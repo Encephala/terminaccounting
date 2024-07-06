@@ -1,7 +1,6 @@
 package entries
 
 import (
-	"context"
 	"log/slog"
 	"terminaccounting/models/utils"
 
@@ -23,8 +22,8 @@ type EntryRow struct {
 	reconciled bool         `db:"reconciled"`
 }
 
-func SetupSchemaEntryRows(ctx context.Context, db *sqlx.DB) error {
-	isSetUp, err := utils.TableIsSetUp(ctx, db, "entryrows")
+func SetupSchemaEntryRows(db *sqlx.DB) error {
+	isSetUp, err := utils.TableIsSetUp(db, "entryrows")
 	if err != nil {
 		return err
 	}
@@ -39,12 +38,12 @@ func SetupSchemaEntryRows(ctx context.Context, db *sqlx.DB) error {
 		entry INTEGER,
 		ledger INTEGER,
 		account INTEGER,
-		document,
+		document TEXT,
 		FOREIGN KEY (entry) REFERENCES entries(id),
 		FOREIGN KEY (ledger) REFERENCES ledgers(id),
 		FOREIGN KEY (account) REFERENCES accounts(id)
-	);`
+	) STRICT;`
 
-	_, err = db.ExecContext(ctx, schema)
+	_, err = db.Exec(schema)
 	return err
 }

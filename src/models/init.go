@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"log/slog"
 	"terminaccounting/models/accounts"
 	"terminaccounting/models/entries"
@@ -12,30 +11,21 @@ import (
 )
 
 // Does one-time database schema setup
-func SetupSchema(ctx context.Context, db *sqlx.DB) error {
-	err := ledgers.SetupSchema(ctx, db)
-	if err != nil {
-		return err
+func SetupSchema(db *sqlx.DB) error {
+	setupFunctions := []func(*sqlx.DB) error{
+		ledgers.SetupSchema,
+		accounts.SetupSchema,
+		journals.SetupSchema,
+		entries.SetupSchemaEntries,
+		entries.SetupSchemaEntryRows,
 	}
 
-	err = accounts.SetupSchema(ctx, db)
-	if err != nil {
-		return err
-	}
-
-	err = journals.SetupSchema(ctx, db)
-	if err != nil {
-		return err
-	}
-
-	err = entries.SetupSchemaEntries(ctx, db)
-	if err != nil {
-		return err
-	}
-
-	err = entries.SetupSchemaEntryRows(ctx, db)
-	if err != nil {
-		return err
+	var err error
+	for _, function := range setupFunctions {
+		err = function(db)
+		if err != nil {
+			return err
+		}
 	}
 
 	slog.Info("Database schema setup completed")

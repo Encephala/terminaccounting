@@ -1,7 +1,6 @@
 package journals
 
 import (
-	"context"
 	"log/slog"
 	"terminaccounting/models/utils"
 
@@ -22,8 +21,8 @@ type Journal struct {
 	notes       []string    `db:"notes"`
 }
 
-func SetupSchema(ctx context.Context, db *sqlx.DB) error {
-	isSetUp, err := utils.TableIsSetUp(ctx, db, "journals")
+func SetupSchema(db *sqlx.DB) error {
+	isSetUp, err := utils.TableIsSetUp(db, "journals")
 	if err != nil {
 		return err
 	}
@@ -35,11 +34,11 @@ func SetupSchema(ctx context.Context, db *sqlx.DB) error {
 
 	schema := `CREATE TABLE IF NOT EXISTS journals(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name VARCHAR(69),
+		name TEXT,
 		type INTEGER,
-		notes JSONB
-	);`
+		notes TEXT
+	) STRICT;`
 
-	_, err = db.ExecContext(ctx, schema)
+	_, err = db.Exec(schema)
 	return err
 }

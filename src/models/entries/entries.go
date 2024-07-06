@@ -1,7 +1,6 @@
 package entries
 
 import (
-	"context"
 	"log/slog"
 	"terminaccounting/models/utils"
 
@@ -14,8 +13,8 @@ type Entry struct {
 	notes   []string `db:"notes"`
 }
 
-func SetupSchemaEntries(ctx context.Context, db *sqlx.DB) error {
-	isSetUp, err := utils.TableIsSetUp(ctx, db, "entries")
+func SetupSchemaEntries(db *sqlx.DB) error {
+	isSetUp, err := utils.TableIsSetUp(db, "entries")
 	if err != nil {
 		return err
 	}
@@ -28,10 +27,10 @@ func SetupSchemaEntries(ctx context.Context, db *sqlx.DB) error {
 	schema := `CREATE TABLE IF NOT EXISTS entries(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		journal INTEGER,
-		notes JSONB,
+		notes TEXT,
 		FOREIGN KEY (journal) REFERENCES journals(id)
-	);`
+	) STRICT;`
 
-	_, err = db.ExecContext(ctx, schema)
+	_, err = db.Exec(schema)
 	return err
 }

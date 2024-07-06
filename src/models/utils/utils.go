@@ -1,15 +1,14 @@
 package utils
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
 
-func TableIsSetUp(ctx context.Context, db *sqlx.DB, name string) (bool, error) {
+func TableIsSetUp(db *sqlx.DB, name string) (bool, error) {
 	// Kinda hacky, whatever
-	result, err := db.QueryContext(ctx, "SELECT name FROM sqlite_master WHERE type='table' AND name=$1", name)
+	result, err := db.Query("SELECT name FROM sqlite_master WHERE type='table' AND name=$1", name)
 	if err != nil {
 		return false, fmt.Errorf("FAILED TO CHECK IF DATABASE IS NEW: %v", err)
 	}

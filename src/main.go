@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"log/slog"
 	"os"
@@ -27,9 +26,9 @@ func main() {
 
 	slog.Info("Program started")
 
-	db, err := sqlx.Open("sqlite3", "file:test.db?cache=shared&mode=rwc")
+	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc")
 	if err != nil {
-		slog.Error("Couldn't open database: ", "error", err)
+		slog.Error("Couldn't connect to database: ", "error", err)
 		os.Exit(1)
 	}
 
@@ -45,12 +44,9 @@ func main() {
 }
 
 func (m model) Init() tea.Cmd {
-	ctx := context.Background()
-
-	err := models.SetupSchema(ctx, m.db)
+	err := models.SetupSchema(m.db)
 	if err != nil {
 		slog.Error("Failed to setup database: ", "error", err)
-
 		return tea.Quit
 	}
 
