@@ -2,10 +2,10 @@ package models
 
 import (
 	"log/slog"
-	"terminaccounting/models/accounts"
-	"terminaccounting/models/entries"
-	"terminaccounting/models/journals"
-	"terminaccounting/models/ledgers"
+	accountsModel "terminaccounting/accounts/model"
+	entriesModel "terminaccounting/entries/model"
+	journalsModel "terminaccounting/journals/model"
+	ledgersModel "terminaccounting/ledgers/model"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -13,11 +13,11 @@ import (
 // Does one-time database schema setup
 func SetupSchema(db *sqlx.DB) error {
 	setupFunctions := []func(*sqlx.DB) error{
-		ledgers.SetupSchema,
-		accounts.SetupSchema,
-		journals.SetupSchema,
-		entries.SetupSchemaEntries,
-		entries.SetupSchemaEntryRows,
+		ledgersModel.SetupSchema,
+		accountsModel.SetupSchema,
+		journalsModel.SetupSchema,
+		entriesModel.SetupSchemaEntries,
+		entriesModel.SetupSchemaEntryRows,
 	}
 
 	var err error

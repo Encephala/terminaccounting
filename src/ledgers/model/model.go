@@ -1,8 +1,8 @@
-package ledgers
+package model
 
 import (
 	"log/slog"
-	"terminaccounting/models/utils"
+	modelUtils "terminaccounting/meta/models/utils"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -32,7 +32,7 @@ type Ledger struct {
 }
 
 func SetupSchema(db *sqlx.DB) error {
-	isSetUp, err := utils.TableIsSetUp(db, "ledgers")
+	isSetUp, err := modelUtils.TableIsSetUp(db, "ledgers")
 	if err != nil {
 		return err
 	}

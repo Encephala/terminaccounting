@@ -4,7 +4,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"terminaccounting/models"
+	"terminaccounting/meta/models"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"

@@ -1,28 +1,28 @@
-package journals
+package model
 
 import (
 	"log/slog"
-	"terminaccounting/models/utils"
+	modelUtils "terminaccounting/meta/models/utils"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type JournalType string
+type AccountType string
 
 const (
-	Debtor   JournalType = "DEBTOR"
-	Creditor JournalType = "CREDITOR"
+	Debtor   AccountType = "DEBTOR"
+	Creditor AccountType = "CREDITOR"
 )
 
-type Journal struct {
+type Account struct {
 	id          int         `db:"id"`
 	name        string      `db:"name"`
-	journalType JournalType `db:"type"`
+	accountType AccountType `db:"type"`
 	notes       []string    `db:"notes"`
 }
 
 func SetupSchema(db *sqlx.DB) error {
-	isSetUp, err := utils.TableIsSetUp(db, "journals")
+	isSetUp, err := modelUtils.TableIsSetUp(db, "accounts")
 	if err != nil {
 		return err
 	}
@@ -30,9 +30,9 @@ func SetupSchema(db *sqlx.DB) error {
 		return nil
 	}
 
-	slog.Info("Creating `journals` table")
+	slog.Info("Creating `accounts` table")
 
-	schema := `CREATE TABLE IF NOT EXISTS journals(
+	schema := `CREATE TABLE IF NOT EXISTS accounts(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		type INTEGER,

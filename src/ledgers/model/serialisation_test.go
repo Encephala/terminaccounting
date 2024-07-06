@@ -1,24 +1,24 @@
-package ledgers_test
+package model_test
 
 import (
-	"terminaccounting/models/ledgers"
+	"terminaccounting/ledgers/model"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func TestSerialiseDeserialiseLedger(t *testing.T) {
+func TestMarshalUnmarshalLedger(t *testing.T) {
 	db := setupDB(t)
 
-	ledger := ledgers.Ledger{
+	ledger := model.Ledger{
 		Id:         0,
 		Name:       "test",
 		LedgerType: "INCOME",
 		Notes:      []string{},
 	}
 
-	err := ledgers.Insert(db, &ledger)
+	err := model.Insert(db, &ledger)
 	if err != nil {
 		t.Fatalf("Couldn't insert into database: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestSerialiseDeserialiseLedger(t *testing.T) {
 		t.Fatalf("Couldn't query rows from database: %v", err)
 	}
 
-	var result ledgers.Ledger
+	var result model.Ledger
 	count := 0
 	for rows.Next() {
 		count++
@@ -46,7 +46,7 @@ func setupDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
 	db := sqlx.MustConnect("sqlite3", ":memory:")
-	err := ledgers.SetupSchema(db)
+	err := model.SetupSchema(db)
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
@@ -55,7 +55,7 @@ func setupDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func testLedgersEqual(t *testing.T, actual, expected ledgers.Ledger) {
+func testLedgersEqual(t *testing.T, actual, expected model.Ledger) {
 	if actual.Id != expected.Id {
 		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
 	}
