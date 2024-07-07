@@ -20,18 +20,18 @@ const (
 type Notes []string
 
 type Ledger struct {
-	id   int    `db:"id"`
-	name string `db:"name"`
+	Id   int    `db:"id"`
+	Name string `db:"name"`
 
 	// TODO: Can this work with sqlx? I think not, because some type conversion is needed?
 	// But then the whole marshalling into struct isn't going to work and I'd have to do either two queries,
 	// or just ditch the whole idea altogether and completely lose the convenience.
 	// Ah well, we'll see
-	ledgerType LedgerType `db:"type"`
-	notes      Notes      `db:"notes"`
+	LedgerType LedgerType `db:"type"`
+	Notes      Notes      `db:"notes"`
 }
 
-func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
+func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "ledgers")
 	if err != nil {
 		return 0, err

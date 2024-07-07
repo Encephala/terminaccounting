@@ -2,13 +2,15 @@ package meta
 
 import (
 	"github.com/charmbracelet/lipgloss"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
 
 type App interface {
-	Name() string
+	tea.Model
 
-	Render() string
+	Name() string
 
 	SetupSchema(db *sqlx.DB) (int, error)
 

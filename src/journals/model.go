@@ -10,18 +10,20 @@ import (
 type JournalType string
 
 const (
-	Debtor   JournalType = "DEBTOR"
-	Creditor JournalType = "CREDITOR"
+	Income   JournalType = "INCOME"
+	Expense  JournalType = "EXPENSE"
+	CashFlow JournalType = "CASHFLOW"
+	General  JournalType = "GENERAL"
 )
 
 type Journal struct {
-	id          int         `db:"id"`
-	name        string      `db:"name"`
-	journalType JournalType `db:"type"`
-	notes       []string    `db:"notes"`
+	Id          int         `db:"id"`
+	Name        string      `db:"name"`
+	JournalType JournalType `db:"type"`
+	Notes       []string    `db:"notes"`
 }
 
-func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
+func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "journals")
 	if err != nil {
 		return 0, err

@@ -8,12 +8,12 @@ import (
 )
 
 type Entry struct {
-	id      int      `db:"id"`
-	journal int      `db:"journal"`
-	notes   []string `db:"notes"`
+	Id      int      `db:"id"`
+	Journal int      `db:"journal"`
+	Notes   []string `db:"notes"`
 }
 
-func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
+func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	changedEntries, err := SetupSchemaEntries(db)
 	if err != nil {
 		return 0, err
@@ -55,13 +55,13 @@ type DecimalValue struct {
 }
 
 type EntryRow struct {
-	id         int          `db:"id"`
-	entry      int          `db:"entry"`
-	ledger     int          `db:"ledger"`
-	account    int          `db:"account"`
-	document   string       `db:"document"`
-	value      DecimalValue `db:"value"`
-	reconciled bool         `db:"reconciled"`
+	Id         int          `db:"id"`
+	Entry      int          `db:"entry"`
+	Ledger     int          `db:"ledger"`
+	Account    int          `db:"account"`
+	Document   string       `db:"document"`
+	Value      DecimalValue `db:"value"`
+	Reconciled bool         `db:"reconciled"`
 }
 
 func SetupSchemaEntryRows(db *sqlx.DB) (int, error) {
@@ -79,7 +79,7 @@ func SetupSchemaEntryRows(db *sqlx.DB) (int, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		entry INTEGER NOT NULL,
 		ledger INTEGER NOT NULL,
-		account INTEGER NOT NULL,
+		account INTEGER,
 		document TEXT,
 		FOREIGN KEY (entry) REFERENCES entries(id),
 		FOREIGN KEY (ledger) REFERENCES ledgers(id),

@@ -11,10 +11,10 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	db := setupDB(t)
 
 	ledger := Ledger{
-		id:         0,
-		name:       "test",
-		ledgerType: "INCOME",
-		notes:      []string{},
+		Id:         0,
+		Name:       "test",
+		LedgerType: "INCOME",
+		Notes:      []string{},
 	}
 
 	err := Insert(db, &ledger)
@@ -44,7 +44,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 func setupDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	app := app{}
+	app := model{}
 
 	db := sqlx.MustConnect("sqlite3", ":memory:")
 	_, err := app.SetupSchema(db)
@@ -57,25 +57,25 @@ func setupDB(t *testing.T) *sqlx.DB {
 }
 
 func testLedgersEqual(t *testing.T, actual, expected Ledger) {
-	if actual.id != expected.id {
-		t.Errorf("Invalid ID %d, expected %d", actual.id, expected.id)
+	if actual.Id != expected.Id {
+		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
 	}
 
-	if actual.name != expected.name {
-		t.Errorf("Invalid name %q, expected %q", actual.name, expected.name)
+	if actual.Name != expected.Name {
+		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
 	}
 
-	if actual.ledgerType != expected.ledgerType {
-		t.Errorf("Invalid type %q, expected %q", actual.ledgerType, expected.ledgerType)
+	if actual.LedgerType != expected.LedgerType {
+		t.Errorf("Invalid type %q, expected %q", actual.LedgerType, expected.LedgerType)
 	}
 
-	if len(actual.notes) != len(expected.notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(actual.notes), len(expected.notes))
+	if len(actual.Notes) != len(expected.Notes) {
+		t.Errorf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
 	}
 
-	for i, note := range actual.notes {
-		if note != expected.notes[i] {
-			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.notes[i])
+	for i, note := range actual.Notes {
+		if note != expected.Notes[i] {
+			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.Notes[i])
 		}
 	}
 }

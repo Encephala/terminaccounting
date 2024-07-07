@@ -24,9 +24,9 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	activeTab int
+	activeView int
 
-	apps [4]meta.App
+	apps []meta.App
 
 	commandInput  textinput.Model
 	commandActive bool
@@ -51,18 +51,18 @@ func main() {
 	commandInput.Placeholder = "command"
 	commandInput.Prompt = ""
 
-	m := model{
+	m := &model{
 		db: db,
 
 		viewWidth:  0,
 		viewHeight: 0,
 
-		activeTab: 0,
-		apps: [...]meta.App{
-			entries.Entries,
-			ledgers.Ledgers,
-			journals.Journals,
-			accounts.Accounts,
+		activeView: 0,
+		apps: []meta.App{
+			entries.New(),
+			ledgers.New(db),
+			journals.New(),
+			accounts.New(),
 		},
 
 		commandInput:  commandInput,
@@ -79,19 +79,24 @@ func main() {
 	os.Exit(0)
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	err := meta.SetupSchema(m.db, m.apps[:])
 	if err != nil {
 		slog.Error("Failed to setup database: ", "error", err)
 		return tea.Quit
 	}
 
+	var cmds []tea.Cmd
+	for _, app := range m.apps {
+		cmds = append(cmds, app.Init())
+	}
+
 	slog.Info("Initialised")
 
-	return nil
+	return tea.Batch(cmds...)
 }
 
-func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
@@ -103,12 +108,12 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyTab:
-			m.activeTab = min(m.activeTab+1, len(m.apps)-1)
+			m.activeView = min(m.activeView+1, len(m.apps)-1)
 
 			return m, nil
 
 		case tea.KeyShiftTab:
-			m.activeTab = max(m.activeTab-1, 0)
+			m.activeView = max(m.activeView-1, 0)
 
 			return m, nil
 
@@ -119,24 +124,38 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.commandActive = true
 			}
 		}
+
+	case error:
+		slog.Error(fmt.Sprintf("Got error message: %v", message))
+		return m, tea.Quit
 	}
 
+	var cmds []tea.Cmd
 	var cmd tea.Cmd
-	m.commandInput, cmd = m.commandInput.Update(message)
 
-	return m, cmd
+	for i, app := range m.apps {
+		model, cmd := app.Update(message)
+		m.apps[i] = model.(meta.App)
+
+		cmds = append(cmds, cmd)
+	}
+
+	m.commandInput, cmd = m.commandInput.Update(message)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m *model) View() string {
 	result := []string{}
 
-	if m.activeTab < 0 || m.activeTab >= len(m.apps) {
-		panic(fmt.Sprintf("Invalid tab index: %d", m.activeTab))
+	if m.activeView < 0 || m.activeView >= len(m.apps) {
+		panic(fmt.Sprintf("Invalid tab index: %d", m.activeView))
 	}
 
 	tabs := []string{}
 	for i, view := range m.apps {
-		if i == m.activeTab {
+		if i == m.activeView {
 			style := styles.Tab().BorderForeground(view.AccentColour())
 			tabs = append(tabs, style.Render(view.Name()))
 		} else {
@@ -146,7 +165,7 @@ func (m model) View() string {
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 	result = append(result, tabsRendered)
 
-	activeApp := m.apps[m.activeTab]
+	activeApp := m.apps[m.activeView]
 
 	// -2 for the borders on all sides
 	bodyHeight := m.viewHeight - lipgloss.Height(tabsRendered) - 2
@@ -155,7 +174,7 @@ func (m model) View() string {
 	}
 	bodyWidth := m.viewWidth - 2
 	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.AccentColour())
-	result = append(result, bodyStyle.Render(activeApp.Render()))
+	result = append(result, bodyStyle.Render(activeApp.View()))
 
 	if m.commandActive {
 		result = append(result, styles.Command().Render(m.commandInput.View()))

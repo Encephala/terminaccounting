@@ -15,13 +15,13 @@ const (
 )
 
 type Account struct {
-	id          int         `db:"id"`
-	name        string      `db:"name"`
-	accountType AccountType `db:"type"`
-	notes       []string    `db:"notes"`
+	Id          int         `db:"id"`
+	Name        string      `db:"name"`
+	AccountType AccountType `db:"type"`
+	Notes       []string    `db:"notes"`
 }
 
-func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
+func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "accounts")
 	if err != nil {
 		return 0, err
