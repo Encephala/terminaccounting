@@ -59,7 +59,7 @@ func main() {
 		},
 	}
 
-	_, err = tea.NewProgram(m).Run()
+	_, err = tea.NewProgram(m, tea.WithAltScreen()).Run()
 	if err != nil {
 		slog.Error("Exited with error: ", "error", err)
 		os.Exit(1)
