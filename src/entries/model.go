@@ -1,8 +1,8 @@
-package model
+package entries
 
 import (
 	"log/slog"
-	modelUtils "terminaccounting/meta/models/utils"
+	"terminaccounting/meta"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -13,26 +13,40 @@ type Entry struct {
 	notes   []string `db:"notes"`
 }
 
-func SetupSchemaEntries(db *sqlx.DB) error {
-	isSetUp, err := modelUtils.TableIsSetUp(db, "entries")
+func SetupSchema(db *sqlx.DB) (int, error) {
+	changedEntries, err := SetupSchemaEntries(db)
 	if err != nil {
-		return err
+		return 0, err
+	}
+
+	changedEntryRows, err := SetupSchemaEntryRows(db)
+	if err != nil {
+		return changedEntries, err
+	}
+
+	return changedEntries + changedEntryRows, nil
+}
+
+func SetupSchemaEntries(db *sqlx.DB) (int, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entries")
+	if err != nil {
+		return 0, err
 	}
 	if isSetUp {
-		return nil
+		return 0, nil
 	}
 
 	slog.Info("Creating `entries` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS entries(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		journal INTEGER,
+		journal INTEGER NOT NULL,
 		notes TEXT,
 		FOREIGN KEY (journal) REFERENCES journals(id)
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return err
+	return 1, err
 }
 
 type DecimalValue struct {
@@ -50,22 +64,22 @@ type EntryRow struct {
 	reconciled bool         `db:"reconciled"`
 }
 
-func SetupSchemaEntryRows(db *sqlx.DB) error {
-	isSetUp, err := modelUtils.TableIsSetUp(db, "entryrows")
+func SetupSchemaEntryRows(db *sqlx.DB) (int, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entryrows")
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if isSetUp {
-		return nil
+		return 0, nil
 	}
 
 	slog.Info("Creating `entryrows` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS entryrows(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		entry INTEGER,
-		ledger INTEGER,
-		account INTEGER,
+		entry INTEGER NOT NULL,
+		ledger INTEGER NOT NULL,
+		account INTEGER NOT NULL,
 		document TEXT,
 		FOREIGN KEY (entry) REFERENCES entries(id),
 		FOREIGN KEY (ledger) REFERENCES ledgers(id),
@@ -73,5 +87,5 @@ func SetupSchemaEntryRows(db *sqlx.DB) error {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return err
+	return 1, err
 }

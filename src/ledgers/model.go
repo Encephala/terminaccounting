@@ -1,8 +1,8 @@
-package model
+package ledgers
 
 import (
 	"log/slog"
-	modelUtils "terminaccounting/meta/models/utils"
+	"terminaccounting/meta"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -31,13 +31,13 @@ type Ledger struct {
 	Notes      Notes      `db:"notes"`
 }
 
-func SetupSchema(db *sqlx.DB) error {
-	isSetUp, err := modelUtils.TableIsSetUp(db, "ledgers")
+func (l *ledgers) SetupSchema(db *sqlx.DB) (int, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "ledgers")
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if isSetUp {
-		return nil
+		return 0, nil
 	}
 
 	slog.Info("Creating `ledgers` table")
@@ -50,7 +50,7 @@ func SetupSchema(db *sqlx.DB) error {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return err
+	return 1, err
 }
 
 func Insert(db *sqlx.DB, ledger *Ledger) error {

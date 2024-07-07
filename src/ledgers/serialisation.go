@@ -1,4 +1,4 @@
-package model
+package ledgers
 
 import (
 	"database/sql/driver"

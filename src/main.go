@@ -4,15 +4,23 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"terminaccounting/meta/models"
+	"strings"
+	"terminaccounting/ledgers"
+	"terminaccounting/meta"
+	"terminaccounting/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type model struct {
 	db *sqlx.DB
+
+	activeTab int
+
+	apps [1]meta.App
 }
 
 func main() {
@@ -24,8 +32,6 @@ func main() {
 	defer file.Close()
 	log.SetOutput(file)
 
-	slog.Info("Program started")
-
 	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc")
 	if err != nil {
 		slog.Error("Couldn't connect to database: ", "error", err)
@@ -34,23 +40,31 @@ func main() {
 
 	m := model{
 		db: db,
+
+		activeTab: 0,
+		apps: [1]meta.App{
+			ledgers.Ledgers,
+		},
 	}
 
 	_, err = tea.NewProgram(m).Run()
 	if err != nil {
-		slog.Error("Program exited with error: ", "error", err)
+		slog.Error("Exited with error: ", "error", err)
 		os.Exit(1)
 	}
+
+	slog.Info("Exited gracefully")
+	os.Exit(0)
 }
 
 func (m model) Init() tea.Cmd {
-	err := models.SetupSchema(m.db)
+	err := meta.SetupSchema(m.db, m.apps[:])
 	if err != nil {
 		slog.Error("Failed to setup database: ", "error", err)
 		return tea.Quit
 	}
 
-	slog.Info("Finished Init")
+	slog.Info("Initialised")
 
 	return nil
 }
@@ -61,6 +75,14 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		switch message.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+
+		case tea.KeyTab:
+			m.activeTab++
+			return m, nil
+
+		case tea.KeyShiftTab:
+			m.activeTab--
+			return m, nil
 		}
 	}
 
@@ -68,5 +90,21 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return ""
+	result := strings.Builder{}
+
+	tabs := []string{}
+	for i, view := range m.apps {
+		if i == m.activeTab {
+			tabs = append(tabs, styles.ActiveTab().Render(view.TabName()))
+		} else {
+			tabs = append(tabs, styles.Tab().Render(view.TabName()))
+		}
+	}
+
+	result.WriteString(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		tabs...,
+	))
+
+	return result.String()
 }

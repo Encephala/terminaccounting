@@ -1,7 +1,6 @@
-package model_test
+package ledgers
 
 import (
-	"terminaccounting/ledgers/model"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -11,14 +10,14 @@ import (
 func TestMarshalUnmarshalLedger(t *testing.T) {
 	db := setupDB(t)
 
-	ledger := model.Ledger{
+	ledger := Ledger{
 		Id:         0,
 		Name:       "test",
 		LedgerType: "INCOME",
 		Notes:      []string{},
 	}
 
-	err := model.Insert(db, &ledger)
+	err := Insert(db, &ledger)
 	if err != nil {
 		t.Fatalf("Couldn't insert into database: %v", err)
 	}
@@ -28,7 +27,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		t.Fatalf("Couldn't query rows from database: %v", err)
 	}
 
-	var result model.Ledger
+	var result Ledger
 	count := 0
 	for rows.Next() {
 		count++
@@ -45,8 +44,10 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 func setupDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
+	app := ledgers{}
+
 	db := sqlx.MustConnect("sqlite3", ":memory:")
-	err := model.SetupSchema(db)
+	_, err := app.SetupSchema(db)
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
@@ -55,7 +56,7 @@ func setupDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func testLedgersEqual(t *testing.T, actual, expected model.Ledger) {
+func testLedgersEqual(t *testing.T, actual, expected Ledger) {
 	if actual.Id != expected.Id {
 		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
 	}
