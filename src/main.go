@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"strings"
+	"terminaccounting/accounts"
+	"terminaccounting/entries"
+	"terminaccounting/journals"
 	"terminaccounting/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -18,9 +22,11 @@ import (
 type model struct {
 	db *sqlx.DB
 
+	viewWidth, viewHeight int
+
 	activeTab int
 
-	apps [1]meta.App
+	apps [4]meta.App
 }
 
 func main() {
@@ -41,9 +47,15 @@ func main() {
 	m := model{
 		db: db,
 
+		viewWidth:  0,
+		viewHeight: 0,
+
 		activeTab: 0,
-		apps: [1]meta.App{
+		apps: [...]meta.App{
 			ledgers.Ledgers,
+			journals.Journals,
+			accounts.Accounts,
+			entries.Entries,
 		},
 	}
 
@@ -77,13 +89,22 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyTab:
-			m.activeTab++
+			m.activeTab = min(m.activeTab+1, len(m.apps)-1)
+
 			return m, nil
 
 		case tea.KeyShiftTab:
-			m.activeTab--
+			m.activeTab = max(m.activeTab-1, 0)
+
 			return m, nil
 		}
+
+	case tea.WindowSizeMsg:
+		m.viewWidth = message.Width
+		m.viewHeight = message.Height
+
+	default:
+		slog.Warn(fmt.Sprintf("Unhandled message: %+v", message))
 	}
 
 	return m, nil
@@ -92,19 +113,37 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	result := strings.Builder{}
 
+	if m.activeTab < 0 || m.activeTab >= len(m.apps) {
+		panic(fmt.Sprintf("Invalid tab index: %d", m.activeTab))
+	}
+
 	tabs := []string{}
 	for i, view := range m.apps {
 		if i == m.activeTab {
-			tabs = append(tabs, styles.ActiveTab().Render(view.TabName()))
+			style := styles.Tab().BorderForeground(view.AccentColour())
+			tabs = append(tabs, style.Render(view.Name()))
 		} else {
-			tabs = append(tabs, styles.Tab().Render(view.TabName()))
+			tabs = append(tabs, styles.Tab().Render(view.Name()))
 		}
 	}
+	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 
-	result.WriteString(lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		tabs...,
-	))
+	tabFill := strings.Repeat(" ", max(0, m.viewWidth-lipgloss.Width(tabsRendered)-1))
+
+	row := lipgloss.JoinHorizontal(
+		lipgloss.Bottom,
+		tabsRendered,
+		tabFill,
+	)
+	result.WriteString(row + "\n")
+
+	activeApp := m.apps[m.activeTab]
+
+	// -2 for the borders on all sides
+	bodyHeight := m.viewHeight - lipgloss.Height(row) - 2
+	bodyWidth := m.viewWidth - 2
+	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.AccentColour())
+	result.WriteString(bodyStyle.Render(activeApp.Render()))
 
 	return result.String()
 }

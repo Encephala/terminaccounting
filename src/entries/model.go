@@ -13,7 +13,7 @@ type Entry struct {
 	notes   []string `db:"notes"`
 }
 
-func SetupSchema(db *sqlx.DB) (int, error) {
+func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
 	changedEntries, err := SetupSchemaEntries(db)
 	if err != nil {
 		return 0, err

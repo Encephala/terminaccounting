@@ -1,11 +1,16 @@
 package meta
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
+)
 
 type App interface {
-	TabName() string
+	Name() string
 
 	Render() string
 
 	SetupSchema(db *sqlx.DB) (int, error)
+
+	AccentColour() lipgloss.Color
 }

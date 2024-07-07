@@ -1,4 +1,4 @@
-package model
+package accounts
 
 import (
 	"log/slog"
@@ -21,13 +21,13 @@ type Account struct {
 	notes       []string    `db:"notes"`
 }
 
-func SetupSchema(db *sqlx.DB) error {
+func (a *app) SetupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "accounts")
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if isSetUp {
-		return nil
+		return 0, nil
 	}
 
 	slog.Info("Creating `accounts` table")
@@ -40,5 +40,5 @@ func SetupSchema(db *sqlx.DB) error {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return err
+	return 1, err
 }
