@@ -5,7 +5,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"strings"
 	"terminaccounting/accounts"
 	"terminaccounting/entries"
 	"terminaccounting/journals"
@@ -13,6 +12,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
@@ -27,6 +27,9 @@ type model struct {
 	activeTab int
 
 	apps [4]meta.App
+
+	commandInput  textinput.Model
+	commandActive bool
 }
 
 func main() {
@@ -44,6 +47,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	commandInput := textinput.New()
+	commandInput.Placeholder = "command"
+	commandInput.Prompt = ""
+
 	m := model{
 		db: db,
 
@@ -52,11 +59,14 @@ func main() {
 
 		activeTab: 0,
 		apps: [...]meta.App{
+			entries.Entries,
 			ledgers.Ledgers,
 			journals.Journals,
 			accounts.Accounts,
-			entries.Entries,
 		},
+
+		commandInput:  commandInput,
+		commandActive: false,
 	}
 
 	_, err = tea.NewProgram(m, tea.WithAltScreen()).Run()
@@ -83,6 +93,10 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		m.viewWidth = message.Width
+		m.viewHeight = message.Height
+
 	case tea.KeyMsg:
 		switch message.Type {
 		case tea.KeyCtrlC:
@@ -97,21 +111,24 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.activeTab = max(m.activeTab-1, 0)
 
 			return m, nil
+
+		default:
+			switch message.String() {
+			case ":":
+				m.commandInput.Focus()
+				m.commandActive = true
+			}
 		}
-
-	case tea.WindowSizeMsg:
-		m.viewWidth = message.Width
-		m.viewHeight = message.Height
-
-	default:
-		slog.Warn(fmt.Sprintf("Unhandled message: %+v", message))
 	}
 
-	return m, nil
+	var cmd tea.Cmd
+	m.commandInput, cmd = m.commandInput.Update(message)
+
+	return m, cmd
 }
 
 func (m model) View() string {
-	result := strings.Builder{}
+	result := []string{}
 
 	if m.activeTab < 0 || m.activeTab >= len(m.apps) {
 		panic(fmt.Sprintf("Invalid tab index: %d", m.activeTab))
@@ -127,23 +144,22 @@ func (m model) View() string {
 		}
 	}
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
-
-	tabFill := strings.Repeat(" ", max(0, m.viewWidth-lipgloss.Width(tabsRendered)-1))
-
-	row := lipgloss.JoinHorizontal(
-		lipgloss.Bottom,
-		tabsRendered,
-		tabFill,
-	)
-	result.WriteString(row + "\n")
+	result = append(result, tabsRendered)
 
 	activeApp := m.apps[m.activeTab]
 
 	// -2 for the borders on all sides
-	bodyHeight := m.viewHeight - lipgloss.Height(row) - 2
+	bodyHeight := m.viewHeight - lipgloss.Height(tabsRendered) - 2
+	if m.commandActive {
+		bodyHeight -= 1
+	}
 	bodyWidth := m.viewWidth - 2
 	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.AccentColour())
-	result.WriteString(bodyStyle.Render(activeApp.Render()))
+	result = append(result, bodyStyle.Render(activeApp.Render()))
 
-	return result.String()
+	if m.commandActive {
+		result = append(result, styles.Command().Render(m.commandInput.View()))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }

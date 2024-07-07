@@ -24,3 +24,10 @@ func Body(width, height int, accentColour lipgloss.Color) lipgloss.Style {
 
 	return style
 }
+
+func Command() lipgloss.Style {
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#00FFFF"))
+
+	return style
+}
