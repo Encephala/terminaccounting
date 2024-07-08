@@ -16,10 +16,6 @@ type App interface {
 	HoverColour() lipgloss.Color
 }
 
-type ErrorMsg struct {
-	Error error
-}
-
 type FatalErrorMsg struct {
 	Error error
 }

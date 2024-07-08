@@ -58,15 +58,15 @@ func main() {
 		apps: []meta.App{
 			entries.New(),
 			ledgers.New(db),
-			journals.New(),
 			accounts.New(),
+			journals.New(),
 		},
 
 		commandInput:  commandInput,
 		commandActive: false,
 	}
 
-	_, err = tea.NewProgram(m, tea.WithAltScreen()).Run()
+	_, err = tea.NewProgram(m).Run()
 	if err != nil {
 		slog.Error("Exited with error: ", "error", err)
 		os.Exit(1)
@@ -79,14 +79,14 @@ func main() {
 func (m *model) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
+	for _, app := range m.apps {
+		cmds = append(cmds, app.Init())
+	}
+
 	for i, app := range m.apps {
 		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
 		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
-	}
-
-	for _, app := range m.apps {
-		cmds = append(cmds, app.Init())
 	}
 
 	slog.Info("Initialised")
@@ -95,31 +95,37 @@ func (m *model) Init() tea.Cmd {
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{}
+
 	switch message := message.(type) {
-	case meta.ErrorMsg:
+	case error:
 		slog.Warn(fmt.Sprintf("Error: %v", message))
 		return m, nil
 
 	case meta.FatalErrorMsg:
-		slog.Error(fmt.Sprintf("Fatal error: %v", message))
+		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
+		// -2 for the tabs and their top borders
+		remainingHeight := message.Height - 2
+		if m.commandActive {
+			// -1 for the command line
+			remainingHeight -= 1
+		}
 
-		for _, app := range m.apps {
-			// -2 for the tabs and their top borders
-			remainingHeight := message.Height - 2
-			if m.commandActive {
-				// -1 for the command line
-				remainingHeight -= 1
-			}
-			app.Update(tea.WindowSizeMsg{
+		for i, app := range m.apps {
+			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
 				Height: remainingHeight,
 			})
+			m.apps[i] = model.(meta.App)
+			cmds = append(cmds, cmd)
 		}
+
+		return m, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
 		switch message.Type {
@@ -127,12 +133,15 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyTab:
-			m.activeApp = min(m.activeApp+1, len(m.apps)-1)
+			m.activeApp = (m.activeApp + 1) % len(m.apps)
 
 			return m, nil
 
 		case tea.KeyShiftTab:
-			m.activeApp = max(m.activeApp-1, 0)
+			m.activeApp = (m.activeApp - 1)
+			if m.activeApp < 0 {
+				m.activeApp += len(m.apps)
+			}
 
 			return m, nil
 
@@ -141,13 +150,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			case ":":
 				m.commandInput.Focus()
 				m.commandActive = true
+
+				return m, nil
 			}
 		}
 	}
 
-	var cmds []tea.Cmd
-	updatedModel, cmd := m.apps[m.activeApp].Update(message)
-	m.apps[m.activeApp] = updatedModel.(meta.App)
+	updatedApp, cmd := m.apps[m.activeApp].Update(message)
+	m.apps[m.activeApp] = updatedApp.(meta.App)
 	cmds = append(cmds, cmd)
 
 	m.commandInput, cmd = m.commandInput.Update(message)

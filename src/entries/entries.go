@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"terminaccounting/meta"
+	"terminaccounting/styles"
+	"terminaccounting/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -31,13 +33,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		changedEntries, err := setupSchemaEntries(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
-			return m, func() tea.Msg { return meta.ErrorMsg{Error: message} }
+			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
 		}
 
 		changedEntryRows, err := setupSchemaEntryRows(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
-			return m, func() tea.Msg { return meta.ErrorMsg{Error: message} }
+			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changedEntries+changedEntryRows != 0 {
@@ -54,7 +56,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
-	return "TODO entries"
+	style := styles.Body(m.viewWidth, m.viewHeight, m.AccentColour())
+	return style.Render("TODO entries")
 }
 
 func (m *model) Name() string {

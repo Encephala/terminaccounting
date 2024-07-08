@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"terminaccounting/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -53,7 +54,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		changed, err := setupSchema(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
-			return m, func() tea.Msg { return meta.ErrorMsg{Error: message} }
+			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changed != 0 {
