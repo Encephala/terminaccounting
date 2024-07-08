@@ -19,8 +19,9 @@ func Body(width, height int, accentColour lipgloss.Color) lipgloss.Style {
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(accentColour).
-		Width(width).
-		Height(height)
+		// -2s for the borders
+		Width(width - 2).
+		Height(height - 2)
 
 	return style
 }

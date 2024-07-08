@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"log/slog"
 	"terminaccounting/meta"
 
 	"github.com/jmoiron/sqlx"
@@ -21,7 +20,7 @@ type Account struct {
 	Notes       []string    `db:"notes"`
 }
 
-func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
+func setupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "accounts")
 	if err != nil {
 		return 0, err
@@ -29,8 +28,6 @@ func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	if isSetUp {
 		return 0, nil
 	}
-
-	slog.Info("Creating `accounts` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS accounts(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

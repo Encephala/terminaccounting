@@ -1,7 +1,6 @@
 package journals
 
 import (
-	"log/slog"
 	"terminaccounting/meta"
 
 	"github.com/jmoiron/sqlx"
@@ -23,7 +22,7 @@ type Journal struct {
 	Notes       []string    `db:"notes"`
 }
 
-func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
+func setupSchema(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "journals")
 	if err != nil {
 		return 0, err
@@ -31,8 +30,6 @@ func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
 	if isSetUp {
 		return 0, nil
 	}
-
-	slog.Info("Creating `journals` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS journals(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

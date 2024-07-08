@@ -1,7 +1,6 @@
 package entries
 
 import (
-	"log/slog"
 	"terminaccounting/meta"
 
 	"github.com/jmoiron/sqlx"
@@ -13,21 +12,7 @@ type Entry struct {
 	Notes   []string `db:"notes"`
 }
 
-func (m *model) SetupSchema(db *sqlx.DB) (int, error) {
-	changedEntries, err := SetupSchemaEntries(db)
-	if err != nil {
-		return 0, err
-	}
-
-	changedEntryRows, err := SetupSchemaEntryRows(db)
-	if err != nil {
-		return changedEntries, err
-	}
-
-	return changedEntries + changedEntryRows, nil
-}
-
-func SetupSchemaEntries(db *sqlx.DB) (int, error) {
+func setupSchemaEntries(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entries")
 	if err != nil {
 		return 0, err
@@ -35,8 +20,6 @@ func SetupSchemaEntries(db *sqlx.DB) (int, error) {
 	if isSetUp {
 		return 0, nil
 	}
-
-	slog.Info("Creating `entries` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS entries(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +47,7 @@ type EntryRow struct {
 	Reconciled bool         `db:"reconciled"`
 }
 
-func SetupSchemaEntryRows(db *sqlx.DB) (int, error) {
+func setupSchemaEntryRows(db *sqlx.DB) (int, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entryrows")
 	if err != nil {
 		return 0, err
@@ -72,8 +55,6 @@ func SetupSchemaEntryRows(db *sqlx.DB) (int, error) {
 	if isSetUp {
 		return 0, nil
 	}
-
-	slog.Info("Creating `entryrows` table")
 
 	schema := `CREATE TABLE IF NOT EXISTS entryrows(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

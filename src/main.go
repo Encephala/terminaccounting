@@ -24,7 +24,7 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	activeView int
+	activeApp int
 
 	apps []meta.App
 
@@ -54,10 +54,7 @@ func main() {
 	m := &model{
 		db: db,
 
-		viewWidth:  0,
-		viewHeight: 0,
-
-		activeView: 0,
+		activeApp: 0,
 		apps: []meta.App{
 			entries.New(),
 			ledgers.New(db),
@@ -80,13 +77,14 @@ func main() {
 }
 
 func (m *model) Init() tea.Cmd {
-	err := meta.SetupSchema(m.db, m.apps[:])
-	if err != nil {
-		slog.Error("Failed to setup database: ", "error", err)
-		return tea.Quit
+	cmds := []tea.Cmd{}
+
+	for i, app := range m.apps {
+		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
+		m.apps[i] = model.(meta.App)
+		cmds = append(cmds, cmd)
 	}
 
-	var cmds []tea.Cmd
 	for _, app := range m.apps {
 		cmds = append(cmds, app.Init())
 	}
@@ -98,9 +96,30 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
+	case meta.ErrorMsg:
+		slog.Warn(fmt.Sprintf("Error: %v", message))
+		return m, nil
+
+	case meta.FatalErrorMsg:
+		slog.Error(fmt.Sprintf("Fatal error: %v", message))
+		return m, tea.Quit
+
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
+
+		for _, app := range m.apps {
+			// -2 for the tabs and their top borders
+			remainingHeight := message.Height - 2
+			if m.commandActive {
+				// -1 for the command line
+				remainingHeight -= 1
+			}
+			app.Update(tea.WindowSizeMsg{
+				Width:  message.Width,
+				Height: remainingHeight,
+			})
+		}
 
 	case tea.KeyMsg:
 		switch message.Type {
@@ -108,12 +127,12 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyTab:
-			m.activeView = min(m.activeView+1, len(m.apps)-1)
+			m.activeApp = min(m.activeApp+1, len(m.apps)-1)
 
 			return m, nil
 
 		case tea.KeyShiftTab:
-			m.activeView = max(m.activeView-1, 0)
+			m.activeApp = max(m.activeApp-1, 0)
 
 			return m, nil
 
@@ -124,21 +143,12 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.commandActive = true
 			}
 		}
-
-	case error:
-		slog.Error(fmt.Sprintf("Got error message: %v", message))
-		return m, tea.Quit
 	}
 
 	var cmds []tea.Cmd
-	var cmd tea.Cmd
-
-	for i, app := range m.apps {
-		model, cmd := app.Update(message)
-		m.apps[i] = model.(meta.App)
-
-		cmds = append(cmds, cmd)
-	}
+	updatedModel, cmd := m.apps[m.activeApp].Update(message)
+	m.apps[m.activeApp] = updatedModel.(meta.App)
+	cmds = append(cmds, cmd)
 
 	m.commandInput, cmd = m.commandInput.Update(message)
 	cmds = append(cmds, cmd)
@@ -149,13 +159,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	result := []string{}
 
-	if m.activeView < 0 || m.activeView >= len(m.apps) {
-		panic(fmt.Sprintf("Invalid tab index: %d", m.activeView))
+	if m.activeApp < 0 || m.activeApp >= len(m.apps) {
+		panic(fmt.Sprintf("Invalid tab index: %d", m.activeApp))
 	}
 
 	tabs := []string{}
 	for i, view := range m.apps {
-		if i == m.activeView {
+		if i == m.activeApp {
 			style := styles.Tab().BorderForeground(view.AccentColour())
 			tabs = append(tabs, style.Render(view.Name()))
 		} else {
@@ -165,16 +175,7 @@ func (m *model) View() string {
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 	result = append(result, tabsRendered)
 
-	activeApp := m.apps[m.activeView]
-
-	// -2 for the borders on all sides
-	bodyHeight := m.viewHeight - lipgloss.Height(tabsRendered) - 2
-	if m.commandActive {
-		bodyHeight -= 1
-	}
-	bodyWidth := m.viewWidth - 2
-	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.BackgroundColour())
-	result = append(result, bodyStyle.Render(activeApp.View()))
+	result = append(result, m.apps[m.activeApp].View())
 
 	if m.commandActive {
 		result = append(result, styles.Command().Render(m.commandInput.View()))

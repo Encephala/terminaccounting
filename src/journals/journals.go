@@ -1,13 +1,17 @@
 package journals
 
 import (
+	"fmt"
+	"log/slog"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-type model struct{}
+type model struct {
+	viewWidth, viewHeight int
+}
 
 func New() meta.App {
 	return &model{}
@@ -18,6 +22,28 @@ func (m *model) Init() tea.Cmd {
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		m.viewWidth = message.Width
+		m.viewHeight = message.Height
+
+	case meta.SetupSchemaMsg:
+		changed, err := setupSchema(message.Db)
+		if err != nil {
+			message := fmt.Errorf("COULD NOT CREATE `journals` TABLE: %v", err)
+			return m, func() tea.Msg { return meta.ErrorMsg{Error: message} }
+		}
+
+		if changed != 0 {
+			return m, func() tea.Msg {
+				slog.Info("Set up `Journals` schema")
+				return nil
+			}
+		}
+
+		return m, nil
+	}
+
 	return m, nil
 }
 

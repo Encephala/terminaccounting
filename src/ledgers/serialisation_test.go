@@ -44,10 +44,8 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 func setupDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	app := model{}
-
 	db := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := app.SetupSchema(db)
+	_, err := setupSchema(db)
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)

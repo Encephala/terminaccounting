@@ -2,27 +2,12 @@ package meta
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
 
-// Does one-time database schema setup
-func SetupSchema(db *sqlx.DB, apps []App) error {
-	totalChangedCount := 0
-	for _, app := range apps {
-		changedCount, err := app.SetupSchema(db)
-		if err != nil {
-			return err
-		}
-		totalChangedCount += changedCount
-	}
-
-	if totalChangedCount > 0 {
-		slog.Info(fmt.Sprintf("Finished setting up %d database tables", totalChangedCount))
-	}
-
-	return nil
+type SetupSchemaMsg struct {
+	Db *sqlx.DB
 }
 
 func DatabaseTableIsSetUp(db *sqlx.DB, name string) (bool, error) {
