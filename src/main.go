@@ -173,7 +173,7 @@ func (m *model) View() string {
 		bodyHeight -= 1
 	}
 	bodyWidth := m.viewWidth - 2
-	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.AccentColour())
+	bodyStyle := styles.Body(bodyWidth, bodyHeight, activeApp.BackgroundColour())
 	result = append(result, bodyStyle.Render(activeApp.View()))
 
 	if m.commandActive {

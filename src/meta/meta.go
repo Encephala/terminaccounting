@@ -15,4 +15,6 @@ type App interface {
 	SetupSchema(db *sqlx.DB) (int, error)
 
 	AccentColour() lipgloss.Color
+	BackgroundColour() lipgloss.Color
+	HoverColour() lipgloss.Color
 }

@@ -17,14 +17,16 @@ type model struct {
 }
 
 func New(db *sqlx.DB) meta.App {
-	return &model{
+	result := &model{
 		db: db,
 
 		activeView: 0,
-		models: []tea.Model{
-			newListView(db),
-		},
+		models:     []tea.Model{},
 	}
+
+	result.models = append(result.models, newListView(db, result))
+
+	return result
 }
 
 func (m *model) Init() tea.Cmd {
@@ -63,4 +65,10 @@ func (m *model) Name() string {
 
 func (m *model) AccentColour() lipgloss.Color {
 	return lipgloss.Color("#A1EEBDD0")
+}
+func (m *model) BackgroundColour() lipgloss.Color {
+	return lipgloss.Color("#A1EEBD60")
+}
+func (m *model) HoverColour() lipgloss.Color {
+	return lipgloss.Color("#A1EEBDFF")
 }

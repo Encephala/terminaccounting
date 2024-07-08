@@ -3,6 +3,8 @@ package ledgers
 import (
 	"fmt"
 	"log/slog"
+	"strings"
+	"terminaccounting/meta"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,14 +12,16 @@ import (
 )
 
 type listView struct {
-	db *sqlx.DB
+	db  *sqlx.DB
+	app meta.App
 
 	list list.Model
 }
 
-func newListView(db *sqlx.DB) tea.Model {
+func newListView(db *sqlx.DB, app meta.App) tea.Model {
 	return &listView{
-		db: db,
+		db:  db,
+		app: app,
 	}
 }
 
@@ -33,8 +37,18 @@ func (lv *listView) Init() tea.Cmd {
 		items = append(items, ledger)
 	}
 
-	lv.list = list.New(items, list.NewDefaultDelegate(), 20, 10)
-	// lv.list.Title = "All the epic ledgers"
+	listDelegator := list.NewDefaultDelegate()
+	listDelegator.Styles.SelectedDesc = listDelegator.Styles.SelectedDesc.Foreground(lv.app.BackgroundColour()).
+		BorderForeground(lv.app.BackgroundColour())
+	listDelegator.Styles.SelectedTitle = listDelegator.Styles.SelectedTitle.Foreground(lv.app.AccentColour()).
+		BorderForeground(lv.app.AccentColour())
+
+	list := list.New(items, listDelegator, 20, 16)
+	list.Title = "Ledgers"
+	list.Styles.Title = lv.list.Styles.Title.Background(lv.app.AccentColour())
+	list.SetShowHelp(false)
+
+	lv.list = list
 
 	return nil
 }
@@ -47,19 +61,19 @@ func (lv *listView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (lv *listView) View() string {
-	slog.Info(fmt.Sprintf("Rendering ledger list view, %d items", len(lv.list.Items())))
-
 	return lv.list.View()
 }
 
 func (l Ledger) FilterValue() string {
-	return "filtervalue " + l.Name
+	result := l.Name
+	result += strings.Join(l.Notes, ";")
+	return result
 }
 
 func (l Ledger) Title() string {
-	return "title " + l.Name
+	return l.Name
 }
 
 func (l Ledger) Description() string {
-	return "description " + l.Name
+	return l.Name
 }

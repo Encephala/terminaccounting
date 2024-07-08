@@ -30,5 +30,11 @@ func (m *model) Name() string {
 }
 
 func (m *model) AccentColour() lipgloss.Color {
-	return lipgloss.Color("#7BD3EAD0")
+	return lipgloss.Color("#7BD4EAD0")
+}
+func (m *model) BackgroundColour() lipgloss.Color {
+	return lipgloss.Color("#7BD4EA50")
+}
+func (m *model) HoverColour() lipgloss.Color {
+	return lipgloss.Color("#7BD4EAFF")
 }
