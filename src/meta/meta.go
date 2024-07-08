@@ -1,7 +1,7 @@
 package meta
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"terminaccounting/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,11 +11,14 @@ type App interface {
 
 	Name() string
 
-	AccentColour() lipgloss.Color
-	BackgroundColour() lipgloss.Color
-	HoverColour() lipgloss.Color
+	Styles() styles.AppStyles
 }
 
 type FatalErrorMsg struct {
 	Error error
+}
+
+type DataLoadedMsg struct {
+	Type  string
+	Items []interface{}
 }

@@ -8,7 +8,6 @@ import (
 	"terminaccounting/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,6 +18,8 @@ type model struct {
 
 	activeView int
 	models     []tea.Model
+
+	ledgers []Ledger
 }
 
 func New(db *sqlx.DB) meta.App {
@@ -27,9 +28,15 @@ func New(db *sqlx.DB) meta.App {
 
 		activeView: 0,
 		models:     []tea.Model{},
+
+		ledgers: []Ledger{},
 	}
 
-	result.models = append(result.models, newListView(db, result))
+	listView := meta.NewListView(
+		"Ledgers",
+		styles.NewListViewStyles(result.Styles().Accent, result.Styles().Foreground),
+	)
+	result.models = append(result.models, &listView)
 
 	return result
 }
@@ -41,6 +48,26 @@ func (m *model) Init() tea.Cmd {
 		cmds = append(cmds, model.Init())
 	}
 
+	loadDataCmd := func() tea.Msg {
+		ledgers, err := SelectAll(m.db)
+
+		if err != nil {
+			errorMessage := fmt.Errorf("FAILED TO LOAD `ledgers` TABLE: %v", err)
+			return meta.FatalErrorMsg{Error: errorMessage}
+		}
+
+		items := []interface{}{}
+		for _, ledger := range ledgers {
+			items = append(items, ledger)
+		}
+
+		return meta.DataLoadedMsg{
+			Type:  "Ledger",
+			Items: items,
+		}
+	}
+	cmds = append(cmds, loadDataCmd)
+
 	return tea.Batch(cmds...)
 }
 
@@ -49,6 +76,23 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
+
+	case meta.DataLoadedMsg:
+		if message.Type != "Ledger" {
+			goto skip
+		}
+
+		ledgers := []Ledger{}
+		for _, item := range message.Items {
+			ledgers = append(ledgers, item.(Ledger))
+		}
+		m.ledgers = ledgers
+
+		// Update list view
+		var cmd tea.Cmd
+		m.models[0], cmd = m.models[0].Update(message)
+
+		return m, cmd
 
 	case meta.SetupSchemaMsg:
 		changed, err := setupSchema(message.Db)
@@ -67,9 +111,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+skip:
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
-
 	for i, model := range m.models {
 		m.models[i], cmd = model.Update(message)
 		cmds = append(cmds, cmd)
@@ -83,7 +127,7 @@ func (m *model) View() string {
 		panic(fmt.Sprintf("Invalid tab index: %d", m.activeView))
 	}
 
-	style := styles.Body(m.viewWidth, m.viewHeight, m.AccentColour())
+	style := styles.Body(m.viewWidth, m.viewHeight, m.Styles().Accent)
 
 	return style.Render(m.models[m.activeView].View())
 }
@@ -92,12 +136,10 @@ func (m *model) Name() string {
 	return "Ledgers"
 }
 
-func (m *model) AccentColour() lipgloss.Color {
-	return lipgloss.Color("#A1EEBDD0")
-}
-func (m *model) BackgroundColour() lipgloss.Color {
-	return lipgloss.Color("#A1EEBD60")
-}
-func (m *model) HoverColour() lipgloss.Color {
-	return lipgloss.Color("#A1EEBDFF")
+func (m *model) Styles() styles.AppStyles {
+	return styles.AppStyles{
+		Foreground: "#A1EEBDD0",
+		Background: "#A1EEBD60",
+		Accent:     "#A1EEBDFF",
+	}
 }

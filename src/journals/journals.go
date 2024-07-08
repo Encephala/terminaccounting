@@ -8,7 +8,6 @@ import (
 	"terminaccounting/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -50,7 +49,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
-	style := styles.Body(m.viewWidth, m.viewHeight, m.AccentColour())
+	style := styles.Body(m.viewWidth, m.viewHeight, m.Styles().Accent)
 	return style.Render("TODO journals")
 }
 
@@ -58,12 +57,10 @@ func (m *model) Name() string {
 	return "Journals"
 }
 
-func (m *model) AccentColour() lipgloss.Color {
-	return lipgloss.Color("#F6D6D6D0")
-}
-func (m *model) BackgroundColour() lipgloss.Color {
-	return lipgloss.Color("#F6D6D680")
-}
-func (m *model) HoverColour() lipgloss.Color {
-	return lipgloss.Color("#F6D6D6FF")
+func (m *model) Styles() styles.AppStyles {
+	return styles.AppStyles{
+		Foreground: "#F6D6D6D0",
+		Accent:     "#F6D6D680",
+		Background: "#F6D6D6FF",
+	}
 }

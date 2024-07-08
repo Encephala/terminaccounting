@@ -5,9 +5,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"terminaccounting/accounts"
-	"terminaccounting/entries"
-	"terminaccounting/journals"
 	"terminaccounting/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -56,10 +53,11 @@ func main() {
 
 		activeApp: 0,
 		apps: []meta.App{
-			entries.New(),
+			// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
+			// entries.New(),
 			ledgers.New(db),
-			accounts.New(),
-			journals.New(),
+			// accounts.New(),
+			// journals.New(),
 		},
 
 		commandInput:  commandInput,
@@ -68,7 +66,7 @@ func main() {
 
 	_, err = tea.NewProgram(m).Run()
 	if err != nil {
-		slog.Error("Exited with error: ", "error", err)
+		slog.Error(fmt.Sprintf("Exited with error: %v", err))
 		os.Exit(1)
 	}
 
@@ -176,7 +174,7 @@ func (m *model) View() string {
 	tabs := []string{}
 	for i, view := range m.apps {
 		if i == m.activeApp {
-			style := styles.Tab().BorderForeground(view.AccentColour())
+			style := styles.Tab().BorderForeground(view.Styles().Foreground)
 			tabs = append(tabs, style.Render(view.Name()))
 		} else {
 			tabs = append(tabs, styles.Tab().Render(view.Name()))
