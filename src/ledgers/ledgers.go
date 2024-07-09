@@ -7,6 +7,7 @@ import (
 	"terminaccounting/styles"
 	"terminaccounting/utils"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
@@ -56,13 +57,13 @@ func (m *model) Init() tea.Cmd {
 			return meta.FatalErrorMsg{Error: errorMessage}
 		}
 
-		items := []interface{}{}
+		items := []list.Item{}
 		for _, ledger := range ledgers {
 			items = append(items, ledger)
 		}
 
 		return meta.DataLoadedMsg{
-			Type:  "Ledger",
+			Model: "Ledger",
 			Items: items,
 		}
 	}
@@ -78,8 +79,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewHeight = message.Height
 
 	case meta.DataLoadedMsg:
-		if message.Type != "Ledger" {
-			goto skip
+		if message.Model != "Ledger" {
+			return m, nil
 		}
 
 		ledgers := []Ledger{}
@@ -111,7 +112,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-skip:
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	for i, model := range m.models {

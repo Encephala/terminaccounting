@@ -3,6 +3,7 @@ package meta
 import (
 	"terminaccounting/styles"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,6 +20,6 @@ type FatalErrorMsg struct {
 }
 
 type DataLoadedMsg struct {
-	Type  string
-	Items []interface{}
+	Model string
+	Items []list.Item
 }
