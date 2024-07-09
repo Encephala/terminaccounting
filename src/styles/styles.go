@@ -64,3 +64,13 @@ func NewListViewStyles(background, foreground lipgloss.Color) ListViewStyles {
 
 	return result
 }
+
+type DetailViewStyles struct {
+	Title lipgloss.Style
+}
+
+func NewDetailViewStyles(background, foreground lipgloss.Color) DetailViewStyles {
+	return DetailViewStyles{
+		Title: lipgloss.NewStyle().Background(background),
+	}
+}

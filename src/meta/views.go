@@ -14,11 +14,11 @@ type ListView struct {
 }
 
 func NewListView(title string, styles styles.ListViewStyles) ListView {
-	listDelegator := list.NewDefaultDelegate()
-	listDelegator.Styles.SelectedTitle = styles.ListDelegateSelectedTitle
-	listDelegator.Styles.SelectedDesc = styles.ListDelegateSelectedDesc
+	delegate := list.NewDefaultDelegate()
+	delegate.Styles.SelectedTitle = styles.ListDelegateSelectedTitle
+	delegate.Styles.SelectedDesc = styles.ListDelegateSelectedDesc
 
-	model := list.New([]list.Item{}, listDelegator, 20, 16)
+	model := list.New([]list.Item{}, delegate, 20, 16)
 	model.Title = title
 	model.Styles.Title = styles.Title
 	model.SetShowHelp(false)
@@ -37,9 +37,7 @@ func (lv *ListView) Init() tea.Cmd {
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
-		for i, item := range message.Items {
-			lv.Model.InsertItem(i, item.(list.Item))
-		}
+		lv.Model.SetItems(message.Items)
 	}
 
 	var cmd tea.Cmd
@@ -50,4 +48,23 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (lv *ListView) View() string {
 	return lv.Model.View()
+}
+
+type DetailView struct {
+	Entries list.Model
+
+	Styles styles.DetailViewStyles
+	Title  string
+}
+
+func (dv *DetailView) Init() tea.Cmd {
+	return nil
+}
+
+func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	return dv, nil
+}
+
+func (dv *DetailView) View() string {
+	return ""
 }
