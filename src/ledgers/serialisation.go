@@ -2,7 +2,6 @@ package ledgers
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 )
 
@@ -18,6 +17,7 @@ func (lt *LedgerType) Scan(value interface{}) error {
 		*lt = Liability
 	case int64(4):
 		*lt = Equity
+
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID LEDGER TYPE: %v", value)
 	}
@@ -40,26 +40,4 @@ func (lt LedgerType) Value() (driver.Value, error) {
 	}
 
 	return nil, fmt.Errorf("MARSHALLING INVALID LEDGER TYPE: %v", lt)
-}
-
-func (n *Notes) Scan(value any) error {
-	if value == nil {
-		*n = make([]string, 0)
-		return nil
-	}
-
-	converted, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("UNMARSHALLING INVALID NOTES: %v", value)
-	}
-
-	return json.Unmarshal(converted, n)
-}
-
-func (n Notes) Value() (driver.Value, error) {
-	if len(n) == 0 {
-		return nil, nil
-	}
-
-	return json.Marshal(n)
 }

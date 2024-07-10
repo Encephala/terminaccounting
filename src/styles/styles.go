@@ -5,6 +5,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var ENTRIESCOLOURS = AppColours{
+	Foreground: "#F0F1B2D0",
+	Accent:     "#F0F1B280",
+	Background: "#EBECABFF",
+}
+
 func Tab() lipgloss.Style {
 	border := lipgloss.NormalBorder()
 	border.TopRight = "╮"
@@ -36,7 +42,7 @@ func Command() lipgloss.Style {
 	return style
 }
 
-type AppStyles struct {
+type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color
 }
 
@@ -51,7 +57,7 @@ func NewListViewStyles(background, foreground lipgloss.Color) ListViewStyles {
 	defaultTitleStyles := list.DefaultStyles().Title
 	defaultItemStyles := list.NewDefaultItemStyles()
 
-	result := ListViewStyles{
+	return ListViewStyles{
 		Title: defaultTitleStyles.Background(background),
 
 		ListDelegateSelectedTitle: defaultItemStyles.SelectedTitle.
@@ -61,16 +67,27 @@ func NewListViewStyles(background, foreground lipgloss.Color) ListViewStyles {
 			Foreground(foreground).
 			BorderForeground(background),
 	}
-
-	return result
 }
 
 type DetailViewStyles struct {
 	Title lipgloss.Style
+
+	ListDelegateSelectedTitle lipgloss.Style
+	ListDelegateSelectedDesc  lipgloss.Style
 }
 
-func NewDetailViewStyles(background, foreground lipgloss.Color) DetailViewStyles {
+func NewDetailViewStyles(background lipgloss.Color) DetailViewStyles {
+	defaultTitleStyles := list.DefaultStyles().Title
+	defaultItemStyles := list.NewDefaultItemStyles()
+
 	return DetailViewStyles{
-		Title: lipgloss.NewStyle().Background(background),
+		Title: defaultTitleStyles.Background(background),
+
+		ListDelegateSelectedTitle: defaultItemStyles.SelectedTitle.
+			Foreground(ENTRIESCOLOURS.Foreground).
+			BorderForeground(ENTRIESCOLOURS.Background),
+		ListDelegateSelectedDesc: defaultItemStyles.SelectedDesc.
+			Foreground(ENTRIESCOLOURS.Foreground).
+			BorderForeground(ENTRIESCOLOURS.Background),
 	}
 }

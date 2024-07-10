@@ -11,7 +11,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	db := setupDB(t)
 
 	ledger := Ledger{
-		Id:         0,
+		Id:         1,
 		Name:       "test",
 		LedgerType: "INCOME",
 		Notes:      []string{},

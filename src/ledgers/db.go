@@ -16,18 +16,11 @@ const (
 	Equity    LedgerType = "EQUITY"
 )
 
-type Notes []string
-
 type Ledger struct {
-	Id   int    `db:"id"`
-	Name string `db:"name"`
-
-	// TODO: Can this work with sqlx? I think not, because some type conversion is needed?
-	// But then the whole marshalling into struct isn't going to work and I'd have to do either two queries,
-	// or just ditch the whole idea altogether and completely lose the convenience.
-	// Ah well, we'll see
+	Id         int        `db:"id"`
+	Name       string     `db:"name"`
 	LedgerType LedgerType `db:"type"`
-	Notes      Notes      `db:"notes"`
+	Notes      meta.Notes `db:"notes"`
 }
 
 func setupSchema(db *sqlx.DB) (int, error) {
@@ -51,13 +44,13 @@ func setupSchema(db *sqlx.DB) (int, error) {
 }
 
 func Insert(db *sqlx.DB, ledger *Ledger) error {
-	_, err := db.NamedExec(`INSERT INTO ledgers VALUES (:id, :name, :type, :notes)`, ledger)
+	_, err := db.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes)`, ledger)
 
 	return err
 }
 
 func SelectAll(db *sqlx.DB) ([]Ledger, error) {
-	result := make([]Ledger, 0)
+	result := []Ledger{}
 
 	err := db.Select(&result, `SELECT * FROM ledgers;`)
 

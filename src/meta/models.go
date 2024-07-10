@@ -1,6 +1,8 @@
 package meta
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -26,4 +28,28 @@ func DatabaseTableIsSetUp(db *sqlx.DB, name string) (bool, error) {
 	} else {
 		return false, nil
 	}
+}
+
+type Notes []string
+
+func (n *Notes) Scan(value any) error {
+	if value == nil {
+		*n = make([]string, 0)
+		return nil
+	}
+
+	converted, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("UNMARSHALLING INVALID NOTES: %v", value)
+	}
+
+	return json.Unmarshal(converted, n)
+}
+
+func (n Notes) Value() (driver.Value, error) {
+	if len(n) == 0 {
+		return nil, nil
+	}
+
+	return json.Marshal(n)
 }

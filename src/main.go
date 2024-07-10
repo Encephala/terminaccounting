@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"terminaccounting/entries"
 	"terminaccounting/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -54,10 +55,10 @@ func main() {
 		activeApp: 0,
 		apps: []meta.App{
 			// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
-			// entries.New(),
 			ledgers.New(db),
 			// accounts.New(),
 			// journals.New(),
+			entries.New(db),
 		},
 
 		commandInput:  commandInput,
@@ -87,6 +88,12 @@ func (m *model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
+	// Init the program with list view
+	// Probably becomes a dashboard in the end or something? This is fine for now.
+	var cmd tea.Cmd
+	m.apps[m.activeApp], cmd = m.apps[m.activeApp].SetActiveView(meta.ListViewType)
+	cmds = append(cmds, cmd)
+
 	slog.Info("Initialised")
 
 	return tea.Batch(cmds...)
@@ -107,13 +114,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
+
 		// -2 for the tabs and their top borders
 		remainingHeight := message.Height - 2
 		if m.commandActive {
 			// -1 for the command line
 			remainingHeight -= 1
 		}
-
 		for i, app := range m.apps {
 			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
@@ -130,18 +137,11 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
 
-		case tea.KeyTab:
-			m.activeApp = (m.activeApp + 1) % len(m.apps)
+		case tea.KeyPgDown, tea.KeyPgUp:
+			return m.handleTabSwitch(message)
 
-			return m, nil
-
-		case tea.KeyShiftTab:
-			m.activeApp = (m.activeApp - 1)
-			if m.activeApp < 0 {
-				m.activeApp += len(m.apps)
-			}
-
-			return m, nil
+		case tea.KeyTab, tea.KeyShiftTab:
+			return m.handleViewSwitch(message)
 
 		default:
 			switch message.String() {
@@ -172,12 +172,12 @@ func (m *model) View() string {
 	}
 
 	tabs := []string{}
-	for i, view := range m.apps {
+	for i, app := range m.apps {
 		if i == m.activeApp {
-			style := styles.Tab().BorderForeground(view.Styles().Foreground)
-			tabs = append(tabs, style.Render(view.Name()))
+			style := styles.Tab().BorderForeground(app.Colours().Foreground)
+			tabs = append(tabs, style.Render(app.Name()))
 		} else {
-			tabs = append(tabs, styles.Tab().Render(view.Name()))
+			tabs = append(tabs, styles.Tab().Render(app.Name()))
 		}
 	}
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
@@ -190,4 +190,48 @@ func (m *model) View() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
+}
+
+func (m *model) handleTabSwitch(message tea.KeyMsg) (*model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch message.Type {
+	case tea.KeyPgDown:
+		m.activeApp = (m.activeApp + 1) % len(m.apps)
+
+		currentApp := m.apps[m.activeApp]
+		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView())
+
+	case tea.KeyPgUp:
+		m.activeApp = (m.activeApp - 1)
+		if m.activeApp < 0 {
+			m.activeApp += len(m.apps)
+		}
+
+		currentApp := m.apps[m.activeApp]
+		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView())
+
+	default:
+		panic(fmt.Sprintf("Handling tab switch but message was %+v", message))
+	}
+
+	return m, cmd
+}
+
+func (m *model) handleViewSwitch(message tea.KeyMsg) (*model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch message.Type {
+	case tea.KeyTab:
+		currentApp := m.apps[m.activeApp]
+		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView() + 1)
+
+	case tea.KeyShiftTab:
+		currentApp := m.apps[m.activeApp]
+		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView() - 1)
+
+	default:
+		panic(fmt.Sprintf("Handling tab switch but message was %+v", message))
+	}
+
+	return m, cmd
 }

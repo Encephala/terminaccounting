@@ -57,8 +57,8 @@ func (m *model) Name() string {
 	return "Journals"
 }
 
-func (m *model) Styles() styles.AppStyles {
-	return styles.AppStyles{
+func (m *model) Styles() styles.AppColours {
+	return styles.AppColours{
 		Foreground: "#F6D6D6D0",
 		Accent:     "#F6D6D680",
 		Background: "#F6D6D6FF",
