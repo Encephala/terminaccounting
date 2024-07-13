@@ -78,8 +78,7 @@ func NewDetailView(app App, itemName string) *DetailView {
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
 	model := list.New([]list.Item{}, delegate, 20, 16)
-	title := fmt.Sprintf("%s: %s", app.Name(), itemName)
-	model.Title = title
+	model.Title = fmt.Sprintf("%s: %s", app.Name(), itemName)
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 

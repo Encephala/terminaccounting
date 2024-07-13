@@ -164,7 +164,7 @@ func (m *model) showItemDetailView() (meta.App, tea.Cmd) {
 	case meta.ListViewType:
 		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
 
-		m.view = meta.NewDetailView(m, m.Name())
+		m.view = meta.NewDetailView(m, selectedLedger.Name)
 		return m, m.loadLedgerRowsCmd(selectedLedger)
 	}
 
