@@ -5,8 +5,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"terminaccounting/entries"
-	"terminaccounting/ledgers"
+	"terminaccounting/apps/entries"
+	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 

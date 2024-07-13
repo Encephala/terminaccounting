@@ -3,7 +3,7 @@ package ledgers
 import (
 	"fmt"
 	"log/slog"
-	"terminaccounting/entries"
+	"terminaccounting/apps/entries"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 	"terminaccounting/utils"

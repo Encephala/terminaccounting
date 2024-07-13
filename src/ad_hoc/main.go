@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"terminaccounting/entries"
+	"terminaccounting/apps/entries"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
