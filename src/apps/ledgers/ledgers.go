@@ -32,7 +32,7 @@ func (m *model) Init() tea.Cmd {
 	m.model = meta.NewListView(m)
 
 	return func() tea.Msg {
-		rows, err := SelectAll(m.db)
+		rows, err := SelectLedgers(m.db)
 		if err != nil {
 			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
@@ -85,7 +85,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.SetActiveViewMsg:
-		m.model = message.View.(*model)
+		m.model = message.View
 	}
 
 	var cmd tea.Cmd
@@ -119,9 +119,9 @@ func (m *model) ActiveView() meta.ViewType {
 func (m *model) handleEnterMsg() (meta.App, tea.Cmd) {
 	switch m.activeView {
 	case meta.ListViewType:
-		activeItem := m.model.(*meta.ListView).Model.Index()
+		selectedLedgerId := m.model.(*meta.ListView).Model.SelectedItem().(Ledger).Id
 		newViewCmd := func() tea.Msg {
-			rows, err := entries.SelectRowsByLedger(m.db, activeItem)
+			rows, err := entries.SelectRowsByLedger(m.db, selectedLedgerId)
 			if err != nil {
 				utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
 			}
@@ -131,7 +131,7 @@ func (m *model) handleEnterMsg() (meta.App, tea.Cmd) {
 				rowsAsItems[i] = row
 			}
 
-			return meta.SetActiveViewMsg{View: meta.NewDetailView(m, activeItem, rowsAsItems)}
+			return meta.SetActiveViewMsg{View: meta.NewDetailView(m, selectedLedgerId, rowsAsItems)}
 		}
 
 		return m, newViewCmd

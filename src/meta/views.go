@@ -72,7 +72,7 @@ func NewDetailView(app App, id int, items []list.Item) *DetailView {
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
-	model := list.New([]list.Item{}, delegate, 20, 16)
+	model := list.New(items, delegate, 20, 16)
 	title := fmt.Sprintf("%s: %d", app.Name(), id)
 	model.Title = title
 	model.Styles.Title = viewStyles.Title

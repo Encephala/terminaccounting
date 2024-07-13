@@ -7,6 +7,7 @@ import (
 	"terminaccounting/styles"
 	"terminaccounting/utils"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
@@ -27,7 +28,24 @@ func New(db *sqlx.DB) meta.App {
 }
 
 func (m *model) Init() tea.Cmd {
-	return nil
+	m.model = meta.NewListView(m)
+
+	return func() tea.Msg {
+		rows, err := SelectEntries(m.db)
+		if err != nil {
+			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			Model: "Entries",
+			Items: items,
+		}
+	}
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {

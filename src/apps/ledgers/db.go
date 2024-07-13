@@ -49,7 +49,7 @@ func Insert(db *sqlx.DB, ledger *Ledger) error {
 	return err
 }
 
-func SelectAll(db *sqlx.DB) ([]Ledger, error) {
+func SelectLedgers(db *sqlx.DB) ([]Ledger, error) {
 	result := []Ledger{}
 
 	err := db.Select(&result, `SELECT * FROM ledgers;`)
