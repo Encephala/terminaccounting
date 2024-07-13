@@ -15,26 +15,28 @@ const (
 	DetailViewType
 )
 
-type ListView struct {
-	Model  list.Model
-	Styles styles.ListViewStyles
-	Title  string
+type SetActiveViewMsg struct {
+	View tea.Model
 }
 
-func NewListView(title string, viewStyles styles.ListViewStyles) ListView {
+type ListView struct {
+	Model list.Model
+}
+
+func NewListView(app App) *ListView {
+	viewStyles := styles.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
+
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
 	model := list.New([]list.Item{}, delegate, 20, 16)
-	model.Title = title
+	model.Title = app.Name()
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	return ListView{
-		Model:  model,
-		Styles: viewStyles,
-		Title:  title,
+	return &ListView{
+		Model: model,
 	}
 }
 
@@ -59,27 +61,26 @@ func (lv *ListView) View() string {
 }
 
 type DetailView struct {
-	Model list.Model
-
-	Styles styles.DetailViewStyles
-	Title  string
+	Model  list.Model
+	ItemId int
 }
 
-// You like that code reuse? Very DRY
-func NewDetailView(title string, viewStyles styles.DetailViewStyles) DetailView {
+func NewDetailView(app App, id int, items []list.Item) *DetailView {
+	viewStyles := styles.NewDetailViewStyles(app.Colours().Foreground)
+
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
 	model := list.New([]list.Item{}, delegate, 20, 16)
+	title := fmt.Sprintf("%s: %d", app.Name(), id)
 	model.Title = title
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	return DetailView{
+	return &DetailView{
 		Model:  model,
-		Styles: viewStyles,
-		Title:  title,
+		ItemId: id,
 	}
 }
 

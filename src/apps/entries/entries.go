@@ -7,7 +7,6 @@ import (
 	"terminaccounting/styles"
 	"terminaccounting/utils"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
@@ -84,77 +83,4 @@ func (m *model) Colours() styles.AppColours {
 
 func (m *model) ActiveView() meta.ViewType {
 	return m.activeView
-}
-
-func (m *model) SetActiveView(view meta.ViewType) (meta.App, tea.Cmd) {
-	var cmd tea.Cmd
-
-	viewInt := int(view)
-	numberOfRegisteredViews := 2
-	if view < 0 {
-		viewInt += numberOfRegisteredViews
-	} else if view >= meta.ViewType(numberOfRegisteredViews) {
-		viewInt -= numberOfRegisteredViews
-	}
-	view = meta.ViewType(viewInt)
-
-	switch view {
-	case meta.ListViewType:
-		listView := meta.NewListView(
-			"Entries",
-			styles.NewListViewStyles(m.Colours().Accent, m.Colours().Foreground),
-		)
-		m.model = &listView
-
-		cmd = func() tea.Msg {
-			rows, err := SelectEntries(m.db)
-
-			if err != nil {
-				errorMessage := fmt.Errorf("FAILED TO LOAD `entries` TABLE: %v", err)
-				return meta.FatalErrorMsg{Error: errorMessage}
-			}
-
-			items := []list.Item{}
-			for _, row := range rows {
-				items = append(items, row)
-			}
-
-			return meta.DataLoadedMsg{
-				Model: "EntryRow",
-				Items: items,
-			}
-		}
-
-	case meta.DetailViewType:
-		detailView := meta.NewDetailView(
-			"Entries",
-			styles.NewDetailViewStyles(m.Colours().Foreground),
-		)
-		m.model = &detailView
-
-		cmd = func() tea.Msg {
-			// TODO: This shouldn't be hardcoded 1. Rework this function to be able to take (a) paremeter(s)
-			entryrows, err := SelectRowsByEntry(m.db, 1)
-			if err != nil {
-				errorMessage := fmt.Errorf("FAILED TO LOAD `entryrows`: %v", err)
-				return meta.FatalErrorMsg{Error: errorMessage}
-			}
-
-			items := []list.Item{}
-			for _, entryrow := range entryrows {
-				items = append(items, entryrow)
-			}
-
-			return meta.DataLoadedMsg{
-				Model: "EntryRow",
-				Items: items,
-			}
-		}
-
-	default:
-		panic(fmt.Sprintf("Unimplemented entries view %v", meta.ListViewType))
-	}
-
-	m.activeView = view
-	return m, cmd
 }

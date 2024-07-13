@@ -29,8 +29,24 @@ func New(db *sqlx.DB) meta.App {
 }
 
 func (m *model) Init() tea.Cmd {
-	// At init time, the model isn't loaded yet.
-	return nil
+	m.model = meta.NewListView(m)
+
+	return func() tea.Msg {
+		rows, err := SelectAll(m.db)
+		if err != nil {
+			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			Model: "Ledgers",
+			Items: items,
+		}
+	}
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -56,6 +72,20 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, nil
+
+	case tea.KeyMsg:
+		switch message.Type {
+		case tea.KeyEnter:
+			return m.handleEnterMsg()
+
+		default:
+			var cmd tea.Cmd
+			m.model, cmd = m.model.Update(message)
+			return m, cmd
+		}
+
+	case meta.SetActiveViewMsg:
+		m.model = message.View.(*model)
 	}
 
 	var cmd tea.Cmd
@@ -86,76 +116,26 @@ func (m *model) ActiveView() meta.ViewType {
 	return m.activeView
 }
 
-func (m *model) SetActiveView(view meta.ViewType) (meta.App, tea.Cmd) {
-	var cmd tea.Cmd
-
-	viewInt := int(view)
-	numberOfRegisteredViews := 2
-	if view < 0 {
-		viewInt += numberOfRegisteredViews
-	} else if view >= meta.ViewType(numberOfRegisteredViews) {
-		viewInt -= numberOfRegisteredViews
-	}
-	view = meta.ViewType(viewInt)
-
-	switch view {
+func (m *model) handleEnterMsg() (meta.App, tea.Cmd) {
+	switch m.activeView {
 	case meta.ListViewType:
-		listView := meta.NewListView(
-			"Ledgers",
-			styles.NewListViewStyles(m.Colours().Accent, m.Colours().Foreground),
-		)
-		m.model = &listView
-
-		cmd = func() tea.Msg {
-			ledgers, err := SelectAll(m.db)
-
+		activeItem := m.model.(*meta.ListView).Model.Index()
+		newViewCmd := func() tea.Msg {
+			rows, err := entries.SelectRowsByLedger(m.db, activeItem)
 			if err != nil {
-				errorMessage := fmt.Errorf("FAILED TO LOAD `ledgers` TABLE: %v", err)
-				return meta.FatalErrorMsg{Error: errorMessage}
+				utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
 			}
 
-			items := []list.Item{}
-			for _, ledger := range ledgers {
-				items = append(items, ledger)
+			rowsAsItems := make([]list.Item, len(rows))
+			for i, row := range rows {
+				rowsAsItems[i] = row
 			}
 
-			return meta.DataLoadedMsg{
-				Model: "Ledger",
-				Items: items,
-			}
+			return meta.SetActiveViewMsg{View: meta.NewDetailView(m, activeItem, rowsAsItems)}
 		}
 
-	case meta.DetailViewType:
-		detailView := meta.NewDetailView(
-			"Ledgers",
-			styles.NewDetailViewStyles(m.Colours().Foreground),
-		)
-		m.model = &detailView
-
-		cmd = func() tea.Msg {
-			// TODO: This shouldn't be hardcoded 1. Rework this function to be able to take (a) paremeter(s)
-			entryrows, err := entries.SelectRowsByLedger(m.db, 1)
-			slog.Info(fmt.Sprintf("Found %d rows on ledger 1", len(entryrows)))
-			if err != nil {
-				errorMessage := fmt.Errorf("FAILED TO LOAD `entryrows`: %v", err)
-				return meta.FatalErrorMsg{Error: errorMessage}
-			}
-
-			items := []list.Item{}
-			for _, entryrow := range entryrows {
-				items = append(items, entryrow)
-			}
-
-			return meta.DataLoadedMsg{
-				Model: "EntryRow",
-				Items: items,
-			}
-		}
-
-	default:
-		panic(fmt.Sprintf("Unimplemented ledgers view %v", meta.ListViewType))
+		return m, newViewCmd
 	}
 
-	m.activeView = view
-	return m, cmd
+	return m, nil
 }

@@ -15,8 +15,6 @@ type App interface {
 	Colours() styles.AppColours
 
 	ActiveView() ViewType
-	// A function to set a given view as active, loading the necessary data.
-	SetActiveView(view ViewType) (App, tea.Cmd)
 }
 
 type FatalErrorMsg struct {

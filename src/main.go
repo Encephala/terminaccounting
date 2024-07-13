@@ -88,12 +88,6 @@ func (m *model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	// Init the program with list view
-	// Probably becomes a dashboard in the end or something? This is fine for now.
-	var cmd tea.Cmd
-	m.apps[m.activeApp], cmd = m.apps[m.activeApp].SetActiveView(meta.ListViewType)
-	cmds = append(cmds, cmd)
-
 	slog.Info("Initialised")
 
 	return tea.Batch(cmds...)
@@ -118,7 +112,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// -2 for the tabs and their top borders
 		remainingHeight := message.Height - 2
 		if m.commandActive {
-			// -1 for the command line
 			remainingHeight -= 1
 		}
 		for i, app := range m.apps {
@@ -137,11 +130,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
 
-		case tea.KeyPgDown, tea.KeyPgUp:
-			return m.handleTabSwitch(message)
-
 		case tea.KeyTab, tea.KeyShiftTab:
-			return m.handleViewSwitch(message)
+			return m.handleTabSwitch(message)
 
 		default:
 			switch message.String() {
@@ -154,11 +144,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	updatedApp, cmd := m.apps[m.activeApp].Update(message)
-	m.apps[m.activeApp] = updatedApp.(meta.App)
-	cmds = append(cmds, cmd)
-
-	m.commandInput, cmd = m.commandInput.Update(message)
+	var cmd tea.Cmd
+	if m.commandActive {
+		m.commandInput, cmd = m.commandInput.Update(message)
+	} else {
+		var app tea.Model
+		app, cmd = m.apps[m.activeApp].Update(message)
+		m.apps[m.activeApp] = app.(meta.App)
+	}
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
@@ -196,38 +189,14 @@ func (m *model) handleTabSwitch(message tea.KeyMsg) (*model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch message.Type {
-	case tea.KeyPgDown:
+	case tea.KeyTab:
 		m.activeApp = (m.activeApp + 1) % len(m.apps)
 
-		currentApp := m.apps[m.activeApp]
-		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView())
-
-	case tea.KeyPgUp:
+	case tea.KeyShiftTab:
 		m.activeApp = (m.activeApp - 1)
 		if m.activeApp < 0 {
 			m.activeApp += len(m.apps)
 		}
-
-		currentApp := m.apps[m.activeApp]
-		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView())
-
-	default:
-		panic(fmt.Sprintf("Handling tab switch but message was %+v", message))
-	}
-
-	return m, cmd
-}
-
-func (m *model) handleViewSwitch(message tea.KeyMsg) (*model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch message.Type {
-	case tea.KeyTab:
-		currentApp := m.apps[m.activeApp]
-		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView() + 1)
-
-	case tea.KeyShiftTab:
-		currentApp := m.apps[m.activeApp]
-		m.apps[m.activeApp], cmd = currentApp.SetActiveView(currentApp.ActiveView() - 1)
 
 	default:
 		panic(fmt.Sprintf("Handling tab switch but message was %+v", message))
