@@ -13,12 +13,15 @@ type App interface {
 	Name() string
 
 	Colours() styles.AppColours
-
-	ActiveView() ViewType
 }
 
 type FatalErrorMsg struct {
 	Error error
+}
+
+type SetActiveViewMsg struct {
+	ViewType
+	View tea.Model
 }
 
 type DataLoadedMsg struct {

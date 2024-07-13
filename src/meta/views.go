@@ -15,8 +15,10 @@ const (
 	DetailViewType
 )
 
-type SetActiveViewMsg struct {
-	View tea.Model
+type View interface {
+	tea.Model
+
+	Type() ViewType
 }
 
 type ListView struct {
@@ -60,27 +62,29 @@ func (lv *ListView) View() string {
 	return lv.Model.View()
 }
 
-type DetailView struct {
-	Model  list.Model
-	ItemId int
+func (lv *ListView) Type() ViewType {
+	return ListViewType
 }
 
-func NewDetailView(app App, id int, items []list.Item) *DetailView {
+type DetailView struct {
+	Model list.Model
+}
+
+func NewDetailView(app App, itemName string) *DetailView {
 	viewStyles := styles.NewDetailViewStyles(app.Colours().Foreground)
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
-	model := list.New(items, delegate, 20, 16)
-	title := fmt.Sprintf("%s: %d", app.Name(), id)
+	model := list.New([]list.Item{}, delegate, 20, 16)
+	title := fmt.Sprintf("%s: %s", app.Name(), itemName)
 	model.Title = title
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
 	return &DetailView{
-		Model:  model,
-		ItemId: id,
+		Model: model,
 	}
 }
 
@@ -105,4 +109,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (dv *DetailView) View() string {
 	return dv.Model.View()
+}
+
+func (dv *DetailView) Type() ViewType {
+	return DetailViewType
 }

@@ -18,8 +18,7 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	activeView meta.ViewType
-	model      tea.Model
+	view meta.View
 }
 
 func New(db *sqlx.DB) meta.App {
@@ -29,7 +28,7 @@ func New(db *sqlx.DB) meta.App {
 }
 
 func (m *model) Init() tea.Cmd {
-	m.model = meta.NewListView(m)
+	m.view = meta.NewListView(m)
 
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
@@ -76,20 +75,20 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch message.Type {
 		case tea.KeyEnter:
-			return m.handleEnterMsg()
+			return m.showItemDetailView()
+
+		case tea.KeyCtrlO:
+			return m.showListView()
 
 		default:
-			var cmd tea.Cmd
-			m.model, cmd = m.model.Update(message)
+			newView, cmd := m.view.Update(message)
+			m.view = newView.(meta.View)
 			return m, cmd
 		}
-
-	case meta.SetActiveViewMsg:
-		m.model = message.View
 	}
 
-	var cmd tea.Cmd
-	m.model, cmd = m.model.Update(message)
+	newView, cmd := m.view.Update(message)
+	m.view = newView.(meta.View)
 
 	return m, cmd
 }
@@ -97,7 +96,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight, m.Colours().Accent)
 
-	return style.Render(m.model.View())
+	return style.Render(m.view.View())
 }
 
 func (m *model) Name() string {
@@ -112,29 +111,61 @@ func (m *model) Colours() styles.AppColours {
 	}
 }
 
-func (m *model) ActiveView() meta.ViewType {
-	return m.activeView
-}
-
-func (m *model) handleEnterMsg() (meta.App, tea.Cmd) {
-	switch m.activeView {
-	case meta.ListViewType:
-		selectedLedgerId := m.model.(*meta.ListView).Model.SelectedItem().(Ledger).Id
-		newViewCmd := func() tea.Msg {
-			rows, err := entries.SelectRowsByLedger(m.db, selectedLedgerId)
-			if err != nil {
-				utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
-			}
-
-			rowsAsItems := make([]list.Item, len(rows))
-			for i, row := range rows {
-				rowsAsItems[i] = row
-			}
-
-			return meta.SetActiveViewMsg{View: meta.NewDetailView(m, selectedLedgerId, rowsAsItems)}
+func (m *model) loadLedgersCmd() tea.Cmd {
+	return func() tea.Msg {
+		rows, err := SelectLedgers(m.db)
+		if err != nil {
+			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
 
-		return m, newViewCmd
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			Model: "Ledger",
+			Items: items,
+		}
+	}
+}
+
+func (m *model) showListView() (meta.App, tea.Cmd) {
+	switch m.view.Type() {
+	case meta.DetailViewType:
+		m.view = meta.NewListView(m)
+		return m, m.loadLedgersCmd()
+	}
+
+	return m, nil
+}
+
+func (m *model) loadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
+	return func() tea.Msg {
+		rows, err := entries.SelectRowsByLedger(m.db, selectedLedger.Id)
+		if err != nil {
+			utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			Model: "EntryRow",
+			Items: items,
+		}
+	}
+}
+
+func (m *model) showItemDetailView() (meta.App, tea.Cmd) {
+	switch m.view.Type() {
+	case meta.ListViewType:
+		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
+
+		m.view = meta.NewDetailView(m, m.Name())
+		return m, m.loadLedgerRowsCmd(selectedLedger)
 	}
 
 	return m, nil
