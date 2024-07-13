@@ -174,10 +174,10 @@ func (m *model) View() string {
 	tabs := []string{}
 	for i, app := range m.apps {
 		if i == m.activeApp {
-			style := styles.Tab().BorderForeground(app.Colours().Foreground)
+			style := styles.Tab.BorderForeground(app.Colours().Foreground)
 			tabs = append(tabs, style.Render(app.Name()))
 		} else {
-			tabs = append(tabs, styles.Tab().Render(app.Name()))
+			tabs = append(tabs, styles.Tab.Render(app.Name()))
 		}
 	}
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
@@ -186,7 +186,7 @@ func (m *model) View() string {
 	result = append(result, m.apps[m.activeApp].View())
 
 	if m.commandActive {
-		result = append(result, styles.Command().Render(m.commandInput.View()))
+		result = append(result, styles.Command.Render(m.commandInput.View()))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)

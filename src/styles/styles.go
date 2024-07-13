@@ -11,18 +11,18 @@ var ENTRIESCOLOURS = AppColours{
 	Background: "#EBECABFF",
 }
 
-func Tab() lipgloss.Style {
-	border := lipgloss.NormalBorder()
-	border.TopRight = "╮"
-	border.TopLeft = "╭"
+func tabBorder() lipgloss.Border {
+	result := lipgloss.NormalBorder()
+	result.TopRight = "╮"
+	result.TopLeft = "╭"
 
-	tab := lipgloss.NewStyle().
-		Border(border, true, true, false, true).
-		Width(12).
-		AlignHorizontal(lipgloss.Center)
-
-	return tab
+	return result
 }
+
+var Tab = lipgloss.NewStyle().
+	Border(tabBorder(), true, true, false, true).
+	Width(12).
+	AlignHorizontal(lipgloss.Center)
 
 func Body(width, height int, accentColour lipgloss.Color) lipgloss.Style {
 	style := lipgloss.NewStyle().
@@ -35,12 +35,8 @@ func Body(width, height int, accentColour lipgloss.Color) lipgloss.Style {
 	return style
 }
 
-func Command() lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#00FFFF"))
-
-	return style
-}
+var Command = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#00FFFF"))
 
 type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color
