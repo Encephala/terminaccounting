@@ -87,3 +87,7 @@ func NewDetailViewStyles(background lipgloss.Color) DetailViewStyles {
 			BorderForeground(ENTRIESCOLOURS.Background),
 	}
 }
+
+type CreateViewStyles struct {
+	Title lipgloss.Style
+}

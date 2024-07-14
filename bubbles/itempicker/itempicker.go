@@ -20,17 +20,17 @@ type ItemSelectedMsg struct {
 	Item
 }
 
-func New() *Model {
-	return &Model{
+func New() Model {
+	return Model{
 		Items: make([]Item, 0),
 	}
 }
 
-func (m *Model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.KeyMsg:
 		switch message.Type {
@@ -60,7 +60,7 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *Model) View() string {
+func (m Model) View() string {
 	if len(m.Items) == 0 {
 		return lipgloss.NewStyle().Italic(true).Render("No items")
 	}

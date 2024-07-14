@@ -13,6 +13,7 @@ type ViewType int
 const (
 	ListViewType ViewType = iota
 	DetailViewType
+	CreateViewType
 )
 
 type View interface {

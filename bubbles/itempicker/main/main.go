@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bubbles/itempicker"
 	"fmt"
+	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,12 +11,10 @@ type testModel struct {
 	model *itempicker.Model
 }
 
-type Item struct {
-	string
-}
+type Item string
 
 func (i Item) String() string {
-	return i.string
+	return string(i)
 }
 
 func main() {
@@ -25,9 +23,9 @@ func main() {
 	}
 
 	items := []itempicker.Item{
-		Item{"first"},
-		Item{"second"},
-		Item{"third"},
+		Item("first"),
+		Item("second"),
+		Item("third"),
 	}
 	model.model.Items = items
 

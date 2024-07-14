@@ -16,6 +16,10 @@ const (
 	Equity    LedgerType = "EQUITY"
 )
 
+func (lt LedgerType) String() string {
+	return string(lt)
+}
+
 type Ledger struct {
 	Id         int        `db:"id"`
 	Name       string     `db:"name"`

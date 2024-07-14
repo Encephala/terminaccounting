@@ -75,10 +75,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch message.Type {
 		case tea.KeyEnter:
-			return m.showItemDetailView()
+			return m.showDetailView()
 
 		case tea.KeyCtrlO:
 			return m.showListView()
+
+		case tea.KeyCtrlN:
+			return m.showCreateView()
 
 		default:
 			newView, cmd := m.view.Update(message)
@@ -159,7 +162,7 @@ func (m *model) loadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 	}
 }
 
-func (m *model) showItemDetailView() (meta.App, tea.Cmd) {
+func (m *model) showDetailView() (meta.App, tea.Cmd) {
 	switch m.view.Type() {
 	case meta.ListViewType:
 		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
@@ -168,5 +171,10 @@ func (m *model) showItemDetailView() (meta.App, tea.Cmd) {
 		return m, m.loadLedgerRowsCmd(selectedLedger)
 	}
 
+	return m, nil
+}
+
+func (m *model) showCreateView() (meta.App, tea.Cmd) {
+	m.view = NewCreateView(m, m.Colours())
 	return m, nil
 }
