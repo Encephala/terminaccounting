@@ -30,10 +30,11 @@ func (l Ledger) Description() string {
 }
 
 type CreateView struct {
-	idInput   textinput.Model
-	nameInput textinput.Model
-	typeInput itempicker.Model
-	noteInput textarea.Model
+	idInput     textinput.Model
+	nameInput   textinput.Model
+	typeInput   itempicker.Model
+	noteInput   textarea.Model
+	activeInput int
 
 	styles styles.CreateViewStyles
 }
@@ -43,14 +44,25 @@ func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 		Title: lipgloss.NewStyle().Background(colours.Background).Padding(0, 1),
 	}
 
-	return &CreateView{
-		idInput:   textinput.New(),
-		nameInput: textinput.New(),
-		typeInput: itempicker.New(),
-		noteInput: textarea.New(),
+	types := []itempicker.Item{
+		Income,
+		Expense,
+		Asset,
+		Liability,
+		Equity,
+	}
+
+	result := &CreateView{
+		idInput:     textinput.New(),
+		nameInput:   textinput.New(),
+		typeInput:   itempicker.New(types),
+		noteInput:   textarea.New(),
+		activeInput: 2,
 
 		styles: styles,
 	}
+
+	return result
 }
 
 func (cv *CreateView) Init() tea.Cmd {
@@ -58,7 +70,22 @@ func (cv *CreateView) Init() tea.Cmd {
 }
 
 func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	return cv, nil
+	var cmd tea.Cmd
+	switch cv.activeInput {
+	case 0:
+		cv.idInput, cmd = cv.idInput.Update(message)
+	case 1:
+		cv.nameInput, cmd = cv.nameInput.Update(message)
+	case 2:
+		cv.typeInput, cmd = cv.typeInput.Update(message)
+	case 3:
+		cv.noteInput, cmd = cv.noteInput.Update(message)
+
+	default:
+		panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
+	}
+
+	return cv, cmd
 }
 
 func (cv *CreateView) View() string {
