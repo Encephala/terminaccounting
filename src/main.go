@@ -17,6 +17,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const LEADER = " "
+
 type model struct {
 	db *sqlx.DB
 
@@ -26,8 +28,12 @@ type model struct {
 
 	apps []meta.App
 
+	// vim-esque command input
 	commandInput  textinput.Model
 	commandActive bool
+
+	// current vim-esque key stroke
+	currentStroke []string
 }
 
 func main() {
@@ -64,6 +70,8 @@ func main() {
 		commandInput:  commandInput,
 		commandActive: false,
 	}
+
+	m.resetCurrentStroke()
 
 	_, err = tea.NewProgram(m).Run()
 	if err != nil {
@@ -126,33 +134,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
-		switch message.Type {
-		case tea.KeyCtrlC:
-			return m, tea.Quit
-
-		case tea.KeyTab, tea.KeyShiftTab:
-			return m.handleTabSwitch(message)
-
-		default:
-			switch message.String() {
-			case ":":
-				m.commandInput.Focus()
-				m.commandActive = true
-
-				return m, nil
-			}
-		}
+		return m.handleKeyMsg(message)
 	}
-
-	var cmd tea.Cmd
-	if m.commandActive {
-		m.commandInput, cmd = m.commandInput.Update(message)
-	} else {
-		var app tea.Model
-		app, cmd = m.apps[m.activeApp].Update(message)
-		m.apps[m.activeApp] = app.(meta.App)
-	}
-	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
@@ -185,22 +168,82 @@ func (m *model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
-func (m *model) handleTabSwitch(message tea.KeyMsg) (*model, tea.Cmd) {
+func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
+	switch message.Type {
+	case tea.KeyCtrlC:
+		m.currentStroke = make([]string, 0, 3)
+
+		m.commandInput.Reset()
+		m.commandActive = false
+
+		return m, nil
+	}
+
+	m.currentStroke = append(m.currentStroke, message.String())
+
+	switch {
+	case m.currentStrokeEquals([]string{LEADER, "q"}):
+		return m, tea.Quit
+
+	case m.currentStrokeEquals([]string{"g", "t"}):
+		m.resetCurrentStroke()
+		return m.handleTabSwitch(NEXTTAB)
+	case m.currentStrokeEquals([]string{"g", "T"}):
+		m.resetCurrentStroke()
+		return m.handleTabSwitch(PREVTAB)
+	}
+
+	// TODO: This shouldn't always happen, I have to think about how to differentiate when a key is part of a stroke,
+	// versus when a key is to control some item on the screen.
+	var cmd tea.Cmd
+	if m.commandActive {
+		m.commandInput, cmd = m.commandInput.Update(message)
+	} else {
+		var app tea.Model
+		app, cmd = m.apps[m.activeApp].Update(message)
+		m.apps[m.activeApp] = app.(meta.App)
+	}
+
+	return m, cmd
+}
+
+const NEXTTAB = "NEXTTAB"
+const PREVTAB = "PREVTAB"
+
+func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	switch message.Type {
-	case tea.KeyTab:
+	switch switchTo {
+	case NEXTTAB:
 		m.activeApp = (m.activeApp + 1) % len(m.apps)
 
-	case tea.KeyShiftTab:
+	case PREVTAB:
 		m.activeApp = (m.activeApp - 1)
 		if m.activeApp < 0 {
 			m.activeApp += len(m.apps)
 		}
 
 	default:
-		panic(fmt.Sprintf("Handling tab switch but message was %+v", message))
+		panic(fmt.Sprintf("Handling tab switchTo was %q", switchTo))
 	}
 
 	return m, cmd
+}
+
+func (m *model) currentStrokeEquals(other []string) bool {
+	if len(m.currentStroke) != len(other) {
+		return false
+	}
+
+	for i, s := range m.currentStroke {
+		if s != other[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (m *model) resetCurrentStroke() {
+	m.currentStroke = make([]string, 0, 3)
 }

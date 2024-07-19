@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bubbles/itempicker"
 	"fmt"
-	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type testModel struct {
-	model *itempicker.Model
+	model itempicker.Model
 }
 
 type Item string
@@ -47,7 +47,7 @@ func (tm *testModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	model, cmd := tm.model.Update(message)
-	tm.model = model.(*itempicker.Model)
+	tm.model = model.(itempicker.Model)
 	return tm, cmd
 }
 
