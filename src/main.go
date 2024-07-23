@@ -146,7 +146,8 @@ func (m *mainModel) View() string {
 		}
 	}
 
-	numberOfTrailingEmptyCells := m.ViewWidth - len(m.Apps)*12
+	// 14 is 12 (width of tab) + 2 (borders)
+	numberOfTrailingEmptyCells := m.viewWidth - len(m.apps)*14
 	if numberOfTrailingEmptyCells >= 0 {
 		tabFill := strings.Repeat(" ", numberOfTrailingEmptyCells)
 		style := lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(activeTabColour)
