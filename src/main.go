@@ -5,11 +5,12 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"strings"
 	"terminaccounting/apps/entries"
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
+	"terminaccounting/model"
 	"terminaccounting/styles"
+	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,32 +19,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const LEADER = " "
-
-type inputMode string
-
-const NORMALMODE inputMode = "NORMAL"
-const INSERTMODE inputMode = "INSERT"
-const COMMANDMODE inputMode = "COMMAND"
-
-type model struct {
-	db *sqlx.DB
-
-	viewWidth, viewHeight int
-
-	activeApp int
-
-	apps []meta.App
-
-	// current vim-esque input mode
-	inputMode
-
-	// vim-esque command input
-	commandInput textinput.Model
-
-	// current vim-esque key stroke
-	currentStroke []string
-}
+type mainModel model.Model
 
 func main() {
 	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
@@ -64,11 +40,11 @@ func main() {
 	commandInput.Placeholder = "command"
 	commandInput.Prompt = ""
 
-	m := &model{
-		db: db,
+	m := &mainModel{
+		Db: db,
 
-		activeApp: 0,
-		apps: []meta.App{
+		ActiveApp: 0,
+		Apps: []meta.App{
 			// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 			ledgers.New(db),
 			// accounts.New(),
@@ -76,8 +52,8 @@ func main() {
 			entries.New(db),
 		},
 
-		inputMode:    NORMALMODE,
-		commandInput: commandInput,
+		InputMode:    model.NORMALMODE,
+		CommandInput: commandInput,
 	}
 
 	m.resetCurrentStroke()
@@ -92,16 +68,16 @@ func main() {
 	os.Exit(0)
 }
 
-func (m *model) Init() tea.Cmd {
+func (m *mainModel) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
-	for _, app := range m.apps {
+	for _, app := range m.Apps {
 		cmds = append(cmds, app.Init())
 	}
 
-	for i, app := range m.apps {
-		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
-		m.apps[i] = model.(meta.App)
+	for i, app := range m.Apps {
+		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.Db})
+		m.Apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
 
@@ -110,7 +86,7 @@ func (m *model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 
 	switch message := message.(type) {
@@ -123,18 +99,18 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.viewWidth = message.Width
-		m.viewHeight = message.Height
+		m.ViewWidth = message.Width
+		m.ViewHeight = message.Height
 
 		// -2 for the tabs and their top borders
 		// -1 for the status line
 		remainingHeight := message.Height - 2 - 1
-		for i, app := range m.apps {
+		for i, app := range m.Apps {
 			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
 				Height: remainingHeight,
 			})
-			m.apps[i] = model.(meta.App)
+			m.Apps[i] = model.(meta.App)
 			cmds = append(cmds, cmd)
 		}
 
@@ -147,16 +123,16 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m *model) View() string {
+func (m *mainModel) View() string {
 	result := []string{}
 
-	if m.activeApp < 0 || m.activeApp >= len(m.apps) {
-		panic(fmt.Sprintf("Invalid tab index: %d", m.activeApp))
+	if m.ActiveApp < 0 || m.ActiveApp >= len(m.Apps) {
+		panic(fmt.Sprintf("Invalid tab index: %d", m.ActiveApp))
 	}
 
 	tabs := []string{}
-	for i, app := range m.apps {
-		if i == m.activeApp {
+	for i, app := range m.Apps {
+		if i == m.ActiveApp {
 			style := styles.Tab.BorderForeground(app.Colours().Foreground)
 			tabs = append(tabs, style.Render(app.Name()))
 		} else {
@@ -166,78 +142,33 @@ func (m *model) View() string {
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 	result = append(result, tabsRendered)
 
-	result = append(result, m.apps[m.activeApp].View())
+	result = append(result, m.Apps[m.ActiveApp].View())
 
-	result = append(result, m.statusLineView())
+	result = append(result, view.StatusLineView((*model.Model)(m)))
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
-func (m *model) statusLineView() string {
-	var result strings.Builder
-
-	statusLineStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("240")).
-		Foreground(lipgloss.Color("252"))
-
-	switch m.inputMode {
-	case NORMALMODE:
-		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("10")).Padding(0, 1)
-		result.WriteString(modeStyle.Render("NORMAL"))
-
-		result.WriteString(statusLineStyle.Render(" "))
-
-		convertedStroke := make([]string, len(m.currentStroke))
-		for _, stroke := range m.currentStroke {
-			if stroke == LEADER {
-				stroke = "<leader>"
-			}
-			convertedStroke = append(convertedStroke, stroke)
-		}
-		joinedStroke := strings.Join(convertedStroke, "")
-		result.WriteString(statusLineStyle.Render(joinedStroke))
-
-		numberOfTrailingEmptyCells := m.viewWidth - len(joinedStroke) - 1
-		if numberOfTrailingEmptyCells >= 0 {
-			// This has to be in if-statement because on initial render viewWidth is 0,
-			// so subtracting 1 leaves negative Repeat count
-			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
-		}
-
-	case INSERTMODE:
-		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
-		result.WriteString(modeStyle.Render("INSERT"))
-
-	case COMMANDMODE:
-		result.WriteString(styles.Command.Render(m.commandInput.View()))
-
-	default:
-		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
-	}
-
-	return result.String()
-}
-
-func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
+func (m *mainModel) handleKeyMsg(message tea.KeyMsg) (*mainModel, tea.Cmd) {
 	switch message.Type {
 	case tea.KeyCtrlC:
-		m.inputMode = NORMALMODE
+		m.InputMode = model.NORMALMODE
 		m.resetCurrentStroke()
 
 		return m, nil
 	}
 
 	var cmd tea.Cmd
-	switch m.inputMode {
-	case NORMALMODE:
-		m.currentStroke = append(m.currentStroke, message.String())
+	switch m.InputMode {
+	case model.NORMALMODE:
+		m.CurrentStroke = append(m.CurrentStroke, message.String())
 
 		switch {
-		case m.currentStrokeEquals([]string{LEADER, "q"}):
+		case m.currentStrokeEquals([]string{model.LEADER, "q"}):
 			return m, tea.Quit
 
 		case m.currentStrokeEquals([]string{"i"}):
-			m.inputMode = INSERTMODE
+			m.InputMode = model.INSERTMODE
 			return m, nil
 
 		case m.currentStrokeEquals([]string{"g", "t"}):
@@ -249,19 +180,19 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		}
 
 		// No case matched
-		if len(m.currentStroke) == 3 {
+		if len(m.CurrentStroke) == 3 {
 			m.resetCurrentStroke()
 		}
 
-	case INSERTMODE:
+	case model.INSERTMODE:
 		var app tea.Model
-		app, cmd = m.apps[m.activeApp].Update(message)
-		m.apps[m.activeApp] = app.(meta.App)
+		app, cmd = m.Apps[m.ActiveApp].Update(message)
+		m.Apps[m.ActiveApp] = app.(meta.App)
 
 		return m, cmd
 
-	case COMMANDMODE:
-		m.commandInput, cmd = m.commandInput.Update(message)
+	case model.COMMANDMODE:
+		m.CommandInput, cmd = m.CommandInput.Update(message)
 		return m, cmd
 	}
 
@@ -271,17 +202,17 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 const NEXTTAB = "NEXTTAB"
 const PREVTAB = "PREVTAB"
 
-func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
+func (m *mainModel) handleTabSwitch(switchTo string) (*mainModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch switchTo {
 	case NEXTTAB:
-		m.activeApp = (m.activeApp + 1) % len(m.apps)
+		m.ActiveApp = (m.ActiveApp + 1) % len(m.Apps)
 
 	case PREVTAB:
-		m.activeApp = (m.activeApp - 1)
-		if m.activeApp < 0 {
-			m.activeApp += len(m.apps)
+		m.ActiveApp = (m.ActiveApp - 1)
+		if m.ActiveApp < 0 {
+			m.ActiveApp += len(m.Apps)
 		}
 
 	default:
@@ -291,12 +222,12 @@ func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) currentStrokeEquals(other []string) bool {
-	if len(m.currentStroke) != len(other) {
+func (m *mainModel) currentStrokeEquals(other []string) bool {
+	if len(m.CurrentStroke) != len(other) {
 		return false
 	}
 
-	for i, s := range m.currentStroke {
+	for i, s := range m.CurrentStroke {
 		if s != other[i] {
 			return false
 		}
@@ -305,6 +236,6 @@ func (m *model) currentStrokeEquals(other []string) bool {
 	return true
 }
 
-func (m *model) resetCurrentStroke() {
-	m.currentStroke = make([]string, 0, 3)
+func (m *mainModel) resetCurrentStroke() {
+	m.CurrentStroke = make([]string, 0, 3)
 }
