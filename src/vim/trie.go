@@ -2,7 +2,7 @@ package vim
 
 import "fmt"
 
-type Trie[K comparable, V comparable] struct {
+type trie[K comparable, V comparable] struct {
 	Children []*node[K, V]
 }
 
@@ -18,7 +18,7 @@ type node[K comparable, V comparable] struct {
 	Children []*node[K, V]
 }
 
-func (t *Trie[K, V]) getChild(key K) (index int, found bool) {
+func (t *trie[K, V]) getChild(key K) (index int, found bool) {
 	for i, child := range t.Children {
 		if child.key == key {
 			return i, true
@@ -37,21 +37,21 @@ func (n *node[K, V]) getChild(key K) (index int, found bool) {
 	return 0, false
 }
 
-func (t *Trie[K, V]) Get(key []K) (value V, found bool) {
+func (t *trie[K, V]) Get(key []K) (value V, found bool) {
 	if len(key) == 0 {
 		found = true
 		return
 	}
 
 	if i, ok := t.getChild(key[0]); ok {
-		return t.Children[i].Get(key[1:])
+		return t.Children[i].get(key[1:])
 	}
 
 	return
 }
-func (n *node[K, V]) Get(key []K) (value V, found bool) {
-	for _, v := range key {
-		if i, ok := n.getChild(v); ok {
+func (n *node[K, V]) get(key []K) (value V, found bool) {
+	for _, k := range key {
+		if i, ok := n.getChild(k); ok {
 			n = n.Children[i]
 		} else {
 			found = false
@@ -67,7 +67,35 @@ func (n *node[K, V]) Get(key []K) (value V, found bool) {
 	}
 }
 
-func (t *Trie[K, V]) Insert(key []K, value V) (changed bool) {
+func (t *trie[K, V]) ContainsPath(key []K) bool {
+	result := true
+
+	if len(key) == 0 {
+		return true
+	}
+
+	if i, ok := t.getChild(key[0]); ok {
+		result = t.Children[i].containsPath(key[1:])
+	} else {
+		result = false
+	}
+
+	return result
+}
+func (n *node[K, V]) containsPath(key []K) bool {
+	for i, k := range key {
+		fmt.Printf("Iterated %d, now %v\n", i, n)
+		if i, ok := n.getChild(k); !ok {
+			return false
+		} else {
+			n = n.Children[i]
+		}
+	}
+
+	return true
+}
+
+func (t *trie[K, V]) Insert(key []K, value V) (changed bool) {
 	changed = false
 
 	if len(key) == 0 {
@@ -75,7 +103,7 @@ func (t *Trie[K, V]) Insert(key []K, value V) (changed bool) {
 	}
 
 	if i, ok := t.getChild(key[0]); ok {
-		changed = t.Children[i].Insert(key[1:], value)
+		changed = t.Children[i].insert(key[1:], value)
 	} else {
 		newChild := &node[K, V]{
 			key:      key[0],
@@ -91,12 +119,12 @@ func (t *Trie[K, V]) Insert(key []K, value V) (changed bool) {
 		t.Children = append(t.Children, newChild)
 		changed = true
 
-		t.Children[len(t.Children)-1].Insert(key[1:], value)
+		t.Children[len(t.Children)-1].insert(key[1:], value)
 	}
 
 	return changed
 }
-func (n *node[K, V]) Insert(key []K, value V) (changed bool) {
+func (n *node[K, V]) insert(key []K, value V) (changed bool) {
 	changed = false
 
 	for i, k := range key {

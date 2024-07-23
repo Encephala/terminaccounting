@@ -5,7 +5,7 @@ import (
 )
 
 func TestInsertTrieKeysOnly(t *testing.T) {
-	var trie Trie[rune, string]
+	var trie trie[rune, string]
 
 	tests := []struct {
 		value           string
@@ -33,7 +33,7 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 }
 
 func TestHandleEmptyValue(t *testing.T) {
-	var trie Trie[rune, string]
+	var trie trie[rune, string]
 
 	changed := trie.Insert([]rune{}, "")
 	if changed {
@@ -47,7 +47,7 @@ func TestHandleEmptyValue(t *testing.T) {
 }
 
 func TestInsertTrieWithValues(t *testing.T) {
-	var trie Trie[rune, string]
+	var trie trie[rune, string]
 
 	tests := []struct {
 		key             string
@@ -115,6 +115,32 @@ func TestInsertTrieWithValues(t *testing.T) {
 
 		if result != test.expectedValue {
 			t.Errorf("Expected value for %q to be %v, got %v", test.key, test.expectedValue, result)
+		}
+	}
+}
+
+func TestContainsPath(t *testing.T) {
+	var trie trie[rune, string]
+
+	trie.Insert([]rune("abc"), "")
+
+	tests := []struct {
+		testValue string
+		expected  bool
+	}{
+		{"a", true},
+		{"ab", true},
+		{"abc", true},
+		{"acb", false},
+		{"abcd", false},
+		{"xd", false},
+	}
+
+	for _, test := range tests {
+		result := trie.ContainsPath([]rune(test.testValue))
+
+		if result != test.expected {
+			t.Fatalf("Got %t for path %q, expected %t", result, test.testValue, test.expected)
 		}
 	}
 }
