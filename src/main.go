@@ -181,7 +181,11 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 			m.currentStrokeEquals([]string{"j"}),
 			m.currentStrokeEquals([]string{"k"}):
 
-			newApp, cmd := m.apps[m.activeApp].Update(meta.CompletedMotionMsg(m.currentStroke))
+			message := meta.CompletedMotionMsg{
+				Strokes:    m.currentStroke,
+				LastKeyMsg: message,
+			}
+			newApp, cmd := m.apps[m.activeApp].Update(message)
 			m.apps[m.activeApp] = newApp.(meta.App)
 			m.resetCurrentStroke()
 			return m, cmd
@@ -201,11 +205,6 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 			m.resetCurrentStroke()
 			return m.handleTabSwitch(PREVTAB)
 		}
-
-		// No case matched
-		// if len(m.CurrentStroke) == 3 {
-		// 	m.resetCurrentStroke()
-		// }
 
 	case vim.COMMANDMODE:
 		m.commandInput, cmd = m.commandInput.Update(message)

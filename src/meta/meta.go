@@ -20,7 +20,10 @@ type FatalErrorMsg struct {
 	Error error
 }
 
-type CompletedMotionMsg vim.Stroke
+type CompletedMotionMsg struct {
+	Strokes    vim.Stroke
+	LastKeyMsg tea.KeyMsg
+}
 
 type SetActiveViewMsg struct {
 	ViewType ViewType

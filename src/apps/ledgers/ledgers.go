@@ -105,27 +105,20 @@ func (m *model) Colours() styles.AppColours {
 }
 
 func (m *model) handleMotionMessage(message meta.CompletedMotionMsg) (meta.App, tea.Cmd) {
-	msg := vim.Stroke(message)
+	strokes := message.Strokes
 
 	switch {
-	case msg.Equals(vim.Stroke{"enter"}):
+	case strokes.Equals(vim.Stroke{"enter"}):
 		return m.showDetailView()
 
-	case msg.Equals(vim.Stroke{"ctrl+o"}):
+	case strokes.Equals(vim.Stroke{"ctrl+o"}):
 		return m.showListView()
 
-	case msg.Equals(vim.Stroke{"ctrl+n"}):
+	case strokes.Equals(vim.Stroke{"ctrl+n"}):
 		return m.showCreateView()
 
-	case len(msg) == 1 && vim.MotionKeys.Contains(msg[0]):
-		keyMsg := tea.KeyMsg{
-			Type:  -1,
-			Runes: []rune(msg[0]),
-			Alt:   false,
-			Paste: false,
-		}
-
-		newView, cmd := m.view.Update(keyMsg)
+	case len(strokes) == 1 && vim.MotionKeys.Contains(strokes[0]):
+		newView, cmd := m.view.Update(message.LastKeyMsg)
 		m.view = newView.(meta.View)
 		return m, cmd
 	}
