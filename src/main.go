@@ -194,9 +194,9 @@ func (m *mainModel) handleKeyMsg(message tea.KeyMsg) (*mainModel, tea.Cmd) {
 		}
 
 		// No case matched
-		if len(m.CurrentStroke) == 3 {
-			m.resetCurrentStroke()
-		}
+		// if len(m.CurrentStroke) == 3 {
+		// 	m.resetCurrentStroke()
+		// }
 
 	case model.INSERTMODE:
 		var app tea.Model
@@ -251,5 +251,5 @@ func (m *mainModel) currentStrokeEquals(other []string) bool {
 }
 
 func (m *mainModel) resetCurrentStroke() {
-	m.CurrentStroke = make([]string, 0, 3)
+	m.CurrentStroke = make([]string, 0)
 }
