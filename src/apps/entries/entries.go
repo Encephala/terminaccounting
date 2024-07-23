@@ -86,7 +86,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
-	style := styles.Body(m.viewWidth, m.viewHeight, m.Colours().Accent)
+	style := styles.Body(m.viewWidth, m.viewHeight)
 
 	return style.Render(m.model.View())
 }

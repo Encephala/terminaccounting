@@ -11,26 +11,48 @@ var ENTRIESCOLOURS = AppColours{
 	Background: "#EBECABFF",
 }
 
-func tabBorder() lipgloss.Border {
-	result := lipgloss.NormalBorder()
-	result.TopRight = "╮"
-	result.TopLeft = "╭"
-
-	return result
+var tabBorder = lipgloss.Border{
+	Top:         "─",
+	Bottom:      "─",
+	Left:        "│",
+	Right:       "│",
+	TopLeft:     "╭",
+	TopRight:    "╮",
+	BottomLeft:  "┴",
+	BottomRight: "┴",
 }
 
-var Tab = lipgloss.NewStyle().
-	Border(tabBorder(), true, true, false, true).
-	Width(12).
-	AlignHorizontal(lipgloss.Center)
+func Tab(activeTabAccentColour lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(tabBorder).
+		BorderBottomForeground(activeTabAccentColour).
+		Width(12).
+		AlignHorizontal(lipgloss.Center)
+}
 
-func Body(width, height int, accentColour lipgloss.Color) lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+var activeTabBorder = lipgloss.Border{
+	Top:         "─",
+	Bottom:      " ",
+	Left:        "│",
+	Right:       "│",
+	TopLeft:     "╭",
+	TopRight:    "╮",
+	BottomLeft:  "┘",
+	BottomRight: "└",
+}
+
+func ActiveTab(accentColour lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(activeTabBorder).
 		BorderForeground(accentColour).
-		// -2s for the borders
-		Width(width - 2).
-		Height(height - 2)
+		Width(12).
+		AlignHorizontal(lipgloss.Center)
+}
+
+func Body(width, height int) lipgloss.Style {
+	style := lipgloss.NewStyle().
+		Width(width).
+		Height(height)
 
 	return style
 }

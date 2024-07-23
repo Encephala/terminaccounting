@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"terminaccounting/apps/entries"
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
@@ -102,9 +103,9 @@ func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.ViewWidth = message.Width
 		m.ViewHeight = message.Height
 
-		// -2 for the tabs and their top borders
+		// -3 for the tabs and their borders
 		// -1 for the status line
-		remainingHeight := message.Height - 2 - 1
+		remainingHeight := message.Height - 3 - 1
 		for i, app := range m.Apps {
 			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
@@ -131,15 +132,24 @@ func (m *mainModel) View() string {
 	}
 
 	tabs := []string{}
+	activeTabColour := m.Apps[m.ActiveApp].Colours().Foreground
 	for i, app := range m.Apps {
 		if i == m.ActiveApp {
-			style := styles.Tab.BorderForeground(app.Colours().Foreground)
+			style := styles.ActiveTab(activeTabColour)
 			tabs = append(tabs, style.Render(app.Name()))
 		} else {
-			tabs = append(tabs, styles.Tab.Render(app.Name()))
+			tabs = append(tabs, styles.Tab(activeTabColour).Render(app.Name()))
 		}
 	}
-	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
+
+	numberOfTrailingEmptyCells := m.ViewWidth - len(m.Apps)*12
+	if numberOfTrailingEmptyCells >= 0 {
+		tabFill := strings.Repeat(" ", numberOfTrailingEmptyCells)
+		style := lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(activeTabColour)
+		tabs = append(tabs, style.Render(tabFill))
+	}
+
+	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
 	result = append(result, tabsRendered)
 
 	result = append(result, m.Apps[m.ActiveApp].View())
