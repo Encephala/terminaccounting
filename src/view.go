@@ -39,6 +39,10 @@ func statusLineView(m *model) string {
 		result.WriteString(modeStyle.Render("INSERT"))
 
 	case vim.COMMANDMODE:
+		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("208")).Padding(0, 1)
+		result.WriteString(modeStyle.Render("COMMAND"))
+		result.WriteString(styles.Command.Render(" "))
+
 		result.WriteString(styles.Command.Render(m.commandInput.View()))
 
 	default:

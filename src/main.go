@@ -174,7 +174,6 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	switch m.inputMode {
 	case vim.NORMALMODE:
 		m.currentStroke = append(m.currentStroke, message.String())
-		slog.Info(fmt.Sprintf("input in normal mode: %#+v", message))
 
 		switch {
 		case
@@ -190,10 +189,6 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 			m.resetCurrentStroke()
 			return m, cmd
 
-		case m.currentStrokeEquals([]string{vim.LEADER, "q"}):
-			slog.Info("matched quit")
-			return m, tea.Quit
-
 		case m.currentStrokeEquals([]string{"i"}):
 			m.inputMode = vim.INSERTMODE
 			return m, nil
@@ -204,9 +199,28 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		case m.currentStrokeEquals([]string{"g", "T"}):
 			m.resetCurrentStroke()
 			return m.handleTabSwitch(PREVTAB)
+
+		case m.currentStrokeEquals([]string{":"}):
+			m.resetCurrentStroke()
+			m.inputMode = vim.COMMANDMODE
+			m.commandInput.Focus()
+			m.commandInput, cmd = m.commandInput.Update(message)
+			return m, cmd
 		}
 
 	case vim.COMMANDMODE:
+		if message.Type == tea.KeyEnter {
+			var cmd tea.Cmd
+			if m.commandInput.Value() == ":q" {
+				cmd = tea.Quit
+			} else {
+				m.commandInput.Reset()
+				m.inputMode = vim.NORMALMODE
+			}
+
+			return m, cmd
+		}
+
 		m.commandInput, cmd = m.commandInput.Update(message)
 		return m, cmd
 	}
