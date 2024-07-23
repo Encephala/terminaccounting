@@ -9,9 +9,8 @@ import (
 	"terminaccounting/apps/entries"
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
-	"terminaccounting/model"
 	"terminaccounting/styles"
-	"terminaccounting/view"
+	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,8 +18,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type mainModel model.Model
 
 func main() {
 	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
@@ -41,11 +38,11 @@ func main() {
 	commandInput.Placeholder = "command"
 	commandInput.Prompt = ""
 
-	m := &mainModel{
-		Db: db,
+	m := &model{
+		db: db,
 
-		ActiveApp: 0,
-		Apps: []meta.App{
+		activeApp: 0,
+		apps: []meta.App{
 			// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 			ledgers.New(db),
 			// accounts.New(),
@@ -53,8 +50,8 @@ func main() {
 			entries.New(db),
 		},
 
-		InputMode:    model.NORMALMODE,
-		CommandInput: commandInput,
+		inputMode:    vim.NORMALMODE,
+		commandInput: commandInput,
 	}
 
 	m.resetCurrentStroke()
@@ -69,16 +66,16 @@ func main() {
 	os.Exit(0)
 }
 
-func (m *mainModel) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
-	for _, app := range m.Apps {
+	for _, app := range m.apps {
 		cmds = append(cmds, app.Init())
 	}
 
-	for i, app := range m.Apps {
-		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.Db})
-		m.Apps[i] = model.(meta.App)
+	for i, app := range m.apps {
+		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
+		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
 
@@ -87,7 +84,7 @@ func (m *mainModel) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 
 	switch message := message.(type) {
@@ -100,18 +97,18 @@ func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.ViewWidth = message.Width
-		m.ViewHeight = message.Height
+		m.viewWidth = message.Width
+		m.viewHeight = message.Height
 
 		// -3 for the tabs and their borders
 		// -1 for the status line
 		remainingHeight := message.Height - 3 - 1
-		for i, app := range m.Apps {
+		for i, app := range m.apps {
 			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
 				Height: remainingHeight,
 			})
-			m.Apps[i] = model.(meta.App)
+			m.apps[i] = model.(meta.App)
 			cmds = append(cmds, cmd)
 		}
 
@@ -121,24 +118,24 @@ func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 	}
 
-	app, cmd := m.Apps[m.ActiveApp].Update(message)
-	m.Apps[m.ActiveApp] = app.(meta.App)
+	app, cmd := m.apps[m.activeApp].Update(message)
+	m.apps[m.activeApp] = app.(meta.App)
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m *mainModel) View() string {
+func (m *model) View() string {
 	result := []string{}
 
-	if m.ActiveApp < 0 || m.ActiveApp >= len(m.Apps) {
-		panic(fmt.Sprintf("Invalid tab index: %d", m.ActiveApp))
+	if m.activeApp < 0 || m.activeApp >= len(m.apps) {
+		panic(fmt.Sprintf("Invalid tab index: %d", m.activeApp))
 	}
 
 	tabs := []string{}
-	activeTabColour := m.Apps[m.ActiveApp].Colours().Foreground
-	for i, app := range m.Apps {
-		if i == m.ActiveApp {
+	activeTabColour := m.apps[m.activeApp].Colours().Foreground
+	for i, app := range m.apps {
+		if i == m.activeApp {
 			style := styles.ActiveTab(activeTabColour)
 			tabs = append(tabs, style.Render(app.Name()))
 		} else {
@@ -157,33 +154,33 @@ func (m *mainModel) View() string {
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
 	result = append(result, tabsRendered)
 
-	result = append(result, m.Apps[m.ActiveApp].View())
+	result = append(result, m.apps[m.activeApp].View())
 
-	result = append(result, view.StatusLineView((*model.Model)(m)))
+	result = append(result, statusLineView(m))
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
-func (m *mainModel) handleKeyMsg(message tea.KeyMsg) (*mainModel, tea.Cmd) {
+func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case tea.KeyCtrlC:
-		m.InputMode = model.NORMALMODE
+		m.inputMode = vim.NORMALMODE
 		m.resetCurrentStroke()
 
 		return m, nil
 	}
 
 	var cmd tea.Cmd
-	switch m.InputMode {
-	case model.NORMALMODE:
-		m.CurrentStroke = append(m.CurrentStroke, message.String())
+	switch m.inputMode {
+	case vim.NORMALMODE:
+		m.currentStroke = append(m.currentStroke, message.String())
 
 		switch {
-		case m.currentStrokeEquals([]string{model.LEADER, "q"}):
+		case m.currentStrokeEquals([]string{vim.LEADER, "q"}):
 			return m, tea.Quit
 
 		case m.currentStrokeEquals([]string{"i"}):
-			m.InputMode = model.INSERTMODE
+			m.inputMode = vim.INSERTMODE
 			return m, nil
 
 		case m.currentStrokeEquals([]string{"g", "t"}):
@@ -199,15 +196,15 @@ func (m *mainModel) handleKeyMsg(message tea.KeyMsg) (*mainModel, tea.Cmd) {
 		// 	m.resetCurrentStroke()
 		// }
 
-	case model.INSERTMODE:
+	case vim.INSERTMODE:
 		var app tea.Model
-		app, cmd = m.Apps[m.ActiveApp].Update(message)
-		m.Apps[m.ActiveApp] = app.(meta.App)
+		app, cmd = m.apps[m.activeApp].Update(message)
+		m.apps[m.activeApp] = app.(meta.App)
 
 		return m, cmd
 
-	case model.COMMANDMODE:
-		m.CommandInput, cmd = m.CommandInput.Update(message)
+	case vim.COMMANDMODE:
+		m.commandInput, cmd = m.commandInput.Update(message)
 		return m, cmd
 	}
 
@@ -217,17 +214,17 @@ func (m *mainModel) handleKeyMsg(message tea.KeyMsg) (*mainModel, tea.Cmd) {
 const NEXTTAB = "NEXTTAB"
 const PREVTAB = "PREVTAB"
 
-func (m *mainModel) handleTabSwitch(switchTo string) (*mainModel, tea.Cmd) {
+func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch switchTo {
 	case NEXTTAB:
-		m.ActiveApp = (m.ActiveApp + 1) % len(m.Apps)
+		m.activeApp = (m.activeApp + 1) % len(m.apps)
 
 	case PREVTAB:
-		m.ActiveApp = (m.ActiveApp - 1)
-		if m.ActiveApp < 0 {
-			m.ActiveApp += len(m.Apps)
+		m.activeApp = (m.activeApp - 1)
+		if m.activeApp < 0 {
+			m.activeApp += len(m.apps)
 		}
 
 	default:
@@ -237,12 +234,12 @@ func (m *mainModel) handleTabSwitch(switchTo string) (*mainModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *mainModel) currentStrokeEquals(other []string) bool {
-	if len(m.CurrentStroke) != len(other) {
+func (m *model) currentStrokeEquals(other []string) bool {
+	if len(m.currentStroke) != len(other) {
 		return false
 	}
 
-	for i, s := range m.CurrentStroke {
+	for i, s := range m.currentStroke {
 		if s != other[i] {
 			return false
 		}
@@ -251,6 +248,6 @@ func (m *mainModel) currentStrokeEquals(other []string) bool {
 	return true
 }
 
-func (m *mainModel) resetCurrentStroke() {
-	m.CurrentStroke = make([]string, 0)
+func (m *model) resetCurrentStroke() {
+	m.currentStroke = make([]string, 0)
 }
