@@ -121,6 +121,10 @@ func (m *mainModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 	}
 
+	app, cmd := m.Apps[m.ActiveApp].Update(message)
+	m.Apps[m.ActiveApp] = app.(meta.App)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
