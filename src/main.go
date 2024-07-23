@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"terminaccounting/apps/entries"
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
@@ -19,6 +20,12 @@ import (
 
 const LEADER = " "
 
+type inputMode string
+
+const NORMALMODE inputMode = "NORMAL"
+const INSERTMODE inputMode = "INSERT"
+const COMMANDMODE inputMode = "COMMAND"
+
 type model struct {
 	db *sqlx.DB
 
@@ -28,9 +35,11 @@ type model struct {
 
 	apps []meta.App
 
+	// current vim-esque input mode
+	inputMode
+
 	// vim-esque command input
-	commandInput  textinput.Model
-	commandActive bool
+	commandInput textinput.Model
 
 	// current vim-esque key stroke
 	currentStroke []string
@@ -67,8 +76,8 @@ func main() {
 			entries.New(db),
 		},
 
-		commandInput:  commandInput,
-		commandActive: false,
+		inputMode:    NORMALMODE,
+		commandInput: commandInput,
 	}
 
 	m.resetCurrentStroke()
@@ -118,10 +127,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewHeight = message.Height
 
 		// -2 for the tabs and their top borders
-		remainingHeight := message.Height - 2
-		if m.commandActive {
-			remainingHeight -= 1
-		}
+		// -1 for the status line
+		remainingHeight := message.Height - 2 - 1
 		for i, app := range m.apps {
 			model, cmd := app.Update(tea.WindowSizeMsg{
 				Width:  message.Width,
@@ -161,50 +168,104 @@ func (m *model) View() string {
 
 	result = append(result, m.apps[m.activeApp].View())
 
-	if m.commandActive {
-		result = append(result, styles.Command.Render(m.commandInput.View()))
-	}
+	result = append(result, m.statusLineView())
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
+}
+
+func (m *model) statusLineView() string {
+	var result strings.Builder
+
+	statusLineStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("240")).
+		Foreground(lipgloss.Color("252"))
+
+	switch m.inputMode {
+	case NORMALMODE:
+		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("10")).Padding(0, 1)
+		result.WriteString(modeStyle.Render("NORMAL"))
+
+		result.WriteString(statusLineStyle.Render(" "))
+
+		convertedStroke := make([]string, len(m.currentStroke))
+		for _, stroke := range m.currentStroke {
+			if stroke == LEADER {
+				stroke = "<leader>"
+			}
+			convertedStroke = append(convertedStroke, stroke)
+		}
+		joinedStroke := strings.Join(convertedStroke, "")
+		result.WriteString(statusLineStyle.Render(joinedStroke))
+
+		numberOfTrailingEmptyCells := m.viewWidth - len(joinedStroke) - 1
+		if numberOfTrailingEmptyCells >= 0 {
+			// This has to be in if-statement because on initial render viewWidth is 0,
+			// so subtracting 1 leaves negative Repeat count
+			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
+		}
+
+	case INSERTMODE:
+		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
+		result.WriteString(modeStyle.Render("INSERT"))
+
+	case COMMANDMODE:
+		result.WriteString(styles.Command.Render(m.commandInput.View()))
+
+	default:
+		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
+	}
+
+	return result.String()
 }
 
 func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case tea.KeyCtrlC:
-		m.currentStroke = make([]string, 0, 3)
-
-		m.commandInput.Reset()
-		m.commandActive = false
+		m.inputMode = NORMALMODE
+		m.resetCurrentStroke()
 
 		return m, nil
 	}
 
-	m.currentStroke = append(m.currentStroke, message.String())
-
-	switch {
-	case m.currentStrokeEquals([]string{LEADER, "q"}):
-		return m, tea.Quit
-
-	case m.currentStrokeEquals([]string{"g", "t"}):
-		m.resetCurrentStroke()
-		return m.handleTabSwitch(NEXTTAB)
-	case m.currentStrokeEquals([]string{"g", "T"}):
-		m.resetCurrentStroke()
-		return m.handleTabSwitch(PREVTAB)
-	}
-
-	// TODO: This shouldn't always happen, I have to think about how to differentiate when a key is part of a stroke,
-	// versus when a key is to control some item on the screen.
 	var cmd tea.Cmd
-	if m.commandActive {
-		m.commandInput, cmd = m.commandInput.Update(message)
-	} else {
+	switch m.inputMode {
+	case NORMALMODE:
+		m.currentStroke = append(m.currentStroke, message.String())
+
+		switch {
+		case m.currentStrokeEquals([]string{LEADER, "q"}):
+			return m, tea.Quit
+
+		case m.currentStrokeEquals([]string{"i"}):
+			m.inputMode = INSERTMODE
+			return m, nil
+
+		case m.currentStrokeEquals([]string{"g", "t"}):
+			m.resetCurrentStroke()
+			return m.handleTabSwitch(NEXTTAB)
+		case m.currentStrokeEquals([]string{"g", "T"}):
+			m.resetCurrentStroke()
+			return m.handleTabSwitch(PREVTAB)
+		}
+
+		// No case matched
+		if len(m.currentStroke) == 3 {
+			m.resetCurrentStroke()
+		}
+
+	case INSERTMODE:
 		var app tea.Model
 		app, cmd = m.apps[m.activeApp].Update(message)
 		m.apps[m.activeApp] = app.(meta.App)
+
+		return m, cmd
+
+	case COMMANDMODE:
+		m.commandInput, cmd = m.commandInput.Update(message)
+		return m, cmd
 	}
 
-	return m, cmd
+	return m, nil
 }
 
 const NEXTTAB = "NEXTTAB"
