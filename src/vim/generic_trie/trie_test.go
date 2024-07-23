@@ -1,12 +1,11 @@
 package vim
 
 import (
-	"strings"
 	"testing"
 )
 
 func TestInsertTrieKeysOnly(t *testing.T) {
-	var trie trie
+	var trie trie[rune, string]
 
 	tests := []struct {
 		value           string
@@ -19,98 +18,111 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		changed := trie.Insert(strings.Split(test.value, ""))
+		changed := trie.Insert([]rune(test.value), "")
 		if changed != test.changedExpected {
 			t.Errorf("Expected changed to be %t for %q, got %t", test.changedExpected, test.value, changed)
 		}
 	}
 
 	for _, test := range tests {
-		exists := trie.Get(strings.Split(test.value, ""))
+		_, exists := trie.Get([]rune(test.value))
 		if !exists {
 			t.Errorf("Failed to find %q in trie", test.value)
 		}
 	}
-
-	exists := trie.Get([]string{"a", "b"})
-	if exists {
-		t.Errorf("Expected partial path %q to not be found, but it was", "ab")
-	}
 }
 
 func TestHandleEmptyValue(t *testing.T) {
-	var trie trie
+	var trie trie[rune, string]
 
-	changed := trie.Insert([]string{})
+	changed := trie.Insert([]rune{}, "")
 	if changed {
 		t.Errorf("Expected changed to be false for %q, got %t", "", changed)
 	}
 
-	exists := trie.Get([]string{})
+	_, exists := trie.Get([]rune{})
 	if !exists {
 		t.Errorf("Failed to find %q in trie", "")
 	}
 }
 
 func TestInsertTrieWithValues(t *testing.T) {
-	var trie trie
+	var trie trie[rune, string]
 
 	tests := []struct {
 		key             string
+		value           string
 		changedExpected bool
 	}{
 		{
 			"asdf",
+			"first",
 			true,
 		},
 		{
 			"asdf",
+			"second",
+			true,
+		},
+		{
+			"asdf",
+			"second",
 			false,
 		},
 
 		{
 			"efg",
+			"third",
 			true,
 		},
 		{
 			"efgh",
+			"fourth",
 			true,
 		},
 	}
 
 	for _, test := range tests {
-		changed := trie.Insert(strings.Split(test.key, ""))
+		changed := trie.Insert([]rune(test.key), test.value)
 		if changed != test.changedExpected {
-			t.Errorf("Expected changed to be %t when inserting %v, got %t",
-				test.changedExpected, test.key, changed)
+			t.Errorf("Expected changed to be %t when inserting %v: %+v, got %t",
+				test.changedExpected, test.key, test.value, changed)
 		}
 	}
 
 	valueTests := []struct {
-		key []string
+		key           string
+		expectedValue string
 	}{
 		{
-			strings.Split("asdf", ""),
+			"asdf",
+			"second",
 		},
 		{
-			strings.Split("efg", ""),
+			"efg",
+			"third",
 		},
 		{
-			strings.Split("efgh", ""),
+			"efgh",
+			"fourth",
 		},
 	}
 	for _, test := range valueTests {
-		found := trie.Get(test.key)
-		if !found {
+		result, ok := trie.Get([]rune(test.key))
+		if !ok {
 			t.Errorf("Failed to find key %q in tree", test.key)
+		}
+
+		if result != test.expectedValue {
+			t.Errorf("Expected value for %q to be %v, got %v", test.key, test.expectedValue, result)
 		}
 	}
 }
 
 func TestContainsPath(t *testing.T) {
-	var trie trie
+	var trie trie[rune, string]
 
-	trie.Insert(strings.Split("abc", ""))
+	trie.Insert([]rune("abc"), "")
 
 	tests := []struct {
 		testValue string
@@ -125,7 +137,7 @@ func TestContainsPath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := trie.ContainsPath(strings.Split(test.testValue, ""))
+		result := trie.ContainsPath([]rune(test.testValue))
 
 		if result != test.expected {
 			t.Fatalf("Got %t for path %q, expected %t", result, test.testValue, test.expected)
