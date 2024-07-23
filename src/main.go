@@ -174,9 +174,20 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	switch m.inputMode {
 	case vim.NORMALMODE:
 		m.currentStroke = append(m.currentStroke, message.String())
+		slog.Info(fmt.Sprintf("input in normal mode: %#+v", message))
 
 		switch {
+		case
+			m.currentStrokeEquals([]string{"j"}),
+			m.currentStrokeEquals([]string{"k"}):
+
+			newApp, cmd := m.apps[m.activeApp].Update(meta.CompletedMotionMsg(m.currentStroke))
+			m.apps[m.activeApp] = newApp.(meta.App)
+			m.resetCurrentStroke()
+			return m, cmd
+
 		case m.currentStrokeEquals([]string{vim.LEADER, "q"}):
+			slog.Info("matched quit")
 			return m, tea.Quit
 
 		case m.currentStrokeEquals([]string{"i"}):
@@ -195,13 +206,6 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		// if len(m.CurrentStroke) == 3 {
 		// 	m.resetCurrentStroke()
 		// }
-
-	case vim.INSERTMODE:
-		var app tea.Model
-		app, cmd = m.apps[m.activeApp].Update(message)
-		m.apps[m.activeApp] = app.(meta.App)
-
-		return m, cmd
 
 	case vim.COMMANDMODE:
 		m.commandInput, cmd = m.commandInput.Update(message)
@@ -234,18 +238,8 @@ func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) currentStrokeEquals(other []string) bool {
-	if len(m.currentStroke) != len(other) {
-		return false
-	}
-
-	for i, s := range m.currentStroke {
-		if s != other[i] {
-			return false
-		}
-	}
-
-	return true
+func (m *model) currentStrokeEquals(right vim.Stroke) bool {
+	return m.currentStroke.Equals(right)
 }
 
 func (m *model) resetCurrentStroke() {

@@ -25,5 +25,5 @@ type model struct {
 	commandInput textinput.Model
 
 	// current vim-esque key stroke
-	currentStroke []string
+	currentStroke vim.Stroke
 }

@@ -2,6 +2,7 @@ package meta
 
 import (
 	"terminaccounting/styles"
+	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,9 +20,11 @@ type FatalErrorMsg struct {
 	Error error
 }
 
+type CompletedMotionMsg vim.Stroke
+
 type SetActiveViewMsg struct {
-	ViewType
-	View tea.Model
+	ViewType ViewType
+	View     tea.Model
 }
 
 type DataLoadedMsg struct {

@@ -7,6 +7,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 	"terminaccounting/utils"
+	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -72,22 +73,11 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
+	case meta.CompletedMotionMsg:
+		return m.handleMotionMessage(message)
+
 	case tea.KeyMsg:
-		switch message.Type {
-		case tea.KeyEnter:
-			return m.showDetailView()
-
-		case tea.KeyCtrlO:
-			return m.showListView()
-
-		case tea.KeyCtrlN:
-			return m.showCreateView()
-
-		default:
-			newView, cmd := m.view.Update(message)
-			m.view = newView.(meta.View)
-			return m, cmd
-		}
+		panic(fmt.Sprintf("App received %#v, this should be a meta.KeyModeMsg", message))
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -112,6 +102,35 @@ func (m *model) Colours() styles.AppColours {
 		Background: "#A1EEBD60",
 		Accent:     "#A1EEBDFF",
 	}
+}
+
+func (m *model) handleMotionMessage(message meta.CompletedMotionMsg) (meta.App, tea.Cmd) {
+	msg := vim.Stroke(message)
+
+	switch {
+	case msg.Equals(vim.Stroke{"enter"}):
+		return m.showDetailView()
+
+	case msg.Equals(vim.Stroke{"ctrl+o"}):
+		return m.showListView()
+
+	case msg.Equals(vim.Stroke{"ctrl+n"}):
+		return m.showCreateView()
+
+	case len(msg) == 1 && vim.MotionKeys.Contains(msg[0]):
+		keyMsg := tea.KeyMsg{
+			Type:  -1,
+			Runes: []rune(msg[0]),
+			Alt:   false,
+			Paste: false,
+		}
+
+		newView, cmd := m.view.Update(keyMsg)
+		m.view = newView.(meta.View)
+		return m, cmd
+	}
+
+	return m, nil
 }
 
 func (m *model) loadLedgersCmd() tea.Cmd {
