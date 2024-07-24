@@ -1,15 +1,17 @@
 package vim
 
 type trie struct {
-	value  string
+	key string
+
 	isLeaf bool
+	value  CompletedMotionMsg
 
 	children []*trie
 }
 
-func (t *trie) getChild(value string) (index int, found bool) {
+func (t *trie) getChild(key string) (index int, found bool) {
 	for i, child := range t.children {
-		if child.value == value {
+		if child.key == key {
 			return i, true
 		}
 	}
@@ -17,23 +19,23 @@ func (t *trie) getChild(value string) (index int, found bool) {
 	return 0, false
 }
 
-func (t *trie) Get(path []string) bool {
+func (t *trie) Get(path []string) (CompletedMotionMsg, bool) {
 	if len(path) == 0 {
-		return true
+		return CompletedMotionMsg{}, false
 	}
 
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
-			return false
+			return CompletedMotionMsg{}, false
 		} else {
 			t = t.children[i]
 		}
 	}
 
 	if t.isLeaf {
-		return true
+		return t.value, true
 	} else {
-		return false
+		return CompletedMotionMsg{}, false
 	}
 }
 
@@ -49,21 +51,37 @@ func (t *trie) ContainsPath(path []string) bool {
 	return true
 }
 
-func (t *trie) Insert(path []string) (changed bool) {
+func (t *trie) Insert(path []string, value CompletedMotionMsg) (changed bool) {
 	changed = false
 
-	for i, value := range path {
+	for i, key := range path {
 		isFinalValue := i == len(path)-1
-		if j, ok := t.getChild(value); ok {
+		if j, ok := t.getChild(key); ok {
 			t = t.children[j]
+
+			// Actually, if this happens, we can drop all t's children,
+			// as as soon as a motion resolves, it executes
+			if isFinalValue {
+				// NOTE: When t.isLeaf, this does not check if the t.value is different from the provided value,
+				// i.e. it is not possible to update a value in the trie
+				if !t.isLeaf {
+					t.isLeaf = true
+					t.value = value
+				}
+			}
+
 			continue
 		}
 
 		newChild := &trie{
-			value:    value,
+			key:      key,
 			isLeaf:   isFinalValue,
 			children: []*trie{},
 		}
+		if isFinalValue {
+			newChild.value = value
+		}
+
 		t.children = append(t.children, newChild)
 		changed = true
 		t = newChild
