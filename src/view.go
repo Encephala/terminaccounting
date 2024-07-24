@@ -28,16 +28,20 @@ func statusLineView(m *model) string {
 		joinedStroke := strings.Join(convertedStroke, "")
 		result.WriteString(statusLineStyle.Render(joinedStroke))
 
-		numberOfTrailingEmptyCells := m.viewWidth - len(joinedStroke) - 1
+		numberOfTrailingEmptyCells := m.viewWidth - len("NORMAL") - 2 - 0 - len(joinedStroke)
 		if numberOfTrailingEmptyCells >= 0 {
-			// This has to be in if-statement because on initial render viewWidth is 0,
-			// so subtracting 1 leaves negative Repeat count
 			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
 		}
 
 	case vim.INSERTMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
-		result.WriteString(modeStyle.Render("INSERT"))
+		mode := modeStyle.Render("INSERT")
+		result.WriteString(mode)
+
+		numberOfTrailingEmptyCells := m.viewWidth - len("INSERT") - 2
+		if numberOfTrailingEmptyCells >= 0 {
+			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
+		}
 
 	case vim.COMMANDMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("208")).Padding(0, 1)
