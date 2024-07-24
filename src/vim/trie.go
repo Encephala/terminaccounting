@@ -1,15 +1,15 @@
 package vim
 
-type trie struct {
+type Trie struct {
 	key string
 
 	isLeaf bool
 	value  CompletedMotionMsg
 
-	children []*trie
+	children []*Trie
 }
 
-func (t *trie) getChild(key string) (index int, found bool) {
+func (t *Trie) getChild(key string) (index int, found bool) {
 	for i, child := range t.children {
 		if child.key == key {
 			return i, true
@@ -19,7 +19,7 @@ func (t *trie) getChild(key string) (index int, found bool) {
 	return 0, false
 }
 
-func (t *trie) Get(path []string) (CompletedMotionMsg, bool) {
+func (t *Trie) Get(path Motion) (CompletedMotionMsg, bool) {
 	if len(path) == 0 {
 		return CompletedMotionMsg{}, false
 	}
@@ -39,7 +39,7 @@ func (t *trie) Get(path []string) (CompletedMotionMsg, bool) {
 	}
 }
 
-func (t *trie) ContainsPath(path []string) bool {
+func (t *Trie) ContainsPath(path Motion) bool {
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
 			return false
@@ -51,7 +51,7 @@ func (t *trie) ContainsPath(path []string) bool {
 	return true
 }
 
-func (t *trie) Insert(path []string, value CompletedMotionMsg) (changed bool) {
+func (t *Trie) Insert(path Motion, value CompletedMotionMsg) (changed bool) {
 	changed = false
 
 	for i, key := range path {
@@ -73,10 +73,10 @@ func (t *trie) Insert(path []string, value CompletedMotionMsg) (changed bool) {
 			continue
 		}
 
-		newChild := &trie{
+		newChild := &Trie{
 			key:      key,
 			isLeaf:   isFinalValue,
-			children: []*trie{},
+			children: []*Trie{},
 		}
 		if isFinalValue {
 			newChild.value = value

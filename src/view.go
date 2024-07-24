@@ -24,7 +24,7 @@ func statusLineView(m *model) string {
 
 		result.WriteString(statusLineStyle.Render(" "))
 
-		convertedStroke := visualMapStroke(m.currentStroke)
+		convertedStroke := visualMapStroke(m.currentMotion)
 		joinedStroke := strings.Join(convertedStroke, "")
 		result.WriteString(statusLineStyle.Render(joinedStroke))
 

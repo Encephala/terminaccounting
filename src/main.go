@@ -51,6 +51,8 @@ func main() {
 
 		inputMode:    vim.NORMALMODE,
 		commandInput: commandInput,
+
+		motions: vim.Motions(),
 	}
 
 	m.resetCurrentStroke()
@@ -172,38 +174,45 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch m.inputMode {
 	case vim.NORMALMODE:
-		m.currentStroke = append(m.currentStroke, message.String())
+		m.currentMotion = append(m.currentMotion, message.String())
+		if !m.motions.ContainsPath(m.currentMotion) {
+			m.resetCurrentStroke()
+			return m, nil
+		}
 
-		switch {
-		case
-			m.currentStrokeEquals([]string{"j"}),
-			m.currentStrokeEquals([]string{"k"}):
+		message, ok := m.motions.Get(m.currentMotion)
+		if !ok {
+			return m, nil
+		}
 
-			message := meta.CompletedMotionMsg{
-				Strokes:    m.currentStroke,
-				LastKeyMsg: message,
-			}
+		m.resetCurrentStroke()
+
+		switch message.Type {
+		case vim.NAVIGATE:
 			newApp, cmd := m.apps[m.activeApp].Update(message)
 			m.apps[m.activeApp] = newApp.(meta.App)
-			m.resetCurrentStroke()
 			return m, cmd
 
-		case m.currentStrokeEquals([]string{"i"}):
-			m.inputMode = vim.INSERTMODE
-			return m, nil
+		case vim.SWITCHMODE:
+			newMode := message.Data.(vim.InputMode)
 
-		case m.currentStrokeEquals([]string{"g", "t"}):
-			m.resetCurrentStroke()
-			return m.handleTabSwitch(NEXTTAB)
-		case m.currentStrokeEquals([]string{"g", "T"}):
-			m.resetCurrentStroke()
-			return m.handleTabSwitch(PREVTAB)
+			if newMode == vim.INSERTMODE {
+				m.inputMode = newMode
+				return m, nil
+			}
 
-		case m.currentStrokeEquals([]string{":"}):
-			m.resetCurrentStroke()
-			m.inputMode = vim.COMMANDMODE
-			m.commandInput.Reset()
-			m.commandInput.Focus()
+			if newMode == vim.COMMANDMODE {
+				m.inputMode = newMode
+				m.commandInput.Focus()
+				return m, nil
+			}
+
+		case vim.SWITCHTAB:
+			m.handleTabSwitch(message.Data.(vim.Direction))
+
+		case vim.SWITCHVIEW:
+			newApp, cmd := m.apps[m.activeApp].Update(message)
+			m.apps[m.activeApp] = newApp.(meta.App)
 			return m, cmd
 		}
 
@@ -227,33 +236,26 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	return m, nil
 }
 
-const NEXTTAB = "NEXTTAB"
-const PREVTAB = "PREVTAB"
-
-func (m *model) handleTabSwitch(switchTo string) (*model, tea.Cmd) {
+func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	switch switchTo {
-	case NEXTTAB:
+	switch direction {
+	case vim.RIGHT:
 		m.activeApp = (m.activeApp + 1) % len(m.apps)
 
-	case PREVTAB:
+	case vim.LEFT:
 		m.activeApp = (m.activeApp - 1)
 		if m.activeApp < 0 {
 			m.activeApp += len(m.apps)
 		}
 
 	default:
-		panic(fmt.Sprintf("Handling tab switchTo was %q", switchTo))
+		panic(fmt.Sprintf("Invalid tab switch direction %q", direction))
 	}
 
 	return m, cmd
 }
 
-func (m *model) currentStrokeEquals(right vim.Stroke) bool {
-	return m.currentStroke.Equals(right)
-}
-
 func (m *model) resetCurrentStroke() {
-	m.currentStroke = make([]string, 0)
+	m.currentMotion = make([]string, 0)
 }

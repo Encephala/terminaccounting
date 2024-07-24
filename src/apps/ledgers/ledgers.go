@@ -73,7 +73,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case meta.CompletedMotionMsg:
+	case vim.CompletedMotionMsg:
 		return m.handleMotionMessage(message)
 
 	case tea.KeyMsg:
@@ -104,29 +104,47 @@ func (m *model) Colours() styles.AppColours {
 	}
 }
 
-func (m *model) handleMotionMessage(message meta.CompletedMotionMsg) (meta.App, tea.Cmd) {
-	strokes := message.Strokes
+func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (meta.App, tea.Cmd) {
+	switch message.Type {
+	case vim.NAVIGATE:
+		keyMsg := tea.KeyMsg{
+			Type:  tea.KeyRunes,
+			Alt:   false,
+			Paste: false,
+		}
 
-	switch {
-	case strokes.Equals(vim.Stroke{"enter"}):
-		return m.showDetailView()
+		switch message.Data.(vim.Direction) {
+		case vim.DOWN:
+			keyMsg.Runes = []rune{'j'}
 
-	case strokes.Equals(vim.Stroke{"ctrl+o"}):
-		return m.showListView()
+		case vim.UP:
+			keyMsg.Runes = []rune{'k'}
 
-	case strokes.Equals(vim.Stroke{"ctrl+n"}):
-		return m.showCreateView()
+		default:
+			panic(fmt.Sprintf("unexpected vim.Direction %#v", message.Data.(vim.Direction)))
+		}
 
-	case len(strokes) == 1 && vim.MotionKeys.Contains(strokes[0]):
-		newView, cmd := m.view.Update(message.LastKeyMsg)
+		newView, cmd := m.view.Update(keyMsg)
 		m.view = newView.(meta.View)
 		return m, cmd
+
+	case vim.SWITCHVIEW:
+		switch message.Data.(vim.View) {
+		case vim.LISTVIEW:
+			return m.showListView()
+
+		case vim.DETAILVIEW:
+			return m.showDetailView()
+
+		case vim.CREATEVIEW:
+			return m.showCreateView()
+		}
 	}
 
 	return m, nil
 }
 
-func (m *model) loadLedgersCmd() tea.Cmd {
+func (m *model) makeLoadLedgersCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
 		if err != nil {
@@ -146,16 +164,11 @@ func (m *model) loadLedgersCmd() tea.Cmd {
 }
 
 func (m *model) showListView() (meta.App, tea.Cmd) {
-	switch m.view.Type() {
-	case meta.DetailViewType:
-		m.view = meta.NewListView(m)
-		return m, m.loadLedgersCmd()
-	}
-
-	return m, nil
+	m.view = meta.NewListView(m)
+	return m, m.makeLoadLedgersCmd()
 }
 
-func (m *model) loadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
+func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := entries.SelectRowsByLedger(m.db, selectedLedger.Id)
 		if err != nil {
@@ -180,7 +193,7 @@ func (m *model) showDetailView() (meta.App, tea.Cmd) {
 		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
 
 		m.view = meta.NewDetailView(m, selectedLedger.Name)
-		return m, m.loadLedgerRowsCmd(selectedLedger)
+		return m, m.makeLoadLedgerRowsCmd(selectedLedger)
 	}
 
 	return m, nil

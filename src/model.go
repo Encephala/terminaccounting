@@ -20,10 +20,11 @@ type model struct {
 
 	// current vim-esque input mode
 	inputMode vim.InputMode
+	// current motion
+	currentMotion vim.Motion
+	// known motions
+	motions vim.Trie
 
 	// vim-esque command input
 	commandInput textinput.Model
-
-	// current vim-esque key stroke
-	currentStroke vim.Stroke
 }
