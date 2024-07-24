@@ -58,7 +58,8 @@ func Body(width, height int) lipgloss.Style {
 }
 
 var Command = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#00FFFF"))
+	Foreground(lipgloss.Color("#00FFFF")).
+	Background(lipgloss.Color("240"))
 
 type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color

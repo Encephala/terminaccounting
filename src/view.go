@@ -7,6 +7,7 @@ import (
 	"terminaccounting/vim"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 )
 
 func statusLineView(m *model) string {
@@ -41,9 +42,14 @@ func statusLineView(m *model) string {
 	case vim.COMMANDMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("208")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("COMMAND"))
-		result.WriteString(styles.Command.Render(" "))
+		result.WriteString(statusLineStyle.Render(" "))
 
 		result.WriteString(styles.Command.Render(m.commandInput.View()))
+
+		blankFillWidth := m.viewWidth - len("COMMAND") - 2 - 1 - runewidth.StringWidth(m.commandInput.Value())
+		blankFillWidth = max(blankFillWidth, 0)
+		blankFill := statusLineStyle.Render(strings.Repeat(" ", blankFillWidth))
+		result.WriteString(blankFill)
 
 	default:
 		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
@@ -55,6 +61,7 @@ func statusLineView(m *model) string {
 var specialStrokes = map[string]string{
 	vim.LEADER:  "<leader>",
 	"backspace": "<bs>",
+	"enter":     "<enter>",
 }
 
 func visualMapStroke(stroke []string) []string {

@@ -35,8 +35,7 @@ func main() {
 	}
 
 	commandInput := textinput.New()
-	commandInput.Placeholder = "command"
-	commandInput.Prompt = ""
+	commandInput.Prompt = ":"
 
 	m := &model{
 		db: db,
@@ -203,15 +202,15 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		case m.currentStrokeEquals([]string{":"}):
 			m.resetCurrentStroke()
 			m.inputMode = vim.COMMANDMODE
+			m.commandInput.Reset()
 			m.commandInput.Focus()
-			m.commandInput, cmd = m.commandInput.Update(message)
 			return m, cmd
 		}
 
 	case vim.COMMANDMODE:
 		if message.Type == tea.KeyEnter {
 			var cmd tea.Cmd
-			if m.commandInput.Value() == ":q" {
+			if m.commandInput.Value() == "q" {
 				cmd = tea.Quit
 			} else {
 				m.commandInput.Reset()
