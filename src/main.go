@@ -10,6 +10,7 @@ import (
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"terminaccounting/utils"
 	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -55,7 +56,7 @@ func main() {
 		motions: vim.Motions(),
 	}
 
-	m.resetCurrentStroke()
+	m.resetCurrentMotion()
 
 	_, err = tea.NewProgram(m).Run()
 	if err != nil {
@@ -80,6 +81,8 @@ func (m *model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
+	cmds = append(cmds, utils.ClearErrorAfterDelayCmd)
+
 	slog.Info("Initialised")
 
 	return tea.Batch(cmds...)
@@ -91,6 +94,11 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case error:
 		slog.Warn(fmt.Sprintf("Error: %v", message))
+		m.displayedError = message.Error()
+		return m, utils.ClearErrorAfterDelayCmd
+
+	case utils.ClearErrorMsg:
+		m.displayedError = ""
 		return m, nil
 
 	case meta.FatalErrorMsg:
@@ -166,7 +174,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case tea.KeyCtrlC:
 		m.inputMode = vim.NORMALMODE
-		m.resetCurrentStroke()
+		m.resetCurrentMotion()
 
 		return m, nil
 	}
@@ -176,8 +184,9 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	case vim.NORMALMODE:
 		m.currentMotion = append(m.currentMotion, message.String())
 		if !m.motions.ContainsPath(m.currentMotion) {
-			m.resetCurrentStroke()
-			return m, nil
+			cmd = utils.MessageCmd(fmt.Errorf("invalid motion: %s", strings.Join(m.currentMotion, "")))
+			m.resetCurrentMotion()
+			return m, cmd
 		}
 
 		message, ok := m.motions.Get(m.currentMotion)
@@ -185,7 +194,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 			return m, nil
 		}
 
-		m.resetCurrentStroke()
+		m.resetCurrentMotion()
 
 		switch message.Type {
 		case vim.NAVIGATE:
@@ -256,6 +265,6 @@ func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) resetCurrentStroke() {
+func (m *model) resetCurrentMotion() {
 	m.currentMotion = make([]string, 0)
 }

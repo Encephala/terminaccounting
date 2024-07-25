@@ -34,7 +34,7 @@ func (m *model) Init() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
 		if err != nil {
-			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))
@@ -61,7 +61,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		changed, err := setupSchema(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
-			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
+			return m, utils.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changed != 0 {
@@ -148,7 +148,7 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
 		if err != nil {
-			return utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))
@@ -172,7 +172,7 @@ func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := entries.SelectRowsByLedger(m.db, selectedLedger.Id)
 		if err != nil {
-			utils.MessageCommand(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
+			utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))

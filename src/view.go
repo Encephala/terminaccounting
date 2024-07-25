@@ -7,57 +7,69 @@ import (
 	"terminaccounting/vim"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mattn/go-runewidth"
+	"github.com/muesli/reflow/truncate"
 )
 
 func statusLineView(m *model) string {
 	var result strings.Builder
-
-	statusLineStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("240")).
-		Foreground(lipgloss.Color("252"))
+	resultLength := 0
 
 	switch m.inputMode {
 	case vim.NORMALMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("10")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("NORMAL"))
+		resultLength += 8 // NORMAL + padding
 
-		result.WriteString(statusLineStyle.Render(" "))
+		result.WriteString(styles.StatusLine.Render(" "))
+		resultLength += 1
 
 		convertedStroke := visualMapStroke(m.currentMotion)
 		joinedStroke := strings.Join(convertedStroke, "")
-		result.WriteString(statusLineStyle.Render(joinedStroke))
-
-		numberOfTrailingEmptyCells := m.viewWidth - len("NORMAL") - 2 - 0 - len(joinedStroke)
-		if numberOfTrailingEmptyCells >= 0 {
-			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
-		}
+		result.WriteString(styles.StatusLine.Render(joinedStroke))
+		resultLength += len(joinedStroke)
 
 	case vim.INSERTMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
 		mode := modeStyle.Render("INSERT")
 		result.WriteString(mode)
+		resultLength += 8 // INSERT + padding
 
-		numberOfTrailingEmptyCells := m.viewWidth - len("INSERT") - 2
-		if numberOfTrailingEmptyCells >= 0 {
-			result.WriteString(statusLineStyle.Render(strings.Repeat(" ", numberOfTrailingEmptyCells)))
-		}
+		result.WriteString(styles.StatusLine.Render(" "))
+		resultLength += 1
 
 	case vim.COMMANDMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("208")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("COMMAND"))
-		result.WriteString(statusLineStyle.Render(" "))
+		resultLength += 9 // COMMAND + padding
 
-		result.WriteString(styles.Command.Render(m.commandInput.View()))
+		result.WriteString(styles.StatusLine.Render(" "))
+		resultLength += 1
 
-		blankFillWidth := m.viewWidth - len("COMMAND") - 2 - 1 - runewidth.StringWidth(m.commandInput.Value())
-		blankFillWidth = max(blankFillWidth, 0)
-		blankFill := statusLineStyle.Render(strings.Repeat(" ", blankFillWidth))
-		result.WriteString(blankFill)
+		commandInputView := styles.Command.Render(m.commandInput.View())
+		result.WriteString(commandInputView)
+		resultLength += len(m.commandInput.Value()) + 1 + 1 // +1 for the commandInput.Prompt, and for its cursor
 
 	default:
 		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
 	}
+
+	maxErrorLength := 24
+
+	numberOfEmptyCells := m.viewWidth - resultLength
+	if m.displayedError != "" {
+		numberOfEmptyCells -= min(len(m.displayedError), maxErrorLength) + 1 // +1 for right padding of the error
+	}
+	if numberOfEmptyCells >= 0 {
+		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", numberOfEmptyCells)))
+	}
+
+	result.WriteString(styles.StatusLineError.Render(
+		truncate.StringWithTail(
+			m.displayedError,
+			uint(maxErrorLength),
+			"...",
+		),
+	))
 
 	return result.String()
 }

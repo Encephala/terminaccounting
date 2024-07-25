@@ -15,8 +15,9 @@ type model struct {
 	viewWidth, viewHeight int
 
 	activeApp int
+	apps      []meta.App
 
-	apps []meta.App
+	displayedError string
 
 	// current vim-esque input mode
 	inputMode vim.InputMode

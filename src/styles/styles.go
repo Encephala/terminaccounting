@@ -61,6 +61,14 @@ var Command = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#00FFFF")).
 	Background(lipgloss.Color("240"))
 
+var StatusLine = lipgloss.NewStyle().
+	Background(lipgloss.Color("240")).
+	Foreground(lipgloss.Color("252"))
+
+var StatusLineError = StatusLine.
+	Foreground(lipgloss.Color("9")).
+	PaddingRight(1)
+
 type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color
 }
