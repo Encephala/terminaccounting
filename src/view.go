@@ -23,10 +23,9 @@ func statusLineView(m *model) string {
 		result.WriteString(styles.StatusLine.Render(" "))
 		resultLength += 1
 
-		convertedStroke := visualMapStroke(m.currentMotion)
-		joinedStroke := strings.Join(convertedStroke, "")
-		result.WriteString(styles.StatusLine.Render(joinedStroke))
-		resultLength += len(joinedStroke)
+		motionVisual := m.currentMotion.View()
+		result.WriteString(styles.StatusLine.Render(motionVisual))
+		resultLength += len(motionVisual)
 
 	case vim.INSERTMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
@@ -72,25 +71,4 @@ func statusLineView(m *model) string {
 	))
 
 	return result.String()
-}
-
-var specialStrokes = map[string]string{
-	vim.LEADER:  "<leader>",
-	"backspace": "<bs>",
-	"enter":     "<enter>",
-}
-
-func visualMapStroke(stroke []string) []string {
-	result := make([]string, len(stroke))
-
-	for i, s := range stroke {
-		mapped, ok := specialStrokes[s]
-		if ok {
-			result[i] = mapped
-		} else {
-			result[i] = s
-		}
-	}
-
-	return result
 }

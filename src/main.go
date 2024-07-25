@@ -138,7 +138,7 @@ func (m *model) View() string {
 	result := []string{}
 
 	if m.activeApp < 0 || m.activeApp >= len(m.apps) {
-		panic(fmt.Sprintf("Invalid tab index: %d", m.activeApp))
+		panic(fmt.Sprintf("invalid tab index: %d", m.activeApp))
 	}
 
 	tabs := []string{}
@@ -184,7 +184,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	case vim.NORMALMODE:
 		m.currentMotion = append(m.currentMotion, message.String())
 		if !m.motions.ContainsPath(m.currentMotion) {
-			cmd = utils.MessageCmd(fmt.Errorf("invalid motion: %s", strings.Join(m.currentMotion, "")))
+			cmd = utils.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
 			m.resetCurrentMotion()
 			return m, cmd
 		}
