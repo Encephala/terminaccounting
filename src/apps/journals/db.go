@@ -22,13 +22,13 @@ type Journal struct {
 	Notes       []string    `db:"notes"`
 }
 
-func setupSchema(db *sqlx.DB) (int, error) {
+func setupSchema(db *sqlx.DB) (bool, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "journals")
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 	if isSetUp {
-		return 0, nil
+		return false, nil
 	}
 
 	schema := `CREATE TABLE IF NOT EXISTS journals(
@@ -39,5 +39,5 @@ func setupSchema(db *sqlx.DB) (int, error) {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return 1, err
+	return true, err
 }

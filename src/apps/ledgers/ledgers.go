@@ -64,7 +64,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, utils.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
-		if changed != 0 {
+		if changed {
 			return m, func() tea.Msg {
 				slog.Info("Set up `ledgers` schema")
 				return nil

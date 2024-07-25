@@ -12,13 +12,13 @@ type Entry struct {
 	Notes   meta.Notes `db:"notes"`
 }
 
-func setupSchemaEntries(db *sqlx.DB) (int, error) {
+func setupSchemaEntries(db *sqlx.DB) (bool, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entries")
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 	if isSetUp {
-		return 0, nil
+		return false, nil
 	}
 
 	schema := `CREATE TABLE IF NOT EXISTS entries(
@@ -29,7 +29,7 @@ func setupSchemaEntries(db *sqlx.DB) (int, error) {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return 1, err
+	return true, err
 }
 
 type DecimalValue struct {
@@ -47,13 +47,13 @@ type EntryRow struct {
 	Reconciled bool         `db:"reconciled"`
 }
 
-func setupSchemaEntryRows(db *sqlx.DB) (int, error) {
+func setupSchemaEntryRows(db *sqlx.DB) (bool, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entryrows")
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 	if isSetUp {
-		return 0, nil
+		return false, nil
 	}
 
 	schema := `CREATE TABLE IF NOT EXISTS entryrows(
@@ -70,7 +70,7 @@ func setupSchemaEntryRows(db *sqlx.DB) (int, error) {
 	) STRICT;`
 
 	_, err = db.Exec(schema)
-	return 1, err
+	return true, err
 }
 
 func InsertRows(db *sqlx.DB, rows []EntryRow) (int, error) {
