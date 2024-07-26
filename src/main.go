@@ -57,9 +57,18 @@ func main() {
 		motions:       vim.Motions(),
 	}
 
-	_, err = tea.NewProgram(m).Run()
+	finalModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		slog.Error(fmt.Sprintf("Exited with error: %v", err))
+		message := fmt.Sprintf("Bubbletea error: %v", err)
+		slog.Error(message)
+		fmt.Println(message)
+		os.Exit(1)
+	}
+
+	err = finalModel.(*model).fatalError
+	if err != nil {
+		message := fmt.Sprintf("Fatal error: %v", err)
+		fmt.Println(message)
 		os.Exit(1)
 	}
 
@@ -91,15 +100,16 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case error:
 		slog.Warn(fmt.Sprintf("Error: %v", message))
-		m.displayedError = message.Error()
+		m.displayedError = message
 		return m, utils.ClearErrorAfterDelayCmd
 
 	case utils.ClearErrorMsg:
-		m.displayedError = ""
+		m.displayedError = nil
 		return m, nil
 
 	case meta.FatalErrorMsg:
 		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
+		m.fatalError = message.Error
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:

@@ -17,7 +17,8 @@ type model struct {
 	activeApp int
 	apps      []meta.App
 
-	displayedError string
+	displayedError error
+	fatalError     error // To print to screen on exit
 
 	// current vim-esque input mode
 	inputMode vim.InputMode

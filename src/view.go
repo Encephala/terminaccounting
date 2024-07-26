@@ -55,20 +55,22 @@ func statusLineView(m *model) string {
 	maxErrorLength := 24
 
 	numberOfEmptyCells := m.viewWidth - resultLength
-	if m.displayedError != "" {
-		numberOfEmptyCells -= min(len(m.displayedError), maxErrorLength) + 1 // +1 for right padding of the error
+	if m.displayedError != nil {
+		numberOfEmptyCells -= min(len(m.displayedError.Error()), maxErrorLength) + 1 // +1 for right padding of the error
 	}
 	if numberOfEmptyCells >= 0 {
 		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", numberOfEmptyCells)))
 	}
 
-	result.WriteString(styles.StatusLineError.Render(
-		truncate.StringWithTail(
-			m.displayedError,
-			uint(maxErrorLength),
-			"...",
-		),
-	))
+	if m.displayedError != nil {
+		result.WriteString(styles.StatusLineError.Render(
+			truncate.StringWithTail(
+				m.displayedError.Error(),
+				uint(maxErrorLength),
+				"...",
+			),
+		))
+	}
 
 	return result.String()
 }
