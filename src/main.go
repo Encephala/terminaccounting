@@ -239,6 +239,10 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	case vim.SWITCHMODE:
 		newMode := completedMotionMsg.Data.(vim.InputMode)
 
+		if m.inputMode == vim.COMMANDMODE {
+			m.commandInput.Blur()
+		}
+
 		if newMode == vim.INSERTMODE {
 			m.inputMode = newMode
 			return m, nil
