@@ -36,10 +36,8 @@ package journals
 // 		}
 
 // 		if changed != 0 {
-// 			return m, func() tea.Msg {
-// 				slog.Info("Set up `Journals` schema")
-// 				return nil
-// 			}
+//			slog.Info("Set up `Journals` schema")
+// 			return m, nil
 // 		}
 
 // 		return m, nil

@@ -36,10 +36,8 @@ package accounts
 // 		}
 
 // 		if changed != 0 {
-// 			return m, func() tea.Msg {
-// 				slog.Info("Set up `Accounts` schema")
-// 				return nil
-// 			}
+//			slog.Info("Set up `Accounts` schema")
+// 			return m, nil
 // 		}
 
 // 		return m, nil

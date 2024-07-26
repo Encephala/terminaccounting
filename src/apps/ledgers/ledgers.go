@@ -48,10 +48,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if changed {
-			return m, func() tea.Msg {
-				slog.Info("Set up `ledgers` schema")
-				return nil
-			}
+			slog.Info("Set up `ledgers` schema")
+			return m, nil
 		}
 
 		return m, nil
