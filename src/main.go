@@ -237,25 +237,22 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, cmd
 
 	case vim.SWITCHMODE:
-		newMode := completedMotionMsg.Data.(vim.InputMode)
-
 		if m.inputMode == vim.COMMANDMODE {
+			m.commandInput.Reset()
 			m.commandInput.Blur()
 		}
 
-		if newMode == vim.INSERTMODE {
-			m.inputMode = newMode
-			return m, nil
-		}
+		newMode := completedMotionMsg.Data.(vim.InputMode)
+		m.inputMode = newMode
 
 		if newMode == vim.COMMANDMODE {
-			m.inputMode = newMode
 			m.commandInput.Focus()
-			return m, nil
 		}
 
+		return m, nil
+
 	case vim.SWITCHTAB:
-		m.handleTabSwitch(completedMotionMsg.Data.(vim.Direction))
+		return m.handleTabSwitch(completedMotionMsg.Data.(vim.Direction))
 
 	case vim.SWITCHVIEW:
 		newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
@@ -263,7 +260,6 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, cmd
 
 	case vim.EXECUTECOMMAND:
-		slog.Info(fmt.Sprintf("Executing command %q", m.commandInput.Value()))
 		var cmd tea.Cmd
 		if m.commandInput.Value() == "q" {
 			cmd = tea.Quit
