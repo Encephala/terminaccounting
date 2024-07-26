@@ -64,9 +64,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vim.CompletedMotionMsg:
 		return m.handleMotionMessage(message)
-
-	case tea.KeyMsg:
-		panic(fmt.Sprintf("App received %#v, this should be a meta.KeyModeMsg", message))
 	}
 
 	newView, cmd := m.view.Update(message)
