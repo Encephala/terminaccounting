@@ -29,24 +29,7 @@ func New(db *sqlx.DB) meta.App {
 }
 
 func (m *model) Init() tea.Cmd {
-	m.view = meta.NewListView(m)
-
-	return func() tea.Msg {
-		rows, err := SelectLedgers(m.db)
-		if err != nil {
-			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
-		}
-
-		items := make([]list.Item, len(rows))
-		for i, row := range rows {
-			items[i] = row
-		}
-
-		return meta.DataLoadedMsg{
-			Model: "Ledgers",
-			Items: items,
-		}
-	}
+	return m.showListView()
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -72,6 +55,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, nil
+
+	case meta.DataLoadedMsg:
+		message.ActualApp = m.Name()
+
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
 
 	case vim.CompletedMotionMsg:
 		return m.handleMotionMessage(message)
@@ -104,7 +95,7 @@ func (m *model) Colours() styles.AppColours {
 	}
 }
 
-func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (meta.App, tea.Cmd) {
+func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case vim.NAVIGATE:
 		keyMsg := tea.KeyMsg{
@@ -131,13 +122,16 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (meta.App, t
 	case vim.SWITCHVIEW:
 		switch message.Data.(vim.View) {
 		case vim.LISTVIEW:
-			return m.showListView()
+			cmd := m.showListView()
+			return m, cmd
 
 		case vim.DETAILVIEW:
-			return m.showDetailView()
+			cmd := m.showDetailView()
+			return m, cmd
 
 		case vim.CREATEVIEW:
-			return m.showCreateView()
+			cmd := m.showCreateView()
+			return m, cmd
 		}
 	}
 
@@ -157,15 +151,16 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			Model: "Ledger",
-			Items: items,
+			TargetApp: m.Name(),
+			Model:     "Ledger",
+			Items:     items,
 		}
 	}
 }
 
-func (m *model) showListView() (meta.App, tea.Cmd) {
+func (m *model) showListView() tea.Cmd {
 	m.view = meta.NewListView(m)
-	return m, m.makeLoadLedgersCmd()
+	return m.makeLoadLedgersCmd()
 }
 
 func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
@@ -181,25 +176,26 @@ func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			Model: "EntryRow",
-			Items: items,
+			TargetApp: m.Name(),
+			Model:     "EntryRow",
+			Items:     items,
 		}
 	}
 }
 
-func (m *model) showDetailView() (meta.App, tea.Cmd) {
+func (m *model) showDetailView() tea.Cmd {
 	switch m.view.Type() {
 	case meta.ListViewType:
 		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
 
 		m.view = meta.NewDetailView(m, selectedLedger.Name)
-		return m, m.makeLoadLedgerRowsCmd(selectedLedger)
+		return m.makeLoadLedgerRowsCmd(selectedLedger)
 	}
 
-	return m, nil
+	return nil
 }
 
-func (m *model) showCreateView() (meta.App, tea.Cmd) {
+func (m *model) showCreateView() tea.Cmd {
 	m.view = NewCreateView(m, m.Colours())
-	return m, nil
+	return nil
 }

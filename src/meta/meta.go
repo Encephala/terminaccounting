@@ -25,6 +25,9 @@ type SetActiveViewMsg struct {
 }
 
 type DataLoadedMsg struct {
+	TargetApp string
+	ActualApp string // for asserting
+
 	Model string
 	Items []list.Item
 }

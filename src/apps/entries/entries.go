@@ -6,6 +6,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 	"terminaccounting/utils"
+	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,8 +18,7 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	activeView meta.ViewType
-	model      tea.Model
+	view meta.View
 }
 
 func New(db *sqlx.DB) meta.App {
@@ -28,24 +28,7 @@ func New(db *sqlx.DB) meta.App {
 }
 
 func (m *model) Init() tea.Cmd {
-	m.model = meta.NewListView(m)
-
-	return func() tea.Msg {
-		rows, err := SelectEntries(m.db)
-		if err != nil {
-			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
-		}
-
-		items := make([]list.Item, len(rows))
-		for i, row := range rows {
-			items[i] = row
-		}
-
-		return meta.DataLoadedMsg{
-			Model: "Entries",
-			Items: items,
-		}
-	}
+	return m.showListView()
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -70,17 +53,26 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if changedEntries || changedEntryRows {
-			return m, func() tea.Msg {
-				slog.Info("Set up `Entries` schema")
-				return nil
-			}
+			slog.Info("Set up `Entries` schema")
+			return m, nil
 		}
 
 		return m, nil
+
+	case meta.DataLoadedMsg:
+		message.ActualApp = m.Name()
+
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
+
+	case vim.CompletedMotionMsg:
+		return m.handleMotionMessage(message)
 	}
 
-	var cmd tea.Cmd
-	m.model, cmd = m.model.Update(message)
+	newView, cmd := m.view.Update(message)
+	m.view = newView.(meta.View)
 
 	return m, cmd
 }
@@ -88,7 +80,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight)
 
-	return style.Render(m.model.View())
+	return style.Render(m.view.View())
 }
 
 func (m *model) Name() string {
@@ -99,6 +91,55 @@ func (m *model) Colours() styles.AppColours {
 	return styles.ENTRIESCOLOURS
 }
 
-func (m *model) ActiveView() meta.ViewType {
-	return m.activeView
+func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
+	switch message.Type {
+	case vim.NAVIGATE:
+		keyMsg := tea.KeyMsg{
+			Type:  tea.KeyRunes,
+			Alt:   false,
+			Paste: false,
+		}
+
+		switch message.Data.(vim.Direction) {
+		case vim.DOWN:
+			keyMsg.Runes = []rune{'j'}
+
+		case vim.UP:
+			keyMsg.Runes = []rune{'k'}
+
+		default:
+			panic(fmt.Sprintf("unexpected vim.Direction %#v", message.Data.(vim.Direction)))
+		}
+
+		newView, cmd := m.view.Update(keyMsg)
+		m.view = newView.(meta.View)
+		return m, cmd
+	}
+
+	return m, nil
+}
+
+func (m *model) makeLoadEntriesCmd() tea.Cmd {
+	return func() tea.Msg {
+		rows, err := SelectEntries(m.db)
+		if err != nil {
+			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: m.Name(),
+			Model:     "Ledger",
+			Items:     items,
+		}
+	}
+}
+
+func (m *model) showListView() tea.Cmd {
+	m.view = meta.NewListView(m)
+	return m.makeLoadEntriesCmd()
 }

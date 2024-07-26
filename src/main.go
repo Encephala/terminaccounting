@@ -53,10 +53,9 @@ func main() {
 		inputMode:    vim.NORMALMODE,
 		commandInput: commandInput,
 
-		motions: vim.Motions(),
+		currentMotion: make(vim.Motion, 0),
+		motions:       vim.Motions(),
 	}
-
-	m.resetCurrentMotion()
 
 	_, err = tea.NewProgram(m).Run()
 	if err != nil {
@@ -80,8 +79,6 @@ func (m *model) Init() tea.Cmd {
 		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
-
-	cmds = append(cmds, utils.ClearErrorAfterDelayCmd)
 
 	slog.Info("Initialised")
 
@@ -125,6 +122,15 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return m.handleKeyMsg(message)
+
+	case meta.DataLoadedMsg:
+		for i, app := range m.apps {
+			if app.Name() == message.TargetApp {
+				newApp, cmd := app.Update(message)
+				m.apps[i] = newApp.(meta.App)
+				return m, cmd
+			}
+		}
 	}
 
 	app, cmd := m.apps[m.activeApp].Update(message)
@@ -266,5 +272,5 @@ func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 }
 
 func (m *model) resetCurrentMotion() {
-	m.currentMotion = make([]string, 0)
+	m.currentMotion = m.currentMotion[:0]
 }

@@ -50,6 +50,9 @@ func (lv *ListView) Init() tea.Cmd {
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
+		if message.ActualApp != message.TargetApp {
+			panic(fmt.Sprintf("App %s received %T for %s", message.ActualApp, message, message.TargetApp))
+		}
 		lv.Model.SetItems(message.Items)
 	}
 
