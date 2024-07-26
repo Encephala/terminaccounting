@@ -3,6 +3,7 @@ package meta
 import (
 	"fmt"
 	"terminaccounting/styles"
+	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,10 +21,14 @@ type View interface {
 	tea.Model
 
 	Type() ViewType
+
+	MotionSet() *vim.MotionSet
 }
 
 type ListView struct {
 	Model list.Model
+
+	motionSet vim.MotionSet
 }
 
 func NewListView(app App) *ListView {
@@ -38,8 +43,15 @@ func NewListView(app App) *ListView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
+	var normalMotions vim.Trie
+	normalMotions.Insert(vim.Motion{"g", "d"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.DETAILVIEW}) // [g]oto [d]etails
+
+	MotionSet := vim.MotionSet{Normal: normalMotions}
+
 	return &ListView{
 		Model: model,
+
+		motionSet: MotionSet,
 	}
 }
 
@@ -68,6 +80,10 @@ func (lv *ListView) View() string {
 
 func (lv *ListView) Type() ViewType {
 	return ListViewType
+}
+
+func (lv *ListView) MotionSet() *vim.MotionSet {
+	return &lv.motionSet
 }
 
 type DetailView struct {
@@ -116,4 +132,11 @@ func (dv *DetailView) View() string {
 
 func (dv *DetailView) Type() ViewType {
 	return DetailViewType
+}
+
+func (dv *DetailView) MotionSet() *vim.MotionSet {
+	var normal vim.Trie
+	normal.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+
+	return &vim.MotionSet{Normal: normal}
 }

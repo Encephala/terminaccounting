@@ -1,5 +1,78 @@
 package vim
 
+import (
+	"fmt"
+)
+
+type MotionSet struct {
+	Normal  Trie
+	Insert  Trie
+	Command Trie
+}
+
+func (ms *MotionSet) get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
+	switch mode {
+	case NORMALMODE:
+		return ms.Normal.get(path)
+
+	case INSERTMODE:
+		return ms.Insert.get(path)
+
+	case COMMANDMODE:
+		return ms.Command.get(path)
+
+	default:
+		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
+	}
+}
+
+func (ms *MotionSet) containsPath(mode InputMode, path Motion) bool {
+	switch mode {
+	case NORMALMODE:
+		return ms.Normal.containsPath(path)
+
+	case INSERTMODE:
+		return ms.Insert.containsPath(path)
+
+	case COMMANDMODE:
+		return ms.Command.containsPath(path)
+
+	default:
+		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
+	}
+}
+
+type CompleteMotionSet struct {
+	MotionSet MotionSet
+
+	ViewMotionSet *MotionSet
+}
+
+func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
+	msg, ok := cms.MotionSet.get(mode, path)
+	if ok {
+		return msg, ok
+	}
+
+	if cms.ViewMotionSet != nil {
+		return cms.ViewMotionSet.get(mode, path)
+	}
+
+	return CompletedMotionMsg{}, false
+}
+
+func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
+	if cms.MotionSet.containsPath(mode, path) {
+		return true
+	}
+
+	if cms.ViewMotionSet != nil {
+		return cms.ViewMotionSet.containsPath(mode, path)
+	}
+
+	return false
+}
+
 type CompletedMotionMsg struct {
 	Type completedMotionType
 	Data interface{}
@@ -12,6 +85,7 @@ const (
 	SWITCHMODE
 	SWITCHTAB
 	SWITCHVIEW
+	EXECUTECOMMAND
 )
 
 type motionWithValue struct {
@@ -36,13 +110,11 @@ const (
 	CREATEVIEW
 )
 
-func Motions() Trie {
-	var result Trie
-
-	motions := make([]motionWithValue, 0)
+func GlobalMotions() MotionSet {
+	normalMotions := make([]motionWithValue, 0)
 
 	// Single-stroke/no prefix
-	extendMotionsBy(&motions, Motion{}, []motionWithValue{
+	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
 		{Motion{"h"}, CompletedMotionMsg{Type: NAVIGATE, Data: LEFT}},
 		{Motion{"j"}, CompletedMotionMsg{Type: NAVIGATE, Data: DOWN}},
 		{Motion{"k"}, CompletedMotionMsg{Type: NAVIGATE, Data: UP}},
@@ -50,28 +122,48 @@ func Motions() Trie {
 
 		{Motion{"i"}, CompletedMotionMsg{Type: SWITCHMODE, Data: INSERTMODE}},
 		{Motion{":"}, CompletedMotionMsg{Type: SWITCHMODE, Data: COMMANDMODE}},
-		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
-
-		{Motion{"ctrl+o"}, CompletedMotionMsg{Type: SWITCHVIEW, Data: LISTVIEW}}, // Go back to list view
 	})
 
 	// LEADER
-	extendMotionsBy(&motions, Motion{LEADER}, []motionWithValue{
+	extendMotionsBy(&normalMotions, Motion{LEADER}, []motionWithValue{
 		{Motion{"n"}, CompletedMotionMsg{Type: SWITCHVIEW, Data: CREATEVIEW}}, // [n]ew object
 	})
 
 	// "g"
-	extendMotionsBy(&motions, Motion{"g"}, []motionWithValue{
-		{Motion{"t"}, CompletedMotionMsg{Type: SWITCHTAB, Data: RIGHT}},       // [g]oto Next [t]ab
-		{Motion{"T"}, CompletedMotionMsg{Type: SWITCHTAB, Data: LEFT}},        // [g]oto Previous [T]ab
-		{Motion{"d"}, CompletedMotionMsg{Type: SWITCHVIEW, Data: DETAILVIEW}}, // [g]oto [d]etails
+	extendMotionsBy(&normalMotions, Motion{"g"}, []motionWithValue{
+		{Motion{"t"}, CompletedMotionMsg{Type: SWITCHTAB, Data: RIGHT}}, // [g]oto Next [t]ab
+		{Motion{"T"}, CompletedMotionMsg{Type: SWITCHTAB, Data: LEFT}},  // [g]oto Previous [T]ab
 	})
 
-	for _, m := range motions {
-		result.Insert(m.path, m.value)
+	var normal Trie
+	for _, m := range normalMotions {
+		normal.Insert(m.path, m.value)
 	}
 
-	return result
+	insertMotions := []motionWithValue{
+		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+	}
+
+	var insert Trie
+	for _, m := range insertMotions {
+		insert.Insert(m.path, m.value)
+	}
+
+	commandMotions := []motionWithValue{
+		{Motion{"enter"}, CompletedMotionMsg{Type: EXECUTECOMMAND}},
+		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+	}
+
+	var command Trie
+	for _, m := range commandMotions {
+		command.Insert(m.path, m.value)
+	}
+
+	return MotionSet{
+		Normal:  normal,
+		Insert:  insert,
+		Command: command,
+	}
 }
 
 func extendMotionsBy(motions *[]motionWithValue, base Motion, tail []motionWithValue) {

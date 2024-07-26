@@ -19,7 +19,7 @@ func (t *Trie) getChild(key string) (index int, found bool) {
 	return 0, false
 }
 
-func (t *Trie) Get(path Motion) (CompletedMotionMsg, bool) {
+func (t *Trie) get(path Motion) (CompletedMotionMsg, bool) {
 	if len(path) == 0 {
 		return CompletedMotionMsg{}, false
 	}
@@ -39,7 +39,7 @@ func (t *Trie) Get(path Motion) (CompletedMotionMsg, bool) {
 	}
 }
 
-func (t *Trie) ContainsPath(path Motion) bool {
+func (t *Trie) containsPath(path Motion) bool {
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
 			return false

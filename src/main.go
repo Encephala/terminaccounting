@@ -38,6 +38,8 @@ func main() {
 	commandInput := textinput.New()
 	commandInput.Prompt = ":"
 
+	motionSet := vim.CompleteMotionSet{MotionSet: vim.GlobalMotions()}
+
 	m := &model{
 		db: db,
 
@@ -54,7 +56,7 @@ func main() {
 		commandInput: commandInput,
 
 		currentMotion: make(vim.Motion, 0),
-		motions:       vim.Motions(),
+		motionSet:     motionSet,
 	}
 
 	finalModel, err := tea.NewProgram(m).Run()
@@ -187,74 +189,80 @@ func (m *model) View() string {
 }
 
 func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
-	switch message.Type {
-	case tea.KeyCtrlC:
-		m.inputMode = vim.NORMALMODE
+	if m.inputMode == vim.NORMALMODE && message.Type == tea.KeyCtrlC {
 		m.resetCurrentMotion()
 
 		return m, nil
 	}
 
-	var cmd tea.Cmd
-	switch m.inputMode {
-	case vim.NORMALMODE:
-		m.currentMotion = append(m.currentMotion, message.String())
-		if !m.motions.ContainsPath(m.currentMotion) {
-			cmd = utils.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
+	m.currentMotion = append(m.currentMotion, message.String())
+	if !m.motionSet.ContainsPath(m.inputMode, m.currentMotion) {
+		switch m.inputMode {
+		case vim.NORMALMODE:
+			cmd := utils.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
+			m.resetCurrentMotion()
+			return m, cmd
+
+		case vim.INSERTMODE:
+			newApp, cmd := m.apps[m.activeApp].Update(message)
+			m.apps[m.activeApp] = newApp.(meta.App)
+			m.resetCurrentMotion()
+			return m, cmd
+
+		case vim.COMMANDMODE:
+			var cmd tea.Cmd
+			m.commandInput, cmd = m.commandInput.Update(message)
 			m.resetCurrentMotion()
 			return m, cmd
 		}
+	}
 
-		message, ok := m.motions.Get(m.currentMotion)
-		if !ok {
+	completedMotionMsg, ok := m.motionSet.Get(m.inputMode, m.currentMotion)
+	if !ok {
+		return m, nil
+	}
+
+	m.resetCurrentMotion()
+
+	switch completedMotionMsg.Type {
+	case vim.NAVIGATE:
+		newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
+		m.apps[m.activeApp] = newApp.(meta.App)
+		return m, cmd
+
+	case vim.SWITCHMODE:
+		newMode := completedMotionMsg.Data.(vim.InputMode)
+
+		if newMode == vim.INSERTMODE {
+			m.inputMode = newMode
 			return m, nil
 		}
 
-		m.resetCurrentMotion()
-
-		switch message.Type {
-		case vim.NAVIGATE:
-			newApp, cmd := m.apps[m.activeApp].Update(message)
-			m.apps[m.activeApp] = newApp.(meta.App)
-			return m, cmd
-
-		case vim.SWITCHMODE:
-			newMode := message.Data.(vim.InputMode)
-
-			if newMode == vim.INSERTMODE {
-				m.inputMode = newMode
-				return m, nil
-			}
-
-			if newMode == vim.COMMANDMODE {
-				m.inputMode = newMode
-				m.commandInput.Focus()
-				return m, nil
-			}
-
-		case vim.SWITCHTAB:
-			m.handleTabSwitch(message.Data.(vim.Direction))
-
-		case vim.SWITCHVIEW:
-			newApp, cmd := m.apps[m.activeApp].Update(message)
-			m.apps[m.activeApp] = newApp.(meta.App)
-			return m, cmd
+		if newMode == vim.COMMANDMODE {
+			m.inputMode = newMode
+			m.commandInput.Focus()
+			return m, nil
 		}
 
-	case vim.COMMANDMODE:
-		if message.Type == tea.KeyEnter {
-			var cmd tea.Cmd
-			if m.commandInput.Value() == "q" {
-				cmd = tea.Quit
-			} else {
-				m.commandInput.Reset()
-				m.inputMode = vim.NORMALMODE
-			}
+	case vim.SWITCHTAB:
+		m.handleTabSwitch(completedMotionMsg.Data.(vim.Direction))
 
-			return m, cmd
+	case vim.SWITCHVIEW:
+		newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
+		m.apps[m.activeApp] = newApp.(meta.App)
+		return m, cmd
+
+	case vim.EXECUTECOMMAND:
+		slog.Info(fmt.Sprintf("Executing command %q", m.commandInput.Value()))
+		var cmd tea.Cmd
+		if m.commandInput.Value() == "q" {
+			cmd = tea.Quit
+		} else {
+			cmd = utils.MessageCmd(fmt.Errorf("invalid command: %s", m.commandInput.Value()))
+			m.commandInput.Reset()
+			m.inputMode = vim.NORMALMODE
 		}
 
-		m.commandInput, cmd = m.commandInput.Update(message)
 		return m, cmd
 	}
 

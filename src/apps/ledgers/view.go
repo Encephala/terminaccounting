@@ -5,6 +5,7 @@ import (
 	"strings"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"terminaccounting/vim"
 
 	"local/bubbles/itempicker"
 
@@ -57,7 +58,7 @@ func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 		nameInput:   textinput.New(),
 		typeInput:   itempicker.New(types),
 		noteInput:   textarea.New(),
-		activeInput: 2,
+		activeInput: 0,
 
 		styles: styles,
 	}
@@ -108,4 +109,11 @@ func (cv *CreateView) View() string {
 
 func (cv *CreateView) Type() meta.ViewType {
 	return meta.CreateViewType
+}
+
+func (cv *CreateView) MotionSet() *vim.MotionSet {
+	var normal vim.Trie
+	normal.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+
+	return &vim.MotionSet{Normal: normal}
 }

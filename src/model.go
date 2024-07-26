@@ -24,8 +24,8 @@ type model struct {
 	inputMode vim.InputMode
 	// current motion
 	currentMotion vim.Motion
-	// known motions
-	motions vim.Trie
+	// known motionSet
+	motionSet vim.CompleteMotionSet
 
 	// vim-esque command input
 	commandInput textinput.Model
