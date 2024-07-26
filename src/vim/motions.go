@@ -49,28 +49,23 @@ type CompleteMotionSet struct {
 }
 
 func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
-	msg, ok := cms.MotionSet.get(mode, path)
-	if ok {
-		return msg, ok
-	}
-
 	if cms.ViewMotionSet != nil {
-		return cms.ViewMotionSet.get(mode, path)
+		if msg, ok := cms.ViewMotionSet.get(mode, path); ok {
+			return msg, ok
+		}
 	}
 
-	return CompletedMotionMsg{}, false
+	return cms.MotionSet.get(mode, path)
 }
 
 func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
-	if cms.MotionSet.containsPath(mode, path) {
-		return true
-	}
-
 	if cms.ViewMotionSet != nil {
-		return cms.ViewMotionSet.containsPath(mode, path)
+		if cms.ViewMotionSet.containsPath(mode, path) {
+			return true
+		}
 	}
 
-	return false
+	return cms.MotionSet.containsPath(mode, path)
 }
 
 type CompletedMotionMsg struct {
