@@ -88,6 +88,8 @@ func (lv *ListView) MotionSet() *vim.MotionSet {
 
 type DetailView struct {
 	Model list.Model
+
+	motionSet vim.MotionSet
 }
 
 func NewDetailView(app App, itemName string) *DetailView {
@@ -102,8 +104,13 @@ func NewDetailView(app App, itemName string) *DetailView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
+	var normal vim.Trie
+	normal.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+
 	return &DetailView{
 		Model: model,
+
+		motionSet: vim.MotionSet{Normal: normal},
 	}
 }
 
@@ -135,8 +142,5 @@ func (dv *DetailView) Type() ViewType {
 }
 
 func (dv *DetailView) MotionSet() *vim.MotionSet {
-	var normal vim.Trie
-	normal.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
-
-	return &vim.MotionSet{Normal: normal}
+	return &dv.motionSet
 }

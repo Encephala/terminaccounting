@@ -95,6 +95,10 @@ func (m *model) Colours() styles.AppColours {
 	}
 }
 
+func (m *model) CurrentMotionSet() *vim.MotionSet {
+	return m.view.MotionSet()
+}
+
 func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case vim.NAVIGATE:
@@ -111,8 +115,11 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 		case vim.UP:
 			keyMsg.Runes = []rune{'k'}
 
-		default:
-			panic(fmt.Sprintf("unexpected vim.Direction %#v", message.Data.(vim.Direction)))
+		case vim.LEFT:
+			keyMsg.Runes = []rune{'h'}
+
+		case vim.RIGHT:
+			keyMsg.Runes = []rune{'l'}
 		}
 
 		newView, cmd := m.view.Update(keyMsg)
@@ -120,19 +127,23 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 		return m, cmd
 
 	case vim.SWITCHVIEW:
+		var cmds []tea.Cmd
 		switch message.Data.(vim.View) {
 		case vim.LISTVIEW:
-			cmd := m.showListView()
-			return m, cmd
+			cmds = append(cmds, m.showListView())
 
 		case vim.DETAILVIEW:
-			cmd := m.showDetailView()
-			return m, cmd
+			cmds = append(cmds, m.showDetailView())
 
 		case vim.CREATEVIEW:
-			cmd := m.showCreateView()
-			return m, cmd
+			cmds = append(cmds, m.showCreateView())
 		}
+
+		cmds = append(cmds, utils.MessageCmd(meta.UpdateViewMotionSetMsg(
+			m.CurrentMotionSet(),
+		)))
+
+		return m, tea.Batch(cmds...)
 	}
 
 	return m, nil
@@ -184,15 +195,9 @@ func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 }
 
 func (m *model) showDetailView() tea.Cmd {
-	switch m.view.Type() {
-	case meta.ListViewType:
-		selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
-
-		m.view = meta.NewDetailView(m, selectedLedger.Name)
-		return m.makeLoadLedgerRowsCmd(selectedLedger)
-	}
-
-	return nil
+	selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
+	m.view = meta.NewDetailView(m, selectedLedger.Name)
+	return m.makeLoadLedgerRowsCmd(selectedLedger)
 }
 
 func (m *model) showCreateView() tea.Cmd {

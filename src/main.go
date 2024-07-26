@@ -91,6 +91,8 @@ func (m *model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
+	m.motionSet.ViewMotionSet = m.apps[m.activeApp].CurrentMotionSet()
+
 	slog.Info("Initialised")
 
 	return tea.Batch(cmds...)
@@ -143,6 +145,10 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 		}
+
+	case meta.UpdateViewMotionSetMsg:
+		slog.Info("Updating ViewMotionSet")
+		m.motionSet.ViewMotionSet = message
 	}
 
 	app, cmd := m.apps[m.activeApp].Update(message)
@@ -270,11 +276,13 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 }
 
 func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
-	var cmd tea.Cmd
-
 	switch direction {
 	case vim.RIGHT:
 		m.activeApp = (m.activeApp + 1) % len(m.apps)
+
+		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
+		m = newModel.(*model)
+		return m, cmd
 
 	case vim.LEFT:
 		m.activeApp = (m.activeApp - 1)
@@ -282,11 +290,13 @@ func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 			m.activeApp += len(m.apps)
 		}
 
+		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
+		m = newModel.(*model)
+		return m, cmd
+
 	default:
 		panic(fmt.Sprintf("Invalid tab switch direction %q", direction))
 	}
-
-	return m, cmd
 }
 
 func (m *model) resetCurrentMotion() {

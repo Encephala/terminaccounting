@@ -91,6 +91,10 @@ func (m *model) Colours() styles.AppColours {
 	return styles.ENTRIESCOLOURS
 }
 
+func (m *model) CurrentMotionSet() *vim.MotionSet {
+	return m.view.MotionSet()
+}
+
 func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case vim.NAVIGATE:
