@@ -26,13 +26,13 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, exists := trie.Get(strings.Split(test.value, ""))
+		_, exists := trie.get(strings.Split(test.value, ""))
 		if !exists {
 			t.Errorf("Failed to find %q in trie", test.value)
 		}
 	}
 
-	_, exists := trie.Get([]string{"a", "b"})
+	_, exists := trie.get([]string{"a", "b"})
 	if exists {
 		t.Errorf("Expected partial path %q to not be found, but it was", "ab")
 	}
@@ -46,7 +46,7 @@ func TestHandleEmptyKey(t *testing.T) {
 		t.Errorf("Expected changed to be false for %q, got %t", "", changed)
 	}
 
-	_, exists := trie.Get([]string{})
+	_, exists := trie.get([]string{})
 	if exists {
 		t.Errorf("Found %q in trie, expected not to", "")
 	}
@@ -58,12 +58,12 @@ func TestInsertTrieWithValues(t *testing.T) {
 	trie.Insert([]string{"f", "1"}, CompletedMotionMsg{Data: "f1"})
 	trie.Insert([]string{"f", "2"}, CompletedMotionMsg{Data: "f2"})
 
-	f1, _ := trie.Get([]string{"f", "1"})
+	f1, _ := trie.get([]string{"f", "1"})
 	if f1.Data.(string) != "f1" {
 		t.Errorf("Expected to get back %q, got back %q", "f1", f1.Data.(string))
 	}
 
-	f2, _ := trie.Get([]string{"f", "2"})
+	f2, _ := trie.get([]string{"f", "2"})
 	if f2.Data.(string) != "f2" {
 		t.Errorf("Expected to get back %q, got back %q", "f2", f2.Data.(string))
 	}
@@ -74,13 +74,13 @@ func TestTrieInsertValueOnExistingPath(t *testing.T) {
 
 	trie.Insert(strings.Split("asdf", ""), CompletedMotionMsg{})
 
-	_, ok := trie.Get(strings.Split("as", ""))
+	_, ok := trie.get(strings.Split("as", ""))
 	if ok {
 		t.Errorf("Expected to not find leaf node at partial path, but did")
 	}
 
 	trie.Insert(strings.Split("as", ""), CompletedMotionMsg{Data: "found"})
-	result, ok := trie.Get(strings.Split("as", ""))
+	result, ok := trie.get(strings.Split("as", ""))
 	if !ok {
 		t.Errorf("Expected to find leaf at partial path, but didn't")
 	}
@@ -108,7 +108,7 @@ func TestContainsPath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := trie.ContainsPath(strings.Split(test.testValue, ""))
+		result := trie.containsPath(strings.Split(test.testValue, ""))
 
 		if result != test.expected {
 			t.Fatalf("Got %t for path %q, expected %t", result, test.testValue, test.expected)
