@@ -43,7 +43,7 @@ func (ms *MotionSet) containsPath(mode InputMode, path Motion) bool {
 }
 
 type CompleteMotionSet struct {
-	MotionSet MotionSet
+	GlobalMotionSet MotionSet
 
 	ViewMotionSet *MotionSet
 }
@@ -55,7 +55,7 @@ func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (CompletedMotionM
 		}
 	}
 
-	return cms.MotionSet.get(mode, path)
+	return cms.GlobalMotionSet.get(mode, path)
 }
 
 func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
@@ -65,7 +65,7 @@ func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
 		}
 	}
 
-	return cms.MotionSet.containsPath(mode, path)
+	return cms.GlobalMotionSet.containsPath(mode, path)
 }
 
 type CompletedMotionMsg struct {

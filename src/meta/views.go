@@ -104,13 +104,13 @@ func NewDetailView(app App, itemName string) *DetailView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normal vim.Trie
-	normal.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+	var normalMotions vim.Trie
+	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &DetailView{
 		Model: model,
 
-		motionSet: vim.MotionSet{Normal: normal},
+		motionSet: vim.MotionSet{Normal: normalMotions},
 	}
 }
 

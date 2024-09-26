@@ -38,7 +38,7 @@ func main() {
 	commandInput := textinput.New()
 	commandInput.Prompt = ":"
 
-	motionSet := vim.CompleteMotionSet{MotionSet: vim.GlobalMotions()}
+	motionSet := vim.CompleteMotionSet{GlobalMotionSet: vim.GlobalMotions()}
 
 	m := &model{
 		db: db,
