@@ -147,7 +147,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.UpdateViewMotionSetMsg:
-		slog.Info("Updating ViewMotionSet")
 		m.motionSet.ViewMotionSet = message
 	}
 
@@ -272,7 +271,10 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, cmd
 	}
 
-	return m, nil
+	newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
+	m.apps[m.activeApp] = newApp.(meta.App)
+
+	return m, cmd
 }
 
 func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {

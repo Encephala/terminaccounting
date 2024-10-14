@@ -121,4 +121,5 @@ func NewDetailViewStyles(background lipgloss.Color) DetailViewStyles {
 
 type CreateViewStyles struct {
 	Title lipgloss.Style
+	Table lipgloss.Style
 }

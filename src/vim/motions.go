@@ -81,6 +81,7 @@ const (
 	SWITCHTAB
 	SWITCHVIEW
 	EXECUTECOMMAND
+	SWITCHFOCUS
 )
 
 type motionWithValue struct {
@@ -117,6 +118,9 @@ func GlobalMotions() MotionSet {
 
 		{Motion{"i"}, CompletedMotionMsg{Type: SWITCHMODE, Data: INSERTMODE}},
 		{Motion{":"}, CompletedMotionMsg{Type: SWITCHMODE, Data: COMMANDMODE}},
+
+		{Motion{"tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: RIGHT}},
+		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
 	})
 
 	// LEADER
@@ -137,6 +141,9 @@ func GlobalMotions() MotionSet {
 
 	insertMotions := []motionWithValue{
 		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+
+		{Motion{"tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: RIGHT}},
+		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
 	}
 
 	var insert Trie

@@ -141,7 +141,10 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 		return m, tea.Batch(cmds...)
 	}
 
-	return m, nil
+	newView, cmd := m.view.Update(message)
+	m.view = newView.(meta.View)
+
+	return m, cmd
 }
 
 func (m *model) makeLoadLedgersCmd() tea.Cmd {

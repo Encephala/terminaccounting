@@ -9,6 +9,7 @@ import (
 
 	"local/bubbles/itempicker"
 
+	tableBubble "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -31,6 +32,8 @@ func (l Ledger) Description() string {
 }
 
 type CreateView struct {
+	table tableBubble.Model
+
 	idInput     textinput.Model
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
@@ -43,7 +46,32 @@ type CreateView struct {
 func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 	styles := styles.CreateViewStyles{
 		Title: lipgloss.NewStyle().Background(colours.Background).Padding(0, 1),
+
+		Table: lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colours.Foreground),
 	}
+
+	tableColumns := []tableBubble.Column{
+		{
+			Title: "ID",
+			Width: 6,
+		},
+		{
+			Title: "Name",
+			Width: 16,
+		},
+		{
+			Title: "Type",
+			Width: 10,
+		},
+		{
+			Title: "Notes",
+			Width: 20,
+		},
+	}
+	table := tableBubble.New(
+		tableBubble.WithColumns(tableColumns),
+		tableBubble.WithHeight(6),
+	)
 
 	types := []itempicker.Item{
 		Income,
@@ -53,11 +81,21 @@ func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 		Equity,
 	}
 
+	idInput := textinput.New()
+	idInput.Focus()
+	nameInput := textinput.New()
+	nameInput.Focus()
+	typeInput := itempicker.New(types)
+	noteInput := textarea.New()
+	noteInput.Focus()
+
 	result := &CreateView{
-		idInput:     textinput.New(),
-		nameInput:   textinput.New(),
-		typeInput:   itempicker.New(types),
-		noteInput:   textarea.New(),
+		table: table,
+
+		idInput:     idInput,
+		nameInput:   nameInput,
+		typeInput:   typeInput,
+		noteInput:   noteInput,
 		activeInput: 0,
 
 		styles: styles,
@@ -71,7 +109,28 @@ func (cv *CreateView) Init() tea.Cmd {
 }
 
 func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case vim.CompletedMotionMsg:
+		switch message.Type {
+		case vim.SWITCHFOCUS:
+			switch message.Data.(vim.Direction) {
+			case vim.LEFT:
+				cv.activeInput--
+				if cv.activeInput < 0 {
+					cv.activeInput += 4
+				}
+
+			case vim.RIGHT:
+				cv.activeInput++
+				cv.activeInput %= 4
+			}
+		}
+
+		return cv, nil
+	}
+
 	var cmd tea.Cmd
+
 	switch cv.activeInput {
 	case 0:
 		cv.idInput, cmd = cv.idInput.Update(message)
@@ -96,13 +155,16 @@ func (cv *CreateView) View() string {
 	result.WriteString(fmt.Sprintf(" %s", cv.styles.Title.Render("Create new Ledgers")))
 	result.WriteString("\n\n")
 
-	result.WriteString(cv.idInput.View())
-	result.WriteString(" | ")
-	result.WriteString(cv.nameInput.View())
-	result.WriteString(" | ")
-	result.WriteString(cv.typeInput.View())
-	result.WriteString(" | ")
-	result.WriteString(cv.noteInput.View())
+	cv.table.SetRows([]tableBubble.Row{{
+		cv.idInput.View(),
+		cv.nameInput.View(),
+		cv.typeInput.View(),
+		cv.noteInput.View(),
+	}})
+
+	result.WriteString(
+		cv.styles.Table.Render(cv.table.View()),
+	)
 
 	return result.String()
 }
