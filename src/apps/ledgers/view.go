@@ -34,7 +34,6 @@ func (l Ledger) Description() string {
 type CreateView struct {
 	table tableBubble.Model
 
-	idInput     textinput.Model
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	noteInput   textarea.Model
@@ -50,31 +49,7 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 		Table: lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colours.Foreground),
 	}
 
-	tableColumns := []tableBubble.Column{
-		{
-			Title: "ID",
-			Width: 12,
-		},
-		{
-			Title: "Name",
-			Width: 30,
-		},
-		{
-			Title: "Type",
-			Width: 10,
-		},
-		{
-			Title: "Notes",
-			Width: 20,
-		},
-	}
-	// TODO: Set width and height properly on init
-	tableWidth, tableHeight := viewDimensionsToTableDimensions(width, height)
-	table := tableBubble.New(
-		tableBubble.WithColumns(tableColumns),
-		tableBubble.WithWidth(tableWidth),
-		tableBubble.WithHeight(tableHeight),
-	)
+	table := tableBubble.New()
 
 	types := []itempicker.Item{
 		Income,
@@ -95,7 +70,6 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 	result := &CreateView{
 		table: table,
 
-		idInput:     idInput,
 		nameInput:   nameInput,
 		typeInput:   typeInput,
 		noteInput:   noteInput,
@@ -103,6 +77,8 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 
 		styles: styles,
 	}
+
+	result.updateTableDimensions(width, height)
 
 	return result
 }
@@ -132,26 +108,18 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, nil
 
 	case tea.WindowSizeMsg:
-		tableWidth, tableHeight := viewDimensionsToTableDimensions(message.Width, message.Height)
+		cv.updateTableDimensions(message.Width, message.Height)
 
-		// TODO: Update width of each input field for View
-		cv.table.SetWidth(tableWidth)
-
-		// TODO: Maybe not set this to full height?
-		// rather set it to minimum height needed for inputs
-		cv.table.SetHeight(tableHeight)
+		return cv, nil
 	}
 
 	var cmd tea.Cmd
-
 	switch cv.activeInput {
 	case 0:
-		cv.idInput, cmd = cv.idInput.Update(message)
-	case 1:
 		cv.nameInput, cmd = cv.nameInput.Update(message)
-	case 2:
+	case 1:
 		cv.typeInput, cmd = cv.typeInput.Update(message)
-	case 3:
+	case 2:
 		cv.noteInput, cmd = cv.noteInput.Update(message)
 
 	default:
@@ -168,7 +136,6 @@ func (cv *CreateView) View() string {
 	result.WriteString("\n\n")
 
 	cv.table.SetRows([]tableBubble.Row{{
-		cv.idInput.View(),
 		cv.nameInput.View(),
 		cv.typeInput.View(),
 		cv.noteInput.View(),
@@ -190,6 +157,40 @@ func (cv *CreateView) MotionSet() *vim.MotionSet {
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &vim.MotionSet{Normal: normalMotions}
+}
+
+func (cv *CreateView) updateTableDimensions(width, height int) {
+	tableWidth, tableHeight := viewDimensionsToTableDimensions(width, height)
+
+	cv.table.SetWidth(tableWidth)
+	cv.table.SetHeight(tableHeight)
+
+	// -6 because the table has 2-wide gaps between columns
+	// -2 because the table has 1-wide padding on either side
+	totalColumnWidth := width - 6 - 2
+
+	// Hardcoded, maximum length of a ledger type is 9 ('LIABILITY')
+	typeInputWidth := 9
+	nameInputWidth := min((totalColumnWidth-typeInputWidth)/2, 20)
+	noteInputWidth := totalColumnWidth - typeInputWidth - nameInputWidth
+
+	cv.table.SetColumns([]tableBubble.Column{
+		{
+			Title: "Name",
+			Width: nameInputWidth,
+		},
+		{
+			Title: "Type",
+			Width: typeInputWidth,
+		},
+		{
+			Title: "Notes",
+			Width: noteInputWidth,
+		},
+	})
+
+	cv.nameInput.Width = nameInputWidth
+	cv.noteInput.SetWidth(noteInputWidth)
 }
 
 func viewDimensionsToTableDimensions(width, height int) (int, int) {
