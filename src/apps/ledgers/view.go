@@ -92,16 +92,19 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case vim.CompletedMotionMsg:
 		switch message.Type {
 		case vim.SWITCHFOCUS:
+
 			switch message.Data.(vim.Direction) {
 			case vim.LEFT:
 				cv.activeInput--
 				if cv.activeInput < 0 {
-					cv.activeInput += 4
+					cv.activeInput += 3
 				}
 
 			case vim.RIGHT:
 				cv.activeInput++
-				cv.activeInput %= 4
+				cv.activeInput %= 3
+			}
+
 			}
 		}
 
