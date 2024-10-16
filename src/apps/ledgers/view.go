@@ -59,13 +59,10 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 		Equity,
 	}
 
-	idInput := textinput.New()
-	idInput.Focus()
 	nameInput := textinput.New()
 	nameInput.Focus()
 	typeInput := itempicker.New(types)
 	noteInput := textarea.New()
-	noteInput.Focus()
 
 	result := &CreateView{
 		table: table,
@@ -92,6 +89,12 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case vim.CompletedMotionMsg:
 		switch message.Type {
 		case vim.SWITCHFOCUS:
+			switch cv.activeInput {
+			case 0:
+				cv.nameInput.Blur()
+			case 2:
+				cv.noteInput.Blur()
+			}
 
 			switch message.Data.(vim.Direction) {
 			case vim.LEFT:
@@ -105,6 +108,11 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				cv.activeInput %= 3
 			}
 
+			switch cv.activeInput {
+			case 0:
+				cv.nameInput.Focus()
+			case 2:
+				cv.noteInput.Focus()
 			}
 		}
 
@@ -168,12 +176,10 @@ func (cv *CreateView) updateTableDimensions(width, height int) {
 	cv.table.SetWidth(tableWidth)
 	cv.table.SetHeight(tableHeight)
 
-	// -6 because the table has 2-wide gaps between columns
-	// -2 because the table has 1-wide padding on either side
-	totalColumnWidth := width - 6 - 2
+	// -8 because each column has 1-wide padding on either side
+	totalColumnWidth := width - 8
 
-	// Hardcoded, maximum length of a ledger type is 9 ('LIABILITY')
-	typeInputWidth := 9
+	typeInputWidth := 9 // Hardcoded, maximum length of a ledger type is 9 ('LIABILITY')
 	nameInputWidth := min((totalColumnWidth-typeInputWidth)/2, 20)
 	noteInputWidth := totalColumnWidth - typeInputWidth - nameInputWidth
 
