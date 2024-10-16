@@ -43,7 +43,7 @@ type CreateView struct {
 	styles styles.CreateViewStyles
 }
 
-func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
+func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *CreateView {
 	styles := styles.CreateViewStyles{
 		Title: lipgloss.NewStyle().Background(colours.Background).Padding(0, 1),
 
@@ -53,11 +53,11 @@ func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 	tableColumns := []tableBubble.Column{
 		{
 			Title: "ID",
-			Width: 6,
+			Width: 12,
 		},
 		{
 			Title: "Name",
-			Width: 16,
+			Width: 30,
 		},
 		{
 			Title: "Type",
@@ -68,9 +68,12 @@ func NewCreateView(app meta.App, colours styles.AppColours) *CreateView {
 			Width: 20,
 		},
 	}
+	// TODO: Set width and height properly on init
+	tableWidth, tableHeight := viewDimensionsToTableDimensions(width, height)
 	table := tableBubble.New(
 		tableBubble.WithColumns(tableColumns),
-		tableBubble.WithHeight(6),
+		tableBubble.WithWidth(tableWidth),
+		tableBubble.WithHeight(tableHeight),
 	)
 
 	types := []itempicker.Item{
@@ -127,6 +130,16 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return cv, nil
+
+	case tea.WindowSizeMsg:
+		tableWidth, tableHeight := viewDimensionsToTableDimensions(message.Width, message.Height)
+
+		// TODO: Update width of each input field for View
+		cv.table.SetWidth(tableWidth)
+
+		// TODO: Maybe not set this to full height?
+		// rather set it to minimum height needed for inputs
+		cv.table.SetHeight(tableHeight)
 	}
 
 	var cmd tea.Cmd
@@ -151,8 +164,7 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (cv *CreateView) View() string {
 	var result strings.Builder
 
-	result.WriteString("\n")
-	result.WriteString(fmt.Sprintf(" %s", cv.styles.Title.Render("Create new Ledgers")))
+	result.WriteString(fmt.Sprintf("  %s", cv.styles.Title.Render("Create new Ledger")))
 	result.WriteString("\n\n")
 
 	cv.table.SetRows([]tableBubble.Row{{
@@ -178,4 +190,16 @@ func (cv *CreateView) MotionSet() *vim.MotionSet {
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &vim.MotionSet{Normal: normalMotions}
+}
+
+func viewDimensionsToTableDimensions(width, height int) (int, int) {
+	// -2 for the table borders
+	width = width - 2
+
+	// -2 for the title
+	// -2 for the table borders
+	// -1 for the table header (I think? either way it looks good this way)
+	height = height - 2 - 2 - 1
+
+	return width, height
 }

@@ -38,7 +38,10 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
 
-		return m, nil
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
 
 	case meta.SetupSchemaMsg:
 		changed, err := setupSchema(message.Db)
@@ -199,6 +202,6 @@ func (m *model) showDetailView() tea.Cmd {
 }
 
 func (m *model) showCreateView() tea.Cmd {
-	m.view = NewCreateView(m, m.Colours())
+	m.view = NewCreateView(m, m.Colours(), m.viewWidth, m.viewHeight)
 	return nil
 }
