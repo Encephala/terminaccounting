@@ -99,31 +99,6 @@ func (m *model) CurrentMotionSet() *vim.MotionSet {
 
 func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
 	switch message.Type {
-	case vim.NAVIGATE:
-		keyMsg := tea.KeyMsg{
-			Type:  tea.KeyRunes,
-			Alt:   false,
-			Paste: false,
-		}
-
-		switch message.Data.(vim.Direction) {
-		case vim.DOWN:
-			keyMsg.Runes = []rune{'j'}
-
-		case vim.UP:
-			keyMsg.Runes = []rune{'k'}
-
-		case vim.LEFT:
-			keyMsg.Runes = []rune{'h'}
-
-		case vim.RIGHT:
-			keyMsg.Runes = []rune{'l'}
-		}
-
-		newView, cmd := m.view.Update(keyMsg)
-		m.view = newView.(meta.View)
-		return m, cmd
-
 	case vim.SWITCHVIEW:
 		var cmds []tea.Cmd
 		switch message.Data.(vim.View) {

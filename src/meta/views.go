@@ -3,6 +3,7 @@ package meta
 import (
 	"fmt"
 	"terminaccounting/styles"
+	"terminaccounting/utils"
 	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -66,6 +67,16 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("App %s received %T for %s", message.ActualApp, message, message.TargetApp))
 		}
 		lv.Model.SetItems(message.Items)
+
+	case vim.CompletedMotionMsg:
+		if message.Type == vim.NAVIGATE {
+			keyMsg := utils.NavigateMessageToKeyMsg(message)
+
+			var cmd tea.Cmd
+			lv.Model, cmd = lv.Model.Update(keyMsg)
+
+			return lv, cmd
+		}
 	}
 
 	var cmd tea.Cmd
@@ -125,6 +136,16 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("Setting detail view items, but got %q rather than EntryRow", message.Model))
 		}
 		dv.Model.SetItems(message.Items)
+
+	case vim.CompletedMotionMsg:
+		if message.Type == vim.NAVIGATE {
+			keyMsg := utils.NavigateMessageToKeyMsg(message)
+
+			var cmd tea.Cmd
+			dv.Model, cmd = dv.Model.Update(keyMsg)
+
+			return dv, cmd
+		}
 	}
 
 	var cmd tea.Cmd
