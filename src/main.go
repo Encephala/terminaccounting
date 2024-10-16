@@ -103,7 +103,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch message := message.(type) {
 	case error:
-		slog.Warn(fmt.Sprintf("Error: %v", message))
+		slog.Debug(fmt.Sprintf("Error: %v", message))
 		m.displayedError = message
 		return m, utils.ClearErrorAfterDelayCmd
 
