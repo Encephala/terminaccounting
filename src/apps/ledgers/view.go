@@ -9,6 +9,7 @@ import (
 
 	"local/bubbles/itempicker"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	tableBubble "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -61,8 +62,10 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 
 	nameInput := textinput.New()
 	nameInput.Focus()
+	nameInput.Cursor.SetMode(cursor.CursorStatic)
 	typeInput := itempicker.New(types)
 	noteInput := textarea.New()
+	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &CreateView{
 		table: table,

@@ -13,6 +13,7 @@ import (
 	"terminaccounting/utils"
 	"terminaccounting/vim"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -36,6 +37,7 @@ func main() {
 	}
 
 	commandInput := textinput.New()
+	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
 
 	motionSet := vim.CompleteMotionSet{GlobalMotionSet: vim.GlobalMotions()}
