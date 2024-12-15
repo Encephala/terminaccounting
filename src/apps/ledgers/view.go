@@ -10,7 +10,6 @@ import (
 	"local/bubbles/itempicker"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	tableBubble "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -33,8 +32,6 @@ func (l Ledger) Description() string {
 }
 
 type CreateView struct {
-	table tableBubble.Model
-
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	noteInput   textarea.Model
@@ -49,8 +46,6 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 
 		Table: lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colours.Foreground),
 	}
-
-	table := tableBubble.New()
 
 	types := []itempicker.Item{
 		Income,
@@ -68,8 +63,6 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &CreateView{
-		table: table,
-
 		nameInput:   nameInput,
 		typeInput:   typeInput,
 		noteInput:   noteInput,
@@ -77,8 +70,6 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 
 		styles: styles,
 	}
-
-	result.updateTableDimensions(width, height)
 
 	return result
 }
@@ -92,6 +83,8 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case vim.CompletedMotionMsg:
 		switch message.Type {
 		case vim.SWITCHFOCUS:
+			// If currently on a textinput, blur it
+			// Shouldn't matter too much because we only send the update to the right input, but FWIW
 			switch cv.activeInput {
 			case 0:
 				cv.nameInput.Blur()
@@ -111,6 +104,7 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				cv.activeInput %= 3
 			}
 
+			// If now on a textinput, focus it
 			switch cv.activeInput {
 			case 0:
 				cv.nameInput.Focus()
@@ -122,7 +116,7 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, nil
 
 	case tea.WindowSizeMsg:
-		cv.updateTableDimensions(message.Width, message.Height)
+		// TODO
 
 		return cv, nil
 	}
@@ -149,15 +143,49 @@ func (cv *CreateView) View() string {
 	result.WriteString(fmt.Sprintf("  %s", cv.styles.Title.Render("Create new Ledger")))
 	result.WriteString("\n\n")
 
-	cv.table.SetRows([]tableBubble.Row{{
-		cv.nameInput.View(),
-		cv.typeInput.View(),
-		cv.noteInput.View(),
-	}})
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Center)
 
-	result.WriteString(
-		cv.styles.Table.Render(cv.table.View()),
+	const inputWidth = 26
+	cv.nameInput.Width = inputWidth - 2 // -2 because of the prompt
+	cv.noteInput.SetWidth(inputWidth)
+
+	// TODO: Render active input with a different colour
+	var nameRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Name"),
+		" ",
+		style.Render(cv.nameInput.View()),
 	)
+
+	var typeRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Type"),
+		" ",
+		style.Render(cv.typeInput.View()),
+	)
+
+	var notesRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Note"),
+		" ",
+		style.Render(cv.noteInput.View()),
+	)
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			nameRow,
+			typeRow,
+			notesRow,
+		),
+	))
 
 	return result.String()
 }
@@ -171,48 +199,4 @@ func (cv *CreateView) MotionSet() *vim.MotionSet {
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &vim.MotionSet{Normal: normalMotions}
-}
-
-func (cv *CreateView) updateTableDimensions(width, height int) {
-	tableWidth, tableHeight := viewDimensionsToTableDimensions(width, height)
-
-	cv.table.SetWidth(tableWidth)
-	cv.table.SetHeight(tableHeight)
-
-	// -8 because each column has 1-wide padding on either side
-	totalColumnWidth := width - 8
-
-	typeInputWidth := 9 // Hardcoded, maximum length of a ledger type is 9 ('LIABILITY')
-	nameInputWidth := min((totalColumnWidth-typeInputWidth)/2, 20)
-	noteInputWidth := totalColumnWidth - typeInputWidth - nameInputWidth
-
-	cv.table.SetColumns([]tableBubble.Column{
-		{
-			Title: "Name",
-			Width: nameInputWidth,
-		},
-		{
-			Title: "Type",
-			Width: typeInputWidth,
-		},
-		{
-			Title: "Notes",
-			Width: noteInputWidth,
-		},
-	})
-
-	cv.nameInput.Width = nameInputWidth
-	cv.noteInput.SetWidth(noteInputWidth)
-}
-
-func viewDimensionsToTableDimensions(width, height int) (int, int) {
-	// -2 for the table borders
-	width = width - 2
-
-	// -2 for the title
-	// -2 for the table borders
-	// -1 for the table header (I think? either way it looks good this way)
-	height = height - 2 - 2 - 1
-
-	return width, height
 }
