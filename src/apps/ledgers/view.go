@@ -200,3 +200,9 @@ func (cv *CreateView) MotionSet() *vim.MotionSet {
 
 	return &vim.MotionSet{Normal: normalMotions}
 }
+
+func (cv *CreateView) CommandSet() *vim.CommandSet {
+	var commands vim.Trie[vim.CompletedCommandMsg]
+
+	return &vim.CommandSet{Commands: commands}
+}

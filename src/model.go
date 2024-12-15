@@ -29,4 +29,6 @@ type model struct {
 
 	// vim-esque command input
 	commandInput textinput.Model
+	// known commandSet
+	commandSet vim.CompleteCommandSet
 }

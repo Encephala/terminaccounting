@@ -19,7 +19,7 @@ func (t *Trie[T]) getChild(key string) (index int, found bool) {
 	return 0, false
 }
 
-func (t *Trie[T]) get(path Motion) (T, bool) {
+func (t *Trie[T]) get(path []string) (T, bool) {
 	var zeroValue T
 
 	if len(path) == 0 {
@@ -41,7 +41,7 @@ func (t *Trie[T]) get(path Motion) (T, bool) {
 	}
 }
 
-func (t *Trie[T]) containsPath(path Motion) bool {
+func (t *Trie[T]) containsPath(path []string) bool {
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
 			return false
@@ -53,7 +53,7 @@ func (t *Trie[T]) containsPath(path Motion) bool {
 	return true
 }
 
-func (t *Trie[T]) Insert(path Motion, value T) (changed bool) {
+func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
 	changed = false
 
 	for i, key := range path {

@@ -18,7 +18,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -41,6 +40,7 @@ func main() {
 	commandInput.Prompt = ":"
 
 	motionSet := vim.CompleteMotionSet{GlobalMotionSet: vim.GlobalMotions()}
+	commandSet := vim.CompleteCommandSet{GlobalCommandSet: vim.GlobalCommands()}
 
 	m := &model{
 		db: db,
@@ -59,6 +59,8 @@ func main() {
 
 		currentMotion: make(vim.Motion, 0),
 		motionSet:     motionSet,
+
+		commandSet: commandSet,
 	}
 
 	finalModel, err := tea.NewProgram(m).Run()
@@ -71,7 +73,7 @@ func main() {
 
 	err = finalModel.(*model).fatalError
 	if err != nil {
-		message := fmt.Sprintf("Fatal error: %v", err)
+		message := fmt.Sprintf("Program exited with fatal error: %v", err)
 		fmt.Println(message)
 		os.Exit(1)
 	}
@@ -261,14 +263,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, cmd
 
 	case vim.EXECUTECOMMAND:
-		var cmd tea.Cmd
-		if m.commandInput.Value() == "q" {
-			cmd = tea.Quit
-		} else {
-			cmd = utils.MessageCmd(fmt.Errorf("invalid command: %s", m.commandInput.Value()))
-			m.commandInput.Reset()
-			m.inputMode = vim.NORMALMODE
-		}
+		m, cmd := m.executeCommand()
 
 		return m, cmd
 	}
@@ -305,4 +300,20 @@ func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 
 func (m *model) resetCurrentMotion() {
 	m.currentMotion = m.currentMotion[:0]
+}
+
+func (m *model) executeCommand() (*model, tea.Cmd) {
+	completedCommandMsg, ok := m.commandSet.Get(strings.Split(m.commandInput.Value(), ""))
+	if !ok {
+		return m, nil
+	}
+
+	switch completedCommandMsg.Type {
+	case vim.QUIT:
+		return m, tea.Quit
+
+	// TODO: Maybe we dont error but rather just pass the completedCommand onto the view?
+	default:
+		panic(fmt.Sprintf("unexpected vim.completedCommandType: %#v", completedCommandMsg.Type))
+	}
 }

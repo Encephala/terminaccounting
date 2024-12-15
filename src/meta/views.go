@@ -24,12 +24,14 @@ type View interface {
 	Type() ViewType
 
 	MotionSet() *vim.MotionSet
+	CommandSet() *vim.CommandSet
 }
 
 type ListView struct {
 	Model list.Model
 
-	motionSet vim.MotionSet
+	motionSet  vim.MotionSet
+	commandSet vim.CommandSet
 }
 
 func NewListView(app App) *ListView {
@@ -52,7 +54,8 @@ func NewListView(app App) *ListView {
 	return &ListView{
 		Model: model,
 
-		motionSet: MotionSet,
+		motionSet:  MotionSet,
+		commandSet: vim.CommandSet{},
 	}
 }
 
@@ -97,10 +100,15 @@ func (lv *ListView) MotionSet() *vim.MotionSet {
 	return &lv.motionSet
 }
 
+func (lv *ListView) CommandSet() *vim.CommandSet {
+	return &lv.commandSet
+}
+
 type DetailView struct {
 	Model list.Model
 
-	motionSet vim.MotionSet
+	motionSet  vim.MotionSet
+	commandSet vim.CommandSet
 }
 
 func NewDetailView(app App, itemName string) *DetailView {
@@ -121,7 +129,8 @@ func NewDetailView(app App, itemName string) *DetailView {
 	return &DetailView{
 		Model: model,
 
-		motionSet: vim.MotionSet{Normal: normalMotions},
+		motionSet:  vim.MotionSet{Normal: normalMotions},
+		commandSet: vim.CommandSet{},
 	}
 }
 
@@ -164,4 +173,8 @@ func (dv *DetailView) Type() ViewType {
 
 func (dv *DetailView) MotionSet() *vim.MotionSet {
 	return &dv.motionSet
+}
+
+func (dv *DetailView) CommandSet() *vim.CommandSet {
+	return &dv.commandSet
 }
