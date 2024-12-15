@@ -1,15 +1,15 @@
-package trie
+package vim
 
-type Trie[ValueType any] struct {
+type Trie struct {
 	key string
 
 	isLeaf bool
-	value  ValueType
+	value  CompletedMotionMsg
 
-	children []*Trie[ValueType]
+	children []*Trie
 }
 
-func (t *Trie[T]) getChild(key string) (index int, found bool) {
+func (t *Trie) getChild(key string) (index int, found bool) {
 	for i, child := range t.children {
 		if child.key == key {
 			return i, true
@@ -19,15 +19,14 @@ func (t *Trie[T]) getChild(key string) (index int, found bool) {
 	return 0, false
 }
 
-func (t *Trie[T]) Get(path []string) (T, bool) {
-	var zeroValue T
+func (t *Trie) get(path Motion) (CompletedMotionMsg, bool) {
 	if len(path) == 0 {
-		return zeroValue, false
+		return CompletedMotionMsg{}, false
 	}
 
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
-			return zeroValue, false
+			return CompletedMotionMsg{}, false
 		} else {
 			t = t.children[i]
 		}
@@ -36,11 +35,11 @@ func (t *Trie[T]) Get(path []string) (T, bool) {
 	if t.isLeaf {
 		return t.value, true
 	} else {
-		return zeroValue, false
+		return CompletedMotionMsg{}, false
 	}
 }
 
-func (t *Trie[T]) ContainsPath(path []string) bool {
+func (t *Trie) containsPath(path Motion) bool {
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
 			return false
@@ -52,7 +51,7 @@ func (t *Trie[T]) ContainsPath(path []string) bool {
 	return true
 }
 
-func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
+func (t *Trie) Insert(path Motion, value CompletedMotionMsg) (changed bool) {
 	changed = false
 
 	for i, key := range path {
@@ -74,10 +73,10 @@ func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
 			continue
 		}
 
-		newChild := &Trie[T]{
+		newChild := &Trie{
 			key:      key,
 			isLeaf:   isFinalValue,
-			children: []*Trie[T]{},
+			children: []*Trie{},
 		}
 		if isFinalValue {
 			newChild.value = value
