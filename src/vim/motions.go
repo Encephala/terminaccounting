@@ -2,24 +2,26 @@ package vim
 
 import (
 	"fmt"
+
+	"terminaccounting/trie"
 )
 
 type MotionSet struct {
-	Normal  Trie
-	Insert  Trie
-	Command Trie
+	Normal  trie.Trie[CompletedMotionMsg]
+	Insert  trie.Trie[CompletedMotionMsg]
+	Command trie.Trie[CompletedMotionMsg]
 }
 
 func (ms *MotionSet) get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
 	switch mode {
 	case NORMALMODE:
-		return ms.Normal.get(path)
+		return ms.Normal.Get(path)
 
 	case INSERTMODE:
-		return ms.Insert.get(path)
+		return ms.Insert.Get(path)
 
 	case COMMANDMODE:
-		return ms.Command.get(path)
+		return ms.Command.Get(path)
 
 	default:
 		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
@@ -29,13 +31,13 @@ func (ms *MotionSet) get(mode InputMode, path Motion) (CompletedMotionMsg, bool)
 func (ms *MotionSet) containsPath(mode InputMode, path Motion) bool {
 	switch mode {
 	case NORMALMODE:
-		return ms.Normal.containsPath(path)
+		return ms.Normal.ContainsPath(path)
 
 	case INSERTMODE:
-		return ms.Insert.containsPath(path)
+		return ms.Insert.ContainsPath(path)
 
 	case COMMANDMODE:
-		return ms.Command.containsPath(path)
+		return ms.Command.ContainsPath(path)
 
 	default:
 		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
@@ -134,7 +136,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"T"}, CompletedMotionMsg{Type: SWITCHTAB, Data: LEFT}},  // [g]oto Previous [T]ab
 	})
 
-	var normal Trie
+	var normal trie.Trie[CompletedMotionMsg]
 	for _, m := range normalMotions {
 		normal.Insert(m.path, m.value)
 	}
@@ -146,7 +148,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
 	}
 
-	var insert Trie
+	var insert trie.Trie[CompletedMotionMsg]
 	for _, m := range insertMotions {
 		insert.Insert(m.path, m.value)
 	}
@@ -156,7 +158,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
 	}
 
-	var command Trie
+	var command trie.Trie[CompletedMotionMsg]
 	for _, m := range commandMotions {
 		command.Insert(m.path, m.value)
 	}
