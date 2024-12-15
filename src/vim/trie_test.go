@@ -6,7 +6,7 @@ import (
 )
 
 func TestInsertTrieKeysOnly(t *testing.T) {
-	var trie Trie
+	var trie Trie[int]
 
 	tests := []struct {
 		value           string
@@ -19,7 +19,7 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		changed := trie.Insert(strings.Split(test.value, ""), CompletedMotionMsg{})
+		changed := trie.Insert(strings.Split(test.value, ""), 0)
 		if changed != test.changedExpected {
 			t.Errorf("Expected changed to be %t for %q, got %t", test.changedExpected, test.value, changed)
 		}
@@ -39,9 +39,9 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 }
 
 func TestHandleEmptyKey(t *testing.T) {
-	var trie Trie
+	var trie Trie[int]
 
-	changed := trie.Insert([]string{}, CompletedMotionMsg{})
+	changed := trie.Insert([]string{}, 0)
 	if changed {
 		t.Errorf("Expected changed to be false for %q, got %t", "", changed)
 	}
@@ -53,47 +53,47 @@ func TestHandleEmptyKey(t *testing.T) {
 }
 
 func TestInsertTrieWithValues(t *testing.T) {
-	var trie Trie
+	var trie Trie[int]
 
-	trie.Insert([]string{"f", "1"}, CompletedMotionMsg{Data: "f1"})
-	trie.Insert([]string{"f", "2"}, CompletedMotionMsg{Data: "f2"})
+	trie.Insert([]string{"f", "1"}, 0)
+	trie.Insert([]string{"f", "2"}, 1)
 
 	f1, _ := trie.get([]string{"f", "1"})
-	if f1.Data.(string) != "f1" {
-		t.Errorf("Expected to get back %q, got back %q", "f1", f1.Data.(string))
+	if f1 != 0 {
+		t.Errorf("Expected to get back %q, got back %q", 0, f1)
 	}
 
 	f2, _ := trie.get([]string{"f", "2"})
-	if f2.Data.(string) != "f2" {
-		t.Errorf("Expected to get back %q, got back %q", "f2", f2.Data.(string))
+	if f2 != 1 {
+		t.Errorf("Expected to get back %q, got back %q", 1, f2)
 	}
 }
 
 func TestTrieInsertValueOnExistingPath(t *testing.T) {
-	var trie Trie
+	var trie Trie[int]
 
-	trie.Insert(strings.Split("asdf", ""), CompletedMotionMsg{})
+	trie.Insert(strings.Split("asdf", ""), 0)
 
 	_, ok := trie.get(strings.Split("as", ""))
 	if ok {
 		t.Errorf("Expected to not find leaf node at partial path, but did")
 	}
 
-	trie.Insert(strings.Split("as", ""), CompletedMotionMsg{Data: "found"})
+	trie.Insert(strings.Split("as", ""), 69)
 	result, ok := trie.get(strings.Split("as", ""))
 	if !ok {
 		t.Errorf("Expected to find leaf at partial path, but didn't")
 	}
 
-	if result.Data.(string) != "found" {
-		t.Errorf("Expected to get %q, got %q", "found", result.Data.(string))
+	if result != 69 {
+		t.Errorf("Expected to get %q, got %q", 69, result)
 	}
 }
 
 func TestContainsPath(t *testing.T) {
-	var trie Trie
+	var trie Trie[int]
 
-	trie.Insert(strings.Split("abc", ""), CompletedMotionMsg{})
+	trie.Insert(strings.Split("abc", ""), 0)
 
 	tests := []struct {
 		testValue string

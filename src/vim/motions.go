@@ -5,9 +5,9 @@ import (
 )
 
 type MotionSet struct {
-	Normal  Trie
-	Insert  Trie
-	Command Trie
+	Normal  Trie[CompletedMotionMsg]
+	Insert  Trie[CompletedMotionMsg]
+	Command Trie[CompletedMotionMsg]
 }
 
 func (ms *MotionSet) get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
@@ -134,7 +134,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"T"}, CompletedMotionMsg{Type: SWITCHTAB, Data: LEFT}},  // [g]oto Previous [T]ab
 	})
 
-	var normal Trie
+	var normal Trie[CompletedMotionMsg]
 	for _, m := range normalMotions {
 		normal.Insert(m.path, m.value)
 	}
@@ -146,7 +146,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
 	}
 
-	var insert Trie
+	var insert Trie[CompletedMotionMsg]
 	for _, m := range insertMotions {
 		insert.Insert(m.path, m.value)
 	}
@@ -156,7 +156,7 @@ func GlobalMotions() MotionSet {
 		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
 	}
 
-	var command Trie
+	var command Trie[CompletedMotionMsg]
 	for _, m := range commandMotions {
 		command.Insert(m.path, m.value)
 	}

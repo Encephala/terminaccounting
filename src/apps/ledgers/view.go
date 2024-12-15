@@ -195,7 +195,7 @@ func (cv *CreateView) Type() meta.ViewType {
 }
 
 func (cv *CreateView) MotionSet() *vim.MotionSet {
-	var normalMotions vim.Trie
+	var normalMotions vim.Trie[vim.CompletedMotionMsg]
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &vim.MotionSet{Normal: normalMotions}

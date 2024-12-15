@@ -44,7 +44,7 @@ func NewListView(app App) *ListView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions vim.Trie
+	var normalMotions vim.Trie[vim.CompletedMotionMsg]
 	normalMotions.Insert(vim.Motion{"g", "d"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.DETAILVIEW}) // [g]oto [d]etails
 
 	MotionSet := vim.MotionSet{Normal: normalMotions}
@@ -115,7 +115,7 @@ func NewDetailView(app App, itemName string) *DetailView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions vim.Trie
+	var normalMotions vim.Trie[vim.CompletedMotionMsg]
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &DetailView{
