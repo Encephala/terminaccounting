@@ -20,15 +20,15 @@ func (t *Trie[T]) getChild(key string) (index int, found bool) {
 }
 
 func (t *Trie[T]) get(path []string) (T, bool) {
-	var zeroValue T
+	var zeroResult T
 
 	if len(path) == 0 {
-		return zeroValue, false
+		return zeroResult, false
 	}
 
 	for _, value := range path {
 		if i, ok := t.getChild(value); !ok {
-			return zeroValue, false
+			return zeroResult, false
 		} else {
 			t = t.children[i]
 		}
@@ -37,7 +37,7 @@ func (t *Trie[T]) get(path []string) (T, bool) {
 	if t.isLeaf {
 		return t.value, true
 	} else {
-		return zeroValue, false
+		return zeroResult, false
 	}
 }
 
@@ -62,7 +62,7 @@ func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
 			t = t.children[j]
 
 			// Actually, if this happens, we can drop all t's children,
-			// as as soon as a motion resolves, it executes
+			// because as soon as a motion resolves, it executes
 			if isFinalValue {
 				// NOTE: When t.isLeaf, this does not check if the t.value is different from the provided value,
 				// i.e. it is not possible to update a value in the trie

@@ -38,12 +38,27 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 	}
 }
 
+// By default, the root element has empty string as key, but it should also have "isLeaf" as bool
+func TestDefaultValueSane(t *testing.T) {
+	var trie Trie[int]
+
+	_, exists := trie.get([]string{})
+	if exists {
+		t.Errorf("Found empty key in trie, expected not to")
+	}
+
+	_, exists = trie.get([]string{""})
+	if exists {
+		t.Errorf("Found %q in trie, expected not to", "")
+	}
+}
+
 func TestHandleEmptyKey(t *testing.T) {
 	var trie Trie[int]
 
 	changed := trie.Insert([]string{}, 0)
 	if changed {
-		t.Errorf("Expected changed to be false for %q, got %t", "", changed)
+		t.Errorf("Expected changed to be false for inserting %q, got %t", "", changed)
 	}
 
 	_, exists := trie.get([]string{})
