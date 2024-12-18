@@ -16,6 +16,7 @@ type Model struct {
 	activeItem int
 }
 
+// A message that's sent to the bubbletea app to inform that the user selected an item
 type ItemSelectedMsg struct {
 	Item
 }
@@ -66,4 +67,9 @@ func (m Model) View() string {
 	}
 
 	return m.items[m.activeItem].String()
+}
+
+// To allow the bubbletea app to manually retrieve the currently selected value
+func (m Model) Value() Item {
+	return m.items[m.activeItem]
 }
