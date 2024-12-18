@@ -47,8 +47,8 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 	return true, err
 }
 
-func Insert(db *sqlx.DB, ledger *Ledger) error {
-	_, err := db.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes)`, ledger)
+func (l *Ledger) Insert(db *sqlx.DB) error {
+	_, err := db.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes)`, l)
 
 	return err
 }
