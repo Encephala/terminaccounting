@@ -154,6 +154,7 @@ func GlobalMotions() MotionSet {
 	commandMotions := []motionWithValue{
 		{Motion{"enter"}, CompletedMotionMsg{Type: EXECUTECOMMAND}},
 		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+		{Motion{"esc"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
 	}
 
 	var command Trie[CompletedMotionMsg]
