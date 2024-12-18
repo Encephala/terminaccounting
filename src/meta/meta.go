@@ -24,6 +24,8 @@ type FatalErrorMsg struct {
 
 type UpdateViewMotionSetMsg *vim.MotionSet
 
+type UpdateViewCommandSetMsg *vim.CommandSet
+
 type DataLoadedMsg struct {
 	TargetApp string
 	ActualApp string // for asserting

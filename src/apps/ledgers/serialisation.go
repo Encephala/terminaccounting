@@ -8,15 +8,15 @@ import (
 func (lt *LedgerType) Scan(value interface{}) error {
 	switch value {
 	case int64(0):
-		*lt = Income
+		*lt = INCOME
 	case int64(1):
-		*lt = Expense
+		*lt = EXPENSE
 	case int64(2):
-		*lt = Asset
+		*lt = ASSET
 	case int64(3):
-		*lt = Liability
+		*lt = LIABILITY
 	case int64(4):
-		*lt = Equity
+		*lt = EQUITY
 
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID LEDGER TYPE: %v", value)
@@ -27,15 +27,15 @@ func (lt *LedgerType) Scan(value interface{}) error {
 
 func (lt LedgerType) Value() (driver.Value, error) {
 	switch lt {
-	case Income:
+	case INCOME:
 		return int64(0), nil
-	case Expense:
+	case EXPENSE:
 		return int64(1), nil
-	case Asset:
+	case ASSET:
 		return int64(2), nil
-	case Liability:
+	case LIABILITY:
 		return int64(3), nil
-	case Equity:
+	case EQUITY:
 		return int64(4), nil
 	}
 

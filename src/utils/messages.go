@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Takes a message and builds a tea.Cmd that returns that message
 func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
@@ -22,7 +23,7 @@ func ClearErrorAfterDelayCmd() tea.Msg {
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a completed motion.
 // When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbletea std),
-// it has to be converted back to a keyMsg
+// it has to be converted back to a keyMsg.
 func NavigateMessageToKeyMsg(message vim.CompletedMotionMsg) tea.KeyMsg {
 	if message.Type != vim.NAVIGATE {
 		panic("I borked something")

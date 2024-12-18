@@ -48,11 +48,11 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 	}
 
 	types := []itempicker.Item{
-		Income,
-		Expense,
-		Asset,
-		Liability,
-		Equity,
+		INCOME,
+		EXPENSE,
+		ASSET,
+		LIABILITY,
+		EQUITY,
 	}
 
 	nameInput := textinput.New()
@@ -111,6 +111,9 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			case 2:
 				cv.noteInput.Focus()
 			}
+
+		default:
+			panic(fmt.Sprintf("unexpected vim.completedMotionType: %#v", message.Type))
 		}
 
 		return cv, nil
@@ -119,22 +122,26 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// TODO
 
 		return cv, nil
-	}
 
-	var cmd tea.Cmd
-	switch cv.activeInput {
-	case 0:
-		cv.nameInput, cmd = cv.nameInput.Update(message)
-	case 1:
-		cv.typeInput, cmd = cv.typeInput.Update(message)
-	case 2:
-		cv.noteInput, cmd = cv.noteInput.Update(message)
+	case tea.KeyMsg:
+		var cmd tea.Cmd
+		switch cv.activeInput {
+		case 0:
+			cv.nameInput, cmd = cv.nameInput.Update(message)
+		case 1:
+			cv.typeInput, cmd = cv.typeInput.Update(message)
+		case 2:
+			cv.noteInput, cmd = cv.noteInput.Update(message)
+
+		default:
+			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
+		}
+
+		return cv, cmd
 
 	default:
-		panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
-
-	return cv, cmd
 }
 
 func (cv *CreateView) View() string {
@@ -196,6 +203,7 @@ func (cv *CreateView) Type() meta.ViewType {
 
 func (cv *CreateView) MotionSet() *vim.MotionSet {
 	var normalMotions vim.Trie[vim.CompletedMotionMsg]
+
 	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
 
 	return &vim.MotionSet{Normal: normalMotions}
@@ -203,6 +211,8 @@ func (cv *CreateView) MotionSet() *vim.MotionSet {
 
 func (cv *CreateView) CommandSet() *vim.CommandSet {
 	var commands vim.Trie[vim.CompletedCommandMsg]
+
+	commands.Insert(vim.Command{"w"}, vim.CompletedCommandMsg{Type: vim.WRITE})
 
 	return &vim.CommandSet{Commands: commands}
 }

@@ -156,6 +156,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.UpdateViewMotionSetMsg:
 		m.motionSet.ViewMotionSet = message
+
+		return m, nil
+
+	case meta.UpdateViewCommandSetMsg:
+		m.commandSet.ViewCommandSet = message
+
+		return m, nil
 	}
 
 	app, cmd := m.apps[m.activeApp].Update(message)
@@ -244,17 +251,9 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, cmd
 
 	case vim.SWITCHMODE:
-		if m.inputMode == vim.COMMANDMODE {
-			m.commandInput.Reset()
-			m.commandInput.Blur()
-		}
-
 		newMode := completedMotionMsg.Data.(vim.InputMode)
-		m.inputMode = newMode
 
-		if newMode == vim.COMMANDMODE {
-			m.commandInput.Focus()
-		}
+		m.switchMode(newMode)
 
 		return m, nil
 
@@ -306,18 +305,39 @@ func (m *model) resetCurrentMotion() {
 	m.currentMotion = m.currentMotion[:0]
 }
 
+func (m *model) switchMode(newMode vim.InputMode) {
+	if m.inputMode == vim.COMMANDMODE {
+		m.commandInput.Reset()
+		m.commandInput.Blur()
+	}
+
+	m.inputMode = newMode
+
+	if newMode == vim.COMMANDMODE {
+		m.commandInput.Focus()
+	}
+}
+
 func (m *model) executeCommand() (*model, tea.Cmd) {
 	completedCommandMsg, ok := m.commandSet.Get(strings.Split(m.commandInput.Value(), ""))
+
 	if !ok {
-		return m, nil
+		cmd := utils.MessageCmd(fmt.Errorf("invalid command: %v", m.commandInput.Value()))
+
+		m.switchMode(vim.NORMALMODE)
+
+		return m, cmd
 	}
 
 	switch completedCommandMsg.Type {
 	case vim.QUIT:
 		return m, tea.Quit
-
-	// TODO: Maybe we dont error but rather just pass the completedCommand onto the view?
-	default:
-		panic(fmt.Sprintf("unexpected vim.completedCommandType: %#v", completedCommandMsg.Type))
 	}
+
+	newApp, cmd := m.apps[m.activeApp].Update(completedCommandMsg)
+	m.apps[m.activeApp] = newApp.(meta.App)
+
+	m.switchMode(vim.NORMALMODE)
+
+	return m, cmd
 }

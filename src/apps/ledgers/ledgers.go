@@ -3,6 +3,7 @@ package ledgers
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"terminaccounting/apps/entries"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -67,6 +68,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vim.CompletedMotionMsg:
 		return m.handleMotionMessage(message)
+
+	case vim.CompletedCommandMsg:
+		return m.handleCommandMessage(message)
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -97,10 +101,15 @@ func (m *model) CurrentMotionSet() *vim.MotionSet {
 	return m.view.MotionSet()
 }
 
+func (m *model) CurrentCommandSet() *vim.CommandSet {
+	return m.view.CommandSet()
+}
+
 func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case vim.SWITCHVIEW:
 		var cmds []tea.Cmd
+
 		switch message.Data.(vim.View) {
 		case vim.LISTVIEW:
 			cmds = append(cmds, m.showListView())
@@ -112,9 +121,11 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 			cmds = append(cmds, m.showCreateView())
 		}
 
-		cmds = append(cmds, utils.MessageCmd(meta.UpdateViewMotionSetMsg(
-			m.CurrentMotionSet(),
-		)))
+		cmds = append(
+			cmds,
+			utils.MessageCmd(meta.UpdateViewMotionSetMsg(m.CurrentMotionSet())),
+			utils.MessageCmd(meta.UpdateViewCommandSetMsg(m.CurrentCommandSet())),
+		)
 
 		return m, tea.Batch(cmds...)
 	}
@@ -123,6 +134,42 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 	m.view = newView.(meta.View)
 
 	return m, cmd
+}
+
+func (m *model) handleCommandMessage(message vim.CompletedCommandMsg) (*model, tea.Cmd) {
+	switch message.Type {
+	case vim.WRITE:
+		// TODO
+		// Uhh is the view even able to save the model? Should it even?
+		// Like I guess the view is the only one that's able to access the input fields' values,
+		// although that is fixed by a little type assertion.
+		// Let's start writing and if it feels wrong, move the logic to the Ledgers model itself
+		//
+		// Wait I'm yapping dumb shit, this is the Ledgers model itself
+
+		createView := m.view.(*CreateView)
+
+		ledgerName := createView.nameInput.Value()
+		ledgerType := createView.typeInput.Value().(LedgerType)
+		ledgerNotes := createView.noteInput.Value()
+
+		newLedger := Ledger{
+			Name:       ledgerName,
+			LedgerType: ledgerType,
+			Notes:      strings.Split(ledgerNotes, "\n"),
+		}
+
+		err := newLedger.Insert(m.db)
+
+		if err != nil {
+			return m, utils.MessageCmd(err)
+		}
+
+		return m, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected vim.completedCommandType: %#v", message.Type))
+	}
 }
 
 func (m *model) makeLoadLedgersCmd() tea.Cmd {

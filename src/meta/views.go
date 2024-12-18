@@ -80,6 +80,13 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			return lv, cmd
 		}
+
+	case tea.WindowSizeMsg:
+		// Explicitly break to avoid the panic
+		break
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 
 	var cmd tea.Cmd
@@ -155,6 +162,9 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			return dv, cmd
 		}
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 
 	var cmd tea.Cmd

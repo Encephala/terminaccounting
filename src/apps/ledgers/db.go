@@ -9,11 +9,11 @@ import (
 type LedgerType string
 
 const (
-	Income    LedgerType = "INCOME"
-	Expense   LedgerType = "EXPENSE"
-	Asset     LedgerType = "ASSET"
-	Liability LedgerType = "LIABILITY"
-	Equity    LedgerType = "EQUITY"
+	INCOME    LedgerType = "INCOME"
+	EXPENSE   LedgerType = "EXPENSE"
+	ASSET     LedgerType = "ASSET"
+	LIABILITY LedgerType = "LIABILITY"
+	EQUITY    LedgerType = "EQUITY"
 )
 
 func (lt LedgerType) String() string {
