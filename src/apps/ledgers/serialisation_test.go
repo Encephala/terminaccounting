@@ -14,7 +14,10 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		Id:         1,
 		Name:       "test",
 		LedgerType: "INCOME",
-		Notes:      []string{},
+		Notes: []string{
+			"First note",
+			"Second note",
+		},
 	}
 
 	err := ledger.Insert(db)
@@ -69,6 +72,7 @@ func testLedgersEqual(t *testing.T, actual, expected Ledger) {
 
 	if len(actual.Notes) != len(expected.Notes) {
 		t.Errorf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
+		t.Logf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
 	}
 
 	for i, note := range actual.Notes {

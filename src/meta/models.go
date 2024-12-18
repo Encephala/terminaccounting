@@ -38,12 +38,12 @@ func (n *Notes) Scan(value any) error {
 		return nil
 	}
 
-	converted, ok := value.([]byte)
+	converted, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("UNMARSHALLING INVALID NOTES: %v", value)
 	}
 
-	return json.Unmarshal(converted, n)
+	return json.Unmarshal([]byte(converted), n)
 }
 
 func (n Notes) Value() (driver.Value, error) {
@@ -51,5 +51,8 @@ func (n Notes) Value() (driver.Value, error) {
 		return nil, nil
 	}
 
-	return json.Marshal(n)
+	binary, err := json.Marshal(n)
+	result := string(binary)
+
+	return result, err
 }
