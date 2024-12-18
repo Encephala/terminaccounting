@@ -112,11 +112,14 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				cv.noteInput.Focus()
 			}
 
+			return cv, nil
+
+		case vim.NAVIGATE:
+			return cv, nil
+
 		default:
 			panic(fmt.Sprintf("unexpected vim.completedMotionType: %#v", message.Type))
 		}
-
-		return cv, nil
 
 	case tea.WindowSizeMsg:
 		// TODO

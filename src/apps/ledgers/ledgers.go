@@ -128,12 +128,22 @@ func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea
 		)
 
 		return m, tea.Batch(cmds...)
+
+	case vim.SWITCHFOCUS:
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
+
+	case vim.NAVIGATE:
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
+
+	default:
+		panic(fmt.Sprintf("unexpected vim.completedMotionType: %#v", message.Type))
 	}
-
-	newView, cmd := m.view.Update(message)
-	m.view = newView.(meta.View)
-
-	return m, cmd
 }
 
 func (m *model) handleCommandMessage(message vim.CompletedCommandMsg) (*model, tea.Cmd) {
