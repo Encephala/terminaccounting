@@ -21,6 +21,10 @@ import (
 )
 
 func main() {
+	if os.Getenv("LOG_LEVEL") == "DEBUG" {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
+
 	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
 	if err != nil {
 		slog.Error("Couldn't create logger: ", "error", err)
