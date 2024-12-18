@@ -174,7 +174,7 @@ func (cv *CreateView) View() string {
 		"  ",
 		style.Render("Type"),
 		" ",
-		style.Render(cv.typeInput.View()),
+		style.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
