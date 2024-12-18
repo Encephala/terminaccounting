@@ -2,6 +2,7 @@ package itempicker
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -66,10 +67,25 @@ func (m Model) View() string {
 		return lipgloss.NewStyle().Italic(true).Render("No items")
 	}
 
-	return m.items[m.activeItem].String()
+	var result strings.Builder
+	result.WriteString("> ")
+	result.WriteString(m.items[m.activeItem].String())
+
+	return result.String()
 }
 
 // To allow the bubbletea app to manually retrieve the currently selected value
 func (m Model) Value() Item {
 	return m.items[m.activeItem]
+}
+
+func (m Model) MaxViewLength() int {
+	emptyWidth := len("No items")
+	maxItemWidth := 0
+
+	for _, item := range m.items {
+		maxItemWidth = max(maxItemWidth, len(item.String()))
+	}
+
+	return max(emptyWidth, maxItemWidth+2)
 }

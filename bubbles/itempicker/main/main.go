@@ -1,5 +1,7 @@
 package main
 
+// This file is for quick ad-hoc testing of functionality
+
 import (
 	"bubbles/itempicker"
 	"fmt"
@@ -18,16 +20,17 @@ func (i Item) String() string {
 }
 
 func main() {
-	model := &testModel{
-		model: itempicker.New(),
-	}
-
 	items := []itempicker.Item{
 		Item("first"),
 		Item("second"),
 		Item("third"),
 	}
-	model.model.Items = items
+
+	model := &testModel{
+		model: itempicker.New(items),
+	}
+
+	print(fmt.Sprintf("Max view length %d\n", model.model.MaxViewLength()))
 
 	_, err := tea.NewProgram(model).Run()
 
@@ -47,7 +50,8 @@ func (tm *testModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	model, cmd := tm.model.Update(message)
-	tm.model = model.(itempicker.Model)
+	tm.model = model
+
 	return tm, cmd
 }
 
