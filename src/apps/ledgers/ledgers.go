@@ -7,8 +7,6 @@ import (
 	"terminaccounting/apps/entries"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
-	"terminaccounting/utils"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -48,7 +46,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		changed, err := setupSchema(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
-			return m, utils.MessageCmd(meta.FatalErrorMsg{Error: message})
+			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changed {
@@ -66,10 +64,41 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, cmd
 
-	case vim.CompletedMotionMsg:
-		return m.handleMotionMessage(message)
+	case meta.SwitchViewMsg:
+		var cmds []tea.Cmd
 
-	case vim.CompletedCommandMsg:
+		switch message.ViewType {
+		case meta.LISTVIEWTYPE:
+			cmds = append(cmds, m.showListView())
+
+		case meta.DETAILVIEWTYPE:
+			cmds = append(cmds, m.showDetailView())
+
+		case meta.CREATEVIEWTYPE:
+			cmds = append(cmds, m.showCreateView())
+		}
+
+		cmds = append(
+			cmds,
+			meta.MessageCmd(meta.UpdateViewMotionSetMsg(m.CurrentMotionSet())),
+			meta.MessageCmd(meta.UpdateViewCommandSetMsg(m.CurrentCommandSet())),
+		)
+
+		return m, tea.Batch(cmds...)
+
+	case meta.SwitchFocusMsg:
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
+
+	case meta.NavigateMsg:
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
+
+	case meta.CompletedCommandMsg:
 		return m.handleCommandMessage(message)
 	}
 
@@ -97,58 +126,17 @@ func (m *model) Colours() styles.AppColours {
 	}
 }
 
-func (m *model) CurrentMotionSet() *vim.MotionSet {
+func (m *model) CurrentMotionSet() *meta.MotionSet {
 	return m.view.MotionSet()
 }
 
-func (m *model) CurrentCommandSet() *vim.CommandSet {
+func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.view.CommandSet()
 }
 
-func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
+func (m *model) handleCommandMessage(message meta.CompletedCommandMsg) (*model, tea.Cmd) {
 	switch message.Type {
-	case vim.SWITCHVIEW:
-		var cmds []tea.Cmd
-
-		switch message.Data.(vim.View) {
-		case vim.LISTVIEW:
-			cmds = append(cmds, m.showListView())
-
-		case vim.DETAILVIEW:
-			cmds = append(cmds, m.showDetailView())
-
-		case vim.CREATEVIEW:
-			cmds = append(cmds, m.showCreateView())
-		}
-
-		cmds = append(
-			cmds,
-			utils.MessageCmd(meta.UpdateViewMotionSetMsg(m.CurrentMotionSet())),
-			utils.MessageCmd(meta.UpdateViewCommandSetMsg(m.CurrentCommandSet())),
-		)
-
-		return m, tea.Batch(cmds...)
-
-	case vim.SWITCHFOCUS:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
-
-		return m, cmd
-
-	case vim.NAVIGATE:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
-
-		return m, cmd
-
-	default:
-		panic(fmt.Sprintf("unexpected vim.completedMotionType: %#v", message.Type))
-	}
-}
-
-func (m *model) handleCommandMessage(message vim.CompletedCommandMsg) (*model, tea.Cmd) {
-	switch message.Type {
-	case vim.WRITE:
+	case meta.WRITE:
 		// TODO
 		// Uhh is the view even able to save the model? Should it even?
 		// Like I guess the view is the only one that's able to access the input fields' values,
@@ -172,13 +160,13 @@ func (m *model) handleCommandMessage(message vim.CompletedCommandMsg) (*model, t
 		err := newLedger.Insert(m.db)
 
 		if err != nil {
-			return m, utils.MessageCmd(err)
+			return m, meta.MessageCmd(err)
 		}
 
 		return m, nil
 
 	default:
-		panic(fmt.Sprintf("unexpected vim.completedCommandType: %#v", message.Type))
+		panic(fmt.Sprintf("unexpected meta.completedCommandType: %#v", message.Type))
 	}
 }
 
@@ -186,7 +174,7 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
 		if err != nil {
-			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))
@@ -211,7 +199,7 @@ func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := entries.SelectRowsByLedger(m.db, selectedLedger.Id)
 		if err != nil {
-			utils.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
+			meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))

@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
-	"terminaccounting/utils"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -43,13 +41,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		changedEntries, err := setupSchemaEntries(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
-			return m, utils.MessageCmd(meta.FatalErrorMsg{Error: message})
+			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		changedEntryRows, err := setupSchemaEntryRows(message.Db)
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
-			return m, utils.MessageCmd(meta.FatalErrorMsg{Error: message})
+			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changedEntries || changedEntryRows {
@@ -67,8 +65,11 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, cmd
 
-	case vim.CompletedMotionMsg:
-		return m.handleMotionMessage(message)
+	case meta.NavigateMsg:
+		newView, cmd := m.view.Update(message)
+		m.view = newView.(meta.View)
+
+		return m, cmd
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -91,43 +92,15 @@ func (m *model) Colours() styles.AppColours {
 	return styles.ENTRIESCOLOURS
 }
 
-func (m *model) CurrentMotionSet() *vim.MotionSet {
+func (m *model) CurrentMotionSet() *meta.MotionSet {
 	return m.view.MotionSet()
-}
-
-func (m *model) handleMotionMessage(message vim.CompletedMotionMsg) (*model, tea.Cmd) {
-	switch message.Type {
-	case vim.NAVIGATE:
-		keyMsg := tea.KeyMsg{
-			Type:  tea.KeyRunes,
-			Alt:   false,
-			Paste: false,
-		}
-
-		switch message.Data.(vim.Direction) {
-		case vim.DOWN:
-			keyMsg.Runes = []rune{'j'}
-
-		case vim.UP:
-			keyMsg.Runes = []rune{'k'}
-
-		default:
-			panic(fmt.Sprintf("unexpected vim.Direction %#v", message.Data.(vim.Direction)))
-		}
-
-		newView, cmd := m.view.Update(keyMsg)
-		m.view = newView.(meta.View)
-		return m, cmd
-	}
-
-	return m, nil
 }
 
 func (m *model) makeLoadEntriesCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectEntries(m.db)
 		if err != nil {
-			return utils.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
+			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))

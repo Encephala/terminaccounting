@@ -1,4 +1,4 @@
-package vim
+package meta
 
 import (
 	"strings"

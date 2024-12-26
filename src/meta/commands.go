@@ -1,4 +1,4 @@
-package vim
+package meta
 
 // This file is largely analogous to ./motions.go
 

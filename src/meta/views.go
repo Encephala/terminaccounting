@@ -3,19 +3,9 @@ package meta
 import (
 	"fmt"
 	"terminaccounting/styles"
-	"terminaccounting/utils"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-)
-
-type ViewType int
-
-const (
-	ListViewType ViewType = iota
-	DetailViewType
-	CreateViewType
 )
 
 type View interface {
@@ -23,15 +13,15 @@ type View interface {
 
 	Type() ViewType
 
-	MotionSet() *vim.MotionSet
-	CommandSet() *vim.CommandSet
+	MotionSet() *MotionSet
+	CommandSet() *CommandSet
 }
 
 type ListView struct {
 	Model list.Model
 
-	motionSet  vim.MotionSet
-	commandSet vim.CommandSet
+	motionSet  MotionSet
+	commandSet CommandSet
 }
 
 func NewListView(app App) *ListView {
@@ -46,16 +36,16 @@ func NewListView(app App) *ListView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions vim.Trie[vim.CompletedMotionMsg]
-	normalMotions.Insert(vim.Motion{"g", "d"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.DETAILVIEW}) // [g]oto [d]etails
+	var normalMotions Trie[tea.Msg]
+	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{ViewType: DETAILVIEWTYPE}) // [g]oto [d]etails
 
-	MotionSet := vim.MotionSet{Normal: normalMotions}
+	MotionSet := MotionSet{Normal: normalMotions}
 
 	return &ListView{
 		Model: model,
 
 		motionSet:  MotionSet,
-		commandSet: vim.CommandSet{},
+		commandSet: CommandSet{},
 	}
 }
 
@@ -71,15 +61,13 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		lv.Model.SetItems(message.Items)
 
-	case vim.CompletedMotionMsg:
-		if message.Type == vim.NAVIGATE {
-			keyMsg := utils.NavigateMessageToKeyMsg(message)
+	case NavigateMsg:
+		keyMsg := NavigateMessageToKeyMsg(message)
 
-			var cmd tea.Cmd
-			lv.Model, cmd = lv.Model.Update(keyMsg)
+		var cmd tea.Cmd
+		lv.Model, cmd = lv.Model.Update(keyMsg)
 
-			return lv, cmd
-		}
+		return lv, cmd
 
 	case tea.WindowSizeMsg:
 		// Explicitly break to avoid the panic
@@ -100,22 +88,22 @@ func (lv *ListView) View() string {
 }
 
 func (lv *ListView) Type() ViewType {
-	return ListViewType
+	return LISTVIEWTYPE
 }
 
-func (lv *ListView) MotionSet() *vim.MotionSet {
+func (lv *ListView) MotionSet() *MotionSet {
 	return &lv.motionSet
 }
 
-func (lv *ListView) CommandSet() *vim.CommandSet {
+func (lv *ListView) CommandSet() *CommandSet {
 	return &lv.commandSet
 }
 
 type DetailView struct {
 	Model list.Model
 
-	motionSet  vim.MotionSet
-	commandSet vim.CommandSet
+	motionSet  MotionSet
+	commandSet CommandSet
 }
 
 func NewDetailView(app App, itemName string) *DetailView {
@@ -130,14 +118,14 @@ func NewDetailView(app App, itemName string) *DetailView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions vim.Trie[vim.CompletedMotionMsg]
-	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+	var normalMotions Trie[tea.Msg]
+	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
 
 	return &DetailView{
 		Model: model,
 
-		motionSet:  vim.MotionSet{Normal: normalMotions},
-		commandSet: vim.CommandSet{},
+		motionSet:  MotionSet{Normal: normalMotions},
+		commandSet: CommandSet{},
 	}
 }
 
@@ -153,15 +141,13 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		dv.Model.SetItems(message.Items)
 
-	case vim.CompletedMotionMsg:
-		if message.Type == vim.NAVIGATE {
-			keyMsg := utils.NavigateMessageToKeyMsg(message)
+	case NavigateMsg:
+		keyMsg := NavigateMessageToKeyMsg(message)
 
-			var cmd tea.Cmd
-			dv.Model, cmd = dv.Model.Update(keyMsg)
+		var cmd tea.Cmd
+		dv.Model, cmd = dv.Model.Update(keyMsg)
 
-			return dv, cmd
-		}
+		return dv, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
@@ -178,13 +164,13 @@ func (dv *DetailView) View() string {
 }
 
 func (dv *DetailView) Type() ViewType {
-	return DetailViewType
+	return DETAILVIEWTYPE
 }
 
-func (dv *DetailView) MotionSet() *vim.MotionSet {
+func (dv *DetailView) MotionSet() *MotionSet {
 	return &dv.motionSet
 }
 
-func (dv *DetailView) CommandSet() *vim.CommandSet {
+func (dv *DetailView) CommandSet() *CommandSet {
 	return &dv.commandSet
 }

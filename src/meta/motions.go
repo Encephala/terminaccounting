@@ -1,16 +1,18 @@
-package vim
+package meta
 
 import (
 	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type MotionSet struct {
-	Normal  Trie[CompletedMotionMsg]
-	Insert  Trie[CompletedMotionMsg]
-	Command Trie[CompletedMotionMsg]
+	Normal  Trie[tea.Msg]
+	Insert  Trie[tea.Msg]
+	Command Trie[tea.Msg]
 }
 
-func (ms *MotionSet) get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
+func (ms *MotionSet) get(mode InputMode, path Motion) (tea.Msg, bool) {
 	switch mode {
 	case NORMALMODE:
 		return ms.Normal.get(path)
@@ -48,7 +50,7 @@ type CompleteMotionSet struct {
 	ViewMotionSet *MotionSet
 }
 
-func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (CompletedMotionMsg, bool) {
+func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (tea.Msg, bool) {
 	if cms.ViewMotionSet != nil {
 		if msg, ok := cms.ViewMotionSet.get(mode, path); ok {
 			return msg, ok
@@ -68,96 +70,63 @@ func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
 	return cms.GlobalMotionSet.containsPath(mode, path)
 }
 
-type CompletedMotionMsg struct {
-	Type completedMotionType
-	Data interface{}
-}
-
-type completedMotionType int
-
-const (
-	NAVIGATE completedMotionType = iota
-	SWITCHMODE
-	SWITCHTAB
-	SWITCHVIEW
-	EXECUTECOMMAND
-	SWITCHFOCUS
-)
-
 type motionWithValue struct {
 	path  Motion
-	value CompletedMotionMsg
+	value tea.Msg
 }
-
-type Direction int
-
-const (
-	UP Direction = iota
-	RIGHT
-	DOWN
-	LEFT
-)
-
-type View int
-
-const (
-	LISTVIEW View = iota
-	DETAILVIEW
-	CREATEVIEW
-)
 
 func GlobalMotions() MotionSet {
 	normalMotions := make([]motionWithValue, 0)
 
 	// Single-stroke/no prefix
 	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
-		{Motion{"h"}, CompletedMotionMsg{Type: NAVIGATE, Data: LEFT}},
-		{Motion{"j"}, CompletedMotionMsg{Type: NAVIGATE, Data: DOWN}},
-		{Motion{"k"}, CompletedMotionMsg{Type: NAVIGATE, Data: UP}},
-		{Motion{"l"}, CompletedMotionMsg{Type: NAVIGATE, Data: RIGHT}},
+		{Motion{"h"}, NavigateMsg{Direction: LEFT}},
+		{Motion{"j"}, NavigateMsg{Direction: DOWN}},
+		{Motion{"k"}, NavigateMsg{Direction: UP}},
+		{Motion{"l"}, NavigateMsg{Direction: RIGHT}},
 
-		{Motion{"i"}, CompletedMotionMsg{Type: SWITCHMODE, Data: INSERTMODE}},
-		{Motion{":"}, CompletedMotionMsg{Type: SWITCHMODE, Data: COMMANDMODE}},
+		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
+		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE}},
 
-		{Motion{"tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: RIGHT}},
-		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
+		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
+		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
 	})
 
 	// LEADER
 	extendMotionsBy(&normalMotions, Motion{LEADER}, []motionWithValue{
-		{Motion{"n"}, CompletedMotionMsg{Type: SWITCHVIEW, Data: CREATEVIEW}}, // [n]ew object
+		{Motion{"n"}, SwitchViewMsg{ViewType: CREATEVIEWTYPE}}, // [n]ew object
 	})
 
 	// "g"
 	extendMotionsBy(&normalMotions, Motion{"g"}, []motionWithValue{
-		{Motion{"t"}, CompletedMotionMsg{Type: SWITCHTAB, Data: RIGHT}}, // [g]oto Next [t]ab
-		{Motion{"T"}, CompletedMotionMsg{Type: SWITCHTAB, Data: LEFT}},  // [g]oto Previous [T]ab
+		{Motion{"t"}, SwitchTabMsg{Direction: NEXT}},     // [g]oto Next [t]ab
+		{Motion{"T"}, SwitchTabMsg{Direction: PREVIOUS}}, // [g]oto Previous [T]ab
 	})
 
-	var normal Trie[CompletedMotionMsg]
+	var normal Trie[tea.Msg]
 	for _, m := range normalMotions {
 		normal.Insert(m.path, m.value)
 	}
 
 	insertMotions := []motionWithValue{
-		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+		{Motion{"ctrl+c"}, SwitchModeMsg{InputMode: NORMALMODE}},
 
-		{Motion{"tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: RIGHT}},
-		{Motion{"shift+tab"}, CompletedMotionMsg{Type: SWITCHFOCUS, Data: LEFT}},
+		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
+		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
 	}
 
-	var insert Trie[CompletedMotionMsg]
+	var insert Trie[tea.Msg]
 	for _, m := range insertMotions {
 		insert.Insert(m.path, m.value)
 	}
 
 	commandMotions := []motionWithValue{
-		{Motion{"enter"}, CompletedMotionMsg{Type: EXECUTECOMMAND}},
-		{Motion{"ctrl+c"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
-		{Motion{"esc"}, CompletedMotionMsg{Type: SWITCHMODE, Data: NORMALMODE}},
+		{Motion{"enter"}, ExecuteCommandMsg{}},
+		{Motion{"ctrl+c"}, SwitchModeMsg{InputMode: NORMALMODE}},
+		{Motion{"esc"}, SwitchModeMsg{InputMode: NORMALMODE}},
 	}
 
-	var command Trie[CompletedMotionMsg]
+	var command Trie[tea.Msg]
 	for _, m := range commandMotions {
 		command.Insert(m.path, m.value)
 	}

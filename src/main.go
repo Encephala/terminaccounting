@@ -10,8 +10,6 @@ import (
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
-	"terminaccounting/utils"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -43,8 +41,8 @@ func main() {
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
 
-	motionSet := vim.CompleteMotionSet{GlobalMotionSet: vim.GlobalMotions()}
-	commandSet := vim.CompleteCommandSet{GlobalCommandSet: vim.GlobalCommands()}
+	motionSet := meta.CompleteMotionSet{GlobalMotionSet: meta.GlobalMotions()}
+	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
 	m := &model{
 		db: db,
@@ -58,10 +56,10 @@ func main() {
 			entries.New(db),
 		},
 
-		inputMode:    vim.NORMALMODE,
+		inputMode:    meta.NORMALMODE,
 		commandInput: commandInput,
 
-		currentMotion: make(vim.Motion, 0),
+		currentMotion: make(meta.Motion, 0),
 		motionSet:     motionSet,
 
 		commandSet: commandSet,
@@ -113,9 +111,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
 		m.displayedError = message
-		return m, utils.ClearErrorAfterDelayCmd
+		return m, meta.ClearErrorAfterDelayCmd
 
-	case utils.ClearErrorMsg:
+	case meta.ClearErrorMsg:
 		m.displayedError = nil
 		return m, nil
 
@@ -154,6 +152,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		return m, nil
+
 	case meta.UpdateViewMotionSetMsg:
 		m.motionSet.ViewMotionSet = message
 
@@ -163,6 +163,17 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.commandSet.ViewCommandSet = message
 
 		return m, nil
+
+	case meta.SwitchTabMsg:
+		return m.handleTabSwitch(message.Direction)
+
+	case meta.SwitchModeMsg:
+		m.switchMode(message.InputMode)
+
+		return m, nil
+
+	case meta.ExecuteCommandMsg:
+		return m.executeCommand()
 	}
 
 	app, cmd := m.apps[m.activeApp].Update(message)
@@ -209,7 +220,7 @@ func (m *model) View() string {
 }
 
 func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
-	if m.inputMode == vim.NORMALMODE && message.Type == tea.KeyCtrlC {
+	if m.inputMode == meta.NORMALMODE && message.Type == tea.KeyCtrlC {
 		m.resetCurrentMotion()
 
 		return m, nil
@@ -218,18 +229,18 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	m.currentMotion = append(m.currentMotion, message.String())
 	if !m.motionSet.ContainsPath(m.inputMode, m.currentMotion) {
 		switch m.inputMode {
-		case vim.NORMALMODE:
-			cmd := utils.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
+		case meta.NORMALMODE:
+			cmd := meta.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
 			m.resetCurrentMotion()
 			return m, cmd
 
-		case vim.INSERTMODE:
+		case meta.INSERTMODE:
 			newApp, cmd := m.apps[m.activeApp].Update(message)
 			m.apps[m.activeApp] = newApp.(meta.App)
 			m.resetCurrentMotion()
 			return m, cmd
 
-		case vim.COMMANDMODE:
+		case meta.COMMANDMODE:
 			var cmd tea.Cmd
 			m.commandInput, cmd = m.commandInput.Update(message)
 			m.resetCurrentMotion()
@@ -244,49 +255,15 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 
 	m.resetCurrentMotion()
 
-	switch completedMotionMsg.Type {
-	case vim.NAVIGATE:
-		newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
-		m.apps[m.activeApp] = newApp.(meta.App)
-		return m, cmd
-
-	case vim.SWITCHMODE:
-		newMode := completedMotionMsg.Data.(vim.InputMode)
-
-		m.switchMode(newMode)
-
-		return m, nil
-
-	case vim.SWITCHTAB:
-		return m.handleTabSwitch(completedMotionMsg.Data.(vim.Direction))
-
-	case vim.SWITCHVIEW:
-		newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
-		m.apps[m.activeApp] = newApp.(meta.App)
-		return m, cmd
-
-	case vim.EXECUTECOMMAND:
-		m, cmd := m.executeCommand()
-
-		return m, cmd
-	}
-
-	newApp, cmd := m.apps[m.activeApp].Update(completedMotionMsg)
-	m.apps[m.activeApp] = newApp.(meta.App)
+	newModel, cmd := m.Update(completedMotionMsg)
+	m = newModel.(*model)
 
 	return m, cmd
 }
 
-func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
+func (m *model) handleTabSwitch(direction meta.Sequence) (*model, tea.Cmd) {
 	switch direction {
-	case vim.RIGHT:
-		m.activeApp = (m.activeApp + 1) % len(m.apps)
-
-		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
-		m = newModel.(*model)
-		return m, cmd
-
-	case vim.LEFT:
+	case meta.PREVIOUS:
 		m.activeApp = (m.activeApp - 1)
 		if m.activeApp < 0 {
 			m.activeApp += len(m.apps)
@@ -294,10 +271,19 @@ func (m *model) handleTabSwitch(direction vim.Direction) (*model, tea.Cmd) {
 
 		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
 		m = newModel.(*model)
+
+		return m, cmd
+
+	case meta.NEXT:
+		m.activeApp = (m.activeApp + 1) % len(m.apps)
+
+		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
+		m = newModel.(*model)
+
 		return m, cmd
 
 	default:
-		panic(fmt.Sprintf("Invalid tab switch direction %q", direction))
+		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
 	}
 }
 
@@ -305,15 +291,15 @@ func (m *model) resetCurrentMotion() {
 	m.currentMotion = m.currentMotion[:0]
 }
 
-func (m *model) switchMode(newMode vim.InputMode) {
-	if m.inputMode == vim.COMMANDMODE {
+func (m *model) switchMode(newMode meta.InputMode) {
+	if m.inputMode == meta.COMMANDMODE {
 		m.commandInput.Reset()
 		m.commandInput.Blur()
 	}
 
 	m.inputMode = newMode
 
-	if newMode == vim.COMMANDMODE {
+	if newMode == meta.COMMANDMODE {
 		m.commandInput.Focus()
 	}
 }
@@ -322,22 +308,22 @@ func (m *model) executeCommand() (*model, tea.Cmd) {
 	completedCommandMsg, ok := m.commandSet.Get(strings.Split(m.commandInput.Value(), ""))
 
 	if !ok {
-		cmd := utils.MessageCmd(fmt.Errorf("invalid command: %v", m.commandInput.Value()))
+		cmd := meta.MessageCmd(fmt.Errorf("invalid command: %v", m.commandInput.Value()))
 
-		m.switchMode(vim.NORMALMODE)
+		m.switchMode(meta.NORMALMODE)
 
 		return m, cmd
 	}
 
 	switch completedCommandMsg.Type {
-	case vim.QUIT:
+	case meta.QUIT:
 		return m, tea.Quit
 	}
 
 	newApp, cmd := m.apps[m.activeApp].Update(completedCommandMsg)
 	m.apps[m.activeApp] = newApp.(meta.App)
 
-	m.switchMode(vim.NORMALMODE)
+	m.switchMode(meta.NORMALMODE)
 
 	return m, cmd
 }

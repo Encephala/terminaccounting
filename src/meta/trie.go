@@ -1,4 +1,4 @@
-package vim
+package meta
 
 type Trie[T any] struct {
 	key string

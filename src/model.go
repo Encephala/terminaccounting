@@ -2,7 +2,6 @@ package main
 
 import (
 	"terminaccounting/meta"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/jmoiron/sqlx"
@@ -20,15 +19,15 @@ type model struct {
 	displayedError error
 	fatalError     error // To print to screen on exit
 
-	// current vim-esque input mode
-	inputMode vim.InputMode
+	// current vimesque input mode
+	inputMode meta.InputMode
 	// current motion
-	currentMotion vim.Motion
+	currentMotion meta.Motion
 	// known motionSet
-	motionSet vim.CompleteMotionSet
+	motionSet meta.CompleteMotionSet
 
-	// vim-esque command input
+	// vimesque command input
 	commandInput textinput.Model
 	// known commandSet
-	commandSet vim.CompleteCommandSet
+	commandSet meta.CompleteCommandSet
 }

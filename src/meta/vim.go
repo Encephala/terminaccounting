@@ -1,7 +1,8 @@
-package vim
+package meta
 
 import "strings"
 
+// Very configurable yes, just change the source code
 const LEADER = " "
 
 type InputMode string

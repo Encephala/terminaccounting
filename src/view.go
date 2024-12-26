@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+	"terminaccounting/meta"
 	"terminaccounting/styles"
-	"terminaccounting/vim"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/truncate"
@@ -15,7 +15,7 @@ func statusLineView(m *model) string {
 	resultLength := 0
 
 	switch m.inputMode {
-	case vim.NORMALMODE:
+	case meta.NORMALMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("10")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("NORMAL"))
 		resultLength += 8 // NORMAL + padding
@@ -27,7 +27,7 @@ func statusLineView(m *model) string {
 		result.WriteString(styles.StatusLine.Render(motionVisual))
 		resultLength += len(motionVisual)
 
-	case vim.INSERTMODE:
+	case meta.INSERTMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
 		mode := modeStyle.Render("INSERT")
 		result.WriteString(mode)
@@ -36,7 +36,7 @@ func statusLineView(m *model) string {
 		result.WriteString(styles.StatusLine.Render(" "))
 		resultLength += 1
 
-	case vim.COMMANDMODE:
+	case meta.COMMANDMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("208")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("COMMAND"))
 		resultLength += 9 // COMMAND + padding

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
-	"terminaccounting/vim"
 
 	"local/bubbles/itempicker"
 
@@ -80,46 +79,40 @@ func (cv *CreateView) Init() tea.Cmd {
 
 func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
-	case vim.CompletedMotionMsg:
-		switch message.Type {
-		case vim.SWITCHFOCUS:
-			// If currently on a textinput, blur it
-			// Shouldn't matter too much because we only send the update to the right input, but FWIW
-			switch cv.activeInput {
-			case 0:
-				cv.nameInput.Blur()
-			case 2:
-				cv.noteInput.Blur()
-			}
-
-			switch message.Data.(vim.Direction) {
-			case vim.LEFT:
-				cv.activeInput--
-				if cv.activeInput < 0 {
-					cv.activeInput += 3
-				}
-
-			case vim.RIGHT:
-				cv.activeInput++
-				cv.activeInput %= 3
-			}
-
-			// If now on a textinput, focus it
-			switch cv.activeInput {
-			case 0:
-				cv.nameInput.Focus()
-			case 2:
-				cv.noteInput.Focus()
-			}
-
-			return cv, nil
-
-		case vim.NAVIGATE:
-			return cv, nil
-
-		default:
-			panic(fmt.Sprintf("unexpected vim.completedMotionType: %#v", message.Type))
+	case meta.SwitchFocusMsg:
+		// If currently on a textinput, blur it
+		// Shouldn't matter too much because we only send the update to the right input, but FWIW
+		switch cv.activeInput {
+		case 0:
+			cv.nameInput.Blur()
+		case 2:
+			cv.noteInput.Blur()
 		}
+
+		switch message.Direction {
+		case meta.PREVIOUS:
+			cv.activeInput--
+			if cv.activeInput < 0 {
+				cv.activeInput += 3
+			}
+
+		case meta.NEXT:
+			cv.activeInput++
+			cv.activeInput %= 3
+		}
+
+		// If now on a textinput, focus it
+		switch cv.activeInput {
+		case 0:
+			cv.nameInput.Focus()
+		case 2:
+			cv.noteInput.Focus()
+		}
+
+		return cv, nil
+
+	case meta.NavigateMsg:
+		return cv, nil
 
 	case tea.WindowSizeMsg:
 		// TODO
@@ -201,21 +194,21 @@ func (cv *CreateView) View() string {
 }
 
 func (cv *CreateView) Type() meta.ViewType {
-	return meta.CreateViewType
+	return meta.CREATEVIEWTYPE
 }
 
-func (cv *CreateView) MotionSet() *vim.MotionSet {
-	var normalMotions vim.Trie[vim.CompletedMotionMsg]
+func (cv *CreateView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(vim.Motion{"ctrl+o"}, vim.CompletedMotionMsg{Type: vim.SWITCHVIEW, Data: vim.LISTVIEW})
+	normalMotions.Insert(meta.Motion{"ctrl+o"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	return &vim.MotionSet{Normal: normalMotions}
+	return &meta.MotionSet{Normal: normalMotions}
 }
 
-func (cv *CreateView) CommandSet() *vim.CommandSet {
-	var commands vim.Trie[vim.CompletedCommandMsg]
+func (cv *CreateView) CommandSet() *meta.CommandSet {
+	var commands meta.Trie[meta.CompletedCommandMsg]
 
-	commands.Insert(vim.Command{"w"}, vim.CompletedCommandMsg{Type: vim.WRITE})
+	commands.Insert(meta.Command{"w"}, meta.CompletedCommandMsg{Type: meta.WRITE})
 
-	return &vim.CommandSet{Commands: commands}
+	return &meta.CommandSet{Commands: commands}
 }
