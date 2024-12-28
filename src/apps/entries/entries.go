@@ -96,6 +96,10 @@ func (m *model) CurrentMotionSet() *meta.MotionSet {
 	return m.view.MotionSet()
 }
 
+func (m *model) CurrentCommandSet() *meta.CommandSet {
+	return m.view.CommandSet()
+}
+
 func (m *model) makeLoadEntriesCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectEntries(m.db)

@@ -15,4 +15,6 @@ type App interface {
 	Colours() styles.AppColours
 
 	CurrentMotionSet() *MotionSet
+
+	CurrentCommandSet() *CommandSet
 }

@@ -269,22 +269,18 @@ func (m *model) handleTabSwitch(direction meta.Sequence) (*model, tea.Cmd) {
 			m.activeApp += len(m.apps)
 		}
 
-		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
-		m = newModel.(*model)
-
-		return m, cmd
-
 	case meta.NEXT:
 		m.activeApp = (m.activeApp + 1) % len(m.apps)
-
-		newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
-		m = newModel.(*model)
-
-		return m, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
 	}
+
+	newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
+	newModel, cmdTwo := newModel.Update(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
+	m = newModel.(*model)
+
+	return m, tea.Batch(cmd, cmdTwo)
 }
 
 func (m *model) resetCurrentMotion() {
