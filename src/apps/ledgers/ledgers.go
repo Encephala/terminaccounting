@@ -137,14 +137,6 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 func (m *model) handleCommandMessage(message meta.CompletedCommandMsg) (*model, tea.Cmd) {
 	switch message.Type {
 	case meta.WRITE:
-		// TODO
-		// Uhh is the view even able to save the model? Should it even?
-		// Like I guess the view is the only one that's able to access the input fields' values,
-		// although that is fixed by a little type assertion.
-		// Let's start writing and if it feels wrong, move the logic to the Ledgers model itself
-		//
-		// Wait I'm yapping dumb shit, this is the Ledgers model itself
-
 		createView := m.view.(*CreateView)
 
 		ledgerName := createView.nameInput.Value()
@@ -157,11 +149,15 @@ func (m *model) handleCommandMessage(message meta.CompletedCommandMsg) (*model, 
 			Notes:      strings.Split(ledgerNotes, "\n"),
 		}
 
-		err := newLedger.Insert(m.db)
+		_, err := newLedger.Insert(m.db)
 
 		if err != nil {
 			return m, meta.MessageCmd(err)
 		}
+
+		// TODO:
+		// - Move to the update view after writing, using the ID returned on line 152
+		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 
 		return m, nil
 

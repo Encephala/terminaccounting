@@ -10,6 +10,7 @@ import (
 func TestMarshalUnmarshalLedger(t *testing.T) {
 	db := setupDB(t)
 
+	// Note: relying in sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	ledger := Ledger{
 		Id:         1,
 		Name:       "test",
@@ -20,9 +21,13 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		},
 	}
 
-	err := ledger.Insert(db)
+	insertedId, err := ledger.Insert(db)
 	if err != nil {
 		t.Fatalf("Couldn't insert into database: %v", err)
+	}
+
+	if insertedId != 1 {
+		t.Fatalf("Expected id of first inserted ledger to be %d, found %d", 1, insertedId)
 	}
 
 	rows, err := db.Queryx(`SELECT * FROM ledgers;`)
@@ -58,6 +63,8 @@ func setupDB(t *testing.T) *sqlx.DB {
 }
 
 func testLedgersEqual(t *testing.T, actual, expected Ledger) {
+	t.Helper()
+
 	if actual.Id != expected.Id {
 		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
 	}

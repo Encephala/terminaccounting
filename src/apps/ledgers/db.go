@@ -47,8 +47,36 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 	return true, err
 }
 
-func (l *Ledger) Insert(db *sqlx.DB) error {
-	_, err := db.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes)`, l)
+func (l *Ledger) Insert(db *sqlx.DB) (int, error) {
+	transaction := db.MustBegin()
+	defer transaction.Rollback() // If already committed, this is a noop
+
+	_, err := transaction.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes);`, l)
+	if err != nil {
+		return -1, err
+	}
+
+	queryInsertedId := transaction.QueryRowx(`SELECT seq FROM sqlite_sequence WHERE name = 'ledgers';`)
+
+	var insertedId int
+	err = queryInsertedId.Scan(&insertedId)
+	if err != nil {
+		return -1, err
+	}
+
+	err = transaction.Commit()
+
+	return insertedId, err
+}
+
+func (l *Ledger) Update(db *sqlx.DB) error {
+	query := `UPDATE ledgers SET
+	name = :name,
+	type = :type,
+	notes = :notes
+	WHERE id = :id;`
+
+	_, err := db.NamedExec(query, l)
 
 	return err
 }
