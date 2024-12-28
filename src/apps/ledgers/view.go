@@ -30,11 +30,19 @@ func (l Ledger) Description() string {
 	return l.Name
 }
 
+type ActiveInput int
+
+const (
+	NAMEINPUT ActiveInput = iota
+	TYPEINPUT
+	NOTEINPUT
+)
+
 type CreateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	noteInput   textarea.Model
-	activeInput int
+	activeInput ActiveInput
 
 	styles styles.CreateViewStyles
 }
@@ -65,7 +73,7 @@ func NewCreateView(app meta.App, colours styles.AppColours, width, height int) *
 		nameInput:   nameInput,
 		typeInput:   typeInput,
 		noteInput:   noteInput,
-		activeInput: 0,
+		activeInput: NAMEINPUT,
 
 		styles: styles,
 	}
@@ -83,9 +91,9 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// If currently on a textinput, blur it
 		// Shouldn't matter too much because we only send the update to the right input, but FWIW
 		switch cv.activeInput {
-		case 0:
+		case NAMEINPUT:
 			cv.nameInput.Blur()
-		case 2:
+		case NOTEINPUT:
 			cv.noteInput.Blur()
 		}
 
@@ -103,9 +111,9 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		// If now on a textinput, focus it
 		switch cv.activeInput {
-		case 0:
+		case NAMEINPUT:
 			cv.nameInput.Focus()
-		case 2:
+		case NOTEINPUT:
 			cv.noteInput.Focus()
 		}
 
@@ -122,11 +130,11 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch cv.activeInput {
-		case 0:
+		case NAMEINPUT:
 			cv.nameInput, cmd = cv.nameInput.Update(message)
-		case 1:
+		case TYPEINPUT:
 			cv.typeInput, cmd = cv.typeInput.Update(message)
-		case 2:
+		case NOTEINPUT:
 			cv.noteInput, cmd = cv.noteInput.Update(message)
 
 		default:
