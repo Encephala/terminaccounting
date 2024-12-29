@@ -87,9 +87,6 @@ func GlobalMotions() MotionSet {
 
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE}},
-
-		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
-		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
 	})
 
 	// LEADER
