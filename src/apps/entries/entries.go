@@ -115,7 +115,7 @@ func (m *model) makeLoadEntriesCmd() tea.Cmd {
 		return meta.DataLoadedMsg{
 			TargetApp: m.Name(),
 			Model:     "Ledger",
-			Items:     items,
+			Data:      items,
 		}
 	}
 }

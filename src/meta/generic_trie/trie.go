@@ -11,7 +11,7 @@ type node[K comparable, V comparable] struct {
 	value V
 
 	isLeaf bool
-	// TODO: This maybe shouldn't be a slice but an O(1) lookup type from T -> child
+	// NOTE: This maybe shouldn't be a slice but an O(1) lookup type from T -> child
 	// But then again that's only really going to save time when restricting to the alphabet,
 	// as then we can use rune(character) as an array index,
 	// something like hashes are way slower than search over ~10 elements probably

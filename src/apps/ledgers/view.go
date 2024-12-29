@@ -144,10 +144,12 @@ type UpdateView struct {
 	noteInput   textarea.Model
 	activeInput activeInput
 
+	startingValue Ledger
+
 	colours styles.AppColours
 }
 
-func NewUpdateView(colours styles.AppColours) *UpdateView {
+func NewUpdateView(id int, colours styles.AppColours) *UpdateView {
 	types := []itempicker.Item{
 		INCOME,
 		EXPENSE,
@@ -174,14 +176,11 @@ func NewUpdateView(colours styles.AppColours) *UpdateView {
 }
 
 func (uv *UpdateView) Init() tea.Cmd {
-	// TODO: Set the default values of the inputs
-	// Probably also store those somewhere so user can undo back to them
 	return nil
 }
 
 func (uv *UpdateView) title() string {
-	// TODO: Render the name of the specific model being updated in the title
-	return "Update Ledger: <TODO>"
+	return fmt.Sprintf("Update Ledger: %s", uv.nameInput.Value())
 }
 func (uv *UpdateView) getNameInput() *textinput.Model {
 	return &uv.nameInput
@@ -200,6 +199,25 @@ func (uv *UpdateView) getColours() styles.AppColours {
 }
 
 func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		ledger := message.Data.(Ledger)
+
+		uv.startingValue = ledger
+
+		uv.nameInput.SetValue(ledger.Name)
+		// TODO: update itempicker to allow setting value
+		// uv.typeInput.SetValue(ledger.Name)
+		uv.noteInput.SetValue(strings.Join(ledger.Notes, "\n"))
+
+		return uv, nil
+
+	case meta.UpdateMsg:
+		// TODO
+
+		return uv, nil
+	}
+
 	return createUpdateViewUpdate(uv, message)
 }
 
@@ -221,7 +239,7 @@ func (uv *UpdateView) MotionSet() *meta.MotionSet {
 func (uv *UpdateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE})
+	commands.Insert(meta.Command{"w"}, meta.UpdateMsg{})
 
 	return &meta.CommandSet{Commands: commands}
 }
@@ -231,6 +249,8 @@ func createUpdateViewUpdate(view createOrUpdateView, message tea.Msg) (tea.Model
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
 		// Shouldn't matter too much because we only send the update to the right input, but FWIW
+		// Note from later me: might actually delete this as an implicit assertion that only the right input
+		// gets the update message.
 		switch *view.getActiveInput() {
 		case NAMEINPUT:
 			view.getNameInput().Blur()

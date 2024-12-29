@@ -18,7 +18,7 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	view meta.View
+	currentView meta.View
 }
 
 func New(db *sqlx.DB) meta.App {
@@ -37,8 +37,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
 
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
@@ -59,8 +59,8 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		message.ActualApp = m.Name()
 
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
@@ -76,6 +76,12 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case meta.CREATEVIEWTYPE:
 			cmds = append(cmds, m.showCreateView())
+
+		case meta.UPDATEVIEWTYPE:
+			cmds = append(cmds, m.showUpdateView())
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
 
 		cmds = append(
@@ -87,19 +93,19 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case meta.SwitchFocusMsg:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.SaveMsg:
-		createView := m.view.(*CreateView)
+		createView := m.currentView.(*CreateView)
 
 		ledgerName := createView.nameInput.Value()
 		ledgerType := createView.typeInput.Value().(LedgerType)
@@ -118,14 +124,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// TODO:
-		// - Move to the update view after writing, using the ID returned on line 152
+		// - Move to the update view after writing, using the ID returned from `newLedger.Insert` above
 		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 
 		return m, nil
 	}
 
-	newView, cmd := m.view.Update(message)
-	m.view = newView.(meta.View)
+	newView, cmd := m.currentView.Update(message)
+	m.currentView = newView.(meta.View)
 
 	return m, cmd
 }
@@ -133,7 +139,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight)
 
-	return style.Render(m.view.View())
+	return style.Render(m.currentView.View())
 }
 
 func (m *model) Name() string {
@@ -145,11 +151,11 @@ func (m *model) Colours() styles.AppColours {
 }
 
 func (m *model) CurrentMotionSet() *meta.MotionSet {
-	return m.view.MotionSet()
+	return m.currentView.MotionSet()
 }
 
 func (m *model) CurrentCommandSet() *meta.CommandSet {
-	return m.view.CommandSet()
+	return m.currentView.CommandSet()
 }
 
 func (m *model) makeLoadLedgersCmd() tea.Cmd {
@@ -167,21 +173,21 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 		return meta.DataLoadedMsg{
 			TargetApp: m.Name(),
 			Model:     "Ledger",
-			Items:     items,
+			Data:      items,
 		}
 	}
 }
 
 func (m *model) showListView() tea.Cmd {
-	m.view = meta.NewListView(m)
+	m.currentView = meta.NewListView(m)
 	return m.makeLoadLedgersCmd()
 }
 
-func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
+func (m *model) makeLoadLedgerRowsCmd(ledgerId int) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := entries.SelectRowsByLedger(m.db, selectedLedger.Id)
+		rows, err := entries.SelectRowsByLedger(m.db, ledgerId)
 		if err != nil {
-			meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err))
+			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
 		}
 
 		items := make([]list.Item, len(rows))
@@ -192,18 +198,39 @@ func (m *model) makeLoadLedgerRowsCmd(selectedLedger Ledger) tea.Cmd {
 		return meta.DataLoadedMsg{
 			TargetApp: m.Name(),
 			Model:     "EntryRow",
-			Items:     items,
+			Data:      items,
 		}
 	}
 }
 
 func (m *model) showDetailView() tea.Cmd {
-	selectedLedger := m.view.(*meta.ListView).Model.SelectedItem().(Ledger)
-	m.view = meta.NewDetailView(m, selectedLedger.Name)
-	return m.makeLoadLedgerRowsCmd(selectedLedger)
+	selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Ledger)
+	m.currentView = meta.NewDetailView(m, selectedLedger.Id, selectedLedger.Name)
+	return m.makeLoadLedgerRowsCmd(selectedLedger.Id)
 }
 
 func (m *model) showCreateView() tea.Cmd {
-	m.view = NewCreateView(m.Colours())
+	m.currentView = NewCreateView(m.Colours())
 	return nil
+}
+
+func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
+	return func() tea.Msg {
+		ledger, err := SelectLedger(m.db, ledgerId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD LEDGER WITH ID %d: %#v", ledgerId, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: m.Name(),
+			Model:     "Ledger",
+			Data:      ledger,
+		}
+	}
+}
+
+func (m *model) showUpdateView() tea.Cmd {
+	ledgerId := m.currentView.(*meta.DetailView).ModelId
+	m.currentView = NewUpdateView(ledgerId, m.Colours())
+	return m.makeLoadLedgerCmd(ledgerId)
 }

@@ -16,7 +16,7 @@ type View interface {
 }
 
 type ListView struct {
-	Model list.Model
+	ListModel list.Model
 
 	motionSet  MotionSet
 	commandSet CommandSet
@@ -40,7 +40,7 @@ func NewListView(app App) *ListView {
 	MotionSet := MotionSet{Normal: normalMotions}
 
 	return &ListView{
-		Model: model,
+		ListModel: model,
 
 		motionSet:  MotionSet,
 		commandSet: CommandSet{},
@@ -55,34 +55,33 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
 		if message.ActualApp != message.TargetApp {
-			panic(fmt.Sprintf("App %s received %T for %s", message.ActualApp, message, message.TargetApp))
+			panic(fmt.Sprintf("App %s received %#v for %s", message.ActualApp, message, message.TargetApp))
 		}
-		lv.Model.SetItems(message.Items)
+		lv.ListModel.SetItems(message.Data.([]list.Item))
+
+		return lv, nil
 
 	case NavigateMsg:
 		keyMsg := NavigateMessageToKeyMsg(message)
 
 		var cmd tea.Cmd
-		lv.Model, cmd = lv.Model.Update(keyMsg)
+		lv.ListModel, cmd = lv.ListModel.Update(keyMsg)
 
 		return lv, cmd
 
+	// Returning to prevent panic
+	// Required because other views do accept these messages
 	case tea.WindowSizeMsg:
-		// Explicitly break to avoid the panic
-		break
+		// TODO Maybe rescale the rendering of the inputs by the window size or something
+		return lv, nil
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
-
-	var cmd tea.Cmd
-	lv.Model, cmd = lv.Model.Update(message)
-
-	return lv, cmd
 }
 
 func (lv *ListView) View() string {
-	return lv.Model.View()
+	return lv.ListModel.View()
 }
 
 func (lv *ListView) Type() ViewType {
@@ -98,13 +97,15 @@ func (lv *ListView) CommandSet() *CommandSet {
 }
 
 type DetailView struct {
-	Model list.Model
+	listModel list.Model
+
+	ModelId int
 
 	motionSet  MotionSet
 	commandSet CommandSet
 }
 
-func NewDetailView(app App, itemName string) *DetailView {
+func NewDetailView(app App, itemId int, itemName string) *DetailView {
 	viewStyles := styles.NewDetailViewStyles(app.Colours().Foreground)
 
 	delegate := list.NewDefaultDelegate()
@@ -119,11 +120,16 @@ func NewDetailView(app App, itemName string) *DetailView {
 	var normalMotions Trie[tea.Msg]
 	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
 
+	var commands Trie[tea.Msg]
+	commands.Insert(Motion{"e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})
+
 	return &DetailView{
-		Model: model,
+		listModel: model,
+
+		ModelId: itemId,
 
 		motionSet:  MotionSet{Normal: normalMotions},
-		commandSet: CommandSet{},
+		commandSet: CommandSet{Commands: commands},
 	}
 }
 
@@ -134,31 +140,32 @@ func (dv *DetailView) Init() tea.Cmd {
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
+		if message.ActualApp != message.TargetApp {
+			panic(fmt.Sprintf("App %s received %#v for %s", message.ActualApp, message, message.TargetApp))
+		}
+
 		if message.Model != "EntryRow" {
 			panic(fmt.Sprintf("Setting detail view items, but got %q rather than EntryRow", message.Model))
 		}
-		dv.Model.SetItems(message.Items)
+		dv.listModel.SetItems(message.Data.([]list.Item))
+
+		return dv, nil
 
 	case NavigateMsg:
 		keyMsg := NavigateMessageToKeyMsg(message)
 
 		var cmd tea.Cmd
-		dv.Model, cmd = dv.Model.Update(keyMsg)
+		dv.listModel, cmd = dv.listModel.Update(keyMsg)
 
 		return dv, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
-
-	var cmd tea.Cmd
-	dv.Model, cmd = dv.Model.Update(message)
-
-	return dv, cmd
 }
 
 func (dv *DetailView) View() string {
-	return dv.Model.View()
+	return dv.listModel.View()
 }
 
 func (dv *DetailView) Type() ViewType {

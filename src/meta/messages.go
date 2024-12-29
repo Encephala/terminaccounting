@@ -3,11 +3,10 @@ package meta
 import (
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Takes a message and builds a tea.Cmd that returns that message
+// Takes a message and builds a tea.Cmd that returns that message.
 func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
@@ -30,10 +29,10 @@ type UpdateViewCommandSetMsg *CommandSet
 
 type DataLoadedMsg struct {
 	TargetApp string
-	ActualApp string // for asserting that the loaded data arrives at the correct App
+	ActualApp string // for asserting that the loaded data arrives at the correct App, gets injected when app processes message
 
 	Model string
-	Items []list.Item
+	Data  interface{}
 }
 
 type NavigateMsg struct {
@@ -84,6 +83,8 @@ const (
 type ExecuteCommandMsg struct{}
 
 type SaveMsg struct{}
+
+type UpdateMsg struct{}
 
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a completed motion.

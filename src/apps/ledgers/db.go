@@ -88,3 +88,11 @@ func SelectLedgers(db *sqlx.DB) ([]Ledger, error) {
 
 	return result, err
 }
+
+func SelectLedger(db *sqlx.DB, ledgerId int) (Ledger, error) {
+	var result Ledger
+
+	err := db.Get(&result, `SELECT * FROM ledgers WHERE id = :id`, ledgerId)
+
+	return result, err
+}
