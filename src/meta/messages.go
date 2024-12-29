@@ -78,13 +78,16 @@ const (
 	LISTVIEWTYPE ViewType = iota
 	DETAILVIEWTYPE
 	CREATEVIEWTYPE
+	UPDATEVIEWTYPE
 )
 
 type ExecuteCommandMsg struct{}
 
+type SaveMsg struct{}
+
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a completed motion.
-// When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbletea std),
+// When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbles package),
 // it has to be converted back to a keyMsg.
 func NavigateMessageToKeyMsg(message NavigateMsg) tea.KeyMsg {
 	keyMsg := tea.KeyMsg{

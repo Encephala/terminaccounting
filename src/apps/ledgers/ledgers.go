@@ -98,8 +98,30 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, cmd
 
-	case meta.CompletedCommandMsg:
-		return m.handleCommandMessage(message)
+	case meta.SaveMsg:
+		createView := m.view.(*CreateView)
+
+		ledgerName := createView.nameInput.Value()
+		ledgerType := createView.typeInput.Value().(LedgerType)
+		ledgerNotes := createView.noteInput.Value()
+
+		newLedger := Ledger{
+			Name:       ledgerName,
+			LedgerType: ledgerType,
+			Notes:      strings.Split(ledgerNotes, "\n"),
+		}
+
+		_, err := newLedger.Insert(m.db)
+
+		if err != nil {
+			return m, meta.MessageCmd(err)
+		}
+
+		// TODO:
+		// - Move to the update view after writing, using the ID returned on line 152
+		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
+
+		return m, nil
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -128,38 +150,6 @@ func (m *model) CurrentMotionSet() *meta.MotionSet {
 
 func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.view.CommandSet()
-}
-
-func (m *model) handleCommandMessage(message meta.CompletedCommandMsg) (*model, tea.Cmd) {
-	switch message.Type {
-	case meta.CREATE:
-		createView := m.view.(*CreateView)
-
-		ledgerName := createView.nameInput.Value()
-		ledgerType := createView.typeInput.Value().(LedgerType)
-		ledgerNotes := createView.noteInput.Value()
-
-		newLedger := Ledger{
-			Name:       ledgerName,
-			LedgerType: ledgerType,
-			Notes:      strings.Split(ledgerNotes, "\n"),
-		}
-
-		_, err := newLedger.Insert(m.db)
-
-		if err != nil {
-			return m, meta.MessageCmd(err)
-		}
-
-		// TODO:
-		// - Move to the update view after writing, using the ID returned on line 152
-		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
-
-		return m, nil
-
-	default:
-		panic(fmt.Sprintf("unexpected meta.completedCommandType: %#v", message.Type))
-	}
 }
 
 func (m *model) makeLoadLedgersCmd() tea.Cmd {

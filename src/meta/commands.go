@@ -1,16 +1,18 @@
 package meta
 
+import tea "github.com/charmbracelet/bubbletea"
+
 // This file is largely analogous to ./motions.go
 
 type CommandSet struct {
-	Commands Trie[CompletedCommandMsg]
+	Commands Trie[tea.Msg]
 }
 
 // Even though a command doesn't have strokes as a Motion does (i.e. "ctrl+o"),
 // still split it into its constituent characters for the Trie search
 type Command []string
 
-func (cs *CommandSet) get(path Command) (CompletedCommandMsg, bool) {
+func (cs *CommandSet) get(path Command) (tea.Msg, bool) {
 	return cs.Commands.get(path)
 }
 
@@ -24,7 +26,7 @@ type CompleteCommandSet struct {
 	ViewCommandSet *CommandSet
 }
 
-func (cms *CompleteCommandSet) Get(path Command) (CompletedCommandMsg, bool) {
+func (cms *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
 	if cms.ViewCommandSet != nil {
 		if msg, ok := cms.ViewCommandSet.get(path); ok {
 			return msg, ok
@@ -44,32 +46,19 @@ func (cms *CompleteCommandSet) ContainsPath(path Command) bool {
 	return cms.GlobalCommandSet.containsPath(path)
 }
 
-type completedCommandType int
-
-const (
-	QUIT completedCommandType = iota
-	CREATE
-	UPDATE
-)
-
-type CompletedCommandMsg struct {
-	Type completedCommandType
-	Data interface{}
-}
-
 type commandWithValue struct {
 	path  Command
-	value CompletedCommandMsg
+	value tea.Msg
 }
 
 func GlobalCommands() CommandSet {
 	commands := make([]commandWithValue, 0)
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
-		{Command{"q"}, CompletedCommandMsg{Type: QUIT}},
+		{Command{"q"}, tea.QuitMsg{}},
 	})
 
-	var commandsTrie Trie[CompletedCommandMsg]
+	var commandsTrie Trie[tea.Msg]
 	for _, m := range commands {
 		commandsTrie.Insert(m.path, m.value)
 	}

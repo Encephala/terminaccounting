@@ -128,9 +128,9 @@ func (cv *CreateView) MotionSet() *meta.MotionSet {
 }
 
 func (cv *CreateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[meta.CompletedCommandMsg]
+	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CompletedCommandMsg{Type: meta.CREATE})
+	commands.Insert(meta.Command{"w"}, meta.SaveMsg{})
 
 	return &meta.CommandSet{Commands: commands}
 }
@@ -213,9 +213,9 @@ func (uv *UpdateView) MotionSet() *meta.MotionSet {
 }
 
 func (uv *UpdateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[meta.CompletedCommandMsg]
+	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CompletedCommandMsg{Type: meta.UPDATE})
+	commands.Insert(meta.Command{"w"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE})
 
 	return &meta.CommandSet{Commands: commands}
 }

@@ -108,6 +108,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 
 	switch message := message.(type) {
+	case tea.QuitMsg:
+		return m, tea.Quit
+
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
 		m.displayedError = message
@@ -173,7 +176,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.ExecuteCommandMsg:
-		return m.executeCommand()
+		command := m.commandInput.Value()
+
+		return m.executeCommand(command)
 	}
 
 	app, cmd := m.apps[m.activeApp].Update(message)
@@ -300,8 +305,8 @@ func (m *model) switchMode(newMode meta.InputMode) {
 	}
 }
 
-func (m *model) executeCommand() (*model, tea.Cmd) {
-	completedCommandMsg, ok := m.commandSet.Get(strings.Split(m.commandInput.Value(), ""))
+func (m *model) executeCommand(command string) (*model, tea.Cmd) {
+	commandMsg, ok := m.commandSet.Get(strings.Split(command, ""))
 
 	if !ok {
 		cmd := meta.MessageCmd(fmt.Errorf("invalid command: %v", m.commandInput.Value()))
@@ -311,13 +316,8 @@ func (m *model) executeCommand() (*model, tea.Cmd) {
 		return m, cmd
 	}
 
-	switch completedCommandMsg.Type {
-	case meta.QUIT:
-		return m, tea.Quit
-	}
-
-	newApp, cmd := m.apps[m.activeApp].Update(completedCommandMsg)
-	m.apps[m.activeApp] = newApp.(meta.App)
+	newModel, cmd := m.Update(commandMsg)
+	m = newModel.(*model)
 
 	m.switchMode(meta.NORMALMODE)
 
