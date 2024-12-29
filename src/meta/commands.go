@@ -48,7 +48,8 @@ type completedCommandType int
 
 const (
 	QUIT completedCommandType = iota
-	WRITE
+	CREATE
+	UPDATE
 )
 
 type CompletedCommandMsg struct {

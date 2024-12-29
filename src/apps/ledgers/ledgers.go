@@ -119,11 +119,7 @@ func (m *model) Name() string {
 }
 
 func (m *model) Colours() styles.AppColours {
-	return styles.AppColours{
-		Foreground: "#A1EEBDD0",
-		Background: "#A1EEBD60",
-		Accent:     "#A1EEBDFF",
-	}
+	return styles.LEDGERSSTYLES
 }
 
 func (m *model) CurrentMotionSet() *meta.MotionSet {
@@ -136,7 +132,7 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 
 func (m *model) handleCommandMessage(message meta.CompletedCommandMsg) (*model, tea.Cmd) {
 	switch message.Type {
-	case meta.WRITE:
+	case meta.CREATE:
 		createView := m.view.(*CreateView)
 
 		ledgerName := createView.nameInput.Value()
@@ -218,6 +214,6 @@ func (m *model) showDetailView() tea.Cmd {
 }
 
 func (m *model) showCreateView() tea.Cmd {
-	m.view = NewCreateView(m, m.Colours(), m.viewWidth, m.viewHeight)
+	m.view = NewCreateView(m.Colours())
 	return nil
 }

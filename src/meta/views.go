@@ -11,8 +11,6 @@ import (
 type View interface {
 	tea.Model
 
-	Type() ViewType
-
 	MotionSet() *MotionSet
 	CommandSet() *CommandSet
 }

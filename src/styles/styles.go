@@ -119,7 +119,8 @@ func NewDetailViewStyles(background lipgloss.Color) DetailViewStyles {
 	}
 }
 
-type CreateViewStyles struct {
-	Title lipgloss.Style
-	Table lipgloss.Style
+var LEDGERSSTYLES = AppColours{
+	Foreground: "#A1EEBDD0",
+	Background: "#A1EEBD60",
+	Accent:     "#A1EEBDFF",
 }
