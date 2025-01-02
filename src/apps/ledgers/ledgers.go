@@ -69,16 +69,20 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			cmds = append(cmds, m.showListView())
+			cmd := m.showListView()
+			cmds = append(cmds, cmd)
 
 		case meta.DETAILVIEWTYPE:
-			cmds = append(cmds, m.showDetailView())
+			cmd := m.showDetailView()
+			cmds = append(cmds, cmd)
 
 		case meta.CREATEVIEWTYPE:
-			cmds = append(cmds, m.showCreateView())
+			cmd := m.showCreateView()
+			cmds = append(cmds, cmd)
 
 		case meta.UPDATEVIEWTYPE:
-			cmds = append(cmds, m.showUpdateView())
+			cmd := m.showUpdateView()
+			cmds = append(cmds, cmd)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
@@ -104,7 +108,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, cmd
 
-	case meta.SaveMsg:
+	case meta.CommitCreateMsg:
 		createView := m.currentView.(*CreateView)
 
 		ledgerName := createView.nameInput.Value()
@@ -231,6 +235,6 @@ func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
 
 func (m *model) showUpdateView() tea.Cmd {
 	ledgerId := m.currentView.(*meta.DetailView).ModelId
-	m.currentView = NewUpdateView(ledgerId, m.Colours())
+	m.currentView = NewUpdateView(m.Colours())
 	return m.makeLoadLedgerCmd(ledgerId)
 }

@@ -82,9 +82,14 @@ const (
 
 type ExecuteCommandMsg struct{}
 
-type SaveMsg struct{}
+// For saving a new model to the database
+type CommitCreateMsg struct{}
 
-type UpdateMsg struct{}
+// For comitting the changes from an update view to the database
+type CommitUpdateMsg struct{}
+
+// For resetting the value of an active input to the default value
+type ResetInputFieldMsg struct{}
 
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a completed motion.

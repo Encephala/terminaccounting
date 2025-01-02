@@ -133,7 +133,7 @@ func (cv *CreateView) MotionSet() *meta.MotionSet {
 func (cv *CreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.SaveMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
 
 	return &meta.CommandSet{Commands: commands}
 }
@@ -149,7 +149,7 @@ type UpdateView struct {
 	colours styles.AppColours
 }
 
-func NewUpdateView(id int, colours styles.AppColours) *UpdateView {
+func NewUpdateView(colours styles.AppColours) *UpdateView {
 	types := []itempicker.Item{
 		INCOME,
 		EXPENSE,
@@ -201,6 +201,7 @@ func (uv *UpdateView) getColours() styles.AppColours {
 func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
+		// Loaded the current(/"starting") properties of the ledger being edited
 		ledger := message.Data.(Ledger)
 
 		uv.startingValue = ledger
@@ -212,7 +213,20 @@ func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return uv, nil
 
-	case meta.UpdateMsg:
+	case meta.ResetInputFieldMsg:
+		switch uv.activeInput {
+		case NAMEINPUT:
+			uv.nameInput.SetValue(uv.startingValue.Name)
+		case TYPEINPUT:
+			// TODO: same as above
+			// uv.typeInput.SetValue(uv.startingValue.LedgerType)
+		case NOTEINPUT:
+			uv.noteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
+		}
+
+		return uv, nil
+
+	case meta.CommitUpdateMsg:
 		// TODO
 
 		return uv, nil
@@ -233,13 +247,15 @@ func (uv *UpdateView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
+	normalMotions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
+
 	return &meta.MotionSet{Normal: normalMotions}
 }
 
 func (uv *UpdateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.UpdateMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitUpdateMsg{})
 
 	return &meta.CommandSet{Commands: commands}
 }

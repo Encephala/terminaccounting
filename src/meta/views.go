@@ -96,6 +96,7 @@ func (lv *ListView) CommandSet() *CommandSet {
 	return &lv.commandSet
 }
 
+// A generic, placeholder view that just renders all entries on a ledger/journal/account in a lis.([]list.Item)t
 type DetailView struct {
 	listModel list.Model
 
