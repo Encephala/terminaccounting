@@ -21,7 +21,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		},
 	}
 
-	insertedId, err := ledger.Insert(db)
+	insertedId, err := ledger.insert(db)
 	if err != nil {
 		t.Fatalf("Couldn't insert into database: %v", err)
 	}

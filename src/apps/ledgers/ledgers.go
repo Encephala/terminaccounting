@@ -132,6 +132,20 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 
 		return m, nil
+
+	case meta.CommitUpdateMsg:
+		view := m.currentView.(*UpdateView)
+
+		currentValues := Ledger{
+			Id:    view.modelId,
+			Name:  view.nameInput.Value(),
+			Type:  view.typeInput.Value().(LedgerType),
+			Notes: strings.Split(view.noteInput.Value(), "\n"),
+		}
+
+		currentValues.Update(m.db)
+
+		return m, nil
 	}
 
 	newView, cmd := m.currentView.Update(message)
@@ -235,6 +249,6 @@ func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
 
 func (m *model) showUpdateView() tea.Cmd {
 	ledgerId := m.currentView.(*meta.DetailView).ModelId
-	m.currentView = NewUpdateView(m.Colours())
+	m.currentView = NewUpdateView(ledgerId, m.Colours())
 	return m.makeLoadLedgerCmd(ledgerId)
 }

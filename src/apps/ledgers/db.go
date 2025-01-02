@@ -27,6 +27,11 @@ type Ledger struct {
 	Notes meta.Notes `db:"notes"`
 }
 
+// TODO: All database interactions should be done asynchronously through tea.Cmds, so all these functions should
+// return a command that does the interaction.
+// Not actually relevant for a sqlite database, but out of principle and for the sake of learning.
+// Classid async struggles.
+
 func setupSchema(db *sqlx.DB) (bool, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "ledgers")
 	if err != nil {

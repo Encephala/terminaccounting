@@ -144,12 +144,13 @@ type UpdateView struct {
 	noteInput   textarea.Model
 	activeInput activeInput
 
+	modelId       int
 	startingValue Ledger
 
 	colours styles.AppColours
 }
 
-func NewUpdateView(colours styles.AppColours) *UpdateView {
+func NewUpdateView(modelId int, colours styles.AppColours) *UpdateView {
 	types := []itempicker.Item{
 		INCOME,
 		EXPENSE,
@@ -170,6 +171,8 @@ func NewUpdateView(colours styles.AppColours) *UpdateView {
 		typeInput:   typeInput,
 		noteInput:   noteInput,
 		activeInput: NAMEINPUT,
+
+		modelId: modelId,
 
 		colours: colours,
 	}
@@ -221,11 +224,6 @@ func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case NOTEINPUT:
 			uv.noteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
 		}
-
-		return uv, nil
-
-	case meta.CommitUpdateMsg:
-		// TODO
 
 		return uv, nil
 	}
