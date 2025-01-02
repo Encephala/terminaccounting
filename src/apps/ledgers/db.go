@@ -21,10 +21,10 @@ func (lt LedgerType) String() string {
 }
 
 type Ledger struct {
-	Id         int        `db:"id"`
-	Name       string     `db:"name"`
-	LedgerType LedgerType `db:"type"`
-	Notes      meta.Notes `db:"notes"`
+	Id    int        `db:"id"`
+	Name  string     `db:"name"`
+	Type  LedgerType `db:"type"`
+	Notes meta.Notes `db:"notes"`
 }
 
 func setupSchema(db *sqlx.DB) (bool, error) {

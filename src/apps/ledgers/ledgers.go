@@ -116,9 +116,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ledgerNotes := createView.noteInput.Value()
 
 		newLedger := Ledger{
-			Name:       ledgerName,
-			LedgerType: ledgerType,
-			Notes:      strings.Split(ledgerNotes, "\n"),
+			Name:  ledgerName,
+			Type:  ledgerType,
+			Notes: strings.Split(ledgerNotes, "\n"),
 		}
 
 		_, err := newLedger.Insert(m.db)

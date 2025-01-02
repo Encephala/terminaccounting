@@ -12,9 +12,9 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 
 	// Note: relying in sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	ledger := Ledger{
-		Id:         1,
-		Name:       "test",
-		LedgerType: "INCOME",
+		Id:   1,
+		Name: "test",
+		Type: "INCOME",
 		Notes: []string{
 			"First note",
 			"Second note",
@@ -73,8 +73,8 @@ func testLedgersEqual(t *testing.T, actual, expected Ledger) {
 		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
 	}
 
-	if actual.LedgerType != expected.LedgerType {
-		t.Errorf("Invalid type %q, expected %q", actual.LedgerType, expected.LedgerType)
+	if actual.Type != expected.Type {
+		t.Errorf("Invalid type %q, expected %q", actual.Type, expected.Type)
 	}
 
 	if len(actual.Notes) != len(expected.Notes) {

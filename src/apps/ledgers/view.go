@@ -207,8 +207,7 @@ func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		uv.startingValue = ledger
 
 		uv.nameInput.SetValue(ledger.Name)
-		// TODO: update itempicker to allow setting value
-		// uv.typeInput.SetValue(ledger.Name)
+		uv.typeInput.SetValue(ledger.Type)
 		uv.noteInput.SetValue(strings.Join(ledger.Notes, "\n"))
 
 		return uv, nil
@@ -218,8 +217,7 @@ func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case NAMEINPUT:
 			uv.nameInput.SetValue(uv.startingValue.Name)
 		case TYPEINPUT:
-			// TODO: same as above
-			// uv.typeInput.SetValue(uv.startingValue.LedgerType)
+			uv.typeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
 			uv.noteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
 		}
