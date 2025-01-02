@@ -30,7 +30,7 @@ func main() {
 		model: itempicker.New(items),
 	}
 
-	print(fmt.Sprintf("Max view length %d\n", model.model.MaxViewLength()))
+	model.model.SetValue(Item("second"))
 
 	_, err := tea.NewProgram(model).Run()
 

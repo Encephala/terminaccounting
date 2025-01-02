@@ -74,9 +74,31 @@ func (m Model) View() string {
 	return result.String()
 }
 
-// To allow the bubbletea app to manually retrieve the currently selected value
+// Allows to manually retrieve the currently selected value.
 func (m Model) Value() Item {
 	return m.items[m.activeItem]
+}
+
+// Sets the currently selected item to the given value.
+// Panics if the value isn't in the set of selectable items.
+func (m *Model) SetValue(value Item) {
+	var index int
+	found := false
+
+	for i, item := range m.items {
+		if item == value {
+			index = i
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		panic(fmt.Sprintf("Setting itempicker value to %v but only valid choices are %v", value, m.items))
+	}
+
+	m.activeItem = index
 }
 
 func (m Model) MaxViewLength() int {
