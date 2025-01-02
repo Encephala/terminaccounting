@@ -65,36 +65,30 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SwitchViewMsg:
-		var cmds []tea.Cmd
-
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
 			cmd := m.showListView()
-			cmds = append(cmds, cmd)
+			return m, cmd
 
 		case meta.DETAILVIEWTYPE:
-			cmd := m.showDetailView()
-			cmds = append(cmds, cmd)
+			selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Ledger)
+
+			cmd := m.showDetailView(selectedLedger)
+			return m, cmd
 
 		case meta.CREATEVIEWTYPE:
 			cmd := m.showCreateView()
-			cmds = append(cmds, cmd)
+			return m, cmd
 
 		case meta.UPDATEVIEWTYPE:
-			cmd := m.showUpdateView()
-			cmds = append(cmds, cmd)
+			ledgerId := m.currentView.(*meta.DetailView).ModelId
+
+			cmd := m.showUpdateView(ledgerId)
+			return m, cmd
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
-
-		cmds = append(
-			cmds,
-			meta.MessageCmd(meta.UpdateViewMotionSetMsg(m.CurrentMotionSet())),
-			meta.MessageCmd(meta.UpdateViewCommandSetMsg(m.CurrentCommandSet())),
-		)
-
-		return m, tea.Batch(cmds...)
 
 	case meta.SwitchFocusMsg:
 		newView, cmd := m.currentView.Update(message)
@@ -121,17 +115,16 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes: strings.Split(ledgerNotes, "\n"),
 		}
 
-		_, err := newLedger.Insert(m.db)
+		id, err := newLedger.Insert(m.db)
 
 		if err != nil {
 			return m, meta.MessageCmd(err)
 		}
 
-		// TODO:
-		// - Move to the update view after writing, using the ID returned from `newLedger.Insert` above
-		// - Send a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
+		switchViewCmd := m.showUpdateView(id)
+		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 
-		return m, nil
+		return m, switchViewCmd
 
 	case meta.CommitUpdateMsg:
 		view := m.currentView.(*UpdateView)
@@ -197,8 +190,17 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 }
 
 func (m *model) showListView() tea.Cmd {
-	m.currentView = meta.NewListView(m)
-	return m.makeLoadLedgersCmd()
+	var cmds []tea.Cmd
+
+	view := meta.NewListView(m)
+
+	m.currentView = view
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
+
+	cmds = append(cmds, m.makeLoadLedgersCmd())
+
+	return tea.Batch(cmds...)
 }
 
 func (m *model) makeLoadLedgerRowsCmd(ledgerId int) tea.Cmd {
@@ -221,15 +223,30 @@ func (m *model) makeLoadLedgerRowsCmd(ledgerId int) tea.Cmd {
 	}
 }
 
-func (m *model) showDetailView() tea.Cmd {
-	selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Ledger)
-	m.currentView = meta.NewDetailView(m, selectedLedger.Id, selectedLedger.Name)
-	return m.makeLoadLedgerRowsCmd(selectedLedger.Id)
+func (m *model) showDetailView(ledger Ledger) tea.Cmd {
+	var cmds []tea.Cmd
+
+	view := meta.NewDetailView(m, ledger.Id, ledger.Name)
+
+	m.currentView = view
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
+
+	cmds = append(cmds, m.makeLoadLedgerRowsCmd(ledger.Id))
+
+	return tea.Batch(cmds...)
 }
 
 func (m *model) showCreateView() tea.Cmd {
-	m.currentView = NewCreateView(m.Colours())
-	return nil
+	var cmds []tea.Cmd
+
+	view := NewCreateView(m.Colours())
+
+	m.currentView = view
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
+
+	return tea.Batch(cmds...)
 }
 
 func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
@@ -247,8 +264,16 @@ func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
 	}
 }
 
-func (m *model) showUpdateView() tea.Cmd {
-	ledgerId := m.currentView.(*meta.DetailView).ModelId
-	m.currentView = NewUpdateView(ledgerId, m.Colours())
-	return m.makeLoadLedgerCmd(ledgerId)
+func (m *model) showUpdateView(ledgerId int) tea.Cmd {
+	var cmds []tea.Cmd
+
+	view := NewUpdateView(ledgerId, m.Colours())
+
+	m.currentView = view
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
+
+	cmds = append(cmds, m.makeLoadLedgerCmd(ledgerId))
+
+	return tea.Batch(cmds...)
 }
