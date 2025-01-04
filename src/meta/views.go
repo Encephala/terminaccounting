@@ -160,6 +160,10 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, cmd
 
+	case tea.WindowSizeMsg:
+		// TODO maybe?
+		return dv, nil
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
