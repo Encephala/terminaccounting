@@ -17,9 +17,6 @@ type View interface {
 
 type ListView struct {
 	ListModel list.Model
-
-	motionSet  MotionSet
-	commandSet CommandSet
 }
 
 func NewListView(app App) *ListView {
@@ -34,16 +31,8 @@ func NewListView(app App) *ListView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions Trie[tea.Msg]
-	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{ViewType: DETAILVIEWTYPE}) // [g]oto [d]etails
-
-	MotionSet := MotionSet{Normal: normalMotions}
-
 	return &ListView{
 		ListModel: model,
-
-		motionSet:  MotionSet,
-		commandSet: CommandSet{},
 	}
 }
 
@@ -89,21 +78,22 @@ func (lv *ListView) Type() ViewType {
 }
 
 func (lv *ListView) MotionSet() *MotionSet {
-	return &lv.motionSet
+	var normalMotions Trie[tea.Msg]
+
+	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{ViewType: DETAILVIEWTYPE}) // [g]oto [d]etails
+
+	return &MotionSet{Normal: normalMotions}
 }
 
 func (lv *ListView) CommandSet() *CommandSet {
-	return &lv.commandSet
+	return &CommandSet{}
 }
 
-// A generic, placeholder view that just renders all entries on a ledger/journal/account in a lis.([]list.Item)t
+// A generic, placeholder view that just renders all entries on a ledger/journal/account in a list.
 type DetailView struct {
 	listModel list.Model
 
 	ModelId int
-
-	motionSet  MotionSet
-	commandSet CommandSet
 }
 
 func NewDetailView(app App, itemId int, itemName string) *DetailView {
@@ -118,20 +108,10 @@ func NewDetailView(app App, itemId int, itemName string) *DetailView {
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	var normalMotions Trie[tea.Msg]
-	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
-	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE})
-
-	var commands Trie[tea.Msg]
-	commands.Insert(Motion{"e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})
-
 	return &DetailView{
 		listModel: model,
 
 		ModelId: itemId,
-
-		motionSet:  MotionSet{Normal: normalMotions},
-		commandSet: CommandSet{Commands: commands},
 	}
 }
 
@@ -179,9 +159,18 @@ func (dv *DetailView) Type() ViewType {
 }
 
 func (dv *DetailView) MotionSet() *MotionSet {
-	return &dv.motionSet
+	var normalMotions Trie[tea.Msg]
+
+	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
+	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE})
+
+	normalMotions.Insert(Motion{"g", "e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})
+
+	return &MotionSet{
+		Normal: normalMotions,
+	}
 }
 
 func (dv *DetailView) CommandSet() *CommandSet {
-	return &dv.commandSet
+	return &CommandSet{}
 }
