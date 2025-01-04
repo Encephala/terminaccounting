@@ -96,7 +96,7 @@ type CommitDeleteMsg struct{}
 type ResetInputFieldMsg struct{}
 
 // When inputting e.g. `j`, this gets captured as a motion,
-// and gets propagated through Model.Update() calls as a completed motion.
+// and gets propagated through Model.Update() calls as a Navigate message
 // When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbles package),
 // it has to be converted back to a keyMsg.
 func NavigateMessageToKeyMsg(message NavigateMsg) tea.KeyMsg {

@@ -446,7 +446,7 @@ func (dv *DeleteView) View() string {
 		"  ",
 		style.Render("Note"),
 		" ",
-		style.Render(strings.Join(dv.model.Notes, "\n")),
+		style.AlignHorizontal(lipgloss.Left).Render(strings.Join(dv.model.Notes, "\n")),
 	)
 
 	var confirmRow = lipgloss.JoinHorizontal(
