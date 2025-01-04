@@ -256,6 +256,7 @@ func (uv *UpdateView) CommandSet() *meta.CommandSet {
 	return &meta.CommandSet{Commands: commands}
 }
 
+// The common parts of the Update function for a create- and update view
 func createUpdateViewUpdate(view createOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
@@ -321,6 +322,7 @@ func createUpdateViewUpdate(view createOrUpdateView, message tea.Msg) (tea.Model
 	}
 }
 
+// The common parts of the View function for a create- and update view
 func createUpdateViewView(view createOrUpdateView) string {
 	var result strings.Builder
 
@@ -374,4 +376,101 @@ func createUpdateViewView(view createOrUpdateView) string {
 	))
 
 	return result.String()
+}
+
+type DeleteView struct {
+	model Ledger
+
+	colours styles.AppColours
+}
+
+func NewDeleteView(colours styles.AppColours) *DeleteView {
+	return &DeleteView{
+		colours: colours,
+	}
+}
+
+func (dv *DeleteView) Init() tea.Cmd {
+	return nil
+}
+
+func (dv *DeleteView) title() string {
+	return fmt.Sprintf("Delete Ledger: %s", dv.model.Name)
+}
+
+func (dv *DeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		dv.model = message.Data.(Ledger)
+
+		return dv, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
+}
+
+func (dv *DeleteView) View() string {
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1)
+
+	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render(dv.title())))
+	result.WriteString("\n\n")
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Center)
+
+	// TODO: Render active input with a different colour
+	var nameRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Name"),
+		" ",
+		style.Render(dv.model.Name),
+	)
+
+	var typeRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Type"),
+		" ",
+		style.Render(dv.model.Type.String()),
+	)
+
+	var notesRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Note"),
+		" ",
+		style.Render(strings.Join(dv.model.Notes, "\n")),
+	)
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			nameRow,
+			typeRow,
+			notesRow,
+		),
+	))
+
+	return result.String()
+}
+
+func (dv *DeleteView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"ctrl+o"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	return &meta.MotionSet{
+		Normal: normalMotions,
+	}
+}
+
+func (dv *DeleteView) CommandSet() *meta.CommandSet {
+	return &meta.CommandSet{}
 }

@@ -86,6 +86,12 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.showUpdateView(ledgerId)
 			return m, cmd
 
+		case meta.DELETEVIEWTYPE:
+			ledgerId := m.currentView.(*meta.DetailView).ModelId
+
+			cmd := m.showDeleteView(ledgerId)
+			return m, cmd
+
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
@@ -268,6 +274,20 @@ func (m *model) showUpdateView(ledgerId int) tea.Cmd {
 	var cmds []tea.Cmd
 
 	view := NewUpdateView(ledgerId, m.Colours())
+
+	m.currentView = view
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
+
+	cmds = append(cmds, m.makeLoadLedgerCmd(ledgerId))
+
+	return tea.Batch(cmds...)
+}
+
+func (m *model) showDeleteView(ledgerId int) tea.Cmd {
+	var cmds []tea.Cmd
+
+	view := NewDeleteView(m.Colours())
 
 	m.currentView = view
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))

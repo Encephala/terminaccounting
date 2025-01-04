@@ -120,6 +120,7 @@ func NewDetailView(app App, itemId int, itemName string) *DetailView {
 
 	var normalMotions Trie[tea.Msg]
 	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
+	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE})
 
 	var commands Trie[tea.Msg]
 	commands.Insert(Motion{"e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})

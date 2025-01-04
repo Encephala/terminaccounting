@@ -67,10 +67,6 @@ type SwitchTabMsg struct {
 	Direction Sequence
 }
 
-type SwitchViewMsg struct {
-	ViewType
-}
-
 type ViewType int
 
 const (
@@ -78,7 +74,12 @@ const (
 	DETAILVIEWTYPE
 	CREATEVIEWTYPE
 	UPDATEVIEWTYPE
+	DELETEVIEWTYPE
 )
+
+type SwitchViewMsg struct {
+	ViewType
+}
 
 type ExecuteCommandMsg struct{}
 
