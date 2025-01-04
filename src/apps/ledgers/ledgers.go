@@ -145,6 +145,16 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		currentValues.Update(m.db)
 
 		return m, nil
+
+	case meta.CommitDeleteMsg:
+		view := m.currentView.(*DeleteView)
+
+		err := DeleteLedger(m.db, view.model.Id)
+
+		switchViewCmd := m.showListView()
+		// TODO: Add a vimesque message to inform user of successful deletion
+
+		return m, tea.Batch(meta.MessageCmd(err), switchViewCmd)
 	}
 
 	newView, cmd := m.currentView.Update(message)

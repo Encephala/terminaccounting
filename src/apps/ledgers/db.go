@@ -101,3 +101,9 @@ func SelectLedger(db *sqlx.DB, ledgerId int) (Ledger, error) {
 
 	return result, err
 }
+
+func DeleteLedger(db *sqlx.DB, ledgerId int) error {
+	_, err := db.Exec(`DELETE FROM ledgers WHERE id = :id`, ledgerId)
+
+	return err
+}

@@ -449,12 +449,19 @@ func (dv *DeleteView) View() string {
 		style.Render(strings.Join(dv.model.Notes, "\n")),
 	)
 
+	var confirmRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
+	)
+
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			nameRow,
 			typeRow,
 			notesRow,
+			"",
+			confirmRow,
 		),
 	))
 
@@ -472,5 +479,9 @@ func (dv *DeleteView) MotionSet() *meta.MotionSet {
 }
 
 func (dv *DeleteView) CommandSet() *meta.CommandSet {
-	return &meta.CommandSet{}
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitDeleteMsg{})
+
+	return &meta.CommandSet{Commands: commands}
 }
