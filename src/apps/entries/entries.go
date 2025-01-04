@@ -58,8 +58,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.DataLoadedMsg:
-		message.ActualApp = m.Name()
-
 		newView, cmd := m.view.Update(message)
 		m.view = newView.(meta.View)
 

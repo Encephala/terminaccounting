@@ -43,9 +43,6 @@ func (lv *ListView) Init() tea.Cmd {
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
-		if message.ActualApp != message.TargetApp {
-			panic(fmt.Sprintf("App %s received %#v for %s", message.ActualApp, message, message.TargetApp))
-		}
 		lv.ListModel.SetItems(message.Data.([]list.Item))
 
 		return lv, nil
@@ -122,10 +119,6 @@ func (dv *DetailView) Init() tea.Cmd {
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
-		if message.ActualApp != message.TargetApp {
-			panic(fmt.Sprintf("App %s received %#v for %s", message.ActualApp, message, message.TargetApp))
-		}
-
 		if message.Model != "EntryRow" {
 			panic(fmt.Sprintf("Setting detail view items, but got %q rather than EntryRow", message.Model))
 		}

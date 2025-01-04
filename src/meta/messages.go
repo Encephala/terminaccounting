@@ -14,6 +14,7 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 type ClearErrorMsg struct{}
 
 func ClearErrorAfterDelayCmd() tea.Msg {
+	// TODO: This does not debounce
 	time.Sleep(time.Second * 2)
 
 	return ClearErrorMsg{}
@@ -29,7 +30,6 @@ type UpdateViewCommandSetMsg *CommandSet
 
 type DataLoadedMsg struct {
 	TargetApp string
-	ActualApp string // for asserting that the loaded data arrives at the correct App, gets injected when app processes message
 
 	Model string
 	Data  interface{}

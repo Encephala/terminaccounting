@@ -147,15 +147,10 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 
 	case meta.DataLoadedMsg:
-		for i, app := range m.apps {
-			if app.Name() == message.TargetApp {
-				newApp, cmd := app.Update(message)
-				m.apps[i] = newApp.(meta.App)
-				return m, cmd
-			}
-		}
+		newApp, cmd := m.apps[m.activeApp].Update(message)
+		m.apps[m.activeApp] = newApp.(meta.App)
 
-		return m, nil
+		return m, cmd
 
 	case meta.UpdateViewMotionSetMsg:
 		m.motionSet.ViewMotionSet = message
