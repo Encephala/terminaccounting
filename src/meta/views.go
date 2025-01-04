@@ -161,7 +161,7 @@ func (dv *DetailView) Type() ViewType {
 func (dv *DetailView) MotionSet() *MotionSet {
 	var normalMotions Trie[tea.Msg]
 
-	normalMotions.Insert(Motion{"ctrl+o"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
+	normalMotions.Insert(Motion{"g", "l"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
 	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE})
 
 	normalMotions.Insert(Motion{"g", "e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})

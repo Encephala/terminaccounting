@@ -8,7 +8,7 @@ type CommandSet struct {
 	Commands Trie[tea.Msg]
 }
 
-// Even though a command doesn't have strokes as a Motion does (i.e. "ctrl+o"),
+// Even though a command doesn't have strokes as a Motion does (i.e. ["g", "d"]),
 // still split it into its constituent characters for the Trie search
 type Command []string
 

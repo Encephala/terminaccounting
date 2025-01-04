@@ -122,7 +122,7 @@ func (cv *CreateView) View() string {
 func (cv *CreateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"ctrl+o"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -238,7 +238,7 @@ func (uv *UpdateView) View() string {
 func (uv *UpdateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"ctrl+o"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -471,7 +471,7 @@ func (dv *DeleteView) View() string {
 func (dv *DeleteView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"ctrl+o"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,
