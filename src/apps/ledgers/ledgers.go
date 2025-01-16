@@ -154,7 +154,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = meta.NewListView(m)
 		// TODO: Add a vimesque message to inform user of successful deletion
 
-		return m, meta.MessageCmd(err)
+		return m, tea.Batch(meta.MessageCmd(err), m.currentView.Init())
 	}
 
 	newView, cmd := m.currentView.Update(message)

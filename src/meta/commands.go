@@ -4,20 +4,22 @@ import tea "github.com/charmbracelet/bubbletea"
 
 // This file is largely analogous to ./motions.go
 
-type CommandSet struct {
-	Commands Trie[tea.Msg]
-}
+type CommandSet Trie[tea.Msg]
 
 // Even though a command doesn't have strokes as a Motion does (i.e. ["g", "d"]),
 // still split it into its constituent characters for the Trie search
 type Command []string
 
 func (cs *CommandSet) get(path Command) (tea.Msg, bool) {
-	return cs.Commands.get(path)
+	asTrie := Trie[tea.Msg](*cs)
+
+	return asTrie.get(path)
 }
 
 func (cs *CommandSet) containsPath(path Command) bool {
-	return cs.Commands.containsPath(path)
+	asTrie := Trie[tea.Msg](*cs)
+
+	return asTrie.containsPath(path)
 }
 
 type CompleteCommandSet struct {
@@ -63,7 +65,7 @@ func GlobalCommands() CommandSet {
 		commandsTrie.Insert(m.path, m.value)
 	}
 
-	return CommandSet{commandsTrie}
+	return CommandSet(commandsTrie)
 }
 
 func extendCommandsBy(commands *[]commandWithValue, base Command, tail []commandWithValue) {

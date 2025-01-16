@@ -140,7 +140,8 @@ func (cv *CreateView) CommandSet() *meta.CommandSet {
 
 	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
 
-	return &meta.CommandSet{Commands: commands}
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
 
 type UpdateView struct {
@@ -269,7 +270,8 @@ func (uv *UpdateView) CommandSet() *meta.CommandSet {
 
 	commands.Insert(meta.Command{"w"}, meta.CommitUpdateMsg{})
 
-	return &meta.CommandSet{Commands: commands}
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
 
 // The common parts of the Update function for a create- and update view
@@ -503,6 +505,9 @@ func (dv *DeleteView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
+	// TODO: Can't do this yet because of the assertion in `ledgers.model.Update`, only allows going from listview
+	// normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
 	return &meta.MotionSet{
 		Normal: normalMotions,
 	}
@@ -513,5 +518,6 @@ func (dv *DeleteView) CommandSet() *meta.CommandSet {
 
 	commands.Insert(meta.Command{"w"}, meta.CommitDeleteMsg{})
 
-	return &meta.CommandSet{Commands: commands}
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
