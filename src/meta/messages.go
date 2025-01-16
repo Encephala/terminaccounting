@@ -29,8 +29,13 @@ type UpdateViewMotionSetMsg *MotionSet
 type UpdateViewCommandSetMsg *CommandSet
 
 type DataLoadedMsg struct {
+	// TODO: This is never used for actual assertions
 	TargetApp string
 
+	// TODO: I keep forgetting to use this for assertions
+	// But maybe I don't use it for assertions? Rather just allow for instance metadata and entryrows for a model to be
+	// loaded, that doesn't not make sense.
+	// I guess with a switch I can do both though.
 	Model string
 	Data  interface{}
 }

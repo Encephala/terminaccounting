@@ -20,13 +20,17 @@ type model struct {
 }
 
 func New(db *sqlx.DB) meta.App {
-	return &model{
+	model := &model{
 		db: db,
 	}
+
+	model.view = meta.NewListView(model)
+
+	return model
 }
 
 func (m *model) Init() tea.Cmd {
-	return m.showListView()
+	return m.view.Init()
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -68,6 +72,10 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.view = newView.(meta.View)
 
 		return m, cmd
+
+	case meta.SwitchViewMsg:
+		// TODO
+		return m, nil
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -98,7 +106,7 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.view.CommandSet()
 }
 
-func (m *model) makeLoadEntriesCmd() tea.Cmd {
+func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectEntries(m.db)
 		if err != nil {
@@ -112,13 +120,17 @@ func (m *model) makeLoadEntriesCmd() tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: m.Name(),
-			Model:     "Ledger",
+			Model:     "Ledger", // TODO: Why is this Ledger? Shouldn't it be Entries? Better question, why doesn't it error then?
 			Data:      items,
 		}
 	}
 }
 
-func (m *model) showListView() tea.Cmd {
-	m.view = meta.NewListView(m)
-	return m.makeLoadEntriesCmd()
+func (m *model) MakeLoadEntriesCmd() tea.Cmd {
+	panic("(meta.App).MakeLoadEntriesCmd should never be called for the Entries app")
+}
+
+func (m *model) MakeLoadDetailCmd() tea.Cmd {
+	// TODO: Load entryrows for this entry, maybe some metadata as well
+	panic("TODO")
 }

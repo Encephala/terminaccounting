@@ -17,6 +17,8 @@ type View interface {
 
 type ListView struct {
 	ListModel list.Model
+
+	app App
 }
 
 func NewListView(app App) *ListView {
@@ -33,11 +35,20 @@ func NewListView(app App) *ListView {
 
 	return &ListView{
 		ListModel: model,
+
+		app: app,
 	}
 }
 
 func (lv *ListView) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, MessageCmd(UpdateViewMotionSetMsg(lv.app.CurrentMotionSet())))
+	cmds = append(cmds, MessageCmd(UpdateViewCommandSetMsg(lv.app.CurrentCommandSet())))
+
+	cmds = append(cmds, lv.app.MakeLoadListCmd())
+
+	return tea.Batch(cmds...)
 }
 
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -90,6 +101,8 @@ func (lv *ListView) CommandSet() *CommandSet {
 type DetailView struct {
 	listModel list.Model
 
+	app App
+
 	ModelId int
 }
 
@@ -108,12 +121,21 @@ func NewDetailView(app App, itemId int, itemName string) *DetailView {
 	return &DetailView{
 		listModel: model,
 
+		app: app,
+
 		ModelId: itemId,
 	}
 }
 
 func (dv *DetailView) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, MessageCmd(UpdateViewMotionSetMsg(dv.app.CurrentMotionSet())))
+	cmds = append(cmds, MessageCmd(UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
+
+	cmds = append(cmds, dv.app.MakeLoadEntriesCmd())
+
+	return tea.Batch(cmds...)
 }
 
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {

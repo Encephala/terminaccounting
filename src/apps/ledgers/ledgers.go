@@ -22,13 +22,17 @@ type model struct {
 }
 
 func New(db *sqlx.DB) meta.App {
-	return &model{
+	model := &model{
 		db: db,
 	}
+
+	model.currentView = meta.NewListView(model)
+
+	return model
 }
 
 func (m *model) Init() tea.Cmd {
-	return m.showListView()
+	return m.currentView.Init()
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -65,34 +69,31 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.SwitchViewMsg:
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			cmd := m.showListView()
-			return m, cmd
+			m.currentView = meta.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
 			selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Ledger)
 
-			cmd := m.showDetailView(selectedLedger)
-			return m, cmd
+			m.currentView = meta.NewDetailView(m, selectedLedger.Id, selectedLedger.Name)
 
 		case meta.CREATEVIEWTYPE:
-			cmd := m.showCreateView()
-			return m, cmd
+			m.currentView = NewCreateView(m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			ledgerId := m.currentView.(*meta.DetailView).ModelId
 
-			cmd := m.showUpdateView(ledgerId)
-			return m, cmd
+			m.currentView = NewUpdateView(m, ledgerId)
 
 		case meta.DELETEVIEWTYPE:
 			ledgerId := m.currentView.(*meta.DetailView).ModelId
 
-			cmd := m.showDeleteView(ledgerId)
-			return m, cmd
+			m.currentView = NewDeleteView(m, ledgerId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
+
+		return m, m.currentView.Init()
 
 	case meta.SwitchFocusMsg:
 		newView, cmd := m.currentView.Update(message)
@@ -125,10 +126,11 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, meta.MessageCmd(err)
 		}
 
-		switchViewCmd := m.showUpdateView(id)
+		m.currentView = NewUpdateView(m, id)
 		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
+		// Or maybe this should just switch to the list view or the detail view? Idk
 
-		return m, switchViewCmd
+		return m, m.currentView.Init()
 
 	case meta.CommitUpdateMsg:
 		view := m.currentView.(*UpdateView)
@@ -149,10 +151,10 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		err := DeleteLedger(m.db, view.model.Id)
 
-		switchViewCmd := m.showListView()
+		m.currentView = meta.NewListView(m)
 		// TODO: Add a vimesque message to inform user of successful deletion
 
-		return m, tea.Batch(meta.MessageCmd(err), switchViewCmd)
+		return m, meta.MessageCmd(err)
 	}
 
 	newView, cmd := m.currentView.Update(message)
@@ -183,7 +185,7 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.currentView.CommandSet()
 }
 
-func (m *model) makeLoadLedgersCmd() tea.Cmd {
+func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
 		if err != nil {
@@ -203,21 +205,10 @@ func (m *model) makeLoadLedgersCmd() tea.Cmd {
 	}
 }
 
-func (m *model) showListView() tea.Cmd {
-	var cmds []tea.Cmd
+func (m *model) MakeLoadEntriesCmd() tea.Cmd {
+	// Aren't closures just great
+	ledgerId := m.currentView.(*meta.DetailView).ModelId
 
-	view := meta.NewListView(m)
-
-	m.currentView = view
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
-
-	cmds = append(cmds, m.makeLoadLedgersCmd())
-
-	return tea.Batch(cmds...)
-}
-
-func (m *model) makeLoadLedgerRowsCmd(ledgerId int) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := entries.SelectRowsByLedger(m.db, ledgerId)
 		if err != nil {
@@ -237,33 +228,18 @@ func (m *model) makeLoadLedgerRowsCmd(ledgerId int) tea.Cmd {
 	}
 }
 
-func (m *model) showDetailView(ledger Ledger) tea.Cmd {
-	var cmds []tea.Cmd
+func (m *model) MakeLoadDetailCmd() tea.Cmd {
+	var ledgerId int
+	switch view := m.currentView.(type) {
+	case *UpdateView:
+		ledgerId = view.modelId
+	case *DeleteView:
+		ledgerId = view.modelId
 
-	view := meta.NewDetailView(m, ledger.Id, ledger.Name)
+	default:
+		panic(fmt.Sprintf("unexpected view: %#v", view))
+	}
 
-	m.currentView = view
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
-
-	cmds = append(cmds, m.makeLoadLedgerRowsCmd(ledger.Id))
-
-	return tea.Batch(cmds...)
-}
-
-func (m *model) showCreateView() tea.Cmd {
-	var cmds []tea.Cmd
-
-	view := NewCreateView(m.Colours())
-
-	m.currentView = view
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
-
-	return tea.Batch(cmds...)
-}
-
-func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
 	return func() tea.Msg {
 		ledger, err := SelectLedger(m.db, ledgerId)
 		if err != nil {
@@ -276,32 +252,4 @@ func (m *model) makeLoadLedgerCmd(ledgerId int) tea.Cmd {
 			Data:      ledger,
 		}
 	}
-}
-
-func (m *model) showUpdateView(ledgerId int) tea.Cmd {
-	var cmds []tea.Cmd
-
-	view := NewUpdateView(ledgerId, m.Colours())
-
-	m.currentView = view
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
-
-	cmds = append(cmds, m.makeLoadLedgerCmd(ledgerId))
-
-	return tea.Batch(cmds...)
-}
-
-func (m *model) showDeleteView(ledgerId int) tea.Cmd {
-	var cmds []tea.Cmd
-
-	view := NewDeleteView(m.Colours())
-
-	m.currentView = view
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(view.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(view.CommandSet())))
-
-	cmds = append(cmds, m.makeLoadLedgerCmd(ledgerId))
-
-	return tea.Batch(cmds...)
 }

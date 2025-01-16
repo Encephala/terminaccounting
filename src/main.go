@@ -280,7 +280,7 @@ func (m *model) handleTabSwitch(direction meta.Sequence) (*model, tea.Cmd) {
 	newModel, cmdTwo := newModel.Update(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
 	m = newModel.(*model)
 
-	return m, tea.Batch(cmd, cmdTwo)
+	return m, tea.Batch(cmd, cmdTwo, m.apps[m.activeApp].Init())
 }
 
 func (m *model) resetCurrentMotion() {

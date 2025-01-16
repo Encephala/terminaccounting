@@ -90,7 +90,12 @@ func NewCreateView(colours styles.AppColours) *CreateView {
 }
 
 func (cv *CreateView) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
+
+	return tea.Batch(cmds...)
 }
 
 func (cv *CreateView) title() string {
@@ -144,13 +149,15 @@ type UpdateView struct {
 	noteInput   textarea.Model
 	activeInput activeInput
 
+	app *model
+
 	modelId       int
 	startingValue Ledger
 
 	colours styles.AppColours
 }
 
-func NewUpdateView(modelId int, colours styles.AppColours) *UpdateView {
+func NewUpdateView(app *model, modelId int) *UpdateView {
 	types := []itempicker.Item{
 		INCOME,
 		EXPENSE,
@@ -172,14 +179,23 @@ func NewUpdateView(modelId int, colours styles.AppColours) *UpdateView {
 		noteInput:   noteInput,
 		activeInput: NAMEINPUT,
 
+		app: app,
+
 		modelId: modelId,
 
-		colours: colours,
+		colours: app.Colours(),
 	}
 }
 
 func (uv *UpdateView) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
+
+	cmds = append(cmds, uv.app.MakeLoadDetailCmd())
+
+	return tea.Batch(cmds...)
 }
 
 func (uv *UpdateView) title() string {
@@ -379,19 +395,33 @@ func createUpdateViewView(view createOrUpdateView) string {
 }
 
 type DeleteView struct {
-	model Ledger
+	modelId int
+	model   Ledger
+
+	app *model
 
 	colours styles.AppColours
 }
 
-func NewDeleteView(colours styles.AppColours) *DeleteView {
+func NewDeleteView(app *model, modelId int) *DeleteView {
 	return &DeleteView{
-		colours: colours,
+		modelId: modelId,
+
+		app: app,
+
+		colours: app.Colours(),
 	}
 }
 
 func (dv *DeleteView) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.app.CurrentMotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
+
+	cmds = append(cmds, dv.app.MakeLoadDetailCmd())
+
+	return tea.Batch(cmds...)
 }
 
 func (dv *DeleteView) title() string {

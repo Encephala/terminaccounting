@@ -15,6 +15,9 @@ type App interface {
 	Colours() styles.AppColours
 
 	CurrentMotionSet() *MotionSet
-
 	CurrentCommandSet() *CommandSet
+
+	MakeLoadListCmd() tea.Cmd
+	MakeLoadEntriesCmd() tea.Cmd
+	MakeLoadDetailCmd() tea.Cmd
 }
