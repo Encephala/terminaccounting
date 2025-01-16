@@ -205,7 +205,7 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadEntriesCmd() tea.Cmd {
+func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
 	ledgerId := m.currentView.(*meta.DetailView).ModelId
 

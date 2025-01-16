@@ -133,7 +133,8 @@ func (dv *DetailView) Init() tea.Cmd {
 	cmds = append(cmds, MessageCmd(UpdateViewMotionSetMsg(dv.app.CurrentMotionSet())))
 	cmds = append(cmds, MessageCmd(UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
 
-	cmds = append(cmds, dv.app.MakeLoadEntriesCmd())
+	// TODO: Also show the model metadata and not just the rows?
+	cmds = append(cmds, dv.app.MakeLoadRowsCmd())
 
 	return tea.Batch(cmds...)
 }

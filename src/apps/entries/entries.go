@@ -3,6 +3,7 @@ package entries
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -74,8 +75,20 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SwitchViewMsg:
-		// TODO
-		return m, nil
+		switch message.ViewType {
+		case meta.LISTVIEWTYPE:
+			m.view = meta.NewListView(m)
+
+		case meta.DETAILVIEWTYPE:
+			selectedEntry := m.view.(*meta.ListView).ListModel.SelectedItem().(Entry)
+
+			m.view = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
+		}
+
+		return m, m.view.Init()
 	}
 
 	newView, cmd := m.view.Update(message)
@@ -126,11 +139,29 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadEntriesCmd() tea.Cmd {
-	panic("(meta.App).MakeLoadEntriesCmd should never be called for the Entries app")
+func (m *model) MakeLoadRowsCmd() tea.Cmd {
+	// Aren't closures just great
+	entryId := m.view.(*meta.DetailView).ModelId
+
+	return func() tea.Msg {
+		rows, err := SelectRowsByEntry(m.db, entryId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: m.Name(),
+			Model:     "EntryRow",
+			Data:      items,
+		}
+	}
 }
 
 func (m *model) MakeLoadDetailCmd() tea.Cmd {
-	// TODO: Load entryrows for this entry, maybe some metadata as well
 	panic("TODO")
 }

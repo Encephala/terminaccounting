@@ -36,6 +36,7 @@ type DataLoadedMsg struct {
 	// But maybe I don't use it for assertions? Rather just allow for instance metadata and entryrows for a model to be
 	// loaded, that doesn't not make sense.
 	// I guess with a switch I can do both though.
+	// TODO: use a type alias for string, so compiler can help (autocompleting switch statements, equality checking)
 	Model string
 	Data  interface{}
 }

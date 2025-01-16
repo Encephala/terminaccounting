@@ -18,6 +18,6 @@ type App interface {
 	CurrentCommandSet() *CommandSet
 
 	MakeLoadListCmd() tea.Cmd
-	MakeLoadEntriesCmd() tea.Cmd
+	MakeLoadRowsCmd() tea.Cmd
 	MakeLoadDetailCmd() tea.Cmd
 }
