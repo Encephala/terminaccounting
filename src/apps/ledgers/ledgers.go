@@ -185,6 +185,13 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.currentView.CommandSet()
 }
 
+func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGER:   {},
+		meta.ENTRYROW: {},
+	}
+}
+
 func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectLedgers(m.db)
@@ -198,8 +205,8 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: m.Name(),
-			Model:     "Ledger",
+			TargetApp: meta.LEDGERS,
+			Model:     meta.LEDGER,
 			Data:      items,
 		}
 	}
@@ -221,8 +228,8 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: m.Name(),
-			Model:     "EntryRow",
+			TargetApp: meta.LEDGERS,
+			Model:     meta.ENTRYROW,
 			Data:      items,
 		}
 	}
@@ -247,8 +254,8 @@ func (m *model) MakeLoadDetailCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: m.Name(),
-			Model:     "Ledger",
+			TargetApp: meta.LEDGERS,
+			Model:     meta.LEDGER,
 			Data:      ledger,
 		}
 	}

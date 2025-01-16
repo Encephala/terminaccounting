@@ -44,17 +44,18 @@ func main() {
 	motionSet := meta.CompleteMotionSet{GlobalMotionSet: meta.GlobalMotions()}
 	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
+	apps := make([]meta.App, 2)
+	apps[meta.LEDGERS] = ledgers.New(db)
+	apps[meta.ENTRIES] = entries.New(db)
+	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
+	// apps[meta.JOURNALS] = journals.New()
+	// apps[meta.ACCOUNTS] = accounts.New()
+
 	m := &model{
 		db: db,
 
 		activeApp: 0,
-		apps: []meta.App{
-			// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
-			ledgers.New(db),
-			// accounts.New(),
-			// journals.New(),
-			entries.New(db),
-		},
+		apps:      apps,
 
 		inputMode:    meta.NORMALMODE,
 		commandInput: commandInput,
@@ -147,8 +148,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 
 	case meta.DataLoadedMsg:
-		newApp, cmd := m.apps[m.activeApp].Update(message)
-		m.apps[m.activeApp] = newApp.(meta.App)
+		acceptedModels := m.apps[message.TargetApp].AcceptedModels()
+
+		if _, ok := acceptedModels[message.Model]; !ok {
+			panic(fmt.Sprintf("Mismatch between target app %q and loaded model:\n%#v", m.apps[message.TargetApp].Name(), message))
+		}
+
+		newApp, cmd := m.apps[message.TargetApp].Update(message)
+		m.apps[message.TargetApp] = newApp.(meta.App)
 
 		return m, cmd
 
@@ -291,7 +298,7 @@ func (m *model) handleTabSwitch(direction meta.Sequence) (*model, tea.Cmd) {
 	newModel, cmdTwo := newModel.Update(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
 	m = newModel.(*model)
 
-	return m, tea.Batch(cmd, cmdTwo, m.apps[m.activeApp].Init())
+	return m, tea.Batch(cmd, cmdTwo)
 }
 
 func (m *model) resetCurrentMotion() {

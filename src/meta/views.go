@@ -142,9 +142,10 @@ func (dv *DetailView) Init() tea.Cmd {
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case DataLoadedMsg:
-		if message.Model != "EntryRow" {
-			panic(fmt.Sprintf("Setting detail view items, but got %q rather than EntryRow", message.Model))
+		if message.Model != ENTRYROW {
+			panic(fmt.Sprintf("Expected an EntryRow, but got %v", message.Model))
 		}
+
 		dv.listModel.SetItems(message.Data.([]list.Item))
 
 		return dv, nil

@@ -119,6 +119,13 @@ func (m *model) CurrentCommandSet() *meta.CommandSet {
 	return m.view.CommandSet()
 }
 
+func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ENTRY:    {},
+		meta.ENTRYROW: {},
+	}
+}
+
 func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectEntries(m.db)
@@ -132,8 +139,8 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: m.Name(),
-			Model:     "Ledger", // TODO: Why is this Ledger? Shouldn't it be Entries? Better question, why doesn't it error then?
+			TargetApp: meta.ENTRIES,
+			Model:     meta.ENTRY,
 			Data:      items,
 		}
 	}
@@ -155,8 +162,8 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: m.Name(),
-			Model:     "EntryRow",
+			TargetApp: meta.ENTRIES,
+			Model:     meta.ENTRYROW,
 			Data:      items,
 		}
 	}

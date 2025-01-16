@@ -17,6 +17,8 @@ type App interface {
 	CurrentMotionSet() *MotionSet
 	CurrentCommandSet() *CommandSet
 
+	AcceptedModels() map[ModelType]struct{}
+
 	MakeLoadListCmd() tea.Cmd
 	MakeLoadRowsCmd() tea.Cmd
 	MakeLoadDetailCmd() tea.Cmd
