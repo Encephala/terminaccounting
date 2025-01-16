@@ -220,6 +220,8 @@ func (m *model) View() string {
 }
 
 func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
+	// ctrl+c to reset the current motion can't be handled as a motion itself,
+	// because then for instance ["g", "ctrl+c"] would be recognised as an invalid motion
 	if m.inputMode == meta.NORMALMODE && message.Type == tea.KeyCtrlC {
 		m.resetCurrentMotion()
 
@@ -227,29 +229,38 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	}
 
 	m.currentMotion = append(m.currentMotion, message.String())
+
 	if !m.motionSet.ContainsPath(m.inputMode, m.currentMotion) {
 		switch m.inputMode {
 		case meta.NORMALMODE:
 			cmd := meta.MessageCmd(fmt.Errorf("invalid motion: %s", m.currentMotion.View()))
+
 			m.resetCurrentMotion()
+
 			return m, cmd
 
+		// In INSERT and COMMAND mode, a key stroke that isn't a motion gets sent to the appropriate input
 		case meta.INSERTMODE:
 			newApp, cmd := m.apps[m.activeApp].Update(message)
 			m.apps[m.activeApp] = newApp.(meta.App)
+
 			m.resetCurrentMotion()
+
 			return m, cmd
 
 		case meta.COMMANDMODE:
 			var cmd tea.Cmd
 			m.commandInput, cmd = m.commandInput.Update(message)
+
 			m.resetCurrentMotion()
+
 			return m, cmd
 		}
 	}
 
 	completedMotionMsg, ok := m.motionSet.Get(m.inputMode, m.currentMotion)
 	if !ok {
+		// The currentMotion is the start of an existing motion, wait for more inputs
 		return m, nil
 	}
 
