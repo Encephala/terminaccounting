@@ -2,8 +2,6 @@ package accounts
 
 import (
 	"terminaccounting/meta"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type AccountType string
@@ -20,8 +18,8 @@ type Account struct {
 	Notes       []string    `db:"notes"`
 }
 
-func setupSchema(db *sqlx.DB) (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(db, "accounts")
+func setupSchema() (bool, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(DB, "accounts")
 	if err != nil {
 		return false, err
 	}
@@ -36,6 +34,6 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 		notes TEXT
 	) STRICT;`
 
-	_, err = db.Exec(schema)
+	_, err = DB.Exec(schema)
 	return true, err
 }

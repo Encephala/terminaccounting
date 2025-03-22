@@ -2,8 +2,6 @@ package journals
 
 import (
 	"terminaccounting/meta"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type JournalType string
@@ -22,8 +20,8 @@ type Journal struct {
 	Notes       []string    `db:"notes"`
 }
 
-func setupSchema(db *sqlx.DB) (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(db, "journals")
+func setupSchema() (bool, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(DB, "journals")
 	if err != nil {
 		return false, err
 	}
@@ -38,14 +36,14 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 		notes TEXT
 	) STRICT;`
 
-	_, err = db.Exec(schema)
+	_, err = DB.Exec(schema)
 	return true, err
 }
 
-func SelectJournals(db *sqlx.DB) ([]Journal, error) {
+func SelectJournals() ([]Journal, error) {
 	result := []Journal{}
 
-	err := db.Select(&result, `SELECT * FROM journals;`)
+	err := DB.Select(&result, `SELECT * FROM journals;`)
 
 	return result, err
 }

@@ -1,5 +1,7 @@
 package journals
 
+import "github.com/jmoiron/sqlx"
+
 // import (
 // 	"fmt"
 // 	"log/slog"
@@ -9,6 +11,8 @@ package journals
 
 // 	tea "github.com/charmbracelet/bubbletea"
 // )
+
+var DB *sqlx.DB
 
 // type model struct {
 // 	viewWidth, viewHeight int

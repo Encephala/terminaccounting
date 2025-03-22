@@ -13,18 +13,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type model struct {
-	db *sqlx.DB
+var DB *sqlx.DB
 
+type model struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
-func New(db *sqlx.DB) meta.App {
-	model := &model{
-		db: db,
-	}
+func New() meta.App {
+	model := &model{}
 
 	model.currentView = meta.NewListView(model)
 
@@ -44,13 +42,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.SetupSchemaMsg:
-		changedEntries, err := setupSchemaEntries(message.Db)
+		changedEntries, err := setupSchemaEntries()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
-		changedEntryRows, err := setupSchemaEntryRows(message.Db)
+		changedEntryRows, err := setupSchemaEntryRows()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
@@ -139,7 +137,7 @@ func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectEntries(m.db)
+		rows, err := SelectEntries()
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
 		}
@@ -162,7 +160,7 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	entryId := m.currentView.(*meta.DetailView).ModelId
 
 	return func() tea.Msg {
-		rows, err := SelectRowsByEntry(m.db, entryId)
+		rows, err := SelectRowsByEntry(entryId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}
@@ -186,7 +184,7 @@ func (m *model) MakeLoadDetailCmd() tea.Cmd {
 
 func (m *model) makeSelectJournalsCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := journals.SelectJournals(m.db)
+		rows, err := journals.SelectJournals()
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
 		}

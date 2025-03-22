@@ -13,18 +13,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type model struct {
-	db *sqlx.DB
+var DB *sqlx.DB
 
+type model struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
-func New(db *sqlx.DB) meta.App {
-	model := &model{
-		db: db,
-	}
+func New() meta.App {
+	model := &model{}
 
 	model.currentView = meta.NewListView(model)
 
@@ -47,7 +45,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SetupSchemaMsg:
-		changed, err := setupSchema(message.Db)
+		changed, err := setupSchema()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
@@ -120,7 +118,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes: strings.Split(ledgerNotes, "\n"),
 		}
 
-		id, err := newLedger.Insert(m.db)
+		id, err := newLedger.Insert()
 
 		if err != nil {
 			return m, meta.MessageCmd(err)
@@ -142,14 +140,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes: strings.Split(view.noteInput.Value(), "\n"),
 		}
 
-		currentValues.Update(m.db)
+		currentValues.Update()
 
 		return m, nil
 
 	case meta.CommitDeleteMsg:
 		view := m.currentView.(*DeleteView)
 
-		err := DeleteLedger(m.db, view.model.Id)
+		err := DeleteLedger(view.model.Id)
 
 		m.currentView = meta.NewListView(m)
 		// TODO: Add a vimesque message to inform user of successful deletion
@@ -194,7 +192,7 @@ func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (m *model) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectLedgers(m.db)
+		rows, err := SelectLedgers()
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
@@ -217,7 +215,7 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	ledgerId := m.currentView.(*meta.DetailView).ModelId
 
 	return func() tea.Msg {
-		rows, err := entries.SelectRowsByLedger(m.db, ledgerId)
+		rows, err := entries.SelectRowsByLedger(ledgerId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
 		}
@@ -248,7 +246,7 @@ func (m *model) MakeLoadDetailCmd() tea.Cmd {
 	}
 
 	return func() tea.Msg {
-		ledger, err := SelectLedger(m.db, ledgerId)
+		ledger, err := SelectLedger(ledgerId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER WITH ID %d: %#v", ledgerId, err)
 		}
