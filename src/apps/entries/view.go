@@ -92,8 +92,7 @@ func (cv *CreateView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
 
-	// TODO: Cmd to Load journals
-	// Requires access to db though.
+	cmds = append(cmds, makeSelectJournalsCmd())
 
 	return tea.Batch(cmds...)
 }

@@ -182,7 +182,7 @@ func (m *model) MakeLoadDetailCmd() tea.Cmd {
 	panic("TODO")
 }
 
-func (m *model) makeSelectJournalsCmd() tea.Cmd {
+func makeSelectJournalsCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := journals.SelectJournals()
 		if err != nil {
