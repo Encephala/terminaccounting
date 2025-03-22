@@ -43,6 +43,7 @@ const (
 	LEDGER ModelType = iota
 	ENTRY
 	ENTRYROW
+	JOURNAL
 )
 
 type DataLoadedMsg struct {

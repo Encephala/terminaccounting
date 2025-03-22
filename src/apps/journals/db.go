@@ -41,3 +41,11 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 	_, err = db.Exec(schema)
 	return true, err
 }
+
+func SelectJournals(db *sqlx.DB) ([]Journal, error) {
+	result := []Journal{}
+
+	err := db.Select(&result, `SELECT * FROM journals;`)
+
+	return result, err
+}

@@ -39,7 +39,8 @@ func (er EntryRow) FilterValue() string {
 	// for this. Makes sense maybe.
 	// Then again, import loops and all. Maybe the main program needs a way to query these things?
 	// Or a just a bunch of DB queries.
-	// I mean I guess they're just lookups by primary key, that's fiiiine
+	// I mean I guess they're just lookups by primary key, that's fiiiine?
+	// Probably runs every time the search box updates, maybe it's not "fiiiine".
 	result.WriteString(strconv.Itoa(er.Entry))
 	result.WriteString(strconv.Itoa(er.Ledger))
 	result.WriteString(strconv.Itoa(*er.Account))
@@ -86,8 +87,15 @@ func NewCreateView(colours styles.AppColours) *CreateView {
 }
 
 func (cv *CreateView) Init() tea.Cmd {
-	// TODO: Query db for available journals
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
+
+	// TODO: Cmd to Load journals
+	// Requires access to db though.
+
+	return tea.Batch(cmds...)
 }
 
 func (cv *CreateView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

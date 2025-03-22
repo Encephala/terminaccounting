@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"terminaccounting/apps/journals"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -132,6 +133,7 @@ func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRY:    {},
 		meta.ENTRYROW: {},
+		meta.JOURNAL:  {},
 	}
 }
 
@@ -180,4 +182,19 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 
 func (m *model) MakeLoadDetailCmd() tea.Cmd {
 	panic("TODO")
+}
+
+func (m *model) makeSelectJournalsCmd() tea.Cmd {
+	return func() tea.Msg {
+		rows, err := journals.SelectJournals(m.db)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ENTRIES,
+			Model:     meta.JOURNAL,
+			Data:      rows,
+		}
+	}
 }
