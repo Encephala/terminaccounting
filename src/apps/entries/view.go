@@ -1,8 +1,16 @@
 package entries
 
 import (
+	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
+	"terminaccounting/meta"
+	"terminaccounting/styles"
+
+	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func (e Entry) FilterValue() string {
@@ -48,4 +56,63 @@ func (er EntryRow) Title() string {
 
 func (er EntryRow) Description() string {
 	return strconv.Itoa(er.Id)
+}
+
+type CreateView struct {
+	nameInput    textinput.Model
+	journalInput itempicker.Model
+	notesInput   textarea.Model
+
+	colours styles.AppColours
+}
+
+func NewCreateView(colours styles.AppColours) *CreateView {
+	nameInput := textinput.New()
+	nameInput.Focus()
+	nameInput.Cursor.SetMode(cursor.CursorStatic)
+	journalInput := itempicker.New([]itempicker.Item{})
+	noteInput := textarea.New()
+	noteInput.Cursor.SetMode(cursor.CursorStatic)
+
+	result := &CreateView{
+		nameInput:    nameInput,
+		journalInput: journalInput,
+		notesInput:   noteInput,
+
+		colours: colours,
+	}
+
+	return result
+}
+
+func (cv *CreateView) Init() tea.Cmd {
+	// TODO: Query db for available journals
+	return nil
+}
+
+func (cv *CreateView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return cv, nil
+}
+
+func (cv *CreateView) View() string {
+	return "todo"
+}
+
+func (cv *CreateView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	return &meta.MotionSet{
+		Normal: normalMotions,
+	}
+}
+
+func (cv *CreateView) CommandSet() *meta.CommandSet {
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }

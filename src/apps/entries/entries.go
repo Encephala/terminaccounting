@@ -17,7 +17,7 @@ type model struct {
 
 	viewWidth, viewHeight int
 
-	view meta.View
+	currentView meta.View
 }
 
 func New(db *sqlx.DB) meta.App {
@@ -25,13 +25,13 @@ func New(db *sqlx.DB) meta.App {
 		db: db,
 	}
 
-	model.view = meta.NewListView(model)
+	model.currentView = meta.NewListView(model)
 
 	return model
 }
 
 func (m *model) Init() tea.Cmd {
-	return m.view.Init()
+	return m.currentView.Init()
 }
 
 func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -63,36 +63,45 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.DataLoadedMsg:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
-		newView, cmd := m.view.Update(message)
-		m.view = newView.(meta.View)
+		newView, cmd := m.currentView.Update(message)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.SwitchViewMsg:
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			m.view = meta.NewListView(m)
+			m.currentView = meta.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedEntry := m.view.(*meta.ListView).ListModel.SelectedItem().(Entry)
+			selectedEntry := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Entry)
 
-			m.view = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
+			m.currentView = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
+
+		case meta.CREATEVIEWTYPE:
+			m.currentView = NewCreateView(m.Colours())
+
+		case meta.UPDATEVIEWTYPE:
+			// TODO
+
+		case meta.DELETEVIEWTYPE:
+			// TODO
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
 
-		return m, m.view.Init()
+		return m, m.currentView.Init()
 	}
 
-	newView, cmd := m.view.Update(message)
-	m.view = newView.(meta.View)
+	newView, cmd := m.currentView.Update(message)
+	m.currentView = newView.(meta.View)
 
 	return m, cmd
 }
@@ -100,7 +109,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight)
 
-	return style.Render(m.view.View())
+	return style.Render(m.currentView.View())
 }
 
 func (m *model) Name() string {
@@ -112,11 +121,11 @@ func (m *model) Colours() styles.AppColours {
 }
 
 func (m *model) CurrentMotionSet() *meta.MotionSet {
-	return m.view.MotionSet()
+	return m.currentView.MotionSet()
 }
 
 func (m *model) CurrentCommandSet() *meta.CommandSet {
-	return m.view.CommandSet()
+	return m.currentView.CommandSet()
 }
 
 func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
@@ -148,7 +157,7 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 
 func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
-	entryId := m.view.(*meta.DetailView).ModelId
+	entryId := m.currentView.(*meta.DetailView).ModelId
 
 	return func() tea.Msg {
 		rows, err := SelectRowsByEntry(m.db, entryId)

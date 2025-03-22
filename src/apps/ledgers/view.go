@@ -101,6 +101,9 @@ func (cv *CreateView) Init() tea.Cmd {
 func (cv *CreateView) title() string {
 	return "Create new Ledger"
 }
+
+// NOTE from future me: I'm not sure why these exist?
+// I think just to take a reference without having to write & everywhere?
 func (cv *CreateView) getNameInput() *textinput.Model {
 	return &cv.nameInput
 }
