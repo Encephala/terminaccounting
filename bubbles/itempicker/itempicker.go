@@ -101,6 +101,10 @@ func (m *Model) SetValue(value Item) {
 	m.activeItem = index
 }
 
+func (m *Model) SetItems(items []Item) {
+	m.items = items
+}
+
 func (m Model) MaxViewLength() int {
 	emptyWidth := len("No items")
 	maxItemWidth := 0
