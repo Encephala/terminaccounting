@@ -2,6 +2,8 @@ package entries
 
 import (
 	"terminaccounting/meta"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Entry struct {
@@ -10,8 +12,8 @@ type Entry struct {
 	Notes   meta.Notes `db:"notes"`
 }
 
-func setupSchemaEntries() (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(DB, "entries")
+func setupSchemaEntries(db *sqlx.DB) (bool, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entries")
 	if err != nil {
 		return false, err
 	}
@@ -26,7 +28,7 @@ func setupSchemaEntries() (bool, error) {
 		FOREIGN KEY (journal) REFERENCES journals(id)
 	) STRICT;`
 
-	_, err = DB.Exec(schema)
+	_, err = db.Exec(schema)
 	return true, err
 }
 
@@ -45,8 +47,8 @@ type EntryRow struct {
 	Reconciled bool         `db:"reconciled"`
 }
 
-func setupSchemaEntryRows() (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(DB, "entryrows")
+func setupSchemaEntryRows(db *sqlx.DB) (bool, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "entryrows")
 	if err != nil {
 		return false, err
 	}
@@ -67,17 +69,17 @@ func setupSchemaEntryRows() (bool, error) {
 		FOREIGN KEY (account) REFERENCES accounts(id)
 	) STRICT;`
 
-	_, err = DB.Exec(schema)
+	_, err = db.Exec(schema)
 	return true, err
 }
 
-func InsertRows(rows []EntryRow) (int, error) {
+func InsertRows(db *sqlx.DB, rows []EntryRow) (int, error) {
 	query := `INSERT INTO entryrows
 	(entry, ledger, account, document, value, reconciled)
 	VALUES
 	(:entry, :ledger, :account, :document, :value, :reconciled);`
 
-	result, err := DB.NamedExec(query, rows)
+	result, err := db.NamedExec(query, rows)
 	if err != nil {
 		return 0, err
 	}
@@ -87,34 +89,34 @@ func InsertRows(rows []EntryRow) (int, error) {
 	return int(changed), err
 }
 
-func SelectEntries() ([]Entry, error) {
+func SelectEntries(db *sqlx.DB) ([]Entry, error) {
 	result := []Entry{}
 
-	err := DB.Select(&result, `SELECT * FROM entries;`)
+	err := db.Select(&result, `SELECT * FROM entries;`)
 
 	return result, err
 }
 
-func SelectRows() ([]EntryRow, error) {
+func SelectRows(db *sqlx.DB) ([]EntryRow, error) {
 	result := []EntryRow{}
 
-	err := DB.Select(&result, `SELECT * FROM entryrows;`)
+	err := db.Select(&result, `SELECT * FROM entryrows;`)
 
 	return result, err
 }
 
-func SelectRowsByLedger(id int) ([]EntryRow, error) {
+func SelectRowsByLedger(db *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
-	err := DB.Select(&result, `SELECT * FROM entryrows WHERE ledger = $1;`, id)
+	err := db.Select(&result, `SELECT * FROM entryrows WHERE ledger = $1;`, id)
 
 	return result, err
 }
 
-func SelectRowsByEntry(id int) ([]EntryRow, error) {
+func SelectRowsByEntry(db *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
-	err := DB.Select(&result, `SELECT * FROM entryrows WHERE entry = $1;`, id)
+	err := db.Select(&result, `SELECT * FROM entryrows WHERE entry = $1;`, id)
 
 	return result, err
 }

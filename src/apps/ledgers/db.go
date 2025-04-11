@@ -2,6 +2,8 @@ package ledgers
 
 import (
 	"terminaccounting/meta"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type LedgerType string
@@ -30,8 +32,8 @@ type Ledger struct {
 // Not actually relevant for a sqlite database, but out of principle and for the sake of learning.
 // Classid async struggles.
 
-func setupSchema() (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(DB, "ledgers")
+func setupSchema(db *sqlx.DB) (bool, error) {
+	isSetUp, err := meta.DatabaseTableIsSetUp(db, "ledgers")
 	if err != nil {
 		return false, err
 	}
@@ -46,12 +48,12 @@ func setupSchema() (bool, error) {
 		notes TEXT
 	) STRICT;`
 
-	_, err = DB.Exec(schema)
+	_, err = db.Exec(schema)
 	return true, err
 }
 
-func (l *Ledger) Insert() (int, error) {
-	transaction := DB.MustBegin()
+func (l *Ledger) Insert(db *sqlx.DB) (int, error) {
+	transaction := db.MustBegin()
 	defer transaction.Rollback() // If already committed, this is a noop
 
 	_, err := transaction.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes);`, l)
@@ -72,36 +74,36 @@ func (l *Ledger) Insert() (int, error) {
 	return insertedId, err
 }
 
-func (l *Ledger) Update() error {
+func (l *Ledger) Update(db *sqlx.DB) error {
 	query := `UPDATE ledgers SET
 	name = :name,
 	type = :type,
 	notes = :notes
 	WHERE id = :id;`
 
-	_, err := DB.NamedExec(query, l)
+	_, err := db.NamedExec(query, l)
 
 	return err
 }
 
-func SelectLedgers() ([]Ledger, error) {
+func SelectLedgers(db *sqlx.DB) ([]Ledger, error) {
 	result := []Ledger{}
 
-	err := DB.Select(&result, `SELECT * FROM ledgers;`)
+	err := db.Select(&result, `SELECT * FROM ledgers;`)
 
 	return result, err
 }
 
-func SelectLedger(ledgerId int) (Ledger, error) {
+func SelectLedger(db *sqlx.DB, ledgerId int) (Ledger, error) {
 	var result Ledger
 
-	err := DB.Get(&result, `SELECT * FROM ledgers WHERE id = :id`, ledgerId)
+	err := db.Get(&result, `SELECT * FROM ledgers WHERE id = :id`, ledgerId)
 
 	return result, err
 }
 
-func DeleteLedger(ledgerId int) error {
-	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = :id`, ledgerId)
+func DeleteLedger(db *sqlx.DB, ledgerId int) error {
+	_, err := db.Exec(`DELETE FROM ledgers WHERE id = :id`, ledgerId)
 
 	return err
 }

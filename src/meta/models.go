@@ -8,7 +8,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type SetupSchemaMsg struct{}
+type SetupSchemaMsg struct {
+	Db *sqlx.DB
+}
 
 func DatabaseTableIsSetUp(db *sqlx.DB, name string) (bool, error) {
 	// Kinda hacky, whatever

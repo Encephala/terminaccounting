@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"terminaccounting/apps/accounts"
 	"terminaccounting/apps/entries"
-	"terminaccounting/apps/journals"
 	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -39,11 +37,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	ledgers.DB = db
-	entries.DB = db
-	journals.DB = db
-	accounts.DB = db
-
 	commandInput := textinput.New()
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
@@ -52,13 +45,15 @@ func main() {
 	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
 	apps := make([]meta.App, 2)
-	apps[meta.LEDGERS] = ledgers.New()
-	apps[meta.ENTRIES] = entries.New()
+	apps[meta.LEDGERS] = ledgers.New(db)
+	apps[meta.ENTRIES] = entries.New(db)
 	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 	// apps[meta.JOURNALS] = journals.New()
 	// apps[meta.ACCOUNTS] = accounts.New()
 
 	m := &model{
+		db: db,
+
 		activeApp: 0,
 		apps:      apps,
 
@@ -98,7 +93,7 @@ func (m *model) Init() tea.Cmd {
 	}
 
 	for i, app := range m.apps {
-		model, cmd := app.Update(meta.SetupSchemaMsg{})
+		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
 		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
