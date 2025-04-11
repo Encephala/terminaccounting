@@ -39,6 +39,9 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 	for rows.Next() {
 		count++
 		rows.StructScan(&result)
+		if err != nil {
+			t.Errorf("Failed to scan: %v", err)
+		}
 	}
 
 	if count != 1 {

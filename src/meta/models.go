@@ -47,10 +47,6 @@ func (n *Notes) Scan(value any) error {
 }
 
 func (n Notes) Value() (driver.Value, error) {
-	if len(n) == 0 {
-		return nil, nil
-	}
-
 	binary, err := json.Marshal(n)
 	result := string(binary)
 
