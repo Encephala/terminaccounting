@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 )
 
 func (e Entry) FilterValue() string {
@@ -60,6 +61,8 @@ func (er EntryRow) Description() string {
 }
 
 type CreateView struct {
+	db *sqlx.DB
+
 	nameInput    textinput.Model
 	journalInput itempicker.Model
 	notesInput   textarea.Model
@@ -67,7 +70,7 @@ type CreateView struct {
 	colours styles.AppColours
 }
 
-func NewCreateView(colours styles.AppColours) *CreateView {
+func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
 	nameInput := textinput.New()
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
@@ -76,6 +79,8 @@ func NewCreateView(colours styles.AppColours) *CreateView {
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &CreateView{
+		db: db,
+
 		nameInput:    nameInput,
 		journalInput: journalInput,
 		notesInput:   noteInput,
@@ -92,7 +97,7 @@ func (cv *CreateView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
 
-	cmds = append(cmds, makeSelectJournalsCmd())
+	cmds = append(cmds, makeSelectJournalsCmd(cv.db))
 
 	return tea.Batch(cmds...)
 }

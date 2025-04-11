@@ -86,7 +86,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
 
 		case meta.CREATEVIEWTYPE:
-			m.currentView = NewCreateView(m.Colours())
+			m.currentView = NewCreateView(m.db, m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			// TODO
@@ -184,9 +184,9 @@ func (m *model) MakeLoadDetailCmd() tea.Cmd {
 	panic("TODO")
 }
 
-func makeSelectJournalsCmd() tea.Cmd {
+func makeSelectJournalsCmd(db *sqlx.DB) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := journals.SelectJournals(m.db)
+		rows, err := journals.SelectJournals(db)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
 		}
