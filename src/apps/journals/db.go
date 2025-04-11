@@ -9,10 +9,10 @@ import (
 type JournalType string
 
 const (
-	Income   JournalType = "INCOME"
-	Expense  JournalType = "EXPENSE"
-	CashFlow JournalType = "CASHFLOW"
-	General  JournalType = "GENERAL"
+	INCOME   JournalType = "INCOME"
+	EXPENSE  JournalType = "EXPENSE"
+	CASHFLOW JournalType = "CASHFLOW"
+	GENERAL  JournalType = "GENERAL"
 )
 
 type Journal struct {
