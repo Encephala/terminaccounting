@@ -11,8 +11,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -62,20 +62,24 @@ func (er EntryRow) Description() string {
 	return strconv.Itoa(er.Id)
 }
 
+type activeInput int
+
+const (
+	JOURNALINPUT activeInput = iota
+	NOTESINPUT
+)
+
 type CreateView struct {
 	db *sqlx.DB
 
-	nameInput    textinput.Model
 	journalInput itempicker.Model
 	notesInput   textarea.Model
+	activeInput  activeInput
 
 	colours styles.AppColours
 }
 
 func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
-	nameInput := textinput.New()
-	nameInput.Focus()
-	nameInput.Cursor.SetMode(cursor.CursorStatic)
 	journalInput := itempicker.New([]itempicker.Item{})
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
@@ -83,9 +87,9 @@ func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
 	result := &CreateView{
 		db: db,
 
-		nameInput:    nameInput,
 		journalInput: journalInput,
 		notesInput:   noteInput,
+		activeInput:  JOURNALINPUT,
 
 		colours: colours,
 	}
@@ -106,6 +110,25 @@ func (cv *CreateView) Init() tea.Cmd {
 
 func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
+	case meta.SwitchFocusMsg:
+		if cv.activeInput == NOTESINPUT {
+			cv.notesInput.Blur()
+		}
+
+		// Only two inputs, previous/next is equivalent
+		cv.activeInput++
+		cv.activeInput %= 2
+
+		if cv.activeInput == NOTESINPUT {
+			cv.notesInput.Focus()
+		}
+
+		return cv, nil
+
+	case meta.NavigateMsg:
+		// Don't panic, just ignore the message
+		return cv, nil
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.JOURNAL:
@@ -124,19 +147,77 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
+	case tea.KeyMsg:
+		var cmd tea.Cmd
+		switch cv.activeInput {
+		case JOURNALINPUT:
+			cv.journalInput, cmd = cv.journalInput.Update(message)
+		case NOTESINPUT:
+			cv.notesInput, cmd = cv.notesInput.Update(message)
+
+		default:
+			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
+		}
+
+		return cv, cmd
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
 func (cv *CreateView) View() string {
-	return "todo"
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1)
+
+	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render("Create new Entry")))
+	result.WriteString("\n\n")
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Center)
+
+	const inputWidth = 26
+	cv.notesInput.SetWidth(inputWidth)
+
+	// TODO: Render active input with a different colour
+	var typeRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Journal"),
+		" ",
+		style.Width(cv.journalInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.journalInput.View()),
+	)
+
+	var notesRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Note"),
+		" ",
+		style.Render(cv.notesInput.View()),
+	)
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			typeRow,
+			notesRow,
+		),
+	))
+
+	return result.String()
 }
 
 func (cv *CreateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,
