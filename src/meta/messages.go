@@ -50,7 +50,7 @@ type DataLoadedMsg struct {
 	TargetApp AppType
 
 	Model ModelType
-	Data  interface{}
+	Data  any
 }
 
 type NavigateMsg struct {

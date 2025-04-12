@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (jt *JournalType) Scan(value interface{}) error {
+func (jt *JournalType) Scan(value any) error {
 	switch value {
 	case int64(0):
 		*jt = INCOME

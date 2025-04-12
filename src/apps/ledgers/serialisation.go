@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (lt *LedgerType) Scan(value interface{}) error {
+func (lt *LedgerType) Scan(value any) error {
 	switch value {
 	case int64(0):
 		*lt = INCOME
