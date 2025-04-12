@@ -1,9 +1,11 @@
 package entries
 
 import (
+	"fmt"
 	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
+	"terminaccounting/apps/journals"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -102,8 +104,29 @@ func (cv *CreateView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (cv *CreateView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return cv, nil
+func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.JOURNAL:
+			journals := message.Data.([]journals.Journal)
+
+			asSlice := make([]itempicker.Item, len(journals))
+			for i, journal := range journals {
+				asSlice[i] = journal
+			}
+
+			cv.journalInput.SetItems(asSlice)
+
+			return cv, nil
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
 }
 
 func (cv *CreateView) View() string {

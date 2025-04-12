@@ -22,6 +22,10 @@ type Journal struct {
 	Notes       meta.Notes  `db:"notes"`
 }
 
+func (j Journal) String() string {
+	return j.Name
+}
+
 func setupSchema(db *sqlx.DB) (bool, error) {
 	isSetUp, err := meta.DatabaseTableIsSetUp(db, "journals")
 	if err != nil {
