@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"terminaccounting/apps/journals"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -74,6 +75,29 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = newView.(meta.View)
 
 		return m, cmd
+
+	case meta.CommitCreateMsg:
+		createView := m.currentView.(*CreateView)
+
+		entryJournal := createView.journalInput.Value().(journals.Journal)
+		entryNotes := createView.notesInput.Value()
+
+		// TODO: Actually create the entry in db and stuff.
+		// ALSO TODO: Decide on this implementation vs the one in CreateView.Update
+		_ = Entry{
+			Journal: entryJournal.Id,
+			Notes:   strings.Split(entryNotes, "\n"),
+		}
+
+		// id, err := newEntry.Insert(m.db)
+
+		// if err != nil {
+		// 	return m, meta.MessageCmd(err)
+		// }
+
+		// m.currentView = NewUpdateView(m, id)
+
+		return m, m.currentView.Init()
 
 	case meta.SwitchViewMsg:
 		switch message.ViewType {

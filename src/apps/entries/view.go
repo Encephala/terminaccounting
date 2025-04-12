@@ -147,6 +147,28 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
+	case meta.CommitCreateMsg:
+		journal := cv.journalInput.Value().(journals.Journal)
+		notes := cv.notesInput.Value()
+
+		_ = Entry{
+			Journal: journal.Id,
+			Notes:   strings.Split(notes, "\n"),
+		}
+
+		// TODO: Actually create the entry in db and stuff.
+		// id, err := newEntry.Insert(cv.db)
+
+		// if err != nil {
+		// 	return cv, meta.MessageCmd(err)
+		// }
+
+		cmd := meta.MessageCmd(meta.SwitchViewMsg{
+			ViewType: meta.UPDATEVIEWTYPE,
+		})
+
+		return cv, cmd
+
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch cv.activeInput {
