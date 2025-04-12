@@ -35,22 +35,22 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.KeyMsg:
-		switch message.Type {
-		case tea.KeyCtrlN:
+		switch message.String() {
+		case "ctrl+n", "j":
 			m.activeItem++
 
 			if m.activeItem >= len(m.items) {
 				m.activeItem = 0
 			}
 
-		case tea.KeyCtrlP:
+		case "ctrl+p", "k":
 			m.activeItem--
 
 			if m.activeItem < 0 {
 				m.activeItem = len(m.items) - 1
 			}
 
-		case tea.KeyEnter:
+		case "enter":
 			return m, func() tea.Msg {
 				return ItemSelectedMsg{
 					Item: m.items[m.activeItem],
