@@ -325,9 +325,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	var result strings.Builder
 
 	length := len(ercvm.rows) + 1
-	inputsPerRow := 4
-	highlightRow := ercvm.activeInput / inputsPerRow
-	highlightCol := ercvm.activeInput % inputsPerRow
+	highlightRow, highlightCol := ercvm.activeCoords()
 
 	var idCol []string = make([]string, length)
 	var ledgerCol []string = make([]string, length)
@@ -411,6 +409,11 @@ func (ercvm *EntryRowCreateViewManager) numInputs() int {
 	return numRows * inputsPerRow
 }
 
+func (ercvm *EntryRowCreateViewManager) activeCoords() (int, int) {
+	inputsPerRow := 4
+	return ercvm.activeInput / inputsPerRow, ercvm.activeInput % inputsPerRow
+}
+
 func (ercvm *EntryRowCreateViewManager) Focus(direction meta.Sequence) {
 	numInputs := ercvm.numInputs()
 
@@ -440,9 +443,28 @@ func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (pr
 		}
 	}
 
+	// TODO: Focus/unfocus textinput
+
 	return false, false
 }
 
 func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
-	return ercvm, nil
+	highlightRow, highlightCol := ercvm.activeCoords()
+
+	row := ercvm.rows[highlightRow]
+	var cmd tea.Cmd
+	switch highlightCol {
+	case 0:
+		row.ledgerInput, cmd = row.ledgerInput.Update(msg)
+	case 1:
+		row.accountInput, cmd = row.accountInput.Update(msg)
+	case 2:
+		row.debitInput, cmd = row.debitInput.Update(msg)
+	case 3:
+		row.creditInput, cmd = row.creditInput.Update(msg)
+	}
+
+	ercvm.rows[highlightRow] = row
+
+	return ercvm, cmd
 }
