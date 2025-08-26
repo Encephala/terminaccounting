@@ -6,6 +6,7 @@ import (
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type AccountType string
@@ -23,6 +24,11 @@ type Account struct {
 }
 
 func (a Account) String() string {
+	// Have id -1 to represent an invalid account
+	if a.Id == -1 {
+		return lipgloss.NewStyle().Italic(true).Render("None")
+	}
+
 	return a.Name + " (" + strconv.Itoa(a.Id) + ")"
 }
 

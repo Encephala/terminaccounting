@@ -165,9 +165,10 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case meta.ACCOUNT:
 			accounts := message.Data.([]database.Account)
 
-			asSlice := make([]itempicker.Item, len(accounts))
+			asSlice := make([]itempicker.Item, len(accounts)+1)
+			asSlice[0] = database.Account{Id: -1}
 			for i, account := range accounts {
-				asSlice[i] = account
+				asSlice[i+1] = account
 			}
 
 			cv.EntryRowsManager.SetAccounts(asSlice)
