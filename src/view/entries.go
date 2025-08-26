@@ -85,7 +85,9 @@ func (cv *EntryCreateView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
 
-	cmds = append(cmds, database.MakeSelectJournalsCmd())
+	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
 
 	return tea.Batch(cmds...)
 }
@@ -212,6 +214,8 @@ func (cv *EntryCreateView) View() string {
 	cv.NotesInput.SetWidth(inputWidth)
 
 	// TODO: Render active input with a different colour
+	// TODO: Make this a nameColumn and inputColumn instead of typeRow and notesRow,
+	// so that the alignment can be easily adjusted
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"  ",
@@ -235,8 +239,11 @@ func (cv *EntryCreateView) View() string {
 			notesRow,
 		),
 	))
+	result.WriteString("\n\n")
 
-	result.WriteString(cv.EntryRowsManager.View())
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		cv.EntryRowsManager.View(),
+	))
 
 	return result.String()
 }

@@ -72,7 +72,7 @@ func SelectJournals() ([]Journal, error) {
 	return result, err
 }
 
-func MakeSelectJournalsCmd() tea.Cmd {
+func MakeSelectJournalsCmd(targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectJournals()
 		if err != nil {
@@ -80,7 +80,7 @@ func MakeSelectJournalsCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
+			TargetApp: targetApp,
 			Model:     meta.JOURNAL,
 			Data:      rows,
 		}

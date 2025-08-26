@@ -159,6 +159,8 @@ func (m *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 		meta.ENTRY:    {},
 		meta.ENTRYROW: {},
 		meta.JOURNAL:  {},
+		meta.LEDGER:   {},
+		meta.ACCOUNT:  {},
 	}
 }
 

@@ -139,3 +139,18 @@ func DeleteLedger(ledgerId int) error {
 
 	return err
 }
+
+func MakeSelectLedgersCmd(targetApp meta.AppType) tea.Cmd {
+	return func() tea.Msg {
+		rows, err := SelectLedgers()
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: targetApp,
+			Model:     meta.LEDGER,
+			Data:      rows,
+		}
+	}
+}
