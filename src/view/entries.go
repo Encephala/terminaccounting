@@ -34,7 +34,7 @@ type EntryCreateView struct {
 }
 
 type EntryRowCreateViewManager struct {
-	rows    []EntryRowCreateView
+	rows    []*EntryRowCreateView
 	numRows int
 }
 
@@ -65,9 +65,9 @@ func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView
 }
 
 func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
-	rows := make([]EntryRowCreateView, 1)
+	rows := make([]*EntryRowCreateView, 1)
 
-	rows[0] = EntryRowCreateView{
+	rows[0] = &EntryRowCreateView{
 		ledgerInput:  itempicker.New([]itempicker.Item{}),
 		accountInput: itempicker.New([]itempicker.Item{}),
 		valueInput:   textinput.New(),
