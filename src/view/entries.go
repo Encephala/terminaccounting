@@ -9,6 +9,7 @@ import (
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"unicode"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -45,6 +46,7 @@ type EntryRowCreateView struct {
 	ledgerInput  itempicker.Model
 	accountInput itempicker.Model
 	// TODO: documentInput as some file selector thing
+	// https://github.com/charmbracelet/bubbles/tree/master/filepicker
 	debitInput  textinput.Model
 	creditInput textinput.Model
 }
@@ -502,7 +504,7 @@ func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (pr
 	return false, false
 }
 
-func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
+func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.KeyMsg) (*EntryRowCreateViewManager, tea.Cmd) {
 	highlightRow, highlightCol := ercvm.activeCoords()
 
 	row := ercvm.rows[highlightRow]
@@ -513,14 +515,39 @@ func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.Msg) (*EntryRowCrea
 	case 1:
 		row.accountInput, cmd = row.accountInput.Update(msg)
 	case 2:
+		if !validateNumberInput(msg) {
+			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+		}
 		row.debitInput, cmd = row.debitInput.Update(msg)
 	case 3:
+		if !validateNumberInput(msg) {
+			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+		}
 		row.creditInput, cmd = row.creditInput.Update(msg)
 	}
 
 	ercvm.rows[highlightRow] = row
 
 	return ercvm, cmd
+}
+
+// Checks if input is a digit or a period.
+func validateNumberInput(msg tea.KeyMsg) bool {
+	if len(msg.Runes) > 1 || len(msg.Runes) == 0 {
+		return false
+	}
+
+	character := msg.Runes[0]
+
+	if unicode.IsDigit(character) {
+		return true
+	}
+
+	if character == '.' {
+		return true
+	}
+
+	return false
 }
 
 func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager, tea.Cmd) {
