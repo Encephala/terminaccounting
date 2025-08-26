@@ -23,7 +23,7 @@ type Account struct {
 }
 
 func (a Account) String() string {
-	return a.Name + "(" + strconv.Itoa(a.Id) + ")"
+	return a.Name + " (" + strconv.Itoa(a.Id) + ")"
 }
 
 func SetupSchemaAccounts() (bool, error) {

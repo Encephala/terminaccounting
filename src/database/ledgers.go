@@ -35,7 +35,7 @@ func (l Ledger) Description() string {
 }
 
 func (l Ledger) String() string {
-	return l.Name + "(" + strconv.Itoa(l.Id) + ")"
+	return l.Name + " (" + strconv.Itoa(l.Id) + ")"
 }
 
 func (lt LedgerType) String() string {
