@@ -570,13 +570,16 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 			}
 		}
 	} else {
+		// Blur old active input
+		ercvm.rows[highlightRow].debitInput.Blur()
+		ercvm.rows[highlightRow].creditInput.Blur()
 		newRows = append(newRows, ercvm.rows[:highlightRow]...)
 		newRows = append(newRows, newRow)
 		newRows = append(newRows, ercvm.rows[highlightRow:]...)
 
 		ercvm.rows = newRows
 
-		// TODO: This doesn't properly blur the old active input, aaaa
+		// Ensure new active input is focused if need be
 		ercvm.SwitchFocus(meta.NEXT)
 		ercvm.SwitchFocus(meta.PREVIOUS)
 	}
