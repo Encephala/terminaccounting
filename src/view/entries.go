@@ -146,7 +146,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				asSlice[i] = journal
 			}
 
-			cv.JournalInput.SetItems(asSlice)
+			cv.JournalInput.Items = asSlice
 
 			return cv, nil
 
@@ -223,6 +223,16 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		var cmd tea.Cmd
 		cv.EntryRowsManager, cmd = cv.EntryRowsManager.deleteRow()
+
+		return cv, cmd
+
+	case CreateEntryRowMsg:
+		if cv.activeInput != ENTRYROWINPUT {
+			return cv, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to create one"))
+		}
+
+		var cmd tea.Cmd
+		cv.EntryRowsManager, cmd = cv.EntryRowsManager.addRow(message.after)
 
 		return cv, cmd
 
@@ -419,14 +429,14 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 
 func (ercvm *EntryRowCreateViewManager) SetLedgers(ledgers []itempicker.Item) {
 	for _, row := range ercvm.rows {
-		row.ledgerInput.SetItems(ledgers)
+		row.ledgerInput.Items = ledgers
 	}
 }
 
 func (ercvm *EntryRowCreateViewManager) SetAccounts(accounts []itempicker.Item) {
 
 	for _, row := range ercvm.rows {
-		row.accountInput.SetItems(accounts)
+		row.accountInput.Items = accounts
 	}
 }
 
@@ -533,6 +543,43 @@ func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager,
 	}
 
 	ercvm.rows = append(ercvm.rows[:highlightRow], ercvm.rows[highlightRow+1:]...)
+
+	return ercvm, nil
+}
+
+func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewManager, tea.Cmd) {
+	highlightRow, _ := ercvm.activeCoords()
+
+	newRow := newEntryRowCreateView()
+	newRow.ledgerInput.Items = ercvm.rows[0].ledgerInput.Items
+	newRow.accountInput.Items = ercvm.rows[0].accountInput.Items
+
+	newRows := make([]*EntryRowCreateView, 0, len(ercvm.rows)+1)
+
+	if after {
+		newRows = append(newRows, ercvm.rows[:highlightRow+1]...)
+		newRows = append(newRows, newRow)
+		newRows = append(newRows, ercvm.rows[highlightRow+1:]...)
+
+		ercvm.rows = newRows
+
+		for i := 0; i < 4; i++ {
+			preceeded, exceeded := ercvm.SwitchFocus(meta.NEXT)
+			if preceeded || exceeded {
+				panic("How did this ever happen v2")
+			}
+		}
+	} else {
+		newRows = append(newRows, ercvm.rows[:highlightRow]...)
+		newRows = append(newRows, newRow)
+		newRows = append(newRows, ercvm.rows[highlightRow:]...)
+
+		ercvm.rows = newRows
+
+		// TODO: This doesn't properly blur the old active input, aaaa
+		ercvm.SwitchFocus(meta.NEXT)
+		ercvm.SwitchFocus(meta.PREVIOUS)
+	}
 
 	return ercvm, nil
 }
