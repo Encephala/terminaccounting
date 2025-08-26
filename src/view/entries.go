@@ -414,7 +414,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	debitRendered := lipgloss.JoinVertical(lipgloss.Left, debitCol...)
 	creditRendered := lipgloss.JoinVertical(lipgloss.Left, creditCol...)
 
-	result.WriteString(style.Render(lipgloss.JoinHorizontal(
+	entryRows := style.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		idRendered,
 		" ",
@@ -425,9 +425,54 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 		debitRendered,
 		" ",
 		creditRendered,
-	)))
+	))
+
+	total, err := ercvm.calculateCurrentTotal()
+	var totalRendered string
+	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
+	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
+	if err == nil {
+		if total.Whole == 0 && total.Fractional == 0 {
+			totalRendered = fmt.Sprintf("Total: %s", green.Render(total.String()))
+		} else {
+			totalRendered = fmt.Sprintf("Total: %s", total)
+		}
+	} else {
+		totalRendered = red.Render("error")
+	}
+
+	result.WriteString(lipgloss.JoinVertical(
+		lipgloss.Right,
+		entryRows,
+		totalRendered,
+	))
 
 	return result.String()
+}
+
+func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.DecimalValue, error) {
+	total := database.DecimalValue{}
+
+	for _, row := range ercvm.rows {
+		if row.debitInput.Value() != "" {
+			change, err := database.ParseDecimalValue(row.debitInput.Value())
+			if err != nil {
+				return database.DecimalValue{}, err
+			}
+
+			total = total.Add(change)
+		}
+		if row.creditInput.Value() != "" {
+			change, err := database.ParseDecimalValue(row.creditInput.Value())
+			if err != nil {
+				return database.DecimalValue{}, err
+			}
+
+			total = total.Subtract(change)
+		}
+	}
+
+	return total, nil
 }
 
 func (ercvm *EntryRowCreateViewManager) setLedgers(ledgers []itempicker.Item) {
@@ -538,6 +583,7 @@ func (ercvm *EntryRowCreateViewManager) handleKeyMsg(msg tea.KeyMsg) (*EntryRowC
 }
 
 // Checks if input is a digit or a period.
+// NOTE: don't allow -, a negative debit is just a positive credit
 func validateNumberInput(msg tea.KeyMsg) bool {
 	if len(msg.Runes) > 1 || len(msg.Runes) == 0 {
 		return false

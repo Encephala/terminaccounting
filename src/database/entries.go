@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -80,7 +81,90 @@ func SetupSchemaEntries() (bool, error) {
 
 type DecimalValue struct {
 	Whole      int64
-	Fractional uint64
+	Fractional uint8
+}
+
+func ParseDecimalValue(input string) (DecimalValue, error) {
+	parts := strings.Split(input, ".")
+
+	if len(parts) == 1 {
+		parsed, err := strconv.ParseInt(parts[0], 10, 64)
+
+		return DecimalValue{
+			Whole:      parsed,
+			Fractional: 0,
+		}, err
+	}
+
+	if len(parts) != 2 {
+		return DecimalValue{}, fmt.Errorf("%s isn't a decimal value", input)
+	}
+
+	left := parts[0]
+	right := parts[1]
+
+	whole, err := strconv.ParseInt(left, 10, 64)
+	if err != nil {
+		return DecimalValue{}, err
+	}
+
+	var decimal uint64
+	if len(right) == 0 {
+		decimal = 0
+	} else if len(right) == 1 {
+		decimal, err = strconv.ParseUint(right, 10, 8)
+		if err != nil {
+			return DecimalValue{}, err
+		}
+
+		decimal = decimal * 10
+	} else if len(right) == 2 {
+		decimal, err = strconv.ParseUint(right, 10, 8)
+		if err != nil {
+			return DecimalValue{}, err
+		}
+	} else {
+		return DecimalValue{}, fmt.Errorf("invalid decimal part %s", right)
+	}
+
+	return DecimalValue{
+		Whole:      whole,
+		Fractional: uint8(decimal),
+	}, nil
+}
+
+func (dv DecimalValue) String() string {
+	if dv.Whole >= 0 {
+		return fmt.Sprintf("%d.%02d", dv.Whole, dv.Fractional)
+	}
+
+	if dv.Whole == -1 {
+		return fmt.Sprintf("-0.%02d", 100-dv.Fractional)
+	}
+
+	return fmt.Sprintf("%d.%02d", dv.Whole+1, 100-dv.Fractional)
+}
+
+func (left DecimalValue) Add(right DecimalValue) DecimalValue {
+	return DecimalValue{
+		Whole:      left.Whole + right.Whole,
+		Fractional: left.Fractional + right.Fractional,
+	}
+}
+
+func (left DecimalValue) Subtract(right DecimalValue) DecimalValue {
+	// Fix uint underflow
+	if left.Fractional < right.Fractional {
+		return DecimalValue{
+			Whole:      left.Whole - right.Whole - 1,
+			Fractional: left.Fractional - right.Fractional + 100,
+		}
+	}
+
+	return DecimalValue{
+		Whole:      left.Whole - right.Whole,
+		Fractional: left.Fractional - right.Fractional,
+	}
 }
 
 type EntryRow struct {
