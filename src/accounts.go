@@ -1,4 +1,4 @@
-package accounts
+package main
 
 // import (
 // 	"fmt"
@@ -10,26 +10,26 @@ package accounts
 // 	tea "github.com/charmbracelet/bubbletea"
 // )
 
-// type model struct {
+// type AccountsApp struct {
 // 	viewWidth, viewHeight int
 // }
 
-// func New() meta.App {
+// func NewAccountsApp() meta.App {
 // 	return &model{}
 // }
 
-// func (m *model) Init() tea.Cmd {
+// func (m *AccountsApp) Init() tea.Cmd {
 // 	return nil
 // }
 
-// func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+// func (m *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 // 	switch message := message.(type) {
 // 	case tea.WindowSizeMsg:
 // 		m.viewWidth = message.Width
 // 		m.viewHeight = message.Height
 
 // 	case meta.SetupSchemaMsg:
-// 		changed, err := setupSchema(message.Db)
+// 		changed, err := setupSchema()
 // 		if err != nil {
 // 			message := fmt.Errorf("COULD NOT CREATE `accounts` TABLE: %v", err)
 // 			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
@@ -46,16 +46,16 @@ package accounts
 // 	return m, nil
 // }
 
-// func (m *model) View() string {
+// func (m *AccountsApp) View() string {
 // 	style := styles.Body(m.viewWidth, m.viewHeight, m.Styles().Accent)
 // 	return style.Render("TODO accounts")
 // }
 
-// func (m *model) Name() string {
+// func (m *AccountsApp) Name() string {
 // 	return "Accounts"
 // }
 
-// func (m *model) Styles() styles.AppStyles {
+// func (m *AccountsApp) Styles() styles.AppStyles {
 // 	return styles.AppStyles{
 // 		Foreground: "#7BD4EAD0",
 // 		Accent:     "#7BD4EA50",

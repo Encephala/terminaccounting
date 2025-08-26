@@ -1,4 +1,4 @@
-package journals
+package database
 
 import (
 	"database/sql/driver"
@@ -8,13 +8,13 @@ import (
 func (jt *JournalType) Scan(value any) error {
 	switch value {
 	case int64(0):
-		*jt = INCOME
+		*jt = INCOMEJOURNAL
 	case int64(1):
-		*jt = EXPENSE
+		*jt = EXPENSEJOURNAL
 	case int64(2):
-		*jt = CASHFLOW
+		*jt = CASHFLOWJOURNAL
 	case int64(3):
-		*jt = GENERAL
+		*jt = GENERALJOURNAL
 
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID JOURNAL TYPE: %v", value)
@@ -25,13 +25,13 @@ func (jt *JournalType) Scan(value any) error {
 
 func (jt JournalType) Value() (driver.Value, error) {
 	switch jt {
-	case INCOME:
+	case INCOMEJOURNAL:
 		return int64(0), nil
-	case EXPENSE:
+	case EXPENSEJOURNAL:
 		return int64(1), nil
-	case CASHFLOW:
+	case CASHFLOWJOURNAL:
 		return int64(2), nil
-	case GENERAL:
+	case GENERALJOURNAL:
 		return int64(3), nil
 	}
 

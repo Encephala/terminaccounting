@@ -1,9 +1,7 @@
-package accounts
+package database
 
 import (
-	"terminaccounting/meta"
-
-	"github.com/jmoiron/sqlx"
+	"strconv"
 )
 
 type AccountType string
@@ -20,8 +18,12 @@ type Account struct {
 	Notes       []string    `db:"notes"`
 }
 
-func setupSchema(db *sqlx.DB) (bool, error) {
-	isSetUp, err := meta.DatabaseTableIsSetUp(db, "accounts")
+func (a Account) String() string {
+	return a.Name + "(" + strconv.Itoa(a.Id) + ")"
+}
+
+func SetupSchemaAccounts() (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp("accounts")
 	if err != nil {
 		return false, err
 	}
@@ -36,6 +38,6 @@ func setupSchema(db *sqlx.DB) (bool, error) {
 		notes TEXT
 	) STRICT;`
 
-	_, err = db.Exec(schema)
+	_, err = DB.Exec(schema)
 	return true, err
 }

@@ -1,9 +1,9 @@
-package ledgers
+package view
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -15,27 +15,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-func (l Ledger) FilterValue() string {
-	var result strings.Builder
-	result.WriteString(l.Name)
-	result.WriteString(strings.Join(l.Notes, ";"))
-	return result.String()
-}
-
-func (l Ledger) Title() string {
-	return l.Name
-}
-
-func (l Ledger) Description() string {
-	return l.Name
-}
-
-func (l Ledger) String() string {
-	return l.Name + "(" + strconv.Itoa(l.Id) + ")"
-}
-
-type activeInput int
 
 const (
 	NAMEINPUT activeInput = iota
@@ -57,22 +36,22 @@ type createOrUpdateView interface {
 	getColours() styles.AppColours
 }
 
-type CreateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	noteInput   textarea.Model
+type LedgersCreateView struct {
+	NameInput   textinput.Model
+	TypeInput   itempicker.Model
+	NoteInput   textarea.Model
 	activeInput activeInput
 
 	colours styles.AppColours
 }
 
-func NewCreateView(colours styles.AppColours) *CreateView {
+func NewLedgersCreateView(colours styles.AppColours) *LedgersCreateView {
 	types := []itempicker.Item{
-		INCOME,
-		EXPENSE,
-		ASSET,
-		LIABILITY,
-		EQUITY,
+		database.INCOMELEDGER,
+		database.EXPENSELEDGER,
+		database.ASSETLEDGER,
+		database.LIABILITYLEDGER,
+		database.EQUITYLEDGER,
 	}
 
 	nameInput := textinput.New()
@@ -82,10 +61,10 @@ func NewCreateView(colours styles.AppColours) *CreateView {
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
-	result := &CreateView{
-		nameInput:   nameInput,
-		typeInput:   typeInput,
-		noteInput:   noteInput,
+	result := &LedgersCreateView{
+		NameInput:   nameInput,
+		TypeInput:   typeInput,
+		NoteInput:   noteInput,
 		activeInput: NAMEINPUT,
 
 		colours: colours,
@@ -94,7 +73,7 @@ func NewCreateView(colours styles.AppColours) *CreateView {
 	return result
 }
 
-func (cv *CreateView) Init() tea.Cmd {
+func (cv *LedgersCreateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
@@ -103,36 +82,36 @@ func (cv *CreateView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (cv *CreateView) title() string {
+func (cv *LedgersCreateView) title() string {
 	return "Create new Ledger"
 }
 
 // NOTE from future me: I'm not sure why these exist?
 // I think just to take a reference without having to write & everywhere?
-func (cv *CreateView) getNameInput() *textinput.Model {
-	return &cv.nameInput
+func (cv *LedgersCreateView) getNameInput() *textinput.Model {
+	return &cv.NameInput
 }
-func (cv *CreateView) getTypeInput() *itempicker.Model {
-	return &cv.typeInput
+func (cv *LedgersCreateView) getTypeInput() *itempicker.Model {
+	return &cv.TypeInput
 }
-func (cv *CreateView) getNoteInput() *textarea.Model {
-	return &cv.noteInput
+func (cv *LedgersCreateView) getNoteInput() *textarea.Model {
+	return &cv.NoteInput
 }
-func (cv *CreateView) getActiveInput() *activeInput {
+func (cv *LedgersCreateView) getActiveInput() *activeInput {
 	return &cv.activeInput
 }
-func (cv *CreateView) getColours() styles.AppColours {
+func (cv *LedgersCreateView) getColours() styles.AppColours {
 	return cv.colours
 }
-func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return createUpdateViewUpdate(cv, message)
 }
 
-func (cv *CreateView) View() string {
+func (cv *LedgersCreateView) View() string {
 	return createUpdateViewView(cv)
 }
 
-func (cv *CreateView) MotionSet() *meta.MotionSet {
+func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -143,7 +122,7 @@ func (cv *CreateView) MotionSet() *meta.MotionSet {
 	return &meta.MotionSet{Normal: normalMotions}
 }
 
-func (cv *CreateView) CommandSet() *meta.CommandSet {
+func (cv *LedgersCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
@@ -152,27 +131,25 @@ func (cv *CreateView) CommandSet() *meta.CommandSet {
 	return &asCommandSet
 }
 
-type UpdateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	noteInput   textarea.Model
+type LedgersUpdateView struct {
+	NameInput   textinput.Model
+	TypeInput   itempicker.Model
+	NoteInput   textarea.Model
 	activeInput activeInput
 
-	app *model
-
-	modelId       int
-	startingValue Ledger
+	ModelId       int
+	startingValue database.Ledger
 
 	colours styles.AppColours
 }
 
-func NewUpdateView(app *model, modelId int) *UpdateView {
+func NewLedgersUpdateView(modelId int, colours styles.AppColours) *LedgersUpdateView {
 	types := []itempicker.Item{
-		INCOME,
-		EXPENSE,
-		ASSET,
-		LIABILITY,
-		EQUITY,
+		database.INCOMELEDGER,
+		database.EXPENSELEDGER,
+		database.ASSETLEDGER,
+		database.LIABILITYLEDGER,
+		database.EQUITYLEDGER,
 	}
 
 	nameInput := textinput.New()
@@ -182,72 +159,70 @@ func NewUpdateView(app *model, modelId int) *UpdateView {
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
-	return &UpdateView{
-		nameInput:   nameInput,
-		typeInput:   typeInput,
-		noteInput:   noteInput,
+	return &LedgersUpdateView{
+		NameInput:   nameInput,
+		TypeInput:   typeInput,
+		NoteInput:   noteInput,
 		activeInput: NAMEINPUT,
 
-		app: app,
+		ModelId: modelId,
 
-		modelId: modelId,
-
-		colours: app.Colours(),
+		colours: colours,
 	}
 }
 
-func (uv *UpdateView) Init() tea.Cmd {
+func (uv *LedgersUpdateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
 
-	cmds = append(cmds, uv.app.MakeLoadDetailCmd())
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(uv.ModelId))
 
 	return tea.Batch(cmds...)
 }
 
-func (uv *UpdateView) title() string {
-	return fmt.Sprintf("Update Ledger: %s", uv.nameInput.Value())
+func (uv *LedgersUpdateView) title() string {
+	return fmt.Sprintf("Update Ledger: %s", uv.NameInput.Value())
 }
-func (uv *UpdateView) getNameInput() *textinput.Model {
-	return &uv.nameInput
+func (uv *LedgersUpdateView) getNameInput() *textinput.Model {
+	return &uv.NameInput
 }
-func (uv *UpdateView) getTypeInput() *itempicker.Model {
-	return &uv.typeInput
+func (uv *LedgersUpdateView) getTypeInput() *itempicker.Model {
+	return &uv.TypeInput
 }
-func (uv *UpdateView) getNoteInput() *textarea.Model {
-	return &uv.noteInput
+func (uv *LedgersUpdateView) getNoteInput() *textarea.Model {
+	return &uv.NoteInput
 }
-func (uv *UpdateView) getActiveInput() *activeInput {
+func (uv *LedgersUpdateView) getActiveInput() *activeInput {
 	return &uv.activeInput
 }
-func (uv *UpdateView) getColours() styles.AppColours {
+func (uv *LedgersUpdateView) getColours() styles.AppColours {
 	return uv.colours
 }
 
-func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
-		ledger := message.Data.(Ledger)
+		ledger := message.Data.(database.Ledger)
 
 		uv.startingValue = ledger
 
-		uv.nameInput.SetValue(ledger.Name)
-		uv.typeInput.SetValue(ledger.Type)
-		uv.noteInput.SetValue(strings.Join(ledger.Notes, "\n"))
+		uv.NameInput.SetValue(ledger.Name)
+		uv.TypeInput.SetValue(ledger.Type)
+		uv.NoteInput.SetValue(strings.Join(ledger.Notes, "\n"))
 
 		return uv, nil
 
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
 		case NAMEINPUT:
-			uv.nameInput.SetValue(uv.startingValue.Name)
+			uv.NameInput.SetValue(uv.startingValue.Name)
 		case TYPEINPUT:
-			uv.typeInput.SetValue(uv.startingValue.Type)
+			uv.TypeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
-			uv.noteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
+			uv.NoteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
 		}
 
 		return uv, nil
@@ -256,11 +231,11 @@ func (uv *UpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return createUpdateViewUpdate(uv, message)
 }
 
-func (uv *UpdateView) View() string {
+func (uv *LedgersUpdateView) View() string {
 	return createUpdateViewView(uv)
 }
 
-func (uv *UpdateView) MotionSet() *meta.MotionSet {
+func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -273,7 +248,7 @@ func (uv *UpdateView) MotionSet() *meta.MotionSet {
 	return &meta.MotionSet{Normal: normalMotions}
 }
 
-func (uv *UpdateView) CommandSet() *meta.CommandSet {
+func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command{"w"}, meta.CommitUpdateMsg{})
@@ -404,44 +379,40 @@ func createUpdateViewView(view createOrUpdateView) string {
 	return result.String()
 }
 
-type DeleteView struct {
-	modelId int
-	model   Ledger
-
-	app *model
+type LedgersDeleteView struct {
+	ModelId int
+	model   database.Ledger
 
 	colours styles.AppColours
 }
 
-func NewDeleteView(app *model, modelId int) *DeleteView {
-	return &DeleteView{
-		modelId: modelId,
+func NewLedgersDeleteView(modelId int, colours styles.AppColours) *LedgersDeleteView {
+	return &LedgersDeleteView{
+		ModelId: modelId,
 
-		app: app,
-
-		colours: app.Colours(),
+		colours: colours,
 	}
 }
 
-func (dv *DeleteView) Init() tea.Cmd {
+func (dv *LedgersDeleteView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.app.CurrentMotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.CommandSet())))
 
-	cmds = append(cmds, dv.app.MakeLoadDetailCmd())
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.ModelId))
 
 	return tea.Batch(cmds...)
 }
 
-func (dv *DeleteView) title() string {
+func (dv *LedgersDeleteView) title() string {
 	return fmt.Sprintf("Delete Ledger: %s", dv.model.Name)
 }
 
-func (dv *DeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		dv.model = message.Data.(Ledger)
+		dv.model = message.Data.(database.Ledger)
 
 		return dv, nil
 
@@ -450,7 +421,7 @@ func (dv *DeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *DeleteView) View() string {
+func (dv *LedgersDeleteView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1)
@@ -508,7 +479,7 @@ func (dv *DeleteView) View() string {
 	return result.String()
 }
 
-func (dv *DeleteView) MotionSet() *meta.MotionSet {
+func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -521,7 +492,7 @@ func (dv *DeleteView) MotionSet() *meta.MotionSet {
 	}
 }
 
-func (dv *DeleteView) CommandSet() *meta.CommandSet {
+func (dv *LedgersDeleteView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command{"w"}, meta.CommitDeleteMsg{})

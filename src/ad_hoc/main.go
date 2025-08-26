@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"terminaccounting/apps/entries"
+	"terminaccounting/database"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -10,15 +10,16 @@ import (
 
 func main() {
 	db := sqlx.MustConnect("sqlite3", "test.db")
+	database.DB = db
 
-	rows := []entries.EntryRow{
+	rows := []database.EntryRow{
 		{
 			Id:         0,
 			Entry:      1,
 			Ledger:     1,
 			Account:    nil,
 			Document:   nil,
-			Value:      entries.DecimalValue{Whole: 6, Fractional: 9},
+			Value:      database.DecimalValue{Whole: 6, Fractional: 9},
 			Reconciled: false,
 		},
 		{
@@ -27,7 +28,7 @@ func main() {
 			Ledger:     2,
 			Account:    nil,
 			Document:   nil,
-			Value:      entries.DecimalValue{Whole: -6, Fractional: 9},
+			Value:      database.DecimalValue{Whole: -6, Fractional: 9},
 			Reconciled: false,
 		},
 	}
@@ -35,7 +36,7 @@ func main() {
 	fmt.Println("Inserting:", rows)
 	// fmt.Println(entries.InsertRows(db, rows))
 
-	a, err := entries.SelectRows(db)
+	a, err := database.SelectRows()
 	if err != nil {
 		fmt.Println(err)
 	}

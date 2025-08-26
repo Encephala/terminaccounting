@@ -1,19 +1,20 @@
-package ledgers
+package main
 
 import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"terminaccounting/apps/entries"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
 
-type model struct {
+type LedgersApp struct {
 	db *sqlx.DB
 
 	viewWidth, viewHeight int
@@ -21,8 +22,8 @@ type model struct {
 	currentView meta.View
 }
 
-func New(db *sqlx.DB) meta.App {
-	model := &model{
+func NewLedgersApp(db *sqlx.DB) meta.App {
+	model := &LedgersApp{
 		db: db,
 	}
 
@@ -31,11 +32,11 @@ func New(db *sqlx.DB) meta.App {
 	return model
 }
 
-func (m *model) Init() tea.Cmd {
+func (m *LedgersApp) Init() tea.Cmd {
 	return m.currentView.Init()
 }
 
-func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
@@ -47,7 +48,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SetupSchemaMsg:
-		changed, err := setupSchema(message.Db)
+		changed, err := database.SetupSchemaLedgers()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
@@ -72,22 +73,22 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = meta.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Ledger)
+			selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Ledger)
 
 			m.currentView = meta.NewDetailView(m, selectedLedger.Id, selectedLedger.Name)
 
 		case meta.CREATEVIEWTYPE:
-			m.currentView = NewCreateView(m.Colours())
+			m.currentView = view.NewLedgersCreateView(m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			ledgerId := m.currentView.(*meta.DetailView).ModelId
 
-			m.currentView = NewUpdateView(m, ledgerId)
+			m.currentView = view.NewLedgersUpdateView(ledgerId, m.Colours())
 
 		case meta.DELETEVIEWTYPE:
 			ledgerId := m.currentView.(*meta.DetailView).ModelId
 
-			m.currentView = NewDeleteView(m, ledgerId)
+			m.currentView = view.NewLedgersDeleteView(ledgerId, m.Colours())
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
@@ -108,48 +109,48 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.CommitCreateMsg:
-		createView := m.currentView.(*CreateView)
+		createView := m.currentView.(*view.LedgersCreateView)
 
-		ledgerName := createView.nameInput.Value()
-		ledgerType := createView.typeInput.Value().(LedgerType)
-		ledgerNotes := createView.noteInput.Value()
+		ledgerName := createView.NameInput.Value()
+		ledgerType := createView.TypeInput.Value().(database.LedgerType)
+		ledgerNotes := createView.NoteInput.Value()
 
-		newLedger := Ledger{
+		newLedger := database.Ledger{
 			Name:  ledgerName,
 			Type:  ledgerType,
 			Notes: strings.Split(ledgerNotes, "\n"),
 		}
 
-		id, err := newLedger.Insert(m.db)
+		id, err := newLedger.Insert()
 
 		if err != nil {
 			return m, meta.MessageCmd(err)
 		}
 
-		m.currentView = NewUpdateView(m, id)
+		m.currentView = view.NewLedgersUpdateView(id, m.Colours())
 		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 		// Or maybe this should just switch to the list view or the detail view? Idk
 
 		return m, m.currentView.Init()
 
 	case meta.CommitUpdateMsg:
-		view := m.currentView.(*UpdateView)
+		view := m.currentView.(*view.LedgersUpdateView)
 
-		currentValues := Ledger{
-			Id:    view.modelId,
-			Name:  view.nameInput.Value(),
-			Type:  view.typeInput.Value().(LedgerType),
-			Notes: strings.Split(view.noteInput.Value(), "\n"),
+		currentValues := database.Ledger{
+			Id:    view.ModelId,
+			Name:  view.NameInput.Value(),
+			Type:  view.TypeInput.Value().(database.LedgerType),
+			Notes: strings.Split(view.NoteInput.Value(), "\n"),
 		}
 
-		currentValues.Update(m.db)
+		currentValues.Update()
 
 		return m, nil
 
 	case meta.CommitDeleteMsg:
-		view := m.currentView.(*DeleteView)
+		view := m.currentView.(*view.LedgersDeleteView)
 
-		err := DeleteLedger(m.db, view.model.Id)
+		err := database.DeleteLedger(view.ModelId)
 
 		m.currentView = meta.NewListView(m)
 		// TODO: Add a vimesque message to inform user of successful deletion
@@ -163,38 +164,38 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) View() string {
+func (m *LedgersApp) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight)
 
 	return style.Render(m.currentView.View())
 }
 
-func (m *model) Name() string {
+func (m *LedgersApp) Name() string {
 	return "Ledgers"
 }
 
-func (m *model) Colours() styles.AppColours {
+func (m *LedgersApp) Colours() styles.AppColours {
 	return styles.LEDGERSSTYLES
 }
 
-func (m *model) CurrentMotionSet() *meta.MotionSet {
+func (m *LedgersApp) CurrentMotionSet() *meta.MotionSet {
 	return m.currentView.MotionSet()
 }
 
-func (m *model) CurrentCommandSet() *meta.CommandSet {
+func (m *LedgersApp) CurrentCommandSet() *meta.CommandSet {
 	return m.currentView.CommandSet()
 }
 
-func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
+func (m *LedgersApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGER:   {},
 		meta.ENTRYROW: {},
 	}
 }
 
-func (m *model) MakeLoadListCmd() tea.Cmd {
+func (m *LedgersApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectLedgers(m.db)
+		rows, err := database.SelectLedgers()
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
@@ -212,12 +213,12 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadRowsCmd() tea.Cmd {
+func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
 	ledgerId := m.currentView.(*meta.DetailView).ModelId
 
 	return func() tea.Msg {
-		rows, err := entries.SelectRowsByLedger(m.db, ledgerId)
+		rows, err := database.SelectRowsByLedger(ledgerId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
 		}
@@ -235,20 +236,20 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadDetailCmd() tea.Cmd {
+func (m *LedgersApp) MakeLoadDetailCmd() tea.Cmd {
 	var ledgerId int
 	switch view := m.currentView.(type) {
-	case *UpdateView:
-		ledgerId = view.modelId
-	case *DeleteView:
-		ledgerId = view.modelId
+	case *view.LedgersUpdateView:
+		ledgerId = view.ModelId
+	case *view.LedgersDeleteView:
+		ledgerId = view.ModelId
 
 	default:
 		panic(fmt.Sprintf("unexpected view: %#v", view))
 	}
 
 	return func() tea.Msg {
-		ledger, err := SelectLedger(m.db, ledgerId)
+		ledger, err := database.SelectLedger(ledgerId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER WITH ID %d: %#v", ledgerId, err)
 		}

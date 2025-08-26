@@ -1,4 +1,4 @@
-package ledgers
+package database
 
 import (
 	"database/sql/driver"
@@ -8,15 +8,15 @@ import (
 func (lt *LedgerType) Scan(value any) error {
 	switch value {
 	case int64(0):
-		*lt = INCOME
+		*lt = INCOMELEDGER
 	case int64(1):
-		*lt = EXPENSE
+		*lt = EXPENSELEDGER
 	case int64(2):
-		*lt = ASSET
+		*lt = ASSETLEDGER
 	case int64(3):
-		*lt = LIABILITY
+		*lt = LIABILITYLEDGER
 	case int64(4):
-		*lt = EQUITY
+		*lt = EQUITYLEDGER
 
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID LEDGER TYPE: %v", value)
@@ -27,15 +27,15 @@ func (lt *LedgerType) Scan(value any) error {
 
 func (lt LedgerType) Value() (driver.Value, error) {
 	switch lt {
-	case INCOME:
+	case INCOMELEDGER:
 		return int64(0), nil
-	case EXPENSE:
+	case EXPENSELEDGER:
 		return int64(1), nil
-	case ASSET:
+	case ASSETLEDGER:
 		return int64(2), nil
-	case LIABILITY:
+	case LIABILITYLEDGER:
 		return int64(3), nil
-	case EQUITY:
+	case EQUITYLEDGER:
 		return int64(4), nil
 	}
 

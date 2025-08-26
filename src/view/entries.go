@@ -1,13 +1,11 @@
-package entries
+package view
 
 import (
 	"fmt"
 	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
-	"terminaccounting/apps/accounts"
-	"terminaccounting/apps/journals"
-	"terminaccounting/apps/ledgers"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -19,65 +17,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func (e Entry) FilterValue() string {
-	var result strings.Builder
-	result.WriteString(strconv.Itoa(e.Id))
-	result.WriteString(strconv.Itoa(e.Journal))
-	result.WriteString(strings.Join(e.Notes, ";"))
-	return result.String()
-}
-
-func (e Entry) Title() string {
-	return strconv.Itoa(e.Id)
-}
-
-func (e Entry) Description() string {
-	return strings.Join(e.Notes, "; ")
-}
-
-func (er EntryRow) FilterValue() string {
-	var result strings.Builder
-
-	result.WriteString(strconv.Itoa(er.Id))
-
-	// TODO: Get entry name, ledger name, account name etc.
-	// Maybe I do want to maintain a `[]Ledger` array in ledgers app etc.,
-	// for this. Makes sense maybe.
-	// Then again, import loops and all. Maybe the main program needs a way to query these things?
-	// Or a just a bunch of DB queries.
-	// I mean I guess they're just lookups by primary key, that's fiiiine?
-	// Probably runs every time the search box updates, maybe it's not "fiiiine".
-	result.WriteString(strconv.Itoa(er.Entry))
-	result.WriteString(strconv.Itoa(er.Ledger))
-	result.WriteString(strconv.Itoa(*er.Account))
-
-	result.WriteString(strconv.Itoa(int(er.Value.Whole)))
-	result.WriteString(strconv.Itoa(int(er.Value.Fractional)))
-
-	return result.String()
-}
-
-func (er EntryRow) Title() string {
-	return strconv.Itoa(er.Id)
-}
-
-func (er EntryRow) Description() string {
-	return strconv.Itoa(er.Id)
-}
-
-type activeInput int
-
 const (
 	JOURNALINPUT activeInput = iota
 	NOTESINPUT
 )
 
-type CreateView struct {
+type EntryCreateView struct {
 	db *sqlx.DB
 
-	journalInput     itempicker.Model
-	notesInput       textarea.Model
-	entryRowsManager EntryRowCreateViewManager
+	JournalInput     itempicker.Model
+	NotesInput       textarea.Model
+	EntryRowsManager EntryRowCreateViewManager
 	activeInput      activeInput
 
 	colours styles.AppColours
@@ -95,18 +45,18 @@ type EntryRowCreateView struct {
 	valueInput textinput.Model
 }
 
-func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
+func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView {
 	journalInput := itempicker.New([]itempicker.Item{})
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
-	result := &CreateView{
+	result := &EntryCreateView{
 		db: db,
 
-		journalInput:     journalInput,
-		notesInput:       noteInput,
+		JournalInput:     journalInput,
+		NotesInput:       noteInput,
 		activeInput:      JOURNALINPUT,
-		entryRowsManager: NewEntryRowCreateViewManager(),
+		EntryRowsManager: NewEntryRowCreateViewManager(),
 
 		colours: colours,
 	}
@@ -129,22 +79,22 @@ func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
 	}
 }
 
-func (cv *CreateView) Init() tea.Cmd {
+func (cv *EntryCreateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
 
-	cmds = append(cmds, makeSelectJournalsCmd(cv.db))
+	cmds = append(cmds, database.MakeSelectJournalsCmd())
 
 	return tea.Batch(cmds...)
 }
 
-func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
 		if cv.activeInput == NOTESINPUT {
-			cv.notesInput.Blur()
+			cv.NotesInput.Blur()
 		}
 
 		// Only two inputs, previous/next is equivalent
@@ -152,7 +102,7 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		cv.activeInput %= 2
 
 		if cv.activeInput == NOTESINPUT {
-			cv.notesInput.Focus()
+			cv.NotesInput.Focus()
 		}
 
 		return cv, nil
@@ -164,38 +114,38 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.JOURNAL:
-			journals := message.Data.([]journals.Journal)
+			journals := message.Data.([]database.Journal)
 
 			asSlice := make([]itempicker.Item, len(journals))
 			for i, journal := range journals {
 				asSlice[i] = journal
 			}
 
-			cv.journalInput.SetItems(asSlice)
+			cv.JournalInput.SetItems(asSlice)
 
 			return cv, nil
 
 		case meta.LEDGER:
-			ledgers := message.Data.([]ledgers.Ledger)
+			ledgers := message.Data.([]database.Ledger)
 
 			asSlice := make([]itempicker.Item, len(ledgers))
 			for i, ledger := range ledgers {
 				asSlice[i] = ledger
 			}
 
-			cv.entryRowsManager.SetLedgers(asSlice)
+			cv.EntryRowsManager.SetLedgers(asSlice)
 
 			return cv, nil
 
 		case meta.ACCOUNT:
-			accounts := message.Data.([]accounts.Account)
+			accounts := message.Data.([]database.Account)
 
 			asSlice := make([]itempicker.Item, len(accounts))
 			for i, account := range accounts {
 				asSlice[i] = account
 			}
 
-			cv.entryRowsManager.SetAccounts(asSlice)
+			cv.EntryRowsManager.SetAccounts(asSlice)
 
 			return cv, nil
 
@@ -204,10 +154,10 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.CommitCreateMsg:
-		journal := cv.journalInput.Value().(journals.Journal)
-		notes := cv.notesInput.Value()
+		journal := cv.JournalInput.Value().(database.Journal)
+		notes := cv.NotesInput.Value()
 
-		_ = Entry{
+		_ = database.Entry{
 			Journal: journal.Id,
 			Notes:   strings.Split(notes, "\n"),
 		}
@@ -229,9 +179,9 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		switch cv.activeInput {
 		case JOURNALINPUT:
-			cv.journalInput, cmd = cv.journalInput.Update(message)
+			cv.JournalInput, cmd = cv.JournalInput.Update(message)
 		case NOTESINPUT:
-			cv.notesInput, cmd = cv.notesInput.Update(message)
+			cv.NotesInput, cmd = cv.NotesInput.Update(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
@@ -244,7 +194,7 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (cv *CreateView) View() string {
+func (cv *EntryCreateView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1)
@@ -259,7 +209,7 @@ func (cv *CreateView) View() string {
 		Align(lipgloss.Center)
 
 	const inputWidth = 26
-	cv.notesInput.SetWidth(inputWidth)
+	cv.NotesInput.SetWidth(inputWidth)
 
 	// TODO: Render active input with a different colour
 	var typeRow = lipgloss.JoinHorizontal(
@@ -267,7 +217,7 @@ func (cv *CreateView) View() string {
 		"  ",
 		style.Render("Journal"),
 		" ",
-		style.Width(cv.journalInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.journalInput.View()),
+		style.Width(cv.JournalInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
@@ -275,7 +225,7 @@ func (cv *CreateView) View() string {
 		"  ",
 		style.Render("Note"),
 		" ",
-		style.Render(cv.notesInput.View()),
+		style.Render(cv.NotesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
@@ -286,12 +236,12 @@ func (cv *CreateView) View() string {
 		),
 	))
 
-	result.WriteString(cv.entryRowsManager.View())
+	result.WriteString(cv.EntryRowsManager.View())
 
 	return result.String()
 }
 
-func (cv *CreateView) MotionSet() *meta.MotionSet {
+func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -304,7 +254,7 @@ func (cv *CreateView) MotionSet() *meta.MotionSet {
 	}
 }
 
-func (cv *CreateView) CommandSet() *meta.CommandSet {
+func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})

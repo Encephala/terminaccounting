@@ -1,20 +1,21 @@
-package entries
+package main
 
 import (
 	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
-	"terminaccounting/apps/journals"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
+	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
 
-type model struct {
+type EntriesApp struct {
 	db *sqlx.DB
 
 	viewWidth, viewHeight int
@@ -22,8 +23,8 @@ type model struct {
 	currentView meta.View
 }
 
-func New(db *sqlx.DB) meta.App {
-	model := &model{
+func NewEntriesApp(db *sqlx.DB) meta.App {
+	model := &EntriesApp{
 		db: db,
 	}
 
@@ -32,11 +33,11 @@ func New(db *sqlx.DB) meta.App {
 	return model
 }
 
-func (m *model) Init() tea.Cmd {
+func (m *EntriesApp) Init() tea.Cmd {
 	return m.currentView.Init()
 }
 
-func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
@@ -45,13 +46,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.SetupSchemaMsg:
-		changedEntries, err := setupSchemaEntries(message.Db)
+		changedEntries, err := database.SetupSchemaEntries()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
-		changedEntryRows, err := setupSchemaEntryRows(message.Db)
+		changedEntryRows, err := database.SetupSchemaEntryRows()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
 			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
@@ -77,14 +78,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.CommitCreateMsg:
-		createView := m.currentView.(*CreateView)
+		createView := m.currentView.(*view.EntryCreateView)
 
-		entryJournal := createView.journalInput.Value().(journals.Journal)
-		entryNotes := createView.notesInput.Value()
+		entryJournal := createView.JournalInput.Value().(database.Journal)
+		entryNotes := createView.NotesInput.Value()
 
 		// TODO: Actually create the entry in db and stuff.
 		// TODO: Decide on this implementation vs the one in CreateView.Update
-		_ = Entry{
+		_ = database.Entry{
 			Journal: entryJournal.Id,
 			Notes:   strings.Split(entryNotes, "\n"),
 		}
@@ -105,12 +106,12 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = meta.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedEntry := m.currentView.(*meta.ListView).ListModel.SelectedItem().(Entry)
+			selectedEntry := m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Entry)
 
 			m.currentView = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
 
 		case meta.CREATEVIEWTYPE:
-			m.currentView = NewCreateView(m.db, m.Colours())
+			m.currentView = view.NewEntryCreateView(m.db, m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			// TODO
@@ -131,29 +132,29 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) View() string {
+func (m *EntriesApp) View() string {
 	style := styles.Body(m.viewWidth, m.viewHeight)
 
 	return style.Render(m.currentView.View())
 }
 
-func (m *model) Name() string {
+func (m *EntriesApp) Name() string {
 	return "Entries"
 }
 
-func (m *model) Colours() styles.AppColours {
+func (m *EntriesApp) Colours() styles.AppColours {
 	return styles.ENTRIESCOLOURS
 }
 
-func (m *model) CurrentMotionSet() *meta.MotionSet {
+func (m *EntriesApp) CurrentMotionSet() *meta.MotionSet {
 	return m.currentView.MotionSet()
 }
 
-func (m *model) CurrentCommandSet() *meta.CommandSet {
+func (m *EntriesApp) CurrentCommandSet() *meta.CommandSet {
 	return m.currentView.CommandSet()
 }
 
-func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
+func (m *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRY:    {},
 		meta.ENTRYROW: {},
@@ -161,9 +162,9 @@ func (m *model) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (m *model) MakeLoadListCmd() tea.Cmd {
+func (m *EntriesApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectEntries(m.db)
+		rows, err := database.SelectEntries()
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
 		}
@@ -181,12 +182,12 @@ func (m *model) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadRowsCmd() tea.Cmd {
+func (m *EntriesApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
 	entryId := m.currentView.(*meta.DetailView).ModelId
 
 	return func() tea.Msg {
-		rows, err := SelectRowsByEntry(m.db, entryId)
+		rows, err := database.SelectRowsByEntry(entryId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}
@@ -204,21 +205,6 @@ func (m *model) MakeLoadRowsCmd() tea.Cmd {
 	}
 }
 
-func (m *model) MakeLoadDetailCmd() tea.Cmd {
+func (m *EntriesApp) MakeLoadDetailCmd() tea.Cmd {
 	panic("TODO")
-}
-
-func makeSelectJournalsCmd(db *sqlx.DB) tea.Cmd {
-	return func() tea.Msg {
-		rows, err := journals.SelectJournals(db)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.JOURNAL,
-			Data:      rows,
-		}
-	}
 }

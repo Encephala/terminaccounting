@@ -1,4 +1,4 @@
-package journals
+package main
 
 // import (
 // 	"fmt"
@@ -10,26 +10,26 @@ package journals
 // 	tea "github.com/charmbracelet/bubbletea"
 // )
 
-// type model struct {
+// type JournalsApp struct {
 // 	viewWidth, viewHeight int
 // }
 
-// func New() meta.App {
+// func NewJournalsApp() meta.App {
 // 	return &model{}
 // }
 
-// func (m *model) Init() tea.Cmd {
+// func (m *JournalsApp) Init() tea.Cmd {
 // 	return nil
 // }
 
-// func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+// func (m *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 // 	switch message := message.(type) {
 // 	case tea.WindowSizeMsg:
 // 		m.viewWidth = message.Width
 // 		m.viewHeight = message.Height
 
 // 	case meta.SetupSchemaMsg:
-// 		changed, err := setupSchema(message.Db)
+// 		changed, err := setupSchema()
 // 		if err != nil {
 // 			message := fmt.Errorf("COULD NOT CREATE `journals` TABLE: %v", err)
 // 			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
@@ -46,16 +46,16 @@ package journals
 // 	return m, nil
 // }
 
-// func (m *model) View() string {
+// func (m *JournalsApp) View() string {
 // 	style := styles.Body(m.viewWidth, m.viewHeight, m.Styles().Accent)
 // 	return style.Render("TODO journals")
 // }
 
-// func (m *model) Name() string {
+// func (m *JournalsApp) Name() string {
 // 	return "Journals"
 // }
 
-// func (m *model) Styles() styles.AppColours {
+// func (m *JournalsApp) Styles() styles.AppColours {
 // 	return styles.AppColours{
 // 		Foreground: "#F6D6D6D0",
 // 		Accent:     "#F6D6D680",

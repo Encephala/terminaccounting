@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"terminaccounting/apps/entries"
-	"terminaccounting/apps/ledgers"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -36,6 +35,7 @@ func main() {
 		slog.Error("Couldn't connect to database: ", "error", err)
 		os.Exit(1)
 	}
+	database.DB = db
 
 	commandInput := textinput.New()
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
@@ -45,8 +45,8 @@ func main() {
 	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
 	apps := make([]meta.App, 2)
-	apps[meta.LEDGERS] = ledgers.New(db)
-	apps[meta.ENTRIES] = entries.New(db)
+	apps[meta.LEDGERS] = NewLedgersApp(db)
+	apps[meta.ENTRIES] = NewEntriesApp(db)
 	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 	// apps[meta.JOURNALS] = journals.New()
 	// apps[meta.ACCOUNTS] = accounts.New()
@@ -93,7 +93,7 @@ func (m *model) Init() tea.Cmd {
 	}
 
 	for i, app := range m.apps {
-		model, cmd := app.Update(meta.SetupSchemaMsg{Db: m.db})
+		model, cmd := app.Update(meta.SetupSchemaMsg{})
 		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
