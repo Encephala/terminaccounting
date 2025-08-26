@@ -28,7 +28,7 @@ type EntryCreateView struct {
 
 	JournalInput     itempicker.Model
 	NotesInput       textarea.Model
-	EntryRowsManager EntryRowCreateViewManager
+	EntryRowsManager *EntryRowCreateViewManager
 	activeInput      activeInput
 
 	colours styles.AppColours
@@ -195,6 +195,8 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			cv.JournalInput, cmd = cv.JournalInput.Update(message)
 		case NOTESINPUT:
 			cv.NotesInput, cmd = cv.NotesInput.Update(message)
+		case ENTRYROWINPUT:
+			cv.EntryRowsManager, cmd = cv.EntryRowsManager.HandleKeyMsg(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
@@ -221,33 +223,27 @@ func (cv *EntryCreateView) View() string {
 		UnsetWidth().
 		Align(lipgloss.Center)
 
-	const inputWidth = 26
+	var inputWidth = cv.JournalInput.MaxViewLength()
 	cv.NotesInput.SetWidth(inputWidth)
 
 	// TODO: Render active input with a different colour
-	// TODO: Make this a nameColumn and inputColumn instead of typeRow and notesRow,
-	// so that the alignment can be easily adjusted
-	var typeRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		"  ",
+	var nameCol = lipgloss.JoinVertical(
+		lipgloss.Right,
 		style.Render("Journal"),
-		" ",
-		style.Width(cv.JournalInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
+		style.Render("Notes"),
 	)
 
-	var notesRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
+	var inputCol = lipgloss.JoinVertical(
+		lipgloss.Left,
+		style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
 		style.Render(cv.NotesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			typeRow,
-			notesRow,
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			nameCol,
+			inputCol,
 		),
 	))
 	result.WriteString("\n\n")
@@ -281,7 +277,7 @@ func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	return &asCommandSet
 }
 
-func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
+func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
 	rows := make([]*EntryRowCreateView, 2)
 
 	// Prefill with two empty rows
@@ -298,12 +294,13 @@ func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
 		creditInput:  textinput.New(),
 	}
 
-	return EntryRowCreateViewManager{
+	return &EntryRowCreateViewManager{
 		rows: rows,
 	}
 }
 
 func (ercvm *EntryRowCreateViewManager) View(style lipgloss.Style) string {
+	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
 
 	length := len(ercvm.rows) + 1
@@ -399,4 +396,8 @@ func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (pr
 	}
 
 	return false, false
+}
+
+func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
+	return ercvm, nil
 }
