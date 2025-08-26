@@ -5,46 +5,45 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-func setupDBJournals(t *testing.T) {
+func setupDBAccounts(t *testing.T) {
 	t.Helper()
 
 	database.DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := database.SetupSchemaJournals()
+	_, err := database.SetupSchemaAccounts()
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
 	}
 }
 
-func TestMarshalUnmarshalJournal(t *testing.T) {
-	setupDBJournals(t)
+func TestMarshalUnmarshalAccount(t *testing.T) {
+	setupDBAccounts(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	journal := database.Journal{
+	account := database.Account{
 		Id:          1,
-		Name:        "test",
-		JournalType: database.CASHFLOWJOURNAL,
+		Name:        "testerino",
+		AccountType: database.DEBTOR,
 		Notes:       []string{"a note"},
 	}
 
-	insertedId, err := journal.Insert()
+	insertedId, err := account.Insert()
 	if err != nil {
 		t.Fatalf("Couldn't insert into database: %v", err)
 	}
 
-	if insertedId != journal.Id {
-		t.Fatalf("Expected id of first inserted journal to be %d, found %d", journal.Id, insertedId)
+	if insertedId != account.Id {
+		t.Fatalf("Expected id of first inserted account to be %d, found %d", account.Id, insertedId)
 	}
 
-	rows, err := database.DB.Queryx(`SELECT * FROM journals;`)
+	rows, err := database.DB.Queryx(`SELECT * FROM accounts;`)
 	if err != nil {
 		t.Fatalf("Couldn't get rows from database: %v", err)
 	}
 
-	var result database.Journal
+	var result database.Account
 	count := 0
 	for rows.Next() {
 		count++
@@ -58,10 +57,10 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 		t.Errorf("Invalid number of rows %d found, expected 1", count)
 	}
 
-	testJournalsEqual(t, result, journal)
+	testAccountsEqual(t, result, account)
 }
 
-func testJournalsEqual(t *testing.T, actual, expected database.Journal) {
+func testAccountsEqual(t *testing.T, actual, expected database.Account) {
 	t.Helper()
 
 	if actual.Id != expected.Id {
@@ -72,8 +71,8 @@ func testJournalsEqual(t *testing.T, actual, expected database.Journal) {
 		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
 	}
 
-	if actual.JournalType != expected.JournalType {
-		t.Errorf("Invalid ID %q, expected %q", actual.JournalType, expected.JournalType)
+	if actual.AccountType != expected.AccountType {
+		t.Errorf("Invalid ID %q, expected %q", actual.AccountType, expected.AccountType)
 	}
 
 	if len(actual.Notes) != len(expected.Notes) {

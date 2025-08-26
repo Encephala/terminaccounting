@@ -39,7 +39,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	}
 
 	if insertedId != 1 {
-		t.Fatalf("Expected id of first inserted ledger to be %d, found %d", 1, insertedId)
+		t.Fatalf("Expected id of first inserted ledger to be %d, found %d", ledger.Id, insertedId)
 	}
 
 	rows, err := database.DB.Queryx(`SELECT * FROM ledgers;`)
