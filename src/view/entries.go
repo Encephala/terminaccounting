@@ -519,11 +519,17 @@ func (ercvm *EntryRowCreateViewManager) handleKeyMsg(msg tea.KeyMsg) (*EntryRowC
 			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
 		}
 		row.debitInput, cmd = row.debitInput.Update(msg)
+		if row.creditInput.Value() != "" {
+			row.creditInput.SetValue("")
+		}
 	case 3:
 		if !validateNumberInput(msg) {
 			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
 		}
 		row.creditInput, cmd = row.creditInput.Update(msg)
+		if row.debitInput.Value() != "" {
+			row.debitInput.SetValue("")
+		}
 	}
 
 	ercvm.rows[highlightRow] = row
