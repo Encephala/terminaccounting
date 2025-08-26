@@ -20,6 +20,7 @@ import (
 const (
 	JOURNALINPUT activeInput = iota
 	NOTESINPUT
+	ENTRYROWINPUT
 )
 
 type EntryCreateView struct {
@@ -35,6 +36,8 @@ type EntryCreateView struct {
 
 type EntryRowCreateViewManager struct {
 	rows []*EntryRowCreateView
+
+	activeInput int
 }
 
 type EntryRowCreateView struct {
@@ -84,9 +87,32 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			cv.NotesInput.Blur()
 		}
 
-		// Only two inputs, previous/next is equivalent
-		cv.activeInput++
-		cv.activeInput %= 2
+		if cv.activeInput != ENTRYROWINPUT {
+			switch message.Direction {
+			case meta.PREVIOUS:
+				cv.activeInput--
+				if cv.activeInput < 0 {
+					cv.activeInput += 3
+				}
+			case meta.NEXT:
+				cv.activeInput++
+				cv.activeInput %= 3
+			}
+
+			// If it changed to entryrow input
+			if cv.activeInput == ENTRYROWINPUT {
+				cv.EntryRowsManager.Focus(message.Direction)
+			}
+		} else {
+			preceeded, exceeded := cv.EntryRowsManager.SwitchFocus(message.Direction)
+
+			if exceeded {
+				cv.activeInput = 0
+			}
+			if preceeded {
+				cv.activeInput = 1
+			}
+		}
 
 		if cv.activeInput == NOTESINPUT {
 			cv.NotesInput.Focus()
@@ -335,4 +361,42 @@ func (ercvm *EntryRowCreateViewManager) SetAccounts(accounts []itempicker.Item) 
 	for _, row := range ercvm.rows {
 		row.accountInput.SetItems(accounts)
 	}
+}
+
+func (ercvm *EntryRowCreateViewManager) numInputs() int {
+	numRows := len(ercvm.rows)
+	inputsPerRow := 4
+	return numRows * inputsPerRow
+}
+
+func (ercvm *EntryRowCreateViewManager) Focus(direction meta.Sequence) {
+	numInputs := ercvm.numInputs()
+
+	switch direction {
+	case meta.PREVIOUS:
+		ercvm.activeInput = numInputs - 1
+
+	case meta.NEXT:
+		ercvm.activeInput = 0
+	}
+}
+
+func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+	numInputs := ercvm.numInputs()
+
+	switch direction {
+	case meta.PREVIOUS:
+		ercvm.activeInput--
+		if ercvm.activeInput < 0 {
+			return true, false
+		}
+
+	case meta.NEXT:
+		ercvm.activeInput++
+		if ercvm.activeInput >= numInputs {
+			return false, true
+		}
+	}
+
+	return false, false
 }
