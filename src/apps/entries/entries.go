@@ -83,7 +83,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		entryNotes := createView.notesInput.Value()
 
 		// TODO: Actually create the entry in db and stuff.
-		// ALSO TODO: Decide on this implementation vs the one in CreateView.Update
+		// TODO: Decide on this implementation vs the one in CreateView.Update
 		_ = Entry{
 			Journal: entryJournal.Id,
 			Notes:   strings.Split(entryNotes, "\n"),

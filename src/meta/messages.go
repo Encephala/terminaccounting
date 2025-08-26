@@ -44,6 +44,7 @@ const (
 	ENTRY
 	ENTRYROW
 	JOURNAL
+	ACCOUNT
 )
 
 type DataLoadedMsg struct {

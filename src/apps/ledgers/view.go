@@ -2,6 +2,7 @@ package ledgers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -28,6 +29,10 @@ func (l Ledger) Title() string {
 
 func (l Ledger) Description() string {
 	return l.Name
+}
+
+func (l Ledger) String() string {
+	return l.Name + "(" + strconv.Itoa(l.Id) + ")"
 }
 
 type activeInput int

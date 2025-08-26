@@ -5,12 +5,15 @@ import (
 	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
+	"terminaccounting/apps/accounts"
 	"terminaccounting/apps/journals"
+	"terminaccounting/apps/ledgers"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
@@ -72,11 +75,24 @@ const (
 type CreateView struct {
 	db *sqlx.DB
 
-	journalInput itempicker.Model
-	notesInput   textarea.Model
-	activeInput  activeInput
+	journalInput     itempicker.Model
+	notesInput       textarea.Model
+	entryRowsManager EntryRowCreateViewManager
+	activeInput      activeInput
 
 	colours styles.AppColours
+}
+
+type EntryRowCreateViewManager struct {
+	rows    []EntryRowCreateView
+	numRows int
+}
+
+type EntryRowCreateView struct {
+	ledgerInput  itempicker.Model
+	accountInput itempicker.Model
+	// TODO: documentInput as some file selector thing
+	valueInput textinput.Model
 }
 
 func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
@@ -87,14 +103,30 @@ func NewCreateView(db *sqlx.DB, colours styles.AppColours) *CreateView {
 	result := &CreateView{
 		db: db,
 
-		journalInput: journalInput,
-		notesInput:   noteInput,
-		activeInput:  JOURNALINPUT,
+		journalInput:     journalInput,
+		notesInput:       noteInput,
+		activeInput:      JOURNALINPUT,
+		entryRowsManager: NewEntryRowCreateViewManager(),
 
 		colours: colours,
 	}
 
 	return result
+}
+
+func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
+	rows := make([]EntryRowCreateView, 1)
+
+	rows[0] = EntryRowCreateView{
+		ledgerInput:  itempicker.New([]itempicker.Item{}),
+		accountInput: itempicker.New([]itempicker.Item{}),
+		valueInput:   textinput.New(),
+	}
+
+	return EntryRowCreateViewManager{
+		rows:    rows,
+		numRows: 1,
+	}
 }
 
 func (cv *CreateView) Init() tea.Cmd {
@@ -140,6 +172,30 @@ func (cv *CreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			cv.journalInput.SetItems(asSlice)
+
+			return cv, nil
+
+		case meta.LEDGER:
+			ledgers := message.Data.([]ledgers.Ledger)
+
+			asSlice := make([]itempicker.Item, len(ledgers))
+			for i, ledger := range ledgers {
+				asSlice[i] = ledger
+			}
+
+			cv.entryRowsManager.SetLedgers(asSlice)
+
+			return cv, nil
+
+		case meta.ACCOUNT:
+			accounts := message.Data.([]accounts.Account)
+
+			asSlice := make([]itempicker.Item, len(accounts))
+			for i, account := range accounts {
+				asSlice[i] = account
+			}
+
+			cv.entryRowsManager.SetAccounts(asSlice)
 
 			return cv, nil
 
@@ -230,6 +286,8 @@ func (cv *CreateView) View() string {
 		),
 	))
 
+	result.WriteString(cv.entryRowsManager.View())
+
 	return result.String()
 }
 
@@ -253,4 +311,40 @@ func (cv *CreateView) CommandSet() *meta.CommandSet {
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
+}
+
+func (ercvm *EntryRowCreateViewManager) View() string {
+	var result strings.Builder
+
+	for i, row := range ercvm.rows {
+		result.WriteString(lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			strconv.Itoa(i),
+			" ",
+			row.ledgerInput.View(),
+			" ",
+			row.accountInput.View(),
+			" ",
+			row.valueInput.View(),
+		))
+
+		if i < len(ercvm.rows)-1 {
+			result.WriteString("\n\n")
+		}
+	}
+
+	return result.String()
+}
+
+func (ercvm *EntryRowCreateViewManager) SetLedgers(ledgers []itempicker.Item) {
+	for _, row := range ercvm.rows {
+		row.ledgerInput.SetItems(ledgers)
+	}
+}
+
+func (ercvm *EntryRowCreateViewManager) SetAccounts(accounts []itempicker.Item) {
+
+	for _, row := range ercvm.rows {
+		row.accountInput.SetItems(accounts)
+	}
 }
