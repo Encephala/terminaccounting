@@ -13,7 +13,7 @@ type Item interface {
 }
 
 type Model struct {
-	items      []Item
+	Items      []Item
 	activeItem int
 }
 
@@ -24,7 +24,7 @@ type ItemSelectedMsg struct {
 
 func New(items []Item) Model {
 	return Model{
-		items: items,
+		Items: items,
 	}
 }
 
@@ -39,7 +39,7 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 		case "ctrl+n", "j":
 			m.activeItem++
 
-			if m.activeItem >= len(m.items) {
+			if m.activeItem >= len(m.Items) {
 				m.activeItem = 0
 			}
 
@@ -47,13 +47,13 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 			m.activeItem--
 
 			if m.activeItem < 0 {
-				m.activeItem = len(m.items) - 1
+				m.activeItem = len(m.Items) - 1
 			}
 
 		case "enter":
 			return m, func() tea.Msg {
 				return ItemSelectedMsg{
-					Item: m.items[m.activeItem],
+					Item: m.Items[m.activeItem],
 				}
 			}
 		}
@@ -63,20 +63,20 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if len(m.items) == 0 {
+	if len(m.Items) == 0 {
 		return lipgloss.NewStyle().Italic(true).Render("No items")
 	}
 
 	var result strings.Builder
 	result.WriteString("> ")
-	result.WriteString(m.items[m.activeItem].String())
+	result.WriteString(m.Items[m.activeItem].String())
 
 	return result.String()
 }
 
 // Allows to manually retrieve the currently selected value.
 func (m Model) Value() Item {
-	return m.items[m.activeItem]
+	return m.Items[m.activeItem]
 }
 
 // Sets the currently selected item to the given value.
@@ -85,7 +85,7 @@ func (m *Model) SetValue(value Item) {
 	var index int
 	found := false
 
-	for i, item := range m.items {
+	for i, item := range m.Items {
 		if item == value {
 			index = i
 			found = true
@@ -95,21 +95,17 @@ func (m *Model) SetValue(value Item) {
 	}
 
 	if !found {
-		panic(fmt.Sprintf("Setting itempicker value to %v but only valid choices are %v", value, m.items))
+		panic(fmt.Sprintf("Setting itempicker value to %v but only valid choices are %v", value, m.Items))
 	}
 
 	m.activeItem = index
-}
-
-func (m *Model) SetItems(items []Item) {
-	m.items = items
 }
 
 func (m Model) MaxViewLength() int {
 	emptyWidth := len("No items")
 	maxItemWidth := 0
 
-	for _, item := range m.items {
+	for _, item := range m.Items {
 		maxItemWidth = max(maxItemWidth, len(item.String()))
 	}
 
