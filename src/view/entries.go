@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"local/bubbles/itempicker"
+	"log/slog"
 	"strconv"
 	"strings"
 	"terminaccounting/database"
@@ -46,6 +47,17 @@ type EntryRowCreateView struct {
 	// TODO: documentInput as some file selector thing
 	debitInput  textinput.Model
 	creditInput textinput.Model
+}
+
+func newEntryRowCreateView() *EntryRowCreateView {
+	result := EntryRowCreateView{
+		ledgerInput:  itempicker.New([]itempicker.Item{}),
+		accountInput: itempicker.New([]itempicker.Item{}),
+		debitInput:   textinput.New(),
+		creditInput:  textinput.New(),
+	}
+
+	return &result
 }
 
 func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView {
@@ -205,7 +217,10 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, cmd
 
 	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
+		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+		slog.Warn(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+		return cv, nil
 	}
 }
 
@@ -302,18 +317,8 @@ func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
 	rows := make([]*EntryRowCreateView, 2)
 
 	// Prefill with two empty rows
-	rows[0] = &EntryRowCreateView{
-		ledgerInput:  itempicker.New([]itempicker.Item{}),
-		accountInput: itempicker.New([]itempicker.Item{}),
-		debitInput:   textinput.New(),
-		creditInput:  textinput.New(),
-	}
-	rows[1] = &EntryRowCreateView{
-		ledgerInput:  itempicker.New([]itempicker.Item{}),
-		accountInput: itempicker.New([]itempicker.Item{}),
-		debitInput:   textinput.New(),
-		creditInput:  textinput.New(),
-	}
+	rows[0] = newEntryRowCreateView()
+	rows[1] = newEntryRowCreateView()
 
 	return &EntryRowCreateViewManager{
 		rows: rows,
@@ -429,6 +434,15 @@ func (ercvm *EntryRowCreateViewManager) Focus(direction meta.Sequence) {
 func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	numInputs := ercvm.numInputs()
 
+	// Blur when leaving a textinput
+	highlightRow, highlightCol := ercvm.activeCoords()
+	switch highlightCol {
+	case 2:
+		ercvm.rows[highlightRow].debitInput.Blur()
+	case 3:
+		ercvm.rows[highlightRow].creditInput.Blur()
+	}
+
 	switch direction {
 	case meta.PREVIOUS:
 		ercvm.activeInput--
@@ -443,7 +457,14 @@ func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (pr
 		}
 	}
 
-	// TODO: Focus/unfocus textinput
+	// Focus when entering a textinput
+	highlightRow, highlightCol = ercvm.activeCoords()
+	switch highlightCol {
+	case 2:
+		ercvm.rows[highlightRow].debitInput.Focus()
+	case 3:
+		ercvm.rows[highlightRow].creditInput.Focus()
+	}
 
 	return false, false
 }
