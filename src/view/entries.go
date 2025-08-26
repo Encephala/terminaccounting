@@ -585,8 +585,9 @@ func (ercvm *EntryRowCreateViewManager) handleKeyMsg(msg tea.KeyMsg) (*EntryRowC
 // Checks if input is a digit or a period.
 // NOTE: don't allow -, a negative debit is just a positive credit
 func validateNumberInput(msg tea.KeyMsg) bool {
+	// These are (likely) control flow stuff, allow it
 	if len(msg.Runes) > 1 || len(msg.Runes) == 0 {
-		return false
+		return true
 	}
 
 	character := msg.Runes[0]
