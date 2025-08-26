@@ -222,22 +222,43 @@ func (cv *EntryCreateView) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	highlightStyle := style.Foreground(cv.colours.Foreground)
 
-	var inputWidth = cv.JournalInput.MaxViewLength()
+	inputWidth := cv.JournalInput.MaxViewLength()
 	cv.NotesInput.SetWidth(inputWidth)
+	cv.NotesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
+	cv.NotesInput.FocusedStyle.Text = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
+	cv.NotesInput.FocusedStyle.CursorLine = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
+	cv.NotesInput.FocusedStyle.LineNumber = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
 
-	// TODO: Render active input with a different colour
-	var nameCol = lipgloss.JoinVertical(
+	nameCol := lipgloss.JoinVertical(
 		lipgloss.Right,
 		style.Render("Journal"),
 		style.Render("Notes"),
 	)
 
-	var inputCol = lipgloss.JoinVertical(
-		lipgloss.Left,
-		style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
-		style.Render(cv.NotesInput.View()),
-	)
+	var inputCol string
+	if cv.activeInput == JOURNALINPUT {
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
+			style.Render(cv.NotesInput.View()),
+		)
+	} else if cv.activeInput == NOTESINPUT {
+		cv.NotesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
+
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
+			style.Render(cv.NotesInput.View()),
+		)
+	} else {
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
+			style.Render(cv.NotesInput.View()),
+		)
+	}
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
 		lipgloss.JoinHorizontal(
@@ -248,8 +269,8 @@ func (cv *EntryCreateView) View() string {
 	))
 	result.WriteString("\n\n")
 
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		cv.EntryRowsManager.View(style),
+	result.WriteString(style.MarginLeft(2).Render(
+		cv.EntryRowsManager.View(lipgloss.NewStyle(), lipgloss.NewStyle().Foreground(cv.colours.Foreground), cv.activeInput == ENTRYROWINPUT),
 	))
 
 	return result.String()
@@ -299,11 +320,14 @@ func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) View(style lipgloss.Style) string {
+func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Style, isActive bool) string {
 	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
 
 	length := len(ercvm.rows) + 1
+	inputsPerRow := 4
+	highlightRow := ercvm.activeInput / inputsPerRow
+	highlightCol := ercvm.activeInput % inputsPerRow
 
 	var idCol []string = make([]string, length)
 	var ledgerCol []string = make([]string, length)
@@ -318,11 +342,32 @@ func (ercvm *EntryRowCreateViewManager) View(style lipgloss.Style) string {
 	creditCol[0] = "Credit"
 
 	for i, row := range ercvm.rows {
-		idCol[i+1] = strconv.Itoa(i + 1)
-		ledgerCol[i+1] = row.ledgerInput.View()
-		accountCol[i+1] = row.accountInput.View()
-		debitCol[i+1] = row.debitInput.View()
-		creditCol[i+1] = row.creditInput.View()
+		idStyle := style
+		ledgerStyle := style
+		accountStyle := style
+		debitStyle := style
+		creditStyle := style
+
+		if isActive && i == highlightRow {
+			switch highlightCol {
+			case 0:
+				ledgerStyle = highlightStyle
+			case 1:
+				accountStyle = highlightStyle
+			case 2:
+				debitStyle = highlightStyle
+			case 3:
+				creditStyle = highlightStyle
+			default:
+				panic(fmt.Sprintf("Unexpected highlighted column %d", highlightCol))
+			}
+		}
+
+		idCol[i+1] = idStyle.Render(strconv.Itoa(i + 1))
+		ledgerCol[i+1] = ledgerStyle.Render(row.ledgerInput.View())
+		accountCol[i+1] = accountStyle.Render(row.accountInput.View())
+		debitCol[i+1] = debitStyle.Render(row.debitInput.View())
+		creditCol[i+1] = creditStyle.Render(row.creditInput.View())
 	}
 
 	idRendered := lipgloss.JoinVertical(lipgloss.Left, idCol...)
