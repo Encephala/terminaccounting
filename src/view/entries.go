@@ -115,10 +115,10 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			// If it changed to entryrow input
 			if cv.activeInput == ENTRYROWINPUT {
-				cv.EntryRowsManager.Focus(message.Direction)
+				cv.EntryRowsManager.focus(message.Direction)
 			}
 		} else {
-			preceeded, exceeded := cv.EntryRowsManager.SwitchFocus(message.Direction)
+			preceeded, exceeded := cv.EntryRowsManager.switchFocus(message.Direction)
 
 			if exceeded {
 				cv.activeInput = 0
@@ -160,7 +160,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				asSlice[i] = ledger
 			}
 
-			cv.EntryRowsManager.SetLedgers(asSlice)
+			cv.EntryRowsManager.setLedgers(asSlice)
 
 			return cv, nil
 
@@ -173,7 +173,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				asSlice[i+1] = account
 			}
 
-			cv.EntryRowsManager.SetAccounts(asSlice)
+			cv.EntryRowsManager.setAccounts(asSlice)
 
 			return cv, nil
 
@@ -211,7 +211,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case NOTESINPUT:
 			cv.NotesInput, cmd = cv.NotesInput.Update(message)
 		case ENTRYROWINPUT:
-			cv.EntryRowsManager, cmd = cv.EntryRowsManager.HandleKeyMsg(message)
+			cv.EntryRowsManager, cmd = cv.EntryRowsManager.handleKeyMsg(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
@@ -430,13 +430,13 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	return result.String()
 }
 
-func (ercvm *EntryRowCreateViewManager) SetLedgers(ledgers []itempicker.Item) {
+func (ercvm *EntryRowCreateViewManager) setLedgers(ledgers []itempicker.Item) {
 	for _, row := range ercvm.rows {
 		row.ledgerInput.Items = ledgers
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) SetAccounts(accounts []itempicker.Item) {
+func (ercvm *EntryRowCreateViewManager) setAccounts(accounts []itempicker.Item) {
 
 	for _, row := range ercvm.rows {
 		row.accountInput.Items = accounts
@@ -454,7 +454,7 @@ func (ercvm *EntryRowCreateViewManager) activeCoords() (int, int) {
 	return ercvm.activeInput / inputsPerRow, ercvm.activeInput % inputsPerRow
 }
 
-func (ercvm *EntryRowCreateViewManager) Focus(direction meta.Sequence) {
+func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 	numInputs := ercvm.numInputs()
 
 	switch direction {
@@ -466,7 +466,7 @@ func (ercvm *EntryRowCreateViewManager) Focus(direction meta.Sequence) {
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	numInputs := ercvm.numInputs()
 
 	// Blur when leaving a textinput
@@ -504,7 +504,7 @@ func (ercvm *EntryRowCreateViewManager) SwitchFocus(direction meta.Sequence) (pr
 	return false, false
 }
 
-func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.KeyMsg) (*EntryRowCreateViewManager, tea.Cmd) {
+func (ercvm *EntryRowCreateViewManager) handleKeyMsg(msg tea.KeyMsg) (*EntryRowCreateViewManager, tea.Cmd) {
 	highlightRow, highlightCol := ercvm.activeCoords()
 
 	row := ercvm.rows[highlightRow]
@@ -563,7 +563,7 @@ func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager,
 	if highlightRow == len(ercvm.rows)-1 {
 		// Bit inefficient, but it handles blur/focus and stuff properly
 		for i := 0; i < 4; i++ {
-			preceeded, exceeded := ercvm.SwitchFocus(meta.PREVIOUS)
+			preceeded, exceeded := ercvm.switchFocus(meta.PREVIOUS)
 			if preceeded || exceeded {
 				panic("How did this ever happen")
 			}
@@ -592,7 +592,7 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 		ercvm.rows = newRows
 
 		for i := 0; i < 4; i++ {
-			preceeded, exceeded := ercvm.SwitchFocus(meta.NEXT)
+			preceeded, exceeded := ercvm.switchFocus(meta.NEXT)
 			if preceeded || exceeded {
 				panic("How did this ever happen v2")
 			}
@@ -608,8 +608,8 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 		ercvm.rows = newRows
 
 		// Ensure new active input is focused if need be
-		ercvm.SwitchFocus(meta.NEXT)
-		ercvm.SwitchFocus(meta.PREVIOUS)
+		ercvm.switchFocus(meta.NEXT)
+		ercvm.switchFocus(meta.PREVIOUS)
 	}
 
 	return ercvm, nil
