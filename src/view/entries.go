@@ -216,6 +216,16 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return cv, cmd
 
+	case DeleteEntryRowMsg:
+		if cv.activeInput != ENTRYROWINPUT {
+			return cv, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to delete one"))
+		}
+
+		var cmd tea.Cmd
+		cv.EntryRowsManager, cmd = cv.EntryRowsManager.deleteRow()
+
+		return cv, cmd
+
 	default:
 		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
 		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
@@ -299,9 +309,21 @@ func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
+	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
+
+	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
+	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
+
 	return &meta.MotionSet{
 		Normal: normalMotions,
 	}
+}
+
+type DeleteEntryRowMsg struct{}
+type CreateEntryRowMsg struct {
+	after bool
 }
 
 func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
@@ -488,4 +510,29 @@ func (ercvm *EntryRowCreateViewManager) HandleKeyMsg(msg tea.Msg) (*EntryRowCrea
 	ercvm.rows[highlightRow] = row
 
 	return ercvm, cmd
+}
+
+func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager, tea.Cmd) {
+	highlightRow, _ := ercvm.activeCoords()
+
+	// If trying to delete the last row in the entry
+	// CBA handling weird edge cases here
+	if len(ercvm.rows) == 1 {
+		return ercvm, meta.MessageCmd(fmt.Errorf("cannot delete the final entryrow"))
+	}
+
+	// If about to delete the bottom-most row, switch focus to one row above
+	if highlightRow == len(ercvm.rows)-1 {
+		// Bit inefficient, but it handles blur/focus and stuff properly
+		for i := 0; i < 4; i++ {
+			preceeded, exceeded := ercvm.SwitchFocus(meta.PREVIOUS)
+			if preceeded || exceeded {
+				panic("How did this ever happen")
+			}
+		}
+	}
+
+	ercvm.rows = append(ercvm.rows[:highlightRow], ercvm.rows[highlightRow+1:]...)
+
+	return ercvm, nil
 }
