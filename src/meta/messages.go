@@ -28,23 +28,23 @@ type UpdateViewMotionSetMsg *MotionSet
 
 type UpdateViewCommandSetMsg *CommandSet
 
-type AppType int
+type AppType string
 
 const (
-	LEDGERS AppType = iota
-	ENTRIES
-	JOURNALS
-	ACCOUNTS
+	LEDGERS  AppType = "LEDGERS"
+	ENTRIES  AppType = "ENTRIES"
+	JOURNALS AppType = "JOURNALS"
+	ACCOUNTS AppType = "ACCOUNTS"
 )
 
-type ModelType int
+type ModelType string
 
 const (
-	LEDGER ModelType = iota
-	ENTRY
-	ENTRYROW
-	JOURNAL
-	ACCOUNT
+	LEDGER   ModelType = "LEDGER"
+	ENTRY    ModelType = "ENTRY"
+	ENTRYROW ModelType = "ENTRYROW"
+	JOURNAL  ModelType = "JOURNAL"
+	ACCOUNT  ModelType = "ACCOUNT"
 )
 
 type DataLoadedMsg struct {
@@ -58,24 +58,24 @@ type NavigateMsg struct {
 	Direction
 }
 
-type Direction int
+type Direction string
 
 const (
-	UP Direction = iota
-	RIGHT
-	DOWN
-	LEFT
+	UP    Direction = "UP"
+	RIGHT Direction = "RIGHT"
+	DOWN  Direction = "DOWN"
+	LEFT  Direction = "LEFT"
 )
 
 type SwitchModeMsg struct {
 	InputMode
 }
 
-type Sequence int
+type Sequence string
 
 const (
-	PREVIOUS Sequence = iota
-	NEXT
+	PREVIOUS Sequence = "PREVIOUS"
+	NEXT     Sequence = "NEXT"
 )
 
 type SwitchFocusMsg struct {
@@ -86,14 +86,14 @@ type SwitchTabMsg struct {
 	Direction Sequence
 }
 
-type ViewType int
+type ViewType string
 
 const (
-	LISTVIEWTYPE ViewType = iota
-	DETAILVIEWTYPE
-	CREATEVIEWTYPE
-	UPDATEVIEWTYPE
-	DELETEVIEWTYPE
+	LISTVIEWTYPE   ViewType = "LIST VIEW"
+	DETAILVIEWTYPE ViewType = "DETAIL VIEW"
+	CREATEVIEWTYPE ViewType = "CREATE VIEW"
+	UPDATEVIEWTYPE ViewType = "UPDATE VIEW"
+	DELETEVIEWTYPE ViewType = "DELETE VIEW"
 )
 
 type SwitchViewMsg struct {

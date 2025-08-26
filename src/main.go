@@ -45,17 +45,22 @@ func main() {
 	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
 	apps := make([]meta.App, 2)
-	apps[meta.LEDGERS] = NewLedgersApp(db)
-	apps[meta.ENTRIES] = NewEntriesApp(db)
+	apps[0] = NewLedgersApp(db)
+	apps[1] = NewEntriesApp(db)
 	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 	// apps[meta.JOURNALS] = journals.New()
 	// apps[meta.ACCOUNTS] = accounts.New()
+
+	appIds := make(map[meta.AppType]int, 2)
+	appIds[meta.LEDGERS] = 0
+	appIds[meta.ENTRIES] = 1
 
 	m := &model{
 		db: db,
 
 		activeApp: 0,
 		apps:      apps,
+		appIds:    appIds,
 
 		inputMode:    meta.NORMALMODE,
 		commandInput: commandInput,
@@ -148,14 +153,14 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 
 	case meta.DataLoadedMsg:
-		acceptedModels := m.apps[message.TargetApp].AcceptedModels()
+		acceptedModels := m.appTypeToApp(message.TargetApp).AcceptedModels()
 
 		if _, ok := acceptedModels[message.Model]; !ok {
-			panic(fmt.Sprintf("Mismatch between target app %q and loaded model:\n%#v", m.apps[message.TargetApp].Name(), message))
+			panic(fmt.Sprintf("Mismatch between target app %q and loaded model:\n%#v", m.appTypeToApp(message.TargetApp).Name(), message))
 		}
 
-		newApp, cmd := m.apps[message.TargetApp].Update(message)
-		m.apps[message.TargetApp] = newApp.(meta.App)
+		newApp, cmd := m.appTypeToApp(message.TargetApp).Update(message)
+		m.apps[m.appIds[message.TargetApp]] = newApp.(meta.App)
 
 		return m, cmd
 
@@ -224,6 +229,10 @@ func (m *model) View() string {
 	result = append(result, statusLineView(m))
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
+}
+
+func (m *model) appTypeToApp(appType meta.AppType) meta.App {
+	return m.apps[m.appIds[appType]]
 }
 
 func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
