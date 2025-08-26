@@ -34,15 +34,15 @@ type EntryCreateView struct {
 }
 
 type EntryRowCreateViewManager struct {
-	rows    []*EntryRowCreateView
-	numRows int
+	rows []*EntryRowCreateView
 }
 
 type EntryRowCreateView struct {
 	ledgerInput  itempicker.Model
 	accountInput itempicker.Model
 	// TODO: documentInput as some file selector thing
-	valueInput textinput.Model
+	debitInput  textinput.Model
+	creditInput textinput.Model
 }
 
 func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView {
@@ -62,21 +62,6 @@ func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView
 	}
 
 	return result
-}
-
-func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
-	rows := make([]*EntryRowCreateView, 1)
-
-	rows[0] = &EntryRowCreateView{
-		ledgerInput:  itempicker.New([]itempicker.Item{}),
-		accountInput: itempicker.New([]itempicker.Item{}),
-		valueInput:   textinput.New(),
-	}
-
-	return EntryRowCreateViewManager{
-		rows:    rows,
-		numRows: 1,
-	}
 }
 
 func (cv *EntryCreateView) Init() tea.Cmd {
@@ -242,7 +227,7 @@ func (cv *EntryCreateView) View() string {
 	result.WriteString("\n\n")
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		cv.EntryRowsManager.View(),
+		cv.EntryRowsManager.View(style),
 	))
 
 	return result.String()
@@ -270,25 +255,71 @@ func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	return &asCommandSet
 }
 
-func (ercvm *EntryRowCreateViewManager) View() string {
+func NewEntryRowCreateViewManager() EntryRowCreateViewManager {
+	rows := make([]*EntryRowCreateView, 2)
+
+	// Prefill with two empty rows
+	rows[0] = &EntryRowCreateView{
+		ledgerInput:  itempicker.New([]itempicker.Item{}),
+		accountInput: itempicker.New([]itempicker.Item{}),
+		debitInput:   textinput.New(),
+		creditInput:  textinput.New(),
+	}
+	rows[1] = &EntryRowCreateView{
+		ledgerInput:  itempicker.New([]itempicker.Item{}),
+		accountInput: itempicker.New([]itempicker.Item{}),
+		debitInput:   textinput.New(),
+		creditInput:  textinput.New(),
+	}
+
+	return EntryRowCreateViewManager{
+		rows: rows,
+	}
+}
+
+func (ercvm *EntryRowCreateViewManager) View(style lipgloss.Style) string {
 	var result strings.Builder
 
-	for i, row := range ercvm.rows {
-		result.WriteString(lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			strconv.Itoa(i),
-			" ",
-			row.ledgerInput.View(),
-			" ",
-			row.accountInput.View(),
-			" ",
-			row.valueInput.View(),
-		))
+	length := len(ercvm.rows) + 1
 
-		if i < len(ercvm.rows)-1 {
-			result.WriteString("\n\n")
-		}
+	var idCol []string = make([]string, length)
+	var ledgerCol []string = make([]string, length)
+	var accountCol []string = make([]string, length)
+	var debitCol []string = make([]string, length)
+	var creditCol []string = make([]string, length)
+
+	idCol[0] = "Row"
+	ledgerCol[0] = "Ledger"
+	accountCol[0] = "Account"
+	debitCol[0] = "Debit"
+	creditCol[0] = "Credit"
+
+	for i, row := range ercvm.rows {
+		idCol[i+1] = strconv.Itoa(i + 1)
+		ledgerCol[i+1] = row.ledgerInput.View()
+		accountCol[i+1] = row.accountInput.View()
+		debitCol[i+1] = row.debitInput.View()
+		creditCol[i+1] = row.creditInput.View()
 	}
+
+	idRendered := lipgloss.JoinVertical(lipgloss.Left, idCol...)
+	ledgerRendered := lipgloss.JoinVertical(lipgloss.Left, ledgerCol...)
+	accountRendered := lipgloss.JoinVertical(lipgloss.Left, accountCol...)
+	debitRendered := lipgloss.JoinVertical(lipgloss.Left, debitCol...)
+	creditRendered := lipgloss.JoinVertical(lipgloss.Left, creditCol...)
+
+	result.WriteString(style.Render(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		idRendered,
+		" ",
+		ledgerRendered,
+		" ",
+		accountRendered,
+		" ",
+		debitRendered,
+		" ",
+		creditRendered,
+	)))
 
 	return result.String()
 }
