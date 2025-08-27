@@ -142,6 +142,10 @@ func (dv DecimalValue) String() string {
 		return fmt.Sprintf("-0.%02d", 100-dv.Fractional)
 	}
 
+	if dv.Fractional == 0 {
+		return fmt.Sprintf("%d.%02d", dv.Whole, 0)
+	}
+
 	return fmt.Sprintf("%d.%02d", dv.Whole+1, 100-dv.Fractional)
 }
 
