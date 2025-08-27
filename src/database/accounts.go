@@ -53,20 +53,17 @@ func SetupSchemaAccounts() (bool, error) {
 }
 
 func (a *Account) Insert() (int, error) {
-	_, err := DB.NamedExec(`INSERT INTO accounts (name, type, notes) VALUES (:name, :type, :notes)`, a)
+	result, err := DB.NamedExec(`INSERT INTO accounts (name, type, notes) VALUES (:name, :type, :notes)`, a)
 	if err != nil {
 		return -1, err
 	}
 
-	queryInsertedId := DB.QueryRowx(`SELECT seq FROM sqlite_sequence WHERE name = 'accounts';`)
-
-	var insertedId int
-	err = queryInsertedId.Scan(&insertedId)
+	id, err := result.LastInsertId()
 	if err != nil {
 		return -1, err
 	}
 
-	return insertedId, err
+	return int(id), err
 }
 
 func SelectAccounts() ([]Account, error) {
