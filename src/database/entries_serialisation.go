@@ -9,12 +9,12 @@ import (
 func (er *DecimalValue) Scan(value any) error {
 	switch value := value.(type) {
 	case []byte:
-		if len(value) != 16 {
-			return fmt.Errorf("UNMARSHALLING `DecimalValue` BUT DID NOT GET 16 BYTES, GOT: %+v", value)
+		if len(value) != 9 {
+			return fmt.Errorf("UNMARSHALLING `DecimalValue` BUT DID NOT GET 9 BYTES, GOT: %+v", value)
 		}
 
 		er.Whole = int64(binary.LittleEndian.Uint64(value))
-		er.Decimal = uint8(binary.LittleEndian.Uint16(value[8:]))
+		er.Decimal = value[8]
 
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID `DecimalValue`: %+v", value)
@@ -24,10 +24,10 @@ func (er *DecimalValue) Scan(value any) error {
 }
 
 func (er DecimalValue) Value() (driver.Value, error) {
-	result := make([]byte, 16)
+	result := make([]byte, 9)
 
 	binary.LittleEndian.PutUint64(result, uint64(er.Whole))
-	binary.LittleEndian.PutUint16(result[8:], uint16(er.Decimal))
+	result[8] = er.Decimal
 
 	return result, nil
 }
