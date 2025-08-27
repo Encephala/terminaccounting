@@ -505,6 +505,7 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 	switch direction {
 	case meta.PREVIOUS:
 		ercvm.activeInput = numInputs - 1
+		ercvm.rows[len(ercvm.rows)-1].creditInput.Focus()
 
 	case meta.NEXT:
 		ercvm.activeInput = 0
