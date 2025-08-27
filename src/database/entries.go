@@ -176,7 +176,7 @@ func (dv DecimalValue) String() string {
 		return fmt.Sprintf("%d.%02d", dv.Whole, dv.Decimal)
 	}
 
-	if dv.Whole == -1 {
+	if dv.Whole == -1 && dv.Decimal > 0 {
 		return fmt.Sprintf("-0.%02d", 100-dv.Decimal)
 	}
 
