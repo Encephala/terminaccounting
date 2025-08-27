@@ -46,7 +46,7 @@ func (er EntryRow) FilterValue() string {
 	result.WriteString(strconv.Itoa(*er.Account))
 
 	result.WriteString(strconv.Itoa(int(er.Value.Whole)))
-	result.WriteString(strconv.Itoa(int(er.Value.Fractional)))
+	result.WriteString(strconv.Itoa(int(er.Value.Decimal)))
 
 	return result.String()
 }
@@ -80,8 +80,8 @@ func SetupSchemaEntries() (bool, error) {
 }
 
 type DecimalValue struct {
-	Whole      int64
-	Fractional uint8
+	Whole   int64
+	Decimal uint8
 }
 
 func ParseDecimalValue(input string) (DecimalValue, error) {
@@ -91,8 +91,8 @@ func ParseDecimalValue(input string) (DecimalValue, error) {
 		parsed, err := strconv.ParseInt(parts[0], 10, 64)
 
 		return DecimalValue{
-			Whole:      parsed,
-			Fractional: 0,
+			Whole:   parsed,
+			Decimal: 0,
 		}, err
 	}
 
@@ -128,46 +128,46 @@ func ParseDecimalValue(input string) (DecimalValue, error) {
 	}
 
 	return DecimalValue{
-		Whole:      whole,
-		Fractional: uint8(decimal),
+		Whole:   whole,
+		Decimal: uint8(decimal),
 	}, nil
 }
 
 func (dv DecimalValue) String() string {
 	if dv.Whole >= 0 {
-		return fmt.Sprintf("%d.%02d", dv.Whole, dv.Fractional)
+		return fmt.Sprintf("%d.%02d", dv.Whole, dv.Decimal)
 	}
 
 	if dv.Whole == -1 {
-		return fmt.Sprintf("-0.%02d", 100-dv.Fractional)
+		return fmt.Sprintf("-0.%02d", 100-dv.Decimal)
 	}
 
-	if dv.Fractional == 0 {
+	if dv.Decimal == 0 {
 		return fmt.Sprintf("%d.%02d", dv.Whole, 0)
 	}
 
-	return fmt.Sprintf("%d.%02d", dv.Whole+1, 100-dv.Fractional)
+	return fmt.Sprintf("%d.%02d", dv.Whole+1, 100-dv.Decimal)
 }
 
 func (left DecimalValue) Add(right DecimalValue) DecimalValue {
 	return DecimalValue{
-		Whole:      left.Whole + right.Whole,
-		Fractional: left.Fractional + right.Fractional,
+		Whole:   left.Whole + right.Whole,
+		Decimal: left.Decimal + right.Decimal,
 	}
 }
 
 func (left DecimalValue) Subtract(right DecimalValue) DecimalValue {
 	// Fix uint underflow
-	if left.Fractional < right.Fractional {
+	if left.Decimal < right.Decimal {
 		return DecimalValue{
-			Whole:      left.Whole - right.Whole - 1,
-			Fractional: left.Fractional - right.Fractional + 100,
+			Whole:   left.Whole - right.Whole - 1,
+			Decimal: left.Decimal - right.Decimal + 100,
 		}
 	}
 
 	return DecimalValue{
-		Whole:      left.Whole - right.Whole,
-		Fractional: left.Fractional - right.Fractional,
+		Whole:   left.Whole - right.Whole,
+		Decimal: left.Decimal - right.Decimal,
 	}
 }
 

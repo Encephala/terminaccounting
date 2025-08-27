@@ -14,7 +14,7 @@ func (er *DecimalValue) Scan(value any) error {
 		}
 
 		er.Whole = int64(binary.LittleEndian.Uint64(value))
-		er.Fractional = uint8(binary.LittleEndian.Uint16(value[8:]))
+		er.Decimal = uint8(binary.LittleEndian.Uint16(value[8:]))
 
 	default:
 		return fmt.Errorf("UNMARSHALLING INVALID `DecimalValue`: %+v", value)
@@ -27,7 +27,7 @@ func (er DecimalValue) Value() (driver.Value, error) {
 	result := make([]byte, 16)
 
 	binary.LittleEndian.PutUint64(result, uint64(er.Whole))
-	binary.LittleEndian.PutUint16(result[8:], uint16(er.Fractional))
+	binary.LittleEndian.PutUint16(result[8:], uint16(er.Decimal))
 
 	return result, nil
 }

@@ -432,7 +432,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
 	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
 	if err == nil {
-		if total.Whole == 0 && total.Fractional == 0 {
+		if total.Whole == 0 && total.Decimal == 0 {
 			totalRendered = fmt.Sprintf("Total: %s", green.Render(total.String()))
 		} else {
 			totalRendered = fmt.Sprintf("Total: %s", total)
