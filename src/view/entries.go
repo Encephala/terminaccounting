@@ -380,7 +380,7 @@ func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
 func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		highlightRow, highlightCol := ercvm.activeCoords()
+		highlightRow, highlightCol := ercvm.getActiveCoords()
 
 		row := ercvm.rows[highlightRow]
 		var cmd tea.Cmd
@@ -412,48 +412,32 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 		return ercvm, cmd
 
 	case meta.NavigateMsg:
-		activeRow, activeCol := ercvm.activeCoords()
+		oldRow, oldCol := ercvm.getActiveCoords()
 
 		switch msg.Direction {
 		case meta.DOWN:
-			if activeRow == len(ercvm.rows)-1 {
+			if oldRow == len(ercvm.rows)-1 {
 				break
 			}
-			for i := 0; i < 4; i++ {
-				prec, exc := ercvm.switchFocus(meta.NEXT)
-				if prec || exc {
-					panic("How did this happen")
-				}
-			}
+			ercvm.setActiveCoords(oldRow+1, oldCol)
 
 		case meta.LEFT:
-			if activeCol == 0 {
+			if oldCol == 0 {
 				break
 			}
-			prec, exc := ercvm.switchFocus(meta.PREVIOUS)
-			if prec || exc {
-				panic("How did this happen")
-			}
+			ercvm.setActiveCoords(oldRow, oldCol-1)
 
 		case meta.RIGHT:
-			if activeCol == 3 {
+			if oldCol == 3 {
 				break
 			}
-			prec, exc := ercvm.switchFocus(meta.NEXT)
-			if prec || exc {
-				panic("How did this happen")
-			}
+			ercvm.setActiveCoords(oldRow, oldCol+1)
 
 		case meta.UP:
-			if activeRow == 0 {
+			if oldRow == 0 {
 				break
 			}
-			for i := 0; i < 4; i++ {
-				prec, exc := ercvm.switchFocus(meta.PREVIOUS)
-				if prec || exc {
-					panic("How did this happen")
-				}
-			}
+			ercvm.setActiveCoords(oldRow-1, oldCol)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", msg.Direction))
@@ -470,7 +454,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	var result strings.Builder
 
 	length := len(ercvm.rows) + 1
-	highlightRow, highlightCol := ercvm.activeCoords()
+	highlightRow, highlightCol := ercvm.getActiveCoords()
 
 	var idCol []string = make([]string, length)
 	var ledgerCol []string = make([]string, length)
@@ -555,6 +539,32 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	return result.String()
 }
 
+// Returns preceeded/exceeded if the move would make the active input go "out of bounds"
+func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+	activeRow, activeCol := ercvm.getActiveCoords()
+
+	switch direction {
+	case meta.PREVIOUS:
+		if activeRow == 0 && activeCol == 0 {
+			return true, false
+		}
+
+		ercvm.setActiveCoords(activeRow, activeCol-1)
+
+	case meta.NEXT:
+		if activeRow == len(ercvm.rows)-1 && activeCol == ercvm.numInputsPerRow()-1 {
+			return false, true
+		}
+
+		ercvm.setActiveCoords(activeRow, activeCol+1)
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
+	}
+
+	return false, false
+}
+
 func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.DecimalValue, error) {
 	total := database.DecimalValue{}
 
@@ -595,12 +605,16 @@ func (ercvm *EntryRowCreateViewManager) setAccounts(accounts []itempicker.Item) 
 
 func (ercvm *EntryRowCreateViewManager) numInputs() int {
 	numRows := len(ercvm.rows)
-	inputsPerRow := 4
+	inputsPerRow := ercvm.numInputsPerRow()
 	return numRows * inputsPerRow
 }
 
-func (ercvm *EntryRowCreateViewManager) activeCoords() (int, int) {
-	inputsPerRow := 4
+func (ercvm *EntryRowCreateViewManager) numInputsPerRow() int {
+	return 4
+}
+
+func (ercvm *EntryRowCreateViewManager) getActiveCoords() (row, col int) {
+	inputsPerRow := ercvm.numInputsPerRow()
 	return ercvm.activeInput / inputsPerRow, ercvm.activeInput % inputsPerRow
 }
 
@@ -617,42 +631,50 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
-	numInputs := ercvm.numInputs()
+// Ignores an input that would make the active input go "out of bounds"
+func (ercvm *EntryRowCreateViewManager) setActiveCoords(row, col int) {
+	numPerRow := ercvm.numInputsPerRow()
+
+	if col == -1 {
+		row -= 1
+		col = numPerRow - 1
+	} else if col < -1 {
+		panic("What")
+	} else if col == numPerRow {
+		row += 1
+		col = 0
+	} else if col > numPerRow {
+		panic("What")
+	}
+
+	if row == -1 {
+		return
+	} else if row < -1 {
+		panic("What")
+	}
+	if row == len(ercvm.rows) {
+		return
+	} else if row > len(ercvm.rows) {
+		panic("What")
+	}
 
 	// Blur when leaving a textinput
-	highlightRow, highlightCol := ercvm.activeCoords()
-	switch highlightCol {
+	activeRow, activeCol := ercvm.getActiveCoords()
+	switch activeCol {
 	case 2:
-		ercvm.rows[highlightRow].debitInput.Blur()
+		ercvm.rows[activeRow].debitInput.Blur()
 	case 3:
-		ercvm.rows[highlightRow].creditInput.Blur()
+		ercvm.rows[activeRow].creditInput.Blur()
 	}
 
-	switch direction {
-	case meta.PREVIOUS:
-		ercvm.activeInput--
-		if ercvm.activeInput < 0 {
-			return true, false
-		}
+	ercvm.activeInput = row*numPerRow + col
 
-	case meta.NEXT:
-		ercvm.activeInput++
-		if ercvm.activeInput >= numInputs {
-			return false, true
-		}
-	}
-
-	// Focus when entering a textinput
-	highlightRow, highlightCol = ercvm.activeCoords()
-	switch highlightCol {
+	switch col {
 	case 2:
-		ercvm.rows[highlightRow].debitInput.Focus()
+		ercvm.rows[row].debitInput.Focus()
 	case 3:
-		ercvm.rows[highlightRow].creditInput.Focus()
+		ercvm.rows[row].creditInput.Focus()
 	}
-
-	return false, false
 }
 
 // Checks if input is a digit or a period.
@@ -677,7 +699,7 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 }
 
 func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager, tea.Cmd) {
-	highlightRow, _ := ercvm.activeCoords()
+	activeRow, _ := ercvm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
 	// CBA handling weird edge cases here
@@ -686,23 +708,17 @@ func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager,
 	}
 
 	// If about to delete the bottom-most row, switch focus to one row above
-	if highlightRow == len(ercvm.rows)-1 {
-		// Bit inefficient, but it handles blur/focus and stuff properly
-		for i := 0; i < 4; i++ {
-			preceeded, exceeded := ercvm.switchFocus(meta.PREVIOUS)
-			if preceeded || exceeded {
-				panic("How did this ever happen")
-			}
-		}
+	if activeRow == len(ercvm.rows)-1 {
+		ercvm.setActiveCoords(activeRow-1, 0)
 	}
 
-	ercvm.rows = append(ercvm.rows[:highlightRow], ercvm.rows[highlightRow+1:]...)
+	ercvm.rows = append(ercvm.rows[:activeRow], ercvm.rows[activeRow+1:]...)
 
 	return ercvm, nil
 }
 
 func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewManager, tea.Cmd) {
-	highlightRow, _ := ercvm.activeCoords()
+	activeRow, _ := ercvm.getActiveCoords()
 
 	newRow := newEntryRowCreateView()
 	newRow.ledgerInput.Items = ercvm.rows[0].ledgerInput.Items
@@ -711,31 +727,25 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 	newRows := make([]*EntryRowCreateView, 0, len(ercvm.rows)+1)
 
 	if after {
-		newRows = append(newRows, ercvm.rows[:highlightRow+1]...)
+		newRows = append(newRows, ercvm.rows[:activeRow+1]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, ercvm.rows[highlightRow+1:]...)
+		newRows = append(newRows, ercvm.rows[activeRow+1:]...)
 
 		ercvm.rows = newRows
 
-		for i := 0; i < 4; i++ {
-			preceeded, exceeded := ercvm.switchFocus(meta.NEXT)
-			if preceeded || exceeded {
-				panic("How did this ever happen v2")
-			}
-		}
+		ercvm.setActiveCoords(activeRow+1, 0)
 	} else {
 		// Blur old active input
-		ercvm.rows[highlightRow].debitInput.Blur()
-		ercvm.rows[highlightRow].creditInput.Blur()
-		newRows = append(newRows, ercvm.rows[:highlightRow]...)
+		ercvm.rows[activeRow].debitInput.Blur()
+		ercvm.rows[activeRow].creditInput.Blur()
+		newRows = append(newRows, ercvm.rows[:activeRow]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, ercvm.rows[highlightRow:]...)
+		newRows = append(newRows, ercvm.rows[activeRow:]...)
 
 		ercvm.rows = newRows
 
 		// Ensure new active input is focused if need be
-		ercvm.switchFocus(meta.NEXT)
-		ercvm.switchFocus(meta.PREVIOUS)
+		ercvm.setActiveCoords(activeRow, 0)
 	}
 
 	return ercvm, nil
