@@ -97,7 +97,8 @@ const (
 )
 
 type SwitchViewMsg struct {
-	ViewType
+	ViewType ViewType
+	Data     any
 }
 
 type ExecuteCommandMsg struct{}

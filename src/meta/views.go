@@ -88,7 +88,10 @@ func (lv *ListView) Type() ViewType {
 func (lv *ListView) MotionSet() *MotionSet {
 	var normalMotions Trie[tea.Msg]
 
-	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{ViewType: DETAILVIEWTYPE}) // [g]oto [d]etails
+	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{
+		ViewType: DETAILVIEWTYPE,
+		Data:     lv.ListModel.SelectedItem(),
+	}) // [g]oto [d]etails
 
 	return &MotionSet{Normal: normalMotions}
 }
@@ -106,7 +109,7 @@ type DetailView struct {
 	ModelId int
 }
 
-func NewDetailView(app App, itemId int, itemName string) *DetailView {
+func NewDetailView(app App, itemId int) *DetailView {
 	viewStyles := styles.NewDetailViewStyles(app.Colours().Foreground)
 
 	delegate := list.NewDefaultDelegate()
@@ -114,7 +117,8 @@ func NewDetailView(app App, itemId int, itemName string) *DetailView {
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
 	model := list.New([]list.Item{}, delegate, 20, 16)
-	model.Title = fmt.Sprintf("%s: %s", app.Name(), itemName)
+	// TODO: Change placeholder to, ykno, the name of the item being detail-view'd
+	model.Title = fmt.Sprintf("%s: %s", app.Name(), "PLACEHOLDER")
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
@@ -179,9 +183,9 @@ func (dv *DetailView) MotionSet() *MotionSet {
 	var normalMotions Trie[tea.Msg]
 
 	normalMotions.Insert(Motion{"g", "l"}, SwitchViewMsg{ViewType: LISTVIEWTYPE})
-	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE})
+	normalMotions.Insert(Motion{"g", "x"}, SwitchViewMsg{ViewType: DELETEVIEWTYPE, Data: dv.ModelId})
 
-	normalMotions.Insert(Motion{"g", "e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE})
+	normalMotions.Insert(Motion{"g", "e"}, SwitchViewMsg{ViewType: UPDATEVIEWTYPE, Data: dv.ModelId})
 
 	return &MotionSet{
 		Normal: normalMotions,

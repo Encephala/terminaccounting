@@ -68,20 +68,28 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = meta.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedLedger := m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Ledger)
+			ledgerId := -1
+			if message.Data != nil {
+				ledgerId = message.Data.(int)
+			} else {
+				// TODO: I'd like for this to also take the ID from the message.Data,
+				// but that's hard to do because the motion is created when the ListView is initialised,
+				// but we need to know the selected item later when gd is pressed
+				ledgerId = m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Ledger).Id
+			}
 
-			m.currentView = meta.NewDetailView(m, selectedLedger.Id, selectedLedger.Name)
+			m.currentView = meta.NewDetailView(m, ledgerId)
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewLedgersCreateView(m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
-			ledgerId := m.currentView.(*meta.DetailView).ModelId
+			ledgerId := message.Data.(int)
 
 			m.currentView = view.NewLedgersUpdateView(ledgerId, m.Colours())
 
 		case meta.DELETEVIEWTYPE:
-			ledgerId := m.currentView.(*meta.DetailView).ModelId
+			ledgerId := message.Data.(int)
 
 			m.currentView = view.NewLedgersDeleteView(ledgerId, m.Colours())
 
@@ -102,55 +110,6 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = newView.(meta.View)
 
 		return m, cmd
-
-	case meta.CommitCreateMsg:
-		createView := m.currentView.(*view.LedgersCreateView)
-
-		ledgerName := createView.NameInput.Value()
-		ledgerType := createView.TypeInput.Value().(database.LedgerType)
-		ledgerNotes := createView.NoteInput.Value()
-
-		newLedger := database.Ledger{
-			Name:  ledgerName,
-			Type:  ledgerType,
-			Notes: strings.Split(ledgerNotes, "\n"),
-		}
-
-		id, err := newLedger.Insert()
-
-		if err != nil {
-			return m, meta.MessageCmd(err)
-		}
-
-		m.currentView = view.NewLedgersUpdateView(id, m.Colours())
-		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
-		// Or maybe this should just switch to the list view or the detail view? Idk
-
-		return m, m.currentView.Init()
-
-	case meta.CommitUpdateMsg:
-		view := m.currentView.(*view.LedgersUpdateView)
-
-		currentValues := database.Ledger{
-			Id:    view.ModelId,
-			Name:  view.NameInput.Value(),
-			Type:  view.TypeInput.Value().(database.LedgerType),
-			Notes: strings.Split(view.NoteInput.Value(), "\n"),
-		}
-
-		currentValues.Update()
-
-		return m, nil
-
-	case meta.CommitDeleteMsg:
-		view := m.currentView.(*view.LedgersDeleteView)
-
-		err := database.DeleteLedger(view.ModelId)
-
-		m.currentView = meta.NewListView(m)
-		// TODO: Add a vimesque message to inform user of successful deletion
-
-		return m, tea.Batch(meta.MessageCmd(err), m.currentView.Init())
 	}
 
 	newView, cmd := m.currentView.Update(message)

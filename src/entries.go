@@ -109,13 +109,14 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			selectedEntry := m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Entry)
 
-			m.currentView = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
+			m.currentView = meta.NewDetailView(m, selectedEntry.Id)
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewEntryCreateView(m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			// TODO
+			// entryId := message.Data.(int)
 
 		case meta.DELETEVIEWTYPE:
 			// TODO

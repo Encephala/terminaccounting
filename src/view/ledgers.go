@@ -416,6 +416,21 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, nil
 
+	case meta.CommitDeleteMsg:
+		err := database.DeleteLedger(dv.ModelId)
+
+		// TODO: Add a vimesque message to inform user of successful deletion
+		var cmds []tea.Cmd
+		if err != nil {
+			cmds = append(cmds, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.SwitchViewMsg{
+				ViewType: meta.LISTVIEWTYPE,
+			})))
+		}
+
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
+
+		return dv, tea.Batch(cmds...)
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
