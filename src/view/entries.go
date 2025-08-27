@@ -135,8 +135,14 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, nil
 
 	case meta.NavigateMsg:
-		// Don't panic, just ignore the message
-		return cv, nil
+		if cv.activeInput != ENTRYROWINPUT {
+			return cv, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the entryrows"))
+		}
+
+		var cmd tea.Cmd
+		cv.EntryRowsManager, cmd = cv.EntryRowsManager.Update(message)
+
+		return cv, cmd
 
 	case meta.DataLoadedMsg:
 		switch message.Model {
@@ -211,7 +217,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case NOTESINPUT:
 			cv.NotesInput, cmd = cv.NotesInput.Update(message)
 		case ENTRYROWINPUT:
-			cv.EntryRowsManager, cmd = cv.EntryRowsManager.handleKeyMsg(message)
+			cv.EntryRowsManager, cmd = cv.EntryRowsManager.Update(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
@@ -319,15 +325,26 @@ func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
+	// Default navigation
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
+	// Create/delete rows
 	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
 	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
 	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
-
 	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
 	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
+
+	// hjkl navigation in entryrows
+	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"left"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"down"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"up"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+	normalMotions.Insert(meta.Motion{"right"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,
@@ -550,37 +567,92 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 	return false, false
 }
 
-func (ercvm *EntryRowCreateViewManager) handleKeyMsg(msg tea.KeyMsg) (*EntryRowCreateViewManager, tea.Cmd) {
-	highlightRow, highlightCol := ercvm.activeCoords()
+func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		highlightRow, highlightCol := ercvm.activeCoords()
 
-	row := ercvm.rows[highlightRow]
-	var cmd tea.Cmd
-	switch highlightCol {
-	case 0:
-		row.ledgerInput, cmd = row.ledgerInput.Update(msg)
-	case 1:
-		row.accountInput, cmd = row.accountInput.Update(msg)
-	case 2:
-		if !validateNumberInput(msg) {
-			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+		row := ercvm.rows[highlightRow]
+		var cmd tea.Cmd
+		switch highlightCol {
+		case 0:
+			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
+		case 1:
+			row.accountInput, cmd = row.accountInput.Update(msg)
+		case 2:
+			if !validateNumberInput(msg) {
+				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+			}
+			row.debitInput, cmd = row.debitInput.Update(msg)
+			if row.creditInput.Value() != "" {
+				row.creditInput.SetValue("")
+			}
+		case 3:
+			if !validateNumberInput(msg) {
+				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+			}
+			row.creditInput, cmd = row.creditInput.Update(msg)
+			if row.debitInput.Value() != "" {
+				row.debitInput.SetValue("")
+			}
 		}
-		row.debitInput, cmd = row.debitInput.Update(msg)
-		if row.creditInput.Value() != "" {
-			row.creditInput.SetValue("")
+
+		ercvm.rows[highlightRow] = row
+
+		return ercvm, cmd
+
+	case meta.NavigateMsg:
+		activeRow, activeCol := ercvm.activeCoords()
+
+		switch msg.Direction {
+		case meta.DOWN:
+			if activeRow == len(ercvm.rows)-1 {
+				break
+			}
+			for i := 0; i < 4; i++ {
+				prec, exc := ercvm.switchFocus(meta.NEXT)
+				if prec || exc {
+					panic("How did this happen")
+				}
+			}
+
+		case meta.LEFT:
+			if activeCol == 0 {
+				break
+			}
+			prec, exc := ercvm.switchFocus(meta.PREVIOUS)
+			if prec || exc {
+				panic("How did this happen")
+			}
+
+		case meta.RIGHT:
+			if activeCol == 3 {
+				break
+			}
+			prec, exc := ercvm.switchFocus(meta.NEXT)
+			if prec || exc {
+				panic("How did this happen")
+			}
+
+		case meta.UP:
+			if activeRow == 0 {
+				break
+			}
+			for i := 0; i < 4; i++ {
+				prec, exc := ercvm.switchFocus(meta.PREVIOUS)
+				if prec || exc {
+					panic("How did this happen")
+				}
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", msg.Direction))
 		}
-	case 3:
-		if !validateNumberInput(msg) {
-			return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
-		}
-		row.creditInput, cmd = row.creditInput.Update(msg)
-		if row.debitInput.Value() != "" {
-			row.debitInput.SetValue("")
-		}
+		return ercvm, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", msg))
 	}
-
-	ercvm.rows[highlightRow] = row
-
-	return ercvm, cmd
 }
 
 // Checks if input is a digit or a period.
