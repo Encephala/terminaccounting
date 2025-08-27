@@ -78,7 +78,11 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		entryJournal := createView.JournalInput.Value().(database.Journal)
 		entryNotes := createView.NotesInput.Value()
 
-		// TODO: Actually create the entry in db and stuff.
+		entryRows, err := createView.EntryRowsManager.CompileRows()
+		if err != nil {
+			return m, meta.MessageCmd(err)
+		}
+
 		// TODO: Decide on this implementation vs the one in CreateView.Update
 		// note from later me: wish I knew what this meant
 		newEntry := database.Entry{
@@ -86,13 +90,14 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes:   strings.Split(entryNotes, "\n"),
 		}
 
-		_, err := newEntry.Insert()
-
+		_, err = newEntry.Insert(entryRows)
 		if err != nil {
 			return m, meta.MessageCmd(err)
 		}
 
-		// m.currentView = NewEntryUpdateView(m, id)
+		// TODO: make this actually show update view instead of listview (should it?)
+		// m.currentView = NewEntryUpdateView(id)
+		m.currentView = meta.NewListView(m)
 
 		return m, m.currentView.Init()
 

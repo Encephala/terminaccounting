@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Entry struct {
@@ -79,7 +81,7 @@ func SetupSchemaEntries() (bool, error) {
 	return true, err
 }
 
-func (e Entry) Insert() (int, error) {
+func (e Entry) Insert(rows []EntryRow) (int, error) {
 	transaction, err := DB.Beginx()
 	defer transaction.Rollback()
 
@@ -97,9 +99,15 @@ func (e Entry) Insert() (int, error) {
 		return 0, err
 	}
 
-	// TODO: Insert all the rows
-	// for _, row := range e.rows {
-	// }
+	for i, row := range rows {
+		row.Entry = int(id)
+		rows[i] = row
+	}
+
+	_, err = insertRows(transaction, rows)
+	if err != nil {
+		return 0, err
+	}
 
 	err = transaction.Commit()
 	if err != nil {
@@ -237,18 +245,20 @@ func SetupSchemaEntryRows() (bool, error) {
 	return true, err
 }
 
-func insertRows(rows []EntryRow) (int, error) {
+func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 	query := `INSERT INTO entryrows
 	(entry, ledger, account, document, value, reconciled)
 	VALUES
 	(:entry, :ledger, :account, :document, :value, :reconciled);`
 
-	result, err := DB.NamedExec(query, rows)
+	result, err := transaction.NamedExec(query, rows)
 	if err != nil {
 		return 0, err
 	}
-	// I'm assuming this would yield the same error as the query itself?
-	changed, _ := result.RowsAffected()
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
 
 	return int(changed), err
 }

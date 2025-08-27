@@ -182,28 +182,6 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
-	case meta.CommitCreateMsg:
-		journal := cv.JournalInput.Value().(database.Journal)
-		notes := cv.NotesInput.Value()
-
-		newEntry := database.Entry{
-			Journal: journal.Id,
-			Notes:   strings.Split(notes, "\n"),
-		}
-
-		// TODO: Actually create the entry in db and stuff.
-		_, _ = newEntry.Insert()
-
-		// if err != nil {
-		// 	return cv, meta.MessageCmd(err)
-		// }
-
-		cmd := meta.MessageCmd(meta.SwitchViewMsg{
-			ViewType: meta.UPDATEVIEWTYPE,
-		})
-
-		return cv, cmd
-
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch cv.activeInput {
@@ -411,7 +389,7 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 
 		switch msg.Direction {
 		case meta.DOWN:
-			if oldRow == len(ercvm.rows)-1 {
+			if oldRow == ercvm.numRows()-1 {
 				break
 			}
 			ercvm.setActiveCoords(oldRow+1, oldCol)
@@ -448,7 +426,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
 
-	length := len(ercvm.rows) + 1
+	length := ercvm.numRows() + 1
 	highlightRow, highlightCol := ercvm.getActiveCoords()
 
 	var idCol []string = make([]string, length)
@@ -534,6 +512,48 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	return result.String()
 }
 
+func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, error) {
+	result := make([]database.EntryRow, ercvm.numRows())
+
+	for i, formRow := range ercvm.rows {
+		formLedger := formRow.ledgerInput.Value().(database.Ledger)
+		formAccount := formRow.accountInput.Value().(database.Account)
+
+		var accountId *int
+		accountId = nil
+		if formAccount.Id != -1 {
+			accountId = &formAccount.Id
+		}
+
+		var value database.DecimalValue
+		if formRow.debitInput.Value() != "" {
+			debit, err := database.ParseDecimalValue(formRow.debitInput.Value())
+			if err != nil {
+				return nil, err
+			}
+			value = debit
+		}
+		if formRow.creditInput.Value() != "" {
+			credit, err := database.ParseDecimalValue(formRow.creditInput.Value())
+			if err != nil {
+				return nil, err
+			}
+			value = credit
+		}
+
+		result[i] = database.EntryRow{
+			Entry:      -1, // Will be inserted after entry itself has been inserted
+			Ledger:     formLedger.Id,
+			Account:    accountId,
+			Document:   nil, // TODO
+			Value:      value,
+			Reconciled: false,
+		}
+	}
+
+	return result, nil
+}
+
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
 func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	activeRow, activeCol := ercvm.getActiveCoords()
@@ -547,7 +567,7 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 		ercvm.setActiveCoords(activeRow, activeCol-1)
 
 	case meta.NEXT:
-		if activeRow == len(ercvm.rows)-1 && activeCol == ercvm.numInputsPerRow()-1 {
+		if activeRow == ercvm.numRows()-1 && activeCol == ercvm.numInputsPerRow()-1 {
 			return false, true
 		}
 
@@ -598,10 +618,12 @@ func (ercvm *EntryRowCreateViewManager) setAccounts(accounts []itempicker.Item) 
 	}
 }
 
+func (ercvm *EntryRowCreateViewManager) numRows() int {
+	return len(ercvm.rows)
+}
+
 func (ercvm *EntryRowCreateViewManager) numInputs() int {
-	numRows := len(ercvm.rows)
-	inputsPerRow := ercvm.numInputsPerRow()
-	return numRows * inputsPerRow
+	return ercvm.numRows() * ercvm.numInputsPerRow()
 }
 
 func (ercvm *EntryRowCreateViewManager) numInputsPerRow() int {
@@ -619,7 +641,7 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 	switch direction {
 	case meta.PREVIOUS:
 		ercvm.activeInput = numInputs - 1
-		ercvm.rows[len(ercvm.rows)-1].creditInput.Focus()
+		ercvm.rows[ercvm.numRows()-1].creditInput.Focus()
 
 	case meta.NEXT:
 		ercvm.activeInput = 0
@@ -628,6 +650,7 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 
 // Ignores an input that would make the active input go "out of bounds"
 func (ercvm *EntryRowCreateViewManager) setActiveCoords(row, col int) {
+	numRow := ercvm.numRows()
 	numPerRow := ercvm.numInputsPerRow()
 
 	if col == -1 {
@@ -647,9 +670,9 @@ func (ercvm *EntryRowCreateViewManager) setActiveCoords(row, col int) {
 	} else if row < -1 {
 		panic("What")
 	}
-	if row == len(ercvm.rows) {
+	if row == numRow {
 		return
-	} else if row > len(ercvm.rows) {
+	} else if row > numRow {
 		panic("What")
 	}
 
@@ -698,12 +721,12 @@ func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager,
 
 	// If trying to delete the last row in the entry
 	// CBA handling weird edge cases here
-	if len(ercvm.rows) == 1 {
+	if ercvm.numRows() == 1 {
 		return ercvm, meta.MessageCmd(fmt.Errorf("cannot delete the final entryrow"))
 	}
 
 	// If about to delete the bottom-most row, switch focus to one row above
-	if activeRow == len(ercvm.rows)-1 {
+	if activeRow == ercvm.numRows()-1 {
 		ercvm.setActiveCoords(activeRow-1, 0)
 	}
 
@@ -719,7 +742,7 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 	newRow.ledgerInput.Items = ercvm.rows[0].ledgerInput.Items
 	newRow.accountInput.Items = ercvm.rows[0].accountInput.Items
 
-	newRows := make([]*EntryRowCreateView, 0, len(ercvm.rows)+1)
+	newRows := make([]*EntryRowCreateView, 0, ercvm.numRows()+1)
 
 	if after {
 		newRows = append(newRows, ercvm.rows[:activeRow+1]...)
