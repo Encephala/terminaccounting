@@ -377,6 +377,94 @@ func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
 	}
 }
 
+func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		highlightRow, highlightCol := ercvm.activeCoords()
+
+		row := ercvm.rows[highlightRow]
+		var cmd tea.Cmd
+		switch highlightCol {
+		case 0:
+			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
+		case 1:
+			row.accountInput, cmd = row.accountInput.Update(msg)
+		case 2:
+			if !validateNumberInput(msg) {
+				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+			}
+			row.debitInput, cmd = row.debitInput.Update(msg)
+			if row.creditInput.Value() != "" {
+				row.creditInput.SetValue("")
+			}
+		case 3:
+			if !validateNumberInput(msg) {
+				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+			}
+			row.creditInput, cmd = row.creditInput.Update(msg)
+			if row.debitInput.Value() != "" {
+				row.debitInput.SetValue("")
+			}
+		}
+
+		ercvm.rows[highlightRow] = row
+
+		return ercvm, cmd
+
+	case meta.NavigateMsg:
+		activeRow, activeCol := ercvm.activeCoords()
+
+		switch msg.Direction {
+		case meta.DOWN:
+			if activeRow == len(ercvm.rows)-1 {
+				break
+			}
+			for i := 0; i < 4; i++ {
+				prec, exc := ercvm.switchFocus(meta.NEXT)
+				if prec || exc {
+					panic("How did this happen")
+				}
+			}
+
+		case meta.LEFT:
+			if activeCol == 0 {
+				break
+			}
+			prec, exc := ercvm.switchFocus(meta.PREVIOUS)
+			if prec || exc {
+				panic("How did this happen")
+			}
+
+		case meta.RIGHT:
+			if activeCol == 3 {
+				break
+			}
+			prec, exc := ercvm.switchFocus(meta.NEXT)
+			if prec || exc {
+				panic("How did this happen")
+			}
+
+		case meta.UP:
+			if activeRow == 0 {
+				break
+			}
+			for i := 0; i < 4; i++ {
+				prec, exc := ercvm.switchFocus(meta.PREVIOUS)
+				if prec || exc {
+					panic("How did this happen")
+				}
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", msg.Direction))
+		}
+		return ercvm, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", msg))
+	}
+}
+
 func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Style, isActive bool) string {
 	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
@@ -418,7 +506,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 			}
 		}
 
-		idCol[i+1] = idStyle.Render(strconv.Itoa(i + 1))
+		idCol[i+1] = idStyle.Render(strconv.Itoa(i))
 		ledgerCol[i+1] = ledgerStyle.Render(row.ledgerInput.View())
 		accountCol[i+1] = accountStyle.Render(row.accountInput.View())
 		debitCol[i+1] = debitStyle.Render(row.debitInput.View())
@@ -565,94 +653,6 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 	}
 
 	return false, false
-}
-
-func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		highlightRow, highlightCol := ercvm.activeCoords()
-
-		row := ercvm.rows[highlightRow]
-		var cmd tea.Cmd
-		switch highlightCol {
-		case 0:
-			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
-		case 1:
-			row.accountInput, cmd = row.accountInput.Update(msg)
-		case 2:
-			if !validateNumberInput(msg) {
-				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
-			}
-			row.debitInput, cmd = row.debitInput.Update(msg)
-			if row.creditInput.Value() != "" {
-				row.creditInput.SetValue("")
-			}
-		case 3:
-			if !validateNumberInput(msg) {
-				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
-			}
-			row.creditInput, cmd = row.creditInput.Update(msg)
-			if row.debitInput.Value() != "" {
-				row.debitInput.SetValue("")
-			}
-		}
-
-		ercvm.rows[highlightRow] = row
-
-		return ercvm, cmd
-
-	case meta.NavigateMsg:
-		activeRow, activeCol := ercvm.activeCoords()
-
-		switch msg.Direction {
-		case meta.DOWN:
-			if activeRow == len(ercvm.rows)-1 {
-				break
-			}
-			for i := 0; i < 4; i++ {
-				prec, exc := ercvm.switchFocus(meta.NEXT)
-				if prec || exc {
-					panic("How did this happen")
-				}
-			}
-
-		case meta.LEFT:
-			if activeCol == 0 {
-				break
-			}
-			prec, exc := ercvm.switchFocus(meta.PREVIOUS)
-			if prec || exc {
-				panic("How did this happen")
-			}
-
-		case meta.RIGHT:
-			if activeCol == 3 {
-				break
-			}
-			prec, exc := ercvm.switchFocus(meta.NEXT)
-			if prec || exc {
-				panic("How did this happen")
-			}
-
-		case meta.UP:
-			if activeRow == 0 {
-				break
-			}
-			for i := 0; i < 4; i++ {
-				prec, exc := ercvm.switchFocus(meta.PREVIOUS)
-				if prec || exc {
-					panic("How did this happen")
-				}
-			}
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.Direction: %#v", msg.Direction))
-		}
-		return ercvm, nil
-
-	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", msg))
-	}
 }
 
 // Checks if input is a digit or a period.
