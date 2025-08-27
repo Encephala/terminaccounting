@@ -47,8 +47,8 @@ func (er EntryRow) FilterValue() string {
 	result.WriteString(strconv.Itoa(er.Ledger))
 	result.WriteString(strconv.Itoa(*er.Account))
 
-	result.WriteString(strconv.Itoa(int(er.Value.Whole)))
-	result.WriteString(strconv.Itoa(int(er.Value.Decimal)))
+	result.WriteString(strconv.Itoa(int(er.Value / 100)))
+	result.WriteString(strconv.Itoa(int(er.Value % 100)))
 
 	return result.String()
 }
@@ -117,25 +117,19 @@ func (e Entry) Insert(rows []EntryRow) (int, error) {
 	return int(id), nil
 }
 
-type DecimalValue struct {
-	Whole   int64
-	Decimal uint8
-}
+type CurrencyValue int64
 
-func ParseDecimalValue(input string) (DecimalValue, error) {
+func ParseDecimalValue(input string) (CurrencyValue, error) {
 	parts := strings.Split(input, ".")
 
 	if len(parts) == 1 {
 		parsed, err := strconv.ParseInt(parts[0], 10, 64)
 
-		return DecimalValue{
-			Whole:   parsed,
-			Decimal: 0,
-		}, err
+		return CurrencyValue(parsed * 100), err
 	}
 
 	if len(parts) != 2 {
-		return DecimalValue{}, fmt.Errorf("%s isn't a decimal value", input)
+		return 0, fmt.Errorf("%s isn't a decimal value", input)
 	}
 
 	left := parts[0]
@@ -143,7 +137,7 @@ func ParseDecimalValue(input string) (DecimalValue, error) {
 
 	whole, err := strconv.ParseInt(left, 10, 64)
 	if err != nil {
-		return DecimalValue{}, err
+		return 0, err
 	}
 
 	var decimal uint64
@@ -152,71 +146,55 @@ func ParseDecimalValue(input string) (DecimalValue, error) {
 	} else if len(right) == 1 {
 		decimal, err = strconv.ParseUint(right, 10, 8)
 		if err != nil {
-			return DecimalValue{}, err
+			return 0, err
 		}
 
 		decimal = decimal * 10
 	} else if len(right) == 2 {
 		decimal, err = strconv.ParseUint(right, 10, 8)
 		if err != nil {
-			return DecimalValue{}, err
+			return 0, err
 		}
 	} else {
-		return DecimalValue{}, fmt.Errorf("invalid decimal part %s", right)
+		return 0, fmt.Errorf("invalid decimal part %s", right)
 	}
 
-	return DecimalValue{
-		Whole:   whole,
-		Decimal: uint8(decimal),
-	}, nil
+	return CurrencyValue(whole*100 + int64(decimal)), nil
 }
 
-func (dv DecimalValue) String() string {
-	if dv.Whole >= 0 {
-		return fmt.Sprintf("%d.%02d", dv.Whole, dv.Decimal)
+func (dv CurrencyValue) String() string {
+	negative := false
+	if dv < 0 {
+		dv *= -1
+		negative = true
 	}
 
-	if dv.Whole == -1 && dv.Decimal > 0 {
-		return fmt.Sprintf("-0.%02d", 100-dv.Decimal)
+	whole := dv / 100
+	decimal := dv % 100
+
+	if negative {
+		return fmt.Sprintf("-%d.%02d", whole, decimal)
 	}
 
-	if dv.Decimal == 0 {
-		return fmt.Sprintf("%d.%02d", dv.Whole, 0)
-	}
-
-	return fmt.Sprintf("%d.%02d", dv.Whole+1, 100-dv.Decimal)
+	return fmt.Sprintf("%d.%02d", whole, decimal)
 }
 
-func (left DecimalValue) Add(right DecimalValue) DecimalValue {
-	return DecimalValue{
-		Whole:   left.Whole + right.Whole,
-		Decimal: left.Decimal + right.Decimal,
-	}
+func (left CurrencyValue) Add(right CurrencyValue) CurrencyValue {
+	return left + right
 }
 
-func (left DecimalValue) Subtract(right DecimalValue) DecimalValue {
-	// Fix uint underflow
-	if left.Decimal < right.Decimal {
-		return DecimalValue{
-			Whole:   left.Whole - right.Whole - 1,
-			Decimal: left.Decimal - right.Decimal + 100,
-		}
-	}
-
-	return DecimalValue{
-		Whole:   left.Whole - right.Whole,
-		Decimal: left.Decimal - right.Decimal,
-	}
+func (left CurrencyValue) Subtract(right CurrencyValue) CurrencyValue {
+	return left - right
 }
 
 type EntryRow struct {
-	Id         int          `db:"id"`
-	Entry      int          `db:"entry"`
-	Ledger     int          `db:"ledger"`
-	Account    *int         `db:"account"`
-	Document   *string      `db:"document"`
-	Value      DecimalValue `db:"value"`
-	Reconciled bool         `db:"reconciled"`
+	Id         int           `db:"id"`
+	Entry      int           `db:"entry"`
+	Ledger     int           `db:"ledger"`
+	Account    *int          `db:"account"`
+	Document   *string       `db:"document"`
+	Value      CurrencyValue `db:"value"`
+	Reconciled bool          `db:"reconciled"`
 }
 
 func SetupSchemaEntryRows() (bool, error) {
@@ -234,7 +212,7 @@ func SetupSchemaEntryRows() (bool, error) {
 		ledger INTEGER NOT NULL,
 		account INTEGER,
 		document TEXT,
-		value BLOB NOT NULL,
+		value INTEGER NOT NULL,
 		reconciled INTEGER NOT NULL,
 		FOREIGN KEY (entry) REFERENCES entries(id),
 		FOREIGN KEY (ledger) REFERENCES ledgers(id),

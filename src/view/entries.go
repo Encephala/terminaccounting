@@ -494,7 +494,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
 	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
 	if err == nil {
-		if total.Whole == 0 && total.Decimal == 0 {
+		if total == 0 {
 			totalRendered = fmt.Sprintf("Total: %s", green.Render(total.String()))
 		} else {
 			totalRendered = fmt.Sprintf("Total: %s", total)
@@ -525,7 +525,7 @@ func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, erro
 			accountId = &formAccount.Id
 		}
 
-		var value database.DecimalValue
+		var value database.CurrencyValue
 		if formRow.debitInput.Value() != "" {
 			debit, err := database.ParseDecimalValue(formRow.debitInput.Value())
 			if err != nil {
@@ -568,6 +568,7 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 
 	case meta.NEXT:
 		if activeRow == ercvm.numRows()-1 && activeCol == ercvm.numInputsPerRow()-1 {
+			ercvm.rows[activeRow].creditInput.Blur()
 			return false, true
 		}
 
@@ -580,14 +581,14 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 	return false, false
 }
 
-func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.DecimalValue, error) {
-	total := database.DecimalValue{}
+func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
+	var total database.CurrencyValue
 
 	for _, row := range ercvm.rows {
 		if row.debitInput.Value() != "" {
 			change, err := database.ParseDecimalValue(row.debitInput.Value())
 			if err != nil {
-				return database.DecimalValue{}, err
+				return 0, err
 			}
 
 			total = total.Add(change)
@@ -595,7 +596,7 @@ func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.Decima
 		if row.creditInput.Value() != "" {
 			change, err := database.ParseDecimalValue(row.creditInput.Value())
 			if err != nil {
-				return database.DecimalValue{}, err
+				return 0, err
 			}
 
 			total = total.Subtract(change)

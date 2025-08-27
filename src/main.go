@@ -51,6 +51,7 @@ func main() {
 	// apps[meta.JOURNALS] = journals.New()
 	// apps[meta.ACCOUNTS] = accounts.New()
 
+	// Map the name(=type) of an app to its index in `apps`
 	appIds := make(map[meta.AppType]int, 2)
 	appIds[meta.LEDGERS] = 0
 	appIds[meta.ENTRIES] = 1
