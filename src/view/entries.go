@@ -192,7 +192,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// TODO: Actually create the entry in db and stuff.
-		id, err := newEntry.Insert()
+		_, _ = newEntry.Insert()
 
 		// if err != nil {
 		// 	return cv, meta.MessageCmd(err)

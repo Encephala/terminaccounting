@@ -79,6 +79,36 @@ func SetupSchemaEntries() (bool, error) {
 	return true, err
 }
 
+func (e Entry) Insert() (int, error) {
+	transaction, err := DB.Beginx()
+	defer transaction.Rollback()
+
+	if err != nil {
+		return 0, err
+	}
+
+	res, err := transaction.NamedExec(`INSERT INTO entries (journal, notes) VALUES (:journal, :notes)`, e)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	// TODO: Insert all the rows
+	// for _, row := range e.rows {
+	// }
+
+	err = transaction.Commit()
+	if err != nil {
+		return int(id), err
+	}
+
+	return int(id), nil
+}
+
 type DecimalValue struct {
 	Whole   int64
 	Decimal uint8
@@ -207,7 +237,7 @@ func SetupSchemaEntryRows() (bool, error) {
 	return true, err
 }
 
-func InsertRows(rows []EntryRow) (int, error) {
+func insertRows(rows []EntryRow) (int, error) {
 	query := `INSERT INTO entryrows
 	(entry, ledger, account, document, value, reconciled)
 	VALUES

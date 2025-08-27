@@ -80,18 +80,19 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		// TODO: Actually create the entry in db and stuff.
 		// TODO: Decide on this implementation vs the one in CreateView.Update
-		_ = database.Entry{
+		// note from later me: wish I knew what this meant
+		newEntry := database.Entry{
 			Journal: entryJournal.Id,
 			Notes:   strings.Split(entryNotes, "\n"),
 		}
 
-		// id, err := newEntry.Insert(m.db)
+		_, err := newEntry.Insert()
 
-		// if err != nil {
-		// 	return m, meta.MessageCmd(err)
-		// }
+		if err != nil {
+			return m, meta.MessageCmd(err)
+		}
 
-		// m.currentView = NewUpdateView(m, id)
+		// m.currentView = NewEntryUpdateView(m, id)
 
 		return m, m.currentView.Init()
 
