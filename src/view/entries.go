@@ -16,7 +16,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -26,8 +25,6 @@ const (
 )
 
 type EntryCreateView struct {
-	db *sqlx.DB
-
 	JournalInput     itempicker.Model
 	NotesInput       textarea.Model
 	EntryRowsManager *EntryRowCreateViewManager
@@ -62,14 +59,12 @@ func newEntryRowCreateView() *EntryRowCreateView {
 	return &result
 }
 
-func NewEntryCreateView(db *sqlx.DB, colours styles.AppColours) *EntryCreateView {
+func NewEntryCreateView(colours styles.AppColours) *EntryCreateView {
 	journalInput := itempicker.New([]itempicker.Item{})
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &EntryCreateView{
-		db: db,
-
 		JournalInput:     journalInput,
 		NotesInput:       noteInput,
 		activeInput:      JOURNALINPUT,
@@ -191,13 +186,13 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		journal := cv.JournalInput.Value().(database.Journal)
 		notes := cv.NotesInput.Value()
 
-		_ = database.Entry{
+		newEntry := database.Entry{
 			Journal: journal.Id,
 			Notes:   strings.Split(notes, "\n"),
 		}
 
 		// TODO: Actually create the entry in db and stuff.
-		// id, err := newEntry.Insert(cv.db)
+		id, err := newEntry.Insert()
 
 		// if err != nil {
 		// 	return cv, meta.MessageCmd(err)

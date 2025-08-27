@@ -4,13 +4,10 @@ import (
 	"terminaccounting/meta"
 
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type model struct {
-	db *sqlx.DB
-
 	viewWidth, viewHeight int
 
 	activeApp int

@@ -45,8 +45,8 @@ func main() {
 	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
 
 	apps := make([]meta.App, 2)
-	apps[0] = NewLedgersApp(db)
-	apps[1] = NewEntriesApp(db)
+	apps[0] = NewLedgersApp()
+	apps[1] = NewEntriesApp()
 	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
 	// apps[meta.JOURNALS] = journals.New()
 	// apps[meta.ACCOUNTS] = accounts.New()
@@ -56,8 +56,6 @@ func main() {
 	appIds[meta.ENTRIES] = 1
 
 	m := &model{
-		db: db,
-
 		activeApp: 0,
 		apps:      apps,
 		appIds:    appIds,

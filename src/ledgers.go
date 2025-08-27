@@ -11,21 +11,16 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jmoiron/sqlx"
 )
 
 type LedgersApp struct {
-	db *sqlx.DB
-
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
-func NewLedgersApp(db *sqlx.DB) meta.App {
-	model := &LedgersApp{
-		db: db,
-	}
+func NewLedgersApp() meta.App {
+	model := &LedgersApp{}
 
 	model.currentView = meta.NewListView(model)
 

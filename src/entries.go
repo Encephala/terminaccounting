@@ -12,21 +12,16 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jmoiron/sqlx"
 )
 
 type EntriesApp struct {
-	db *sqlx.DB
-
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
-func NewEntriesApp(db *sqlx.DB) meta.App {
-	model := &EntriesApp{
-		db: db,
-	}
+func NewEntriesApp() meta.App {
+	model := &EntriesApp{}
 
 	model.currentView = meta.NewListView(model)
 
@@ -111,7 +106,7 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = meta.NewDetailView(m, selectedEntry.Id, strconv.Itoa(selectedEntry.Id))
 
 		case meta.CREATEVIEWTYPE:
-			m.currentView = view.NewEntryCreateView(m.db, m.Colours())
+			m.currentView = view.NewEntryCreateView(m.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			// TODO
