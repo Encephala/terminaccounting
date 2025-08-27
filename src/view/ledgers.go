@@ -103,8 +103,38 @@ func (cv *LedgersCreateView) getActiveInput() *activeInput {
 func (cv *LedgersCreateView) getColours() styles.AppColours {
 	return cv.colours
 }
+
 func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	return createUpdateViewUpdate(cv, message)
+	switch message.(type) {
+	case meta.CommitCreateMsg:
+		ledgerName := cv.NameInput.Value()
+		ledgerType := cv.TypeInput.Value().(database.LedgerType)
+		ledgerNotes := cv.NoteInput.Value()
+
+		newLedger := database.Ledger{
+			Name:  ledgerName,
+			Type:  ledgerType,
+			Notes: strings.Split(ledgerNotes, "\n"),
+		}
+
+		id, err := newLedger.Insert()
+
+		if err != nil {
+			return cv, meta.MessageCmd(err)
+		}
+
+		// m.currentView = view.NewLedgersUpdateView(id, m.Colours())
+		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
+		// Or maybe this should just switch to the list view or the detail view? Idk
+
+		return cv, meta.MessageCmd(meta.SwitchViewMsg{
+			ViewType: meta.UPDATEVIEWTYPE,
+			Data:     id,
+		})
+
+	default:
+		return createUpdateViewUpdate(cv, message)
+	}
 }
 
 func (cv *LedgersCreateView) View() string {
@@ -226,9 +256,23 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, nil
+
+	case meta.CommitUpdateMsg:
+		currentValues := database.Ledger{
+			Id:    uv.ModelId,
+			Name:  uv.NameInput.Value(),
+			Type:  uv.TypeInput.Value().(database.LedgerType),
+			Notes: strings.Split(uv.NoteInput.Value(), "\n"),
+		}
+
+		currentValues.Update()
+
+		return uv, nil
+
+	default:
+		return createUpdateViewUpdate(uv, message)
 	}
 
-	return createUpdateViewUpdate(uv, message)
 }
 
 func (uv *LedgersUpdateView) View() string {
@@ -499,8 +543,7 @@ func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	// TODO: Can't do this yet because of the assertion in `ledgers.model.Update`, only allows going from listview
-	// normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.ModelId})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,

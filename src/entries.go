@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"strconv"
-	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -71,35 +69,6 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = newView.(meta.View)
 
 		return m, cmd
-
-	case meta.CommitCreateMsg:
-		createView := m.currentView.(*view.EntryCreateView)
-
-		entryJournal := createView.JournalInput.Value().(database.Journal)
-		entryNotes := createView.NotesInput.Value()
-
-		entryRows, err := createView.EntryRowsManager.CompileRows()
-		if err != nil {
-			return m, meta.MessageCmd(err)
-		}
-
-		// TODO: Decide on this implementation vs the one in CreateView.Update
-		// note from later me: wish I knew what this meant
-		newEntry := database.Entry{
-			Journal: entryJournal.Id,
-			Notes:   strings.Split(entryNotes, "\n"),
-		}
-
-		_, err = newEntry.Insert(entryRows)
-		if err != nil {
-			return m, meta.MessageCmd(err)
-		}
-
-		// TODO: make this actually show update view instead of listview (should it?)
-		// m.currentView = NewEntryUpdateView(id)
-		m.currentView = meta.NewListView(m)
-
-		return m, m.currentView.Init()
 
 	case meta.SwitchViewMsg:
 		switch message.ViewType {
