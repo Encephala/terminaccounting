@@ -106,7 +106,7 @@ func (cv *LedgersCreateView) getColours() styles.AppColours {
 
 func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
-	case meta.CommitCreateMsg:
+	case meta.CommitMsg:
 		ledgerName := cv.NameInput.Value()
 		ledgerType := cv.TypeInput.Value().(database.LedgerType)
 		ledgerNotes := cv.NoteInput.Value()
@@ -155,7 +155,7 @@ func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
 func (cv *LedgersCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
@@ -257,7 +257,7 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return uv, nil
 
-	case meta.CommitUpdateMsg:
+	case meta.CommitMsg:
 		currentValues := database.Ledger{
 			Id:    uv.ModelId,
 			Name:  uv.NameInput.Value(),
@@ -295,7 +295,7 @@ func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
 func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitUpdateMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
@@ -460,7 +460,7 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, nil
 
-	case meta.CommitDeleteMsg:
+	case meta.CommitMsg:
 		err := database.DeleteLedger(dv.ModelId)
 
 		// TODO: Add a vimesque message to inform user of successful deletion
@@ -553,7 +553,7 @@ func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
 func (dv *LedgersDeleteView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitDeleteMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet

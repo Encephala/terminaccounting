@@ -103,14 +103,8 @@ type SwitchViewMsg struct {
 
 type ExecuteCommandMsg struct{}
 
-// For saving a new model to the database
-type CommitCreateMsg struct{}
-
-// For comitting the changes from an update view to the database
-type CommitUpdateMsg struct{}
-
-// For deleting a model from the database
-type CommitDeleteMsg struct{}
+// For comitting the changes from a create/update/delete view to the database
+type CommitMsg struct{}
 
 // For resetting the value of an active input to the default value
 type ResetInputFieldMsg struct{}

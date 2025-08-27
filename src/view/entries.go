@@ -218,7 +218,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return cv, cmd
 
-	case meta.CommitCreateMsg:
+	case meta.CommitMsg:
 		entryJournal := cv.JournalInput.Value().(database.Journal)
 		entryNotes := cv.NotesInput.Value()
 
@@ -362,7 +362,7 @@ type CreateEntryRowMsg struct {
 func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitCreateMsg{})
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
