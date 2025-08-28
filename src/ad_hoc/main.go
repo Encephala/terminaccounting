@@ -19,7 +19,7 @@ func main() {
 			Ledger:     1,
 			Account:    nil,
 			Document:   nil,
-			Value:      database.CurrencyValue{Whole: 6, Decimal: 9},
+			Value:      database.CurrencyValue(609),
 			Reconciled: false,
 		},
 		{
@@ -28,7 +28,7 @@ func main() {
 			Ledger:     2,
 			Account:    nil,
 			Document:   nil,
-			Value:      database.CurrencyValue{Whole: -6, Decimal: 9},
+			Value:      database.CurrencyValue(-609),
 			Reconciled: false,
 		},
 	}
