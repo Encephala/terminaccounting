@@ -539,6 +539,15 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ercvm.numRows())
 
+	total, err := ercvm.calculateCurrentTotal()
+	if err != nil {
+		return nil, err
+	}
+
+	if total != 0 {
+		return nil, fmt.Errorf("entry has nonzero total value %s", total)
+	}
+
 	for i, formRow := range ercvm.rows {
 		formLedger := formRow.ledgerInput.Value().(database.Ledger)
 		formAccount := formRow.accountInput.Value().(database.Account)
@@ -549,15 +558,25 @@ func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, erro
 			accountId = &formAccount.Id
 		}
 
+		debitValue := formRow.debitInput.Value()
+		creditValue := formRow.creditInput.Value()
+
+		// Assert exactly one nonempty, because the createview should automatically clear the other field
+		if debitValue == "" && creditValue == "" || debitValue != "" && creditValue != "" {
+			panic(fmt.Sprintf(
+				"expected only one of debit and credit nonzero in row %d, but got %s and %s",
+				i, debitValue, creditValue))
+		}
+
 		var value database.CurrencyValue
-		if formRow.debitInput.Value() != "" {
+		if debitValue != "" {
 			debit, err := database.ParseDecimalValue(formRow.debitInput.Value())
 			if err != nil {
 				return nil, err
 			}
 			value = debit
 		}
-		if formRow.creditInput.Value() != "" {
+		if creditValue != "" {
 			credit, err := database.ParseDecimalValue(formRow.creditInput.Value())
 			if err != nil {
 				return nil, err
