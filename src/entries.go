@@ -15,13 +15,13 @@ import (
 type EntriesApp struct {
 	viewWidth, viewHeight int
 
-	currentView meta.View
+	currentView view.View
 }
 
 func NewEntriesApp() meta.App {
 	model := &EntriesApp{}
 
-	model.currentView = meta.NewListView(model)
+	model.currentView = view.NewListView(model)
 
 	return model
 }
@@ -60,25 +60,25 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 
 	case meta.SwitchViewMsg:
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			m.currentView = meta.NewListView(m)
+			m.currentView = view.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedEntry := m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Entry)
+			selectedEntry := m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Entry)
 
-			m.currentView = meta.NewDetailView(m, selectedEntry.Id)
+			m.currentView = view.NewDetailView(m, selectedEntry.Id)
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewEntryCreateView(m.Colours())
@@ -98,7 +98,7 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	newView, cmd := m.currentView.Update(message)
-	m.currentView = newView.(meta.View)
+	m.currentView = newView.(view.View)
 
 	return m, cmd
 }
@@ -157,7 +157,7 @@ func (m *EntriesApp) MakeLoadListCmd() tea.Cmd {
 
 func (m *EntriesApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
-	entryId := m.currentView.(*meta.DetailView).ModelId
+	entryId := m.currentView.(*view.DetailView).ModelId
 
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByEntry(entryId)

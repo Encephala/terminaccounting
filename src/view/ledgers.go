@@ -23,7 +23,7 @@ const (
 )
 
 type createOrUpdateView interface {
-	meta.View
+	View
 
 	title() string
 

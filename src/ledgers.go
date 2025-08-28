@@ -15,13 +15,13 @@ import (
 type LedgersApp struct {
 	viewWidth, viewHeight int
 
-	currentView meta.View
+	currentView view.View
 }
 
 func NewLedgersApp() meta.App {
 	model := &LedgersApp{}
 
-	model.currentView = meta.NewListView(model)
+	model.currentView = view.NewListView(model)
 
 	return model
 }
@@ -37,7 +37,7 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewHeight = message.Height
 
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 
@@ -57,14 +57,14 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 
 	case meta.SwitchViewMsg:
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			m.currentView = meta.NewListView(m)
+			m.currentView = view.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
 			ledgerId := -1
@@ -77,13 +77,13 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: I'd like for this to also take the ID from the message.Data,
 				// but that's hard to do because the motion is created when the ListView is initialised,
 				// but we need to know the selected item later when gd is pressed
-				ledgerId = m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Ledger).Id
+				ledgerId = m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Ledger).Id
 
 			default:
 				panic(fmt.Sprintf("unexpected Data: %#v", data))
 			}
 
-			m.currentView = meta.NewDetailView(m, ledgerId)
+			m.currentView = view.NewDetailView(m, ledgerId)
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewLedgersCreateView(m.Colours())
@@ -106,19 +106,19 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.SwitchFocusMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		m.currentView = newView.(view.View)
 
 		return m, cmd
 	}
 
 	newView, cmd := m.currentView.Update(message)
-	m.currentView = newView.(meta.View)
+	m.currentView = newView.(view.View)
 
 	return m, cmd
 }
@@ -174,7 +174,7 @@ func (m *LedgersApp) MakeLoadListCmd() tea.Cmd {
 
 func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
-	ledgerId := m.currentView.(*meta.DetailView).ModelId
+	ledgerId := m.currentView.(*view.DetailView).ModelId
 
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByLedger(ledgerId)
