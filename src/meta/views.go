@@ -90,7 +90,6 @@ func (lv *ListView) MotionSet() *MotionSet {
 
 	normalMotions.Insert(Motion{"g", "d"}, SwitchViewMsg{
 		ViewType: DETAILVIEWTYPE,
-		Data:     lv.ListModel.SelectedItem(),
 	}) // [g]oto [d]etails
 
 	return &MotionSet{Normal: normalMotions}

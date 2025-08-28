@@ -68,13 +68,19 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case meta.DETAILVIEWTYPE:
 			ledgerId := -1
-			if message.Data != nil {
-				ledgerId = message.Data.(int)
-			} else {
+			switch data := message.Data.(type) {
+			case int:
+				ledgerId = data
+			case database.Ledger:
+				ledgerId = data.Id
+			case nil:
 				// TODO: I'd like for this to also take the ID from the message.Data,
 				// but that's hard to do because the motion is created when the ListView is initialised,
 				// but we need to know the selected item later when gd is pressed
 				ledgerId = m.currentView.(*meta.ListView).ListModel.SelectedItem().(database.Ledger).Id
+
+			default:
+				panic(fmt.Sprintf("unexpected Data: %#v", data))
 			}
 
 			m.currentView = meta.NewDetailView(m, ledgerId)
