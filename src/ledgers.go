@@ -174,6 +174,8 @@ func (m *LedgersApp) MakeLoadListCmd() tea.Cmd {
 
 func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
+	// Would be nice to pass modelId as argument here though, instead of asserting current view type
+	// Modularity and all
 	ledgerId := m.currentView.(*view.DetailView).ModelId
 
 	return func() tea.Msg {

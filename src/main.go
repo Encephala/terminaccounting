@@ -205,8 +205,7 @@ func (m *model) View() string {
 	activeTabColour := m.apps[m.activeApp].Colours().Foreground
 	for i, app := range m.apps {
 		if i == m.activeApp {
-			style := styles.ActiveTab(activeTabColour)
-			tabs = append(tabs, style.Render(app.Name()))
+			tabs = append(tabs, styles.ActiveTab(activeTabColour).Render(app.Name()))
 		} else {
 			tabs = append(tabs, styles.Tab(activeTabColour).Render(app.Name()))
 		}

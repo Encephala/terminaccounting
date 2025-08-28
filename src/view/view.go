@@ -2,6 +2,8 @@ package view
 
 import (
 	"fmt"
+	"io"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
@@ -111,17 +113,48 @@ type DetailView struct {
 	ModelId int
 }
 
-func NewDetailView(app meta.App, itemId int) *DetailView {
-	viewStyles := styles.NewDetailViewStyles(app.Colours().Foreground)
+type entryRowDelegate struct {
+	style styles.DetailViewStyles
+}
 
-	delegate := list.NewDefaultDelegate()
-	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
-	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
+func (erd entryRowDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+	er := item.(database.EntryRow)
+
+	var debit, credit database.CurrencyValue
+	if er.Value > 0 {
+		debit = er.Value
+	} else {
+		credit = er.Value
+	}
+
+	line := fmt.Sprintf("%-20s | %-20s | %s | %s", "LedgerName", "AccountName", debit, credit)
+	if index == m.Index() {
+		fmt.Fprint(w, erd.style.ItemSelected.Render(line))
+	} else {
+		fmt.Fprint(w, erd.style.Item.Render(line))
+	}
+}
+
+func (erd entryRowDelegate) Height() int { return 1 }
+
+func (erd entryRowDelegate) Spacing() int { return 0 }
+
+func (erd entryRowDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+
+func NewDetailView(app meta.App, itemId int) *DetailView {
+	viewStyles := styles.NewDetailViewStyles(app.Colours())
+
+	delegate := entryRowDelegate{
+		style: viewStyles,
+	}
 
 	model := list.New([]list.Item{}, delegate, 20, 16)
-	// TODO: Change placeholder to, ykno, the name of the item being detail-view'd
+	// TODO: Change PLACEHOLDER to, ykno, the name of the item being detail-view'd
 	model.Title = fmt.Sprintf("%s: %s", app.Name(), "PLACEHOLDER")
 	model.Styles.Title = viewStyles.Title
+	// TODO: Make this scale when outer model scales and stuff
+	// Think that's the WindowResizeMsg or smth, that should be handled
+	model.SetWidth(100)
 	model.SetShowHelp(false)
 
 	return &DetailView{

@@ -53,14 +53,6 @@ func (er EntryRow) FilterValue() string {
 	return result.String()
 }
 
-func (er EntryRow) Title() string {
-	return strconv.Itoa(er.Id)
-}
-
-func (er EntryRow) Description() string {
-	return strconv.Itoa(er.Id)
-}
-
 func SetupSchemaEntries() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("entries")
 	if err != nil {

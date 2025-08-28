@@ -99,23 +99,20 @@ func NewListViewStyles(background, foreground lipgloss.Color) ListViewStyles {
 type DetailViewStyles struct {
 	Title lipgloss.Style
 
-	ListDelegateSelectedTitle lipgloss.Style
-	ListDelegateSelectedDesc  lipgloss.Style
+	Item         lipgloss.Style
+	ItemSelected lipgloss.Style
 }
 
-func NewDetailViewStyles(background lipgloss.Color) DetailViewStyles {
-	defaultTitleStyles := list.DefaultStyles().Title
-	defaultItemStyles := list.NewDefaultItemStyles()
+func NewDetailViewStyles(colours AppColours) DetailViewStyles {
+	// TODO: Update to match new listdelegate
+	title := list.DefaultStyles().Title
+	item := list.NewDefaultItemStyles().NormalDesc.Foreground(lipgloss.ANSIColor(7))
 
 	return DetailViewStyles{
-		Title: defaultTitleStyles.Background(background),
+		Title: title.Background(colours.Background),
 
-		ListDelegateSelectedTitle: defaultItemStyles.SelectedTitle.
-			Foreground(ENTRIESCOLOURS.Foreground).
-			BorderForeground(ENTRIESCOLOURS.Background),
-		ListDelegateSelectedDesc: defaultItemStyles.SelectedDesc.
-			Foreground(ENTRIESCOLOURS.Foreground).
-			BorderForeground(ENTRIESCOLOURS.Background),
+		Item:         item,
+		ItemSelected: item.Foreground(ENTRIESCOLOURS.Foreground),
 	}
 }
 
