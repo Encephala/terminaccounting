@@ -227,8 +227,6 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return cv, meta.MessageCmd(err)
 		}
 
-		// TODO: Decide on this implementation vs the one in CreateView.Update
-		// note from later me: wish I knew what this meant
 		newEntry := database.Entry{
 			Journal: entryJournal.Id,
 			Notes:   strings.Split(entryNotes, "\n"),
@@ -238,10 +236,6 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
-
-		// TODO: make this actually show update view instead of listview (should it?)
-		// m.currentView = NewEntryUpdateView(id)
-		// m.currentView = meta.NewListView(m)
 
 		return cv, meta.MessageCmd(meta.SwitchViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
