@@ -114,7 +114,7 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		newLedger := database.Ledger{
 			Name:  ledgerName,
 			Type:  ledgerType,
-			Notes: strings.Split(ledgerNotes, "\n"),
+			Notes: meta.CompileNotes(ledgerNotes),
 		}
 
 		id, err := newLedger.Insert()
@@ -241,7 +241,7 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.NameInput.SetValue(ledger.Name)
 		uv.TypeInput.SetValue(ledger.Type)
-		uv.NoteInput.SetValue(strings.Join(ledger.Notes, "\n"))
+		uv.NoteInput.SetValue(ledger.Notes.Collapse())
 
 		return uv, nil
 
@@ -252,7 +252,7 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case TYPEINPUT:
 			uv.TypeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
-			uv.NoteInput.SetValue(strings.Join(uv.startingValue.Notes, "\n"))
+			uv.NoteInput.SetValue(uv.startingValue.Notes.Collapse())
 		}
 
 		return uv, nil
@@ -262,7 +262,7 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Id:    uv.ModelId,
 			Name:  uv.NameInput.Value(),
 			Type:  uv.TypeInput.Value().(database.LedgerType),
-			Notes: strings.Split(uv.NoteInput.Value(), "\n"),
+			Notes: meta.CompileNotes(uv.NoteInput.Value()),
 		}
 
 		currentValues.Update()
@@ -515,7 +515,7 @@ func (dv *LedgersDeleteView) View() string {
 		"  ",
 		style.Render("Note"),
 		" ",
-		style.AlignHorizontal(lipgloss.Left).Render(strings.Join(dv.model.Notes, "\n")),
+		style.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
 	)
 
 	var confirmRow = lipgloss.JoinHorizontal(

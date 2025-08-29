@@ -85,7 +85,9 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case meta.UPDATEVIEWTYPE:
 			// TODO
-			// entryId := message.Data.(int)
+			entryId := message.Data.(int)
+
+			m.currentView = view.NewEntryUpdateView(entryId, m.Colours())
 
 		case meta.DELETEVIEWTYPE:
 			// TODO
@@ -178,6 +180,17 @@ func (m *EntriesApp) MakeLoadRowsCmd() tea.Cmd {
 	}
 }
 
-func (m *EntriesApp) MakeLoadDetailCmd() tea.Cmd {
-	panic("TODO")
+func (m *EntriesApp) MakeLoadDetailCmd(entryId int) tea.Cmd {
+	return func() tea.Msg {
+		entry, err := database.SelectEntry(entryId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ENTRY WITH ID %d: %#v", entryId, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ENTRIES,
+			Model:     meta.ENTRY,
+			Data:      entry,
+		}
+	}
 }

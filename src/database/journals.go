@@ -72,6 +72,14 @@ func SelectJournals() ([]Journal, error) {
 	return result, err
 }
 
+func SelectJournal(id int) (Journal, error) {
+	result := Journal{}
+
+	err := DB.Select(&result, `SELECT * FROM journals WHERE id = $1;`, id)
+
+	return result, err
+}
+
 func MakeSelectJournalsCmd(targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectJournals()

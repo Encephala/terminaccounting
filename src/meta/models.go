@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type SetupSchemaMsg struct{}
@@ -29,4 +30,12 @@ func (n Notes) Value() (driver.Value, error) {
 	result := string(binary)
 
 	return result, err
+}
+
+func CompileNotes(input string) Notes {
+	return strings.Split(input, "\n")
+}
+
+func (n Notes) Collapse() string {
+	return strings.Join(n, "\n")
 }

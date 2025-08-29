@@ -1,12 +1,14 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -108,6 +110,11 @@ func (e Entry) Insert(rows []EntryRow) (int, error) {
 	}
 
 	return int(id), nil
+}
+
+func (e Entry) Update(rows []EntryRow) (int, error) {
+	// TODO
+	return 0, errors.New("unimplemented")
 }
 
 type CurrencyValue int64
@@ -250,6 +257,14 @@ func SelectEntries() ([]Entry, error) {
 	return result, err
 }
 
+func SelectEntry(id int) (Entry, error) {
+	var result Entry
+
+	err := DB.Get(&result, `SELECT * FROM entries WHERE id = :id`, id)
+
+	return result, err
+}
+
 func SelectRows() ([]EntryRow, error) {
 	result := []EntryRow{}
 
@@ -272,4 +287,35 @@ func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	err := DB.Select(&result, `SELECT * FROM entryrows WHERE entry = $1;`, id)
 
 	return result, err
+}
+
+func MakeSelectEntryCmd(entryId int, targetApp meta.AppType) tea.Cmd {
+	// Shoutout to closures
+	return func() tea.Msg {
+		rows, err := SelectEntry(entryId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: targetApp,
+			Model:     meta.ENTRY,
+			Data:      rows,
+		}
+	}
+}
+
+func MakeSelectEntryRowsCmd(entryId int, targetApp meta.AppType) tea.Cmd {
+	return func() tea.Msg {
+		rows, err := SelectRowsByEntry(entryId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: targetApp,
+			Model:     meta.ENTRYROW,
+			Data:      rows,
+		}
+	}
 }

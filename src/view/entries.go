@@ -25,9 +25,9 @@ const (
 )
 
 type EntryCreateView struct {
-	JournalInput     itempicker.Model
-	NotesInput       textarea.Model
-	EntryRowsManager *EntryRowViewManager
+	journalInput     itempicker.Model
+	notesInput       textarea.Model
+	entryRowsManager *EntryRowViewManager
 	activeInput      activeInput
 
 	colours styles.AppColours
@@ -79,10 +79,10 @@ func NewEntryCreateView(colours styles.AppColours) *EntryCreateView {
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &EntryCreateView{
-		JournalInput:     journalInput,
-		NotesInput:       noteInput,
+		journalInput:     journalInput,
+		notesInput:       noteInput,
 		activeInput:      JOURNALINPUT,
-		EntryRowsManager: NewEntryRowCreateViewManager(),
+		entryRowsManager: NewEntryRowCreateViewManager(),
 
 		colours: colours,
 	}
@@ -106,17 +106,17 @@ func (cv *EntryCreateView) Init() tea.Cmd {
 func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		entryJournal := cv.JournalInput.Value().(database.Journal)
-		entryNotes := cv.NotesInput.Value()
+		entryJournal := cv.journalInput.Value().(database.Journal)
+		entryNotes := cv.notesInput.Value()
 
-		entryRows, err := cv.EntryRowsManager.CompileRows()
+		entryRows, err := cv.entryRowsManager.CompileRows()
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
 
 		newEntry := database.Entry{
 			Journal: entryJournal.Id,
-			Notes:   strings.Split(entryNotes, "\n"),
+			Notes:   meta.CompileNotes(entryNotes),
 		}
 
 		id, err := newEntry.Insert(entryRows)
@@ -135,6 +135,11 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (cv *EntryCreateView) View() string {
 	return entriesCreateUpdateViewView(cv)
+}
+
+type DeleteEntryRowMsg struct{}
+type CreateEntryRowMsg struct {
+	after bool
 }
 
 func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
@@ -168,11 +173,6 @@ func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
 	}
 }
 
-type DeleteEntryRowMsg struct{}
-type CreateEntryRowMsg struct {
-	after bool
-}
-
 func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
@@ -183,15 +183,15 @@ func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 }
 
 func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
-	return &cv.JournalInput
+	return &cv.journalInput
 }
 
 func (cv *EntryCreateView) getNotesInput() *textarea.Model {
-	return &cv.NotesInput
+	return &cv.notesInput
 }
 
 func (cv *EntryCreateView) getManager() *EntryRowViewManager {
-	return cv.EntryRowsManager
+	return cv.entryRowsManager
 }
 
 func (cv *EntryCreateView) getActiveInput() *activeInput {
@@ -200,6 +200,143 @@ func (cv *EntryCreateView) getActiveInput() *activeInput {
 
 func (cv *EntryCreateView) getColours() styles.AppColours {
 	return cv.colours
+}
+
+type EntryUpdateView struct {
+	journalInput     itempicker.Model
+	notesInput       textarea.Model
+	entryRowsManager *EntryRowViewManager
+	activeInput      activeInput
+
+	modelId           int
+	startingEntry     database.Entry
+	startingEntryRows []database.EntryRow
+
+	colours styles.AppColours
+}
+
+func NewEntryUpdateView(id int, colours styles.AppColours) *EntryUpdateView {
+	journalInput := itempicker.New([]itempicker.Item{})
+	noteInput := textarea.New()
+	noteInput.Cursor.SetMode(cursor.CursorStatic)
+
+	result := &EntryUpdateView{
+		journalInput:     journalInput,
+		notesInput:       noteInput,
+		activeInput:      JOURNALINPUT,
+		entryRowsManager: NewEntryRowCreateViewManager(),
+
+		colours: colours,
+	}
+
+	return result
+}
+
+func (uv *EntryUpdateView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
+
+	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
+
+	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId, meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId, meta.ENTRIES))
+
+	return tea.Batch(cmds...)
+}
+
+func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message.(type) {
+	case meta.CommitMsg:
+		entryJournal := uv.journalInput.Value().(database.Journal)
+		entryNotes := uv.notesInput.Value()
+
+		entryRows, err := uv.entryRowsManager.CompileRows()
+		if err != nil {
+			return uv, meta.MessageCmd(err)
+		}
+
+		newEntry := database.Entry{
+			Journal: entryJournal.Id,
+			Notes:   meta.CompileNotes(entryNotes),
+		}
+
+		_, err = newEntry.Update(entryRows)
+		if err != nil {
+			return uv, meta.MessageCmd(err)
+		}
+
+		return uv, nil
+	}
+
+	return entriesCreateUpdateViewUpdate(uv, message)
+}
+
+func (uv *EntryUpdateView) View() string {
+	return entriesCreateUpdateViewView(uv)
+}
+
+func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	// Default navigation
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	// Create/delete rows
+	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
+	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
+
+	// hjkl navigation in entryrows
+	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"left"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"down"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"up"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+	normalMotions.Insert(meta.Motion{"right"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	return &meta.MotionSet{
+		Normal: normalMotions,
+	}
+}
+
+func (uv *EntryUpdateView) CommandSet() *meta.CommandSet {
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
+}
+
+func (uv *EntryUpdateView) getJournalInput() *itempicker.Model {
+	return &uv.journalInput
+}
+
+func (uv *EntryUpdateView) getNotesInput() *textarea.Model {
+	return &uv.notesInput
+}
+
+func (uv *EntryUpdateView) getManager() *EntryRowViewManager {
+	return uv.entryRowsManager
+}
+
+func (uv *EntryUpdateView) getActiveInput() *activeInput {
+	return &uv.activeInput
+}
+
+func (uv *EntryUpdateView) getColours() styles.AppColours {
+	return uv.colours
 }
 
 func NewEntryRowCreateViewManager() *EntryRowViewManager {
@@ -781,6 +918,25 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 			entryRowsManager.setAccounts(asSlice)
 
+			return view, nil
+
+		case meta.ENTRY:
+			// TODO?: kinda weird this asserts a single value, but the other message.Models assert a slice
+			entry := message.Data.(database.Entry)
+
+			// TODO: would be nice to have this async idk
+			journal, err := database.SelectJournal(entry.Journal)
+			if err != nil {
+				return nil, meta.MessageCmd(err)
+			}
+			view.getJournalInput().SetValue(itempicker.Item(journal))
+
+			view.getNotesInput().SetValue(entry.Notes.Collapse())
+
+			return view, nil
+
+		case meta.ENTRYROW:
+			// TODO: Populate the fields
 			return view, nil
 
 		default:
