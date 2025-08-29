@@ -327,7 +327,6 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (uv *EntryUpdateView) View() string {
-	slog.Debug("It's actually happening here ye?")
 	return entriesCreateUpdateViewView(uv)
 }
 
