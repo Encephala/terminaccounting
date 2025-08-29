@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -179,9 +180,12 @@ func (left CurrencyValue) Subtract(right CurrencyValue) CurrencyValue {
 	return left - right
 }
 
+type Date time.Time
+
 type EntryRow struct {
 	Id         int           `db:"id"`
 	Entry      int           `db:"entry"`
+	Date       Date          `db:"date"`
 	Ledger     int           `db:"ledger"`
 	Account    *int          `db:"account"`
 	Document   *string       `db:"document"`
@@ -201,6 +205,7 @@ func SetupSchemaEntryRows() (bool, error) {
 	schema := `CREATE TABLE IF NOT EXISTS entryrows(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		entry INTEGER NOT NULL,
+		date TEXT NOT NULL,
 		ledger INTEGER NOT NULL,
 		account INTEGER,
 		document TEXT,
@@ -217,9 +222,9 @@ func SetupSchemaEntryRows() (bool, error) {
 
 func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 	query := `INSERT INTO entryrows
-	(entry, ledger, account, document, value, reconciled)
+	(entry, date, ledger, account, document, value, reconciled)
 	VALUES
-	(:entry, :ledger, :account, :document, :value, :reconciled);`
+	(:entry, :date, :ledger, :account, :document, :value, :reconciled);`
 
 	result, err := transaction.NamedExec(query, rows)
 	if err != nil {
