@@ -251,7 +251,7 @@ func (uv *EntryUpdateView) Init() tea.Cmd {
 }
 
 func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	switch message.(type) {
+	switch message := message.(type) {
 	case meta.CommitMsg:
 		entryJournal := uv.journalInput.Value().(database.Journal)
 		entryNotes := uv.notesInput.Value()
@@ -272,6 +272,32 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, nil
+
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.ENTRY:
+			// TODO?: kinda weird this asserts a single value, but the other message.Models assert a slice
+			entry := message.Data.(database.Entry)
+			uv.startingEntry = entry
+
+			// TODO: would be nice to have this async idk
+			journal, err := database.SelectJournal(entry.Journal)
+			if err != nil {
+				return nil, meta.MessageCmd(err)
+			}
+			uv.journalInput.SetValue(itempicker.Item(journal))
+
+			uv.notesInput.SetValue(entry.Notes.Collapse())
+
+			return uv, nil
+
+		case meta.ENTRYROW:
+			rows := message.Data.([]database.EntryRow)
+			uv.startingEntryRows = rows
+
+			// TODO: Populate the fields
+			return uv, nil
+		}
 	}
 
 	return entriesCreateUpdateViewUpdate(uv, message)
@@ -581,7 +607,7 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 		}
 
 		result[i] = database.EntryRow{
-			Entry:      -1, // Will be inserted after entry itself has been inserted
+			Entry:      -1, // Will be inserted into the struct after entry itself has been inserted into db
 			Ledger:     formLedger.Id,
 			Account:    accountId,
 			Document:   nil, // TODO
@@ -920,25 +946,6 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 			entryRowsManager.setAccounts(asSlice)
 
-			return view, nil
-
-		case meta.ENTRY:
-			// TODO?: kinda weird this asserts a single value, but the other message.Models assert a slice
-			entry := message.Data.(database.Entry)
-
-			// TODO: would be nice to have this async idk
-			journal, err := database.SelectJournal(entry.Journal)
-			if err != nil {
-				return nil, meta.MessageCmd(err)
-			}
-			view.getJournalInput().SetValue(itempicker.Item(journal))
-
-			view.getNotesInput().SetValue(entry.Notes.Collapse())
-
-			return view, nil
-
-		case meta.ENTRYROW:
-			// TODO: Populate the fields
 			return view, nil
 
 		default:
