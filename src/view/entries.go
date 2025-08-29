@@ -27,13 +27,13 @@ const (
 type EntryCreateView struct {
 	JournalInput     itempicker.Model
 	NotesInput       textarea.Model
-	EntryRowsManager *EntryRowCreateViewManager
+	EntryRowsManager *EntryRowViewManager
 	activeInput      activeInput
 
 	colours styles.AppColours
 }
 
-type EntryRowCreateViewManager struct {
+type EntryRowViewManager struct {
 	rows []*EntryRowCreateView
 
 	activeInput int
@@ -104,134 +104,7 @@ func (cv *EntryCreateView) Init() tea.Cmd {
 }
 
 func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	switch message := message.(type) {
-	case meta.SwitchFocusMsg:
-		if cv.activeInput == NOTESINPUT {
-			cv.NotesInput.Blur()
-		}
-
-		if cv.activeInput != ENTRYROWINPUT {
-			switch message.Direction {
-			case meta.PREVIOUS:
-				cv.activeInput--
-				if cv.activeInput < 0 {
-					cv.activeInput += 3
-				}
-			case meta.NEXT:
-				cv.activeInput++
-				cv.activeInput %= 3
-			}
-
-			// If it changed to entryrow input
-			if cv.activeInput == ENTRYROWINPUT {
-				cv.EntryRowsManager.focus(message.Direction)
-			}
-		} else {
-			preceeded, exceeded := cv.EntryRowsManager.switchFocus(message.Direction)
-
-			if exceeded {
-				cv.activeInput = 0
-			}
-			if preceeded {
-				cv.activeInput = 1
-			}
-		}
-
-		if cv.activeInput == NOTESINPUT {
-			cv.NotesInput.Focus()
-		}
-
-		return cv, nil
-
-	case meta.NavigateMsg:
-		if cv.activeInput != ENTRYROWINPUT {
-			return cv, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the entryrows"))
-		}
-
-		var cmd tea.Cmd
-		cv.EntryRowsManager, cmd = cv.EntryRowsManager.Update(message)
-
-		return cv, cmd
-
-	case meta.DataLoadedMsg:
-		switch message.Model {
-		case meta.JOURNAL:
-			journals := message.Data.([]database.Journal)
-
-			asSlice := make([]itempicker.Item, len(journals))
-			for i, journal := range journals {
-				asSlice[i] = journal
-			}
-
-			cv.JournalInput.Items = asSlice
-
-			return cv, nil
-
-		case meta.LEDGER:
-			ledgers := message.Data.([]database.Ledger)
-
-			asSlice := make([]itempicker.Item, len(ledgers))
-			for i, ledger := range ledgers {
-				asSlice[i] = ledger
-			}
-
-			cv.EntryRowsManager.setLedgers(asSlice)
-
-			return cv, nil
-
-		case meta.ACCOUNT:
-			accounts := message.Data.([]database.Account)
-
-			asSlice := make([]itempicker.Item, len(accounts)+1)
-			asSlice[0] = database.Account{Id: -1}
-			for i, account := range accounts {
-				asSlice[i+1] = account
-			}
-
-			cv.EntryRowsManager.setAccounts(asSlice)
-
-			return cv, nil
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
-		}
-
-	case tea.KeyMsg:
-		var cmd tea.Cmd
-		switch cv.activeInput {
-		case JOURNALINPUT:
-			cv.JournalInput, cmd = cv.JournalInput.Update(message)
-		case NOTESINPUT:
-			cv.NotesInput, cmd = cv.NotesInput.Update(message)
-		case ENTRYROWINPUT:
-			cv.EntryRowsManager, cmd = cv.EntryRowsManager.Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
-		}
-
-		return cv, cmd
-
-	case DeleteEntryRowMsg:
-		if cv.activeInput != ENTRYROWINPUT {
-			return cv, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to delete one"))
-		}
-
-		var cmd tea.Cmd
-		cv.EntryRowsManager, cmd = cv.EntryRowsManager.deleteRow()
-
-		return cv, cmd
-
-	case CreateEntryRowMsg:
-		if cv.activeInput != ENTRYROWINPUT {
-			return cv, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to create one"))
-		}
-
-		var cmd tea.Cmd
-		cv.EntryRowsManager, cmd = cv.EntryRowsManager.addRow(message.after)
-
-		return cv, cmd
-
+	switch message.(type) {
 	case meta.CommitMsg:
 		entryJournal := cv.JournalInput.Value().(database.Journal)
 		entryNotes := cv.NotesInput.Value()
@@ -255,80 +128,13 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
 		})
-
-	default:
-		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
-		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-		slog.Warn(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-		return cv, nil
 	}
+
+	return entriesCreateUpdateViewUpdate(cv, message)
 }
 
 func (cv *EntryCreateView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1)
-
-	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render("Create new Entry")))
-	result.WriteString("\n\n")
-
-	style := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Center)
-	highlightStyle := style.Foreground(cv.colours.Foreground)
-
-	inputWidth := cv.JournalInput.MaxViewLength()
-	cv.NotesInput.SetWidth(inputWidth)
-	cv.NotesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-	cv.NotesInput.FocusedStyle.Text = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-	cv.NotesInput.FocusedStyle.CursorLine = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-	cv.NotesInput.FocusedStyle.LineNumber = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-
-	nameCol := lipgloss.JoinVertical(
-		lipgloss.Right,
-		style.Render("Journal"),
-		style.Render("Notes"),
-	)
-
-	var inputCol string
-	if cv.activeInput == JOURNALINPUT {
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
-			style.Render(cv.NotesInput.View()),
-		)
-	} else if cv.activeInput == NOTESINPUT {
-		cv.NotesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
-			style.Render(cv.NotesInput.View()),
-		)
-	} else {
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(cv.JournalInput.View()),
-			style.Render(cv.NotesInput.View()),
-		)
-	}
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			nameCol,
-			inputCol,
-		),
-	))
-	result.WriteString("\n\n")
-
-	result.WriteString(style.MarginLeft(2).Render(
-		cv.EntryRowsManager.View(lipgloss.NewStyle(), lipgloss.NewStyle().Foreground(cv.colours.Foreground), cv.activeInput == ENTRYROWINPUT),
-	))
-
-	return result.String()
+	return entriesCreateUpdateViewView(cv)
 }
 
 func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
@@ -376,19 +182,39 @@ func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
 	return &asCommandSet
 }
 
-func NewEntryRowCreateViewManager() *EntryRowCreateViewManager {
+func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
+	return &cv.JournalInput
+}
+
+func (cv *EntryCreateView) getNotesInput() *textarea.Model {
+	return &cv.NotesInput
+}
+
+func (cv *EntryCreateView) getManager() *EntryRowViewManager {
+	return cv.EntryRowsManager
+}
+
+func (cv *EntryCreateView) getActiveInput() *activeInput {
+	return &cv.activeInput
+}
+
+func (cv *EntryCreateView) getColours() styles.AppColours {
+	return cv.colours
+}
+
+func NewEntryRowCreateViewManager() *EntryRowViewManager {
 	rows := make([]*EntryRowCreateView, 2)
 
 	// Prefill with two empty rows
 	rows[0] = newEntryRowCreateView()
 	rows[1] = newEntryRowCreateView()
 
-	return &EntryRowCreateViewManager{
+	return &EntryRowViewManager{
 		rows: rows,
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateViewManager, tea.Cmd) {
+func (ercvm *EntryRowViewManager) Update(msg tea.Msg) (*EntryRowViewManager, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		highlightRow, highlightCol := ercvm.getActiveCoords()
@@ -462,7 +288,7 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Style, isActive bool) string {
+func (ercvm *EntryRowViewManager) View(style, highlightStyle lipgloss.Style, isActive bool) string {
 	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
 
@@ -561,7 +387,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	return result.String()
 }
 
-func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, error) {
+func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ercvm.numRows())
 
 	total, err := ercvm.calculateCurrentTotal()
@@ -623,7 +449,7 @@ func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, erro
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
-func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+func (ercvm *EntryRowViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	oldRow, oldCol := ercvm.getActiveCoords()
 
 	switch direction {
@@ -649,7 +475,7 @@ func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (pr
 	return false, false
 }
 
-func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
+func (ercvm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
 	var total database.CurrencyValue
 
 	for _, row := range ercvm.rows {
@@ -674,37 +500,37 @@ func (ercvm *EntryRowCreateViewManager) calculateCurrentTotal() (database.Curren
 	return total, nil
 }
 
-func (ercvm *EntryRowCreateViewManager) setLedgers(ledgers []itempicker.Item) {
+func (ercvm *EntryRowViewManager) setLedgers(ledgers []itempicker.Item) {
 	for _, row := range ercvm.rows {
 		row.ledgerInput.Items = ledgers
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) setAccounts(accounts []itempicker.Item) {
+func (ercvm *EntryRowViewManager) setAccounts(accounts []itempicker.Item) {
 
 	for _, row := range ercvm.rows {
 		row.accountInput.Items = accounts
 	}
 }
 
-func (ercvm *EntryRowCreateViewManager) numRows() int {
+func (ercvm *EntryRowViewManager) numRows() int {
 	return len(ercvm.rows)
 }
 
-func (ercvm *EntryRowCreateViewManager) numInputs() int {
+func (ercvm *EntryRowViewManager) numInputs() int {
 	return ercvm.numRows() * ercvm.numInputsPerRow()
 }
 
-func (ercvm *EntryRowCreateViewManager) numInputsPerRow() int {
+func (ercvm *EntryRowViewManager) numInputsPerRow() int {
 	return 5
 }
 
-func (ercvm *EntryRowCreateViewManager) getActiveCoords() (row, col int) {
+func (ercvm *EntryRowViewManager) getActiveCoords() (row, col int) {
 	inputsPerRow := ercvm.numInputsPerRow()
 	return ercvm.activeInput / inputsPerRow, ercvm.activeInput % inputsPerRow
 }
 
-func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
+func (ercvm *EntryRowViewManager) focus(direction meta.Sequence) {
 	numInputs := ercvm.numInputs()
 
 	switch direction {
@@ -719,7 +545,7 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 }
 
 // Ignores an input that would make the active input go "out of bounds"
-func (ercvm *EntryRowCreateViewManager) setActiveCoords(newRow, newCol int) {
+func (ercvm *EntryRowViewManager) setActiveCoords(newRow, newCol int) {
 	numRow := ercvm.numRows()
 	numPerRow := ercvm.numInputsPerRow()
 
@@ -790,7 +616,7 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 	return false
 }
 
-func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager, tea.Cmd) {
+func (ercvm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 	activeRow, _ := ercvm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
@@ -809,7 +635,7 @@ func (ercvm *EntryRowCreateViewManager) deleteRow() (*EntryRowCreateViewManager,
 	return ercvm, nil
 }
 
-func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewManager, tea.Cmd) {
+func (ercvm *EntryRowViewManager) addRow(after bool) (*EntryRowViewManager, tea.Cmd) {
 	activeRow, _ := ercvm.getActiveCoords()
 
 	newRow := newEntryRowCreateView()
@@ -843,4 +669,234 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 	}
 
 	return ercvm, nil
+}
+
+type entryCreateOrUpdateView interface {
+	View
+
+	getJournalInput() *itempicker.Model
+	getNotesInput() *textarea.Model
+	getManager() *EntryRowViewManager
+
+	getActiveInput() *activeInput
+
+	getColours() styles.AppColours
+}
+
+func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
+	activeInput := view.getActiveInput()
+	journalInput := view.getJournalInput()
+	notesInput := view.getNotesInput()
+	entryRowsManager := view.getManager()
+
+	switch message := message.(type) {
+	case meta.SwitchFocusMsg:
+		if *activeInput == NOTESINPUT {
+			notesInput.Blur()
+		}
+
+		if *activeInput != ENTRYROWINPUT {
+			switch message.Direction {
+			case meta.PREVIOUS:
+				*activeInput--
+				if *activeInput < 0 {
+					*activeInput += 3
+				}
+			case meta.NEXT:
+				*activeInput++
+				*activeInput %= 3
+			}
+
+			// If it changed to entryrow input
+			if *activeInput == ENTRYROWINPUT {
+				entryRowsManager.focus(message.Direction)
+			}
+		} else {
+			preceeded, exceeded := entryRowsManager.switchFocus(message.Direction)
+
+			if exceeded {
+				*activeInput = 0
+			}
+			if preceeded {
+				*activeInput = 1
+			}
+		}
+
+		if *activeInput == NOTESINPUT {
+			notesInput.Focus()
+		}
+
+		return view, nil
+
+	case meta.NavigateMsg:
+		if *activeInput != ENTRYROWINPUT {
+			return view, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the entryrows"))
+		}
+
+		manager, cmd := entryRowsManager.Update(message)
+		*entryRowsManager = *manager
+
+		return view, cmd
+
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.JOURNAL:
+			journals := message.Data.([]database.Journal)
+
+			asSlice := make([]itempicker.Item, len(journals))
+			for i, journal := range journals {
+				asSlice[i] = journal
+			}
+
+			journalInput.Items = asSlice
+
+			return view, nil
+
+		case meta.LEDGER:
+			ledgers := message.Data.([]database.Ledger)
+
+			asSlice := make([]itempicker.Item, len(ledgers))
+			for i, ledger := range ledgers {
+				asSlice[i] = ledger
+			}
+
+			entryRowsManager.setLedgers(asSlice)
+
+			return view, nil
+
+		case meta.ACCOUNT:
+			accounts := message.Data.([]database.Account)
+
+			asSlice := make([]itempicker.Item, len(accounts)+1)
+			asSlice[0] = database.Account{Id: -1}
+			for i, account := range accounts {
+				asSlice[i+1] = account
+			}
+
+			entryRowsManager.setAccounts(asSlice)
+
+			return view, nil
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+
+	case tea.KeyMsg:
+		var cmd tea.Cmd
+		switch *activeInput {
+		case JOURNALINPUT:
+			*journalInput, cmd = journalInput.Update(message)
+		case NOTESINPUT:
+			*notesInput, cmd = notesInput.Update(message)
+		case ENTRYROWINPUT:
+			var manager *EntryRowViewManager
+			manager, cmd = entryRowsManager.Update(message)
+			*entryRowsManager = *manager
+
+		default:
+			panic(fmt.Sprintf("Updating create view but active input was %d", *activeInput))
+		}
+
+		return view, cmd
+
+	case DeleteEntryRowMsg:
+		if *activeInput != ENTRYROWINPUT {
+			return view, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to delete one"))
+		}
+
+		manager, cmd := entryRowsManager.deleteRow()
+		*entryRowsManager = *manager
+
+		return view, cmd
+
+	case CreateEntryRowMsg:
+		if *activeInput != ENTRYROWINPUT {
+			return view, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to create one"))
+		}
+
+		manager, cmd := entryRowsManager.addRow(message.after)
+		*entryRowsManager = *manager
+
+		return view, cmd
+
+	default:
+		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
+		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+		slog.Warn(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+		return view, nil
+	}
+}
+
+func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
+
+	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render("Create new Entry")))
+	result.WriteString("\n\n")
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Center)
+	highlightStyle := style.Foreground(view.getColours().Foreground)
+
+	journalInput := view.getJournalInput()
+	notesInput := view.getNotesInput()
+	entryRowsManager := view.getManager()
+
+	inputWidth := journalInput.MaxViewLength()
+	notesInput.SetWidth(inputWidth)
+	notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+	notesInput.FocusedStyle.Text = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+	notesInput.FocusedStyle.CursorLine = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+	notesInput.FocusedStyle.LineNumber = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+
+	nameCol := lipgloss.JoinVertical(
+		lipgloss.Right,
+		style.Render("Journal"),
+		style.Render("Notes"),
+	)
+
+	var inputCol string
+	if *view.getActiveInput() == JOURNALINPUT {
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(view.getJournalInput().View()),
+			style.Render(notesInput.View()),
+		)
+	} else if *view.getActiveInput() == NOTESINPUT {
+		notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
+			style.Render(notesInput.View()),
+		)
+	} else {
+		inputCol = lipgloss.JoinVertical(
+			lipgloss.Left,
+			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
+			style.Render(notesInput.View()),
+		)
+	}
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			nameCol,
+			inputCol,
+		),
+	))
+	result.WriteString("\n\n")
+
+	result.WriteString(style.MarginLeft(2).Render(
+		entryRowsManager.View(lipgloss.NewStyle(),
+			lipgloss.NewStyle().Foreground(view.getColours().Foreground),
+			*view.getActiveInput() == ENTRYROWINPUT,
+		),
+	))
+
+	return result.String()
 }

@@ -22,7 +22,7 @@ const (
 	NOTEINPUT
 )
 
-type createOrUpdateView interface {
+type ledgerCreateOrUpdateView interface {
 	View
 
 	title() string
@@ -133,12 +133,12 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	default:
-		return createUpdateViewUpdate(cv, message)
+		return ledgersCreateUpdateViewUpdate(cv, message)
 	}
 }
 
 func (cv *LedgersCreateView) View() string {
-	return createUpdateViewView(cv)
+	return ledgersCreateUpdateViewView(cv)
 }
 
 func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
@@ -270,13 +270,12 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return uv, nil
 
 	default:
-		return createUpdateViewUpdate(uv, message)
+		return ledgersCreateUpdateViewUpdate(uv, message)
 	}
-
 }
 
 func (uv *LedgersUpdateView) View() string {
-	return createUpdateViewView(uv)
+	return ledgersCreateUpdateViewView(uv)
 }
 
 func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
@@ -302,7 +301,7 @@ func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
 }
 
 // The common parts of the Update function for a create- and update view
-func createUpdateViewUpdate(view createOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
+func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
@@ -368,7 +367,7 @@ func createUpdateViewUpdate(view createOrUpdateView, message tea.Msg) (tea.Model
 }
 
 // The common parts of the View function for a create- and update view
-func createUpdateViewView(view createOrUpdateView) string {
+func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
