@@ -175,9 +175,15 @@ func (cv CurrencyValue) String() string {
 	whole := cv / 100
 	decimal := cv % 100
 
-	// NOTE: this is wrong when cv is a negative number (it becomes -6.-90), but negative numbers should never get
-	// rendered anyway so cba because need an if statement because the stdlib is dumb and only has abs for float64
-	return fmt.Sprintf("%d.%02d", whole, decimal)
+	if cv >= 0 {
+		return fmt.Sprintf("%d.%02d", whole, decimal)
+	} else if cv <= -100 {
+		// Negate the decimal to avoid `-6.-90`
+		return fmt.Sprintf("%d.%02d", whole, -decimal)
+	} else {
+		// Negate the decimal and insert a minus because the whole is 0 which doesn't get stringified as -0
+		return fmt.Sprintf("-%d.%02d", whole, -decimal)
+	}
 }
 
 func (left CurrencyValue) Add(right CurrencyValue) CurrencyValue {
