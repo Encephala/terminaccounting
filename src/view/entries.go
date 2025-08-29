@@ -891,7 +891,7 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 }
 
 func (ercvm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
-	activeRow, _ := ercvm.getActiveCoords()
+	activeRow, activeCol := ercvm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
 	// CBA handling weird edge cases here
@@ -899,12 +899,21 @@ func (ercvm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 		return ercvm, meta.MessageCmd(fmt.Errorf("cannot delete the final entryrow"))
 	}
 
-	// If about to delete the bottom-most row, switch focus to one row above
+	// If about to delete the bottom-most row
+	newRow, newCol := activeRow, activeCol
 	if activeRow == ercvm.numRows()-1 {
-		ercvm.setActiveCoords(activeRow-1, 0)
-	}
+		newRow -= 1
 
-	ercvm.rows = append(ercvm.rows[:activeRow], ercvm.rows[activeRow+1:]...)
+		// Switch focus first to avoid index out of bounds panic when unblurring oldRow
+		ercvm.setActiveCoords(newRow, newCol)
+
+		ercvm.rows = append(ercvm.rows[:activeRow], ercvm.rows[activeRow+1:]...)
+	} else {
+		// Switch focus after because otherwise the to-be-deleted row gets highlighted
+		ercvm.rows = append(ercvm.rows[:activeRow], ercvm.rows[activeRow+1:]...)
+
+		ercvm.setActiveCoords(newRow, newCol)
+	}
 
 	return ercvm, nil
 }
