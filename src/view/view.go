@@ -124,7 +124,7 @@ func (erd entryRowDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if er.Value > 0 {
 		debit = er.Value
 	} else {
-		credit = er.Value
+		credit = -er.Value
 	}
 
 	line := fmt.Sprintf("%s | %-20s | %-20s | %s | %s", er.Date, "LedgerName", "AccountName", debit, credit)
