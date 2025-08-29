@@ -119,7 +119,7 @@ func (e Entry) Update(rows []EntryRow) (int, error) {
 
 type CurrencyValue int64
 
-func ParseDecimalValue(input string) (CurrencyValue, error) {
+func ParseCurrencyValue(input string) (CurrencyValue, error) {
 	parts := strings.Split(input, ".")
 
 	if len(parts) == 1 {
@@ -166,19 +166,9 @@ func ParseDecimalValue(input string) (CurrencyValue, error) {
 	}
 }
 
-func (dv CurrencyValue) String() string {
-	negative := false
-	if dv < 0 {
-		dv *= -1
-		negative = true
-	}
-
-	whole := dv / 100
-	decimal := dv % 100
-
-	if negative {
-		return fmt.Sprintf("-%d.%02d", whole, decimal)
-	}
+func (cv CurrencyValue) String() string {
+	whole := cv / 100
+	decimal := cv % 100
 
 	return fmt.Sprintf("%d.%02d", whole, decimal)
 }
