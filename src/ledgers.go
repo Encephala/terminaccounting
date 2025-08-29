@@ -174,8 +174,6 @@ func (m *LedgersApp) MakeLoadListCmd() tea.Cmd {
 
 func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 	// Aren't closures just great
-	// Would be nice to pass modelId as argument here though, instead of asserting current view type
-	// Modularity and all
 	ledgerId := m.currentView.(*view.DetailView).ModelId
 
 	return func() tea.Msg {
@@ -193,32 +191,6 @@ func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 			TargetApp: meta.LEDGERS,
 			Model:     meta.ENTRYROW,
 			Data:      items,
-		}
-	}
-}
-
-func (m *LedgersApp) MakeLoadDetailCmd() tea.Cmd {
-	var ledgerId int
-	switch view := m.currentView.(type) {
-	case *view.LedgersUpdateView:
-		ledgerId = view.ModelId
-	case *view.LedgersDeleteView:
-		ledgerId = view.ModelId
-
-	default:
-		panic(fmt.Sprintf("unexpected view: %#v", view))
-	}
-
-	return func() tea.Msg {
-		ledger, err := database.SelectLedger(ledgerId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD LEDGER WITH ID %d: %#v", ledgerId, err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.LEDGERS,
-			Model:     meta.LEDGER,
-			Data:      ledger,
 		}
 	}
 }
