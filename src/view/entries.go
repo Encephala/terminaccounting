@@ -741,6 +741,7 @@ func (ercvm *EntryRowViewManager) switchFocus(direction meta.Sequence) (preceede
 	switch direction {
 	case meta.PREVIOUS:
 		if oldRow == 0 && oldCol == 0 {
+			ercvm.rows[0].dateInput.Blur()
 			return true, false
 		}
 
