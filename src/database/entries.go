@@ -294,7 +294,7 @@ func MakeSelectEntryCmd(entryId int, targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectEntry(entryId)
 		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
+			return fmt.Errorf("FAILED TO LOAD ENTRY: %v", err)
 		}
 
 		return meta.DataLoadedMsg{
@@ -309,7 +309,7 @@ func MakeSelectEntryRowsCmd(entryId int, targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectRowsByEntry(entryId)
 		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
+			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}
 
 		return meta.DataLoadedMsg{
