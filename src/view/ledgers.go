@@ -142,23 +142,11 @@ func (cv *LedgersCreateView) View() string {
 }
 
 func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
-
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
-
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-
-	return &meta.MotionSet{Normal: normalMotions}
+	return ledgersCreateUpdateViewMotionSet()
 }
 
 func (cv *LedgersCreateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[tea.Msg]
-
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
-
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return ledgersCreateUpdateViewCommandSet()
 }
 
 type LedgersUpdateView struct {
@@ -279,25 +267,15 @@ func (uv *LedgersUpdateView) View() string {
 }
 
 func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+	result := ledgersCreateUpdateViewMotionSet()
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-
-	normalMotions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
-
-	return &meta.MotionSet{Normal: normalMotions}
+	return result
 }
 
 func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[tea.Msg]
-
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
-
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return ledgersCreateUpdateViewCommandSet()
 }
 
 // The common parts of the Update function for a create- and update view
@@ -420,6 +398,26 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	))
 
 	return result.String()
+}
+
+func ledgersCreateUpdateViewMotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	return &meta.MotionSet{Normal: normalMotions}
+}
+
+func ledgersCreateUpdateViewCommandSet() *meta.CommandSet {
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
 
 type LedgersDeleteView struct {

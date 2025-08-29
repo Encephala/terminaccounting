@@ -146,43 +146,11 @@ type CreateEntryRowMsg struct {
 }
 
 func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
-
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
-
-	// Default navigation
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-
-	// Create/delete rows
-	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
-	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
-
-	// hjkl navigation in entryrows
-	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"left"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"down"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"up"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
-	normalMotions.Insert(meta.Motion{"right"}, meta.NavigateMsg{Direction: meta.RIGHT})
-
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return entriesCreateUpdateViewMotionSet()
 }
 
 func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[tea.Msg]
-
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
-
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return entriesCreateUpdateViewCommandSet()
 }
 
 func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
@@ -347,44 +315,11 @@ func (uv *EntryUpdateView) View() string {
 }
 
 func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
-	// TODO: Merge this into entryCreateOrUpdateView
-	var normalMotions meta.Trie[tea.Msg]
-
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
-
-	// Default navigation
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-
-	// Create/delete rows
-	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
-	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
-
-	// hjkl navigation in entryrows
-	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"left"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"down"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"up"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
-	normalMotions.Insert(meta.Motion{"right"}, meta.NavigateMsg{Direction: meta.RIGHT})
-
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return entriesCreateUpdateViewMotionSet()
 }
 
 func (uv *EntryUpdateView) CommandSet() *meta.CommandSet {
-	var commands meta.Trie[tea.Msg]
-
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
-
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return entriesCreateUpdateViewCommandSet()
 }
 
 func (uv *EntryUpdateView) getJournalInput() *itempicker.Model {
@@ -1170,4 +1105,44 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	))
 
 	return result.String()
+}
+
+func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	// Default navigation
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	// Create/delete rows
+	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
+	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
+	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
+
+	// hjkl navigation in entryrows
+	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"left"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"down"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"up"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+	normalMotions.Insert(meta.Motion{"right"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	return &meta.MotionSet{
+		Normal: normalMotions,
+	}
+}
+
+func entriesCreateUpdateViewCommandSet() *meta.CommandSet {
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
