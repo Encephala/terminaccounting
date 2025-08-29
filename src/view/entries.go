@@ -212,6 +212,9 @@ type EntryUpdateView struct {
 	startingEntry     database.Entry
 	startingEntryRows []database.EntryRow
 
+	availableLedgers  []database.Ledger
+	availableAccounts []database.Account
+
 	colours styles.AppColours
 }
 
@@ -295,7 +298,9 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			rows := message.Data.([]database.EntryRow)
 			uv.startingEntryRows = rows
 
-			// TODO: Populate the fields
+			formRows := decompileRows(rows)
+			uv.getManager().rows = formRows
+
 			return uv, nil
 		}
 	}
@@ -308,6 +313,7 @@ func (uv *EntryUpdateView) View() string {
 }
 
 func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
+	// TODO: Merge this into entryCreateOrUpdateView
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -552,6 +558,7 @@ func (ercvm *EntryRowViewManager) View(style, highlightStyle lipgloss.Style, isA
 	return result.String()
 }
 
+// Converts a slice of EntryRow "forms" to a slice of EntryRow
 func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ercvm.numRows())
 
@@ -617,6 +624,45 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 	}
 
 	return result, nil
+}
+
+// Converts a slice of EntryRow to a slice of EntryRow "forms"
+func decompileRows(rows []database.EntryRow) []*EntryRowCreateView {
+	result := make([]*EntryRowCreateView, len(rows))
+
+	for i, row := range rows {
+		ledger, err := database.SelectLedger(row.Ledger)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to retrieve ledger for %#v", row))
+		}
+
+		var account database.Account
+		if row.Account != nil {
+			account, err = database.SelectAccount(*row.Account)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to retrieve account for %#v", row))
+			}
+		} else {
+			// -1 represents invalid account in the itempicker
+			// Actually TODO: just make nil represent invalid account
+			account.Id = -1
+		}
+
+		formRow := newEntryRowCreateView()
+
+		formRow.dateInput.SetValue(row.Date.String())
+		formRow.ledgerInput.SetValue(ledger)
+		formRow.accountInput.SetValue(account)
+		if row.Value > 0 {
+			formRow.debitInput.SetValue(row.Value.String())
+		} else if row.Value < 0 {
+			formRow.creditInput.SetValue(row.Value.String())
+		}
+
+		result[i] = formRow
+	}
+
+	return result
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"

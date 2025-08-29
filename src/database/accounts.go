@@ -74,6 +74,14 @@ func SelectAccounts() ([]Account, error) {
 	return result, err
 }
 
+func SelectAccount(id int) (Account, error) {
+	var result Account
+
+	err := DB.Select(&result, `SELECT * FROM accounts WHERE id = $1;`, id)
+
+	return result, err
+}
+
 func MakeSelectAccountsCmd(targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectAccounts()
