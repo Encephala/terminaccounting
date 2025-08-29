@@ -12,33 +12,9 @@ func main() {
 	db := sqlx.MustConnect("sqlite3", "test.db")
 	database.DB = db
 
-	rows := []database.EntryRow{
-		{
-			Id:         0,
-			Entry:      1,
-			Ledger:     1,
-			Account:    nil,
-			Document:   nil,
-			Value:      database.CurrencyValue(609),
-			Reconciled: false,
-		},
-		{
-			Id:         0,
-			Entry:      1,
-			Ledger:     2,
-			Account:    nil,
-			Document:   nil,
-			Value:      database.CurrencyValue(-609),
-			Reconciled: false,
-		},
-	}
+	val, err := database.ParseCurrencyValue("5.50")
+	fmt.Printf("%#v, %#v", val, err)
 
-	fmt.Println("Inserting:", rows)
-	// fmt.Println(entries.InsertRows(db, rows))
-
-	a, err := database.SelectRows()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("%#+v\n", a)
+	val2, err := database.ParseCurrencyValue("-5.50")
+	fmt.Printf("%#v, %#v", val2, err)
 }

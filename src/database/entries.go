@@ -159,7 +159,11 @@ func ParseDecimalValue(input string) (CurrencyValue, error) {
 		return 0, fmt.Errorf("invalid decimal part %s", right)
 	}
 
-	return CurrencyValue(whole*100 + int64(decimal)), nil
+	if whole >= 0 {
+		return CurrencyValue(whole*100 + int64(decimal)), nil
+	} else {
+		return CurrencyValue(whole*100 - int64(decimal)), nil
+	}
 }
 
 func (dv CurrencyValue) String() string {
