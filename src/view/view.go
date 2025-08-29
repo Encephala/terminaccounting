@@ -127,7 +127,7 @@ func (erd entryRowDelegate) Render(w io.Writer, m list.Model, index int, item li
 		credit = er.Value
 	}
 
-	line := fmt.Sprintf("%-20s | %-20s | %s | %s", "LedgerName", "AccountName", debit, credit)
+	line := fmt.Sprintf("%s | %-20s | %-20s | %s | %s", er.Date, "LedgerName", "AccountName", debit, credit)
 	if index == m.Index() {
 		fmt.Fprint(w, erd.style.ItemSelected.Render(line))
 	} else {

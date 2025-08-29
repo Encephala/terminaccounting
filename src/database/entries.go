@@ -182,6 +182,10 @@ func (left CurrencyValue) Subtract(right CurrencyValue) CurrencyValue {
 
 type Date time.Time
 
+func (d Date) String() string {
+	return time.Time(d).Format(DATE_FORMAT)
+}
+
 type EntryRow struct {
 	Id         int           `db:"id"`
 	Entry      int           `db:"entry"`
