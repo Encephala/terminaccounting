@@ -30,6 +30,9 @@ type EntryCreateView struct {
 	entryRowsManager *EntryRowViewManager
 	activeInput      activeInput
 
+	availableLedgers  []database.Ledger
+	availableAccounts []database.Account
+
 	colours styles.AppColours
 }
 
@@ -202,6 +205,32 @@ func (cv *EntryCreateView) getColours() styles.AppColours {
 	return cv.colours
 }
 
+func (cv *EntryCreateView) setLedgers(ledgers []database.Ledger) {
+	cv.availableLedgers = ledgers
+
+	asSlice := make([]itempicker.Item, len(ledgers))
+	for i, ledger := range ledgers {
+		asSlice[i] = ledger
+	}
+
+	for _, row := range cv.entryRowsManager.rows {
+		row.ledgerInput.Items = asSlice
+	}
+}
+
+func (cv *EntryCreateView) setAccounts(accounts []database.Account) {
+	cv.availableAccounts = accounts
+
+	asSlice := make([]itempicker.Item, len(accounts))
+	for i, account := range accounts {
+		asSlice[i] = account
+	}
+
+	for _, row := range cv.entryRowsManager.rows {
+		row.accountInput.Items = asSlice
+	}
+}
+
 type EntryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
@@ -295,10 +324,15 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return uv, nil
 
 		case meta.ENTRYROW:
+			// You like how I solved this race condition?
+			if uv.availableLedgers == nil || uv.availableAccounts == nil {
+				return uv, meta.MessageCmd(message)
+			}
+
 			rows := message.Data.([]database.EntryRow)
 			uv.startingEntryRows = rows
 
-			formRows := decompileRows(rows)
+			formRows := decompileRows(rows, uv.availableLedgers, uv.availableAccounts)
 			uv.getManager().rows = formRows
 
 			return uv, nil
@@ -371,6 +405,32 @@ func (uv *EntryUpdateView) getActiveInput() *activeInput {
 
 func (uv *EntryUpdateView) getColours() styles.AppColours {
 	return uv.colours
+}
+
+func (uv *EntryUpdateView) setLedgers(ledgers []database.Ledger) {
+	uv.availableLedgers = ledgers
+
+	asSlice := make([]itempicker.Item, len(ledgers))
+	for i, ledger := range ledgers {
+		asSlice[i] = ledger
+	}
+
+	for _, row := range uv.entryRowsManager.rows {
+		row.ledgerInput.Items = asSlice
+	}
+}
+
+func (uv *EntryUpdateView) setAccounts(accounts []database.Account) {
+	uv.availableAccounts = accounts
+
+	asSlice := make([]itempicker.Item, len(accounts))
+	for i, account := range accounts {
+		asSlice[i] = account
+	}
+
+	for _, row := range uv.entryRowsManager.rows {
+		row.accountInput.Items = asSlice
+	}
 }
 
 func NewEntryRowCreateViewManager() *EntryRowViewManager {
@@ -627,25 +687,34 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 }
 
 // Converts a slice of EntryRow to a slice of EntryRow "forms"
-func decompileRows(rows []database.EntryRow) []*EntryRowCreateView {
+func decompileRows(rows []database.EntryRow, ledgers []database.Ledger, accounts []database.Account) []*EntryRowCreateView {
 	result := make([]*EntryRowCreateView, len(rows))
 
 	for i, row := range rows {
-		ledger, err := database.SelectLedger(row.Ledger)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to retrieve ledger for %#v", row))
+		var ledger database.Ledger
+		for _, l := range ledgers {
+			if l.Id == row.Ledger {
+				ledger = l
+			}
+		}
+		if ledger.Id == 0 {
+			panic(fmt.Sprintf("Ledger not found for %#v", row))
 		}
 
 		var account database.Account
-		if row.Account != nil {
-			account, err = database.SelectAccount(*row.Account)
-			if err != nil {
-				panic(fmt.Sprintf("Failed to retrieve account for %#v", row))
-			}
-		} else {
+		if row.Account == nil {
 			// -1 represents invalid account in the itempicker
 			// Actually TODO: just make nil represent invalid account
 			account.Id = -1
+		} else {
+			for _, a := range accounts {
+				if a.Id == *row.Account {
+					account = a
+				}
+			}
+			if account.Id == 0 {
+				panic(fmt.Sprintf("Account not found for %#v", row))
+			}
 		}
 
 		formRow := newEntryRowCreateView()
@@ -715,19 +784,6 @@ func (ercvm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValu
 	}
 
 	return total, nil
-}
-
-func (ercvm *EntryRowViewManager) setLedgers(ledgers []itempicker.Item) {
-	for _, row := range ercvm.rows {
-		row.ledgerInput.Items = ledgers
-	}
-}
-
-func (ercvm *EntryRowViewManager) setAccounts(accounts []itempicker.Item) {
-
-	for _, row := range ercvm.rows {
-		row.accountInput.Items = accounts
-	}
 }
 
 func (ercvm *EntryRowViewManager) numRows() int {
@@ -898,6 +954,9 @@ type entryCreateOrUpdateView interface {
 	getActiveInput() *activeInput
 
 	getColours() styles.AppColours
+
+	setLedgers([]database.Ledger)
+	setAccounts([]database.Account)
 }
 
 func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
@@ -970,27 +1029,12 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, nil
 
 		case meta.LEDGER:
-			ledgers := message.Data.([]database.Ledger)
-
-			asSlice := make([]itempicker.Item, len(ledgers))
-			for i, ledger := range ledgers {
-				asSlice[i] = ledger
-			}
-
-			entryRowsManager.setLedgers(asSlice)
+			view.setLedgers(message.Data.([]database.Ledger))
 
 			return view, nil
 
 		case meta.ACCOUNT:
-			accounts := message.Data.([]database.Account)
-
-			asSlice := make([]itempicker.Item, len(accounts)+1)
-			asSlice[0] = database.Account{Id: -1}
-			for i, account := range accounts {
-				asSlice[i+1] = account
-			}
-
-			entryRowsManager.setAccounts(asSlice)
+			view.setAccounts(message.Data.([]database.Account))
 
 			return view, nil
 
