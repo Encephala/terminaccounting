@@ -226,6 +226,8 @@ func NewEntryUpdateView(id int, colours styles.AppColours) *EntryUpdateView {
 		activeInput:      JOURNALINPUT,
 		entryRowsManager: NewEntryRowCreateViewManager(),
 
+		modelId: id,
+
 		colours: colours,
 	}
 
