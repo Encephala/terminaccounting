@@ -81,7 +81,7 @@ func SelectAccounts() ([]Account, error) {
 func SelectAccount(id int) (Account, error) {
 	var result Account
 
-	err := DB.Select(&result, `SELECT * FROM accounts WHERE id = $1;`, id)
+	err := DB.Get(&result, `SELECT * FROM accounts WHERE id = $1;`, id)
 
 	return result, err
 }

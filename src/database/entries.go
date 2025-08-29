@@ -267,7 +267,7 @@ func SelectEntries() ([]Entry, error) {
 func SelectEntry(id int) (Entry, error) {
 	var result Entry
 
-	err := DB.Get(&result, `SELECT * FROM entries WHERE id = :id`, id)
+	err := DB.Get(&result, `SELECT * FROM entries WHERE id = $1;`, id)
 
 	return result, err
 }

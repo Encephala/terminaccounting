@@ -79,7 +79,7 @@ func SelectJournals() ([]Journal, error) {
 func SelectJournal(id int) (Journal, error) {
 	result := Journal{}
 
-	err := DB.Select(&result, `SELECT * FROM journals WHERE id = $1;`, id)
+	err := DB.Get(&result, `SELECT * FROM journals WHERE id = $1;`, id)
 
 	return result, err
 }

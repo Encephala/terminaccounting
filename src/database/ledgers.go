@@ -141,13 +141,13 @@ func SelectLedgers() ([]Ledger, error) {
 func SelectLedger(ledgerId int) (Ledger, error) {
 	var result Ledger
 
-	err := DB.Get(&result, `SELECT * FROM ledgers WHERE id = :id`, ledgerId)
+	err := DB.Get(&result, `SELECT * FROM ledgers WHERE id = $1;`, ledgerId)
 
 	return result, err
 }
 
 func DeleteLedger(ledgerId int) error {
-	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = :id`, ledgerId)
+	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = $1;`, ledgerId)
 
 	return err
 }
