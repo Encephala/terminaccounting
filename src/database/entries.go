@@ -162,7 +162,7 @@ func ParseCurrencyValue(input string) (CurrencyValue, error) {
 	if whole >= 0 {
 		return CurrencyValue(whole*100 + int64(decimal)), nil
 	} else {
-		return CurrencyValue(whole*100 - int64(decimal)), nil
+		panic("Why did a negative value get inserted?")
 	}
 }
 
