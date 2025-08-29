@@ -40,6 +40,7 @@ type EntryRowCreateViewManager struct {
 }
 
 type EntryRowCreateView struct {
+	dateInput    textinput.Model
 	ledgerInput  itempicker.Model
 	accountInput itempicker.Model
 	// TODO: documentInput as some file selector thing
@@ -49,7 +50,20 @@ type EntryRowCreateView struct {
 }
 
 func newEntryRowCreateView() *EntryRowCreateView {
+	dateInput := textinput.New()
+	dateInput.CharLimit = 10 // YYYY-MM-DD
+	dateInput.Validate = func(input string) error {
+		for _, char := range input {
+			if !unicode.IsDigit(char) && char != '-' {
+				return fmt.Errorf("invalid character %s", string(char))
+			}
+		}
+
+		return nil
+	}
+
 	result := EntryRowCreateView{
+		dateInput:    dateInput,
 		ledgerInput:  itempicker.New([]itempicker.Item{}),
 		accountInput: itempicker.New([]itempicker.Item{}),
 		debitInput:   textinput.New(),
@@ -383,10 +397,12 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 		var cmd tea.Cmd
 		switch highlightCol {
 		case 0:
-			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
+			row.dateInput, cmd = row.dateInput.Update(msg)
 		case 1:
-			row.accountInput, cmd = row.accountInput.Update(msg)
+			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
 		case 2:
+			row.accountInput, cmd = row.accountInput.Update(msg)
+		case 3:
 			if !validateNumberInput(msg) {
 				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
 			}
@@ -394,7 +410,7 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 			if row.creditInput.Value() != "" {
 				row.creditInput.SetValue("")
 			}
-		case 3:
+		case 4:
 			if !validateNumberInput(msg) {
 				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
 			}
@@ -425,7 +441,7 @@ func (ercvm *EntryRowCreateViewManager) Update(msg tea.Msg) (*EntryRowCreateView
 			ercvm.setActiveCoords(oldRow, oldCol-1)
 
 		case meta.RIGHT:
-			if oldCol == 3 {
+			if oldCol == ercvm.numInputsPerRow()-1 {
 				break
 			}
 			ercvm.setActiveCoords(oldRow, oldCol+1)
@@ -454,12 +470,14 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	highlightRow, highlightCol := ercvm.getActiveCoords()
 
 	var idCol []string = make([]string, length)
+	var dateCol []string = make([]string, length)
 	var ledgerCol []string = make([]string, length)
 	var accountCol []string = make([]string, length)
 	var debitCol []string = make([]string, length)
 	var creditCol []string = make([]string, length)
 
 	idCol[0] = "Row"
+	dateCol[0] = "Date"
 	ledgerCol[0] = "Ledger"
 	accountCol[0] = "Account"
 	debitCol[0] = "Debit"
@@ -467,6 +485,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 
 	for i, row := range ercvm.rows {
 		idStyle := style
+		dateStyle := style
 		ledgerStyle := style
 		accountStyle := style
 		debitStyle := style
@@ -475,12 +494,14 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 		if isActive && i == highlightRow {
 			switch highlightCol {
 			case 0:
-				ledgerStyle = highlightStyle
+				dateStyle = highlightStyle
 			case 1:
-				accountStyle = highlightStyle
+				ledgerStyle = highlightStyle
 			case 2:
-				debitStyle = highlightStyle
+				accountStyle = highlightStyle
 			case 3:
+				debitStyle = highlightStyle
+			case 4:
 				creditStyle = highlightStyle
 			default:
 				panic(fmt.Sprintf("Unexpected highlighted column %d", highlightCol))
@@ -488,6 +509,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 		}
 
 		idCol[i+1] = idStyle.Render(strconv.Itoa(i))
+		dateCol[i+1] = dateStyle.Render(row.dateInput.View())
 		ledgerCol[i+1] = ledgerStyle.Render(row.ledgerInput.View())
 		accountCol[i+1] = accountStyle.Render(row.accountInput.View())
 		debitCol[i+1] = debitStyle.Render(row.debitInput.View())
@@ -495,6 +517,7 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	}
 
 	idRendered := lipgloss.JoinVertical(lipgloss.Left, idCol...)
+	dateRendered := lipgloss.JoinVertical(lipgloss.Left, dateCol...)
 	ledgerRendered := lipgloss.JoinVertical(lipgloss.Left, ledgerCol...)
 	accountRendered := lipgloss.JoinVertical(lipgloss.Left, accountCol...)
 	debitRendered := lipgloss.JoinVertical(lipgloss.Left, debitCol...)
@@ -503,6 +526,8 @@ func (ercvm *EntryRowCreateViewManager) View(style, highlightStyle lipgloss.Styl
 	entryRows := style.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		idRendered,
+		" ",
+		dateRendered,
 		" ",
 		ledgerRendered,
 		" ",
@@ -671,7 +696,7 @@ func (ercvm *EntryRowCreateViewManager) numInputs() int {
 }
 
 func (ercvm *EntryRowCreateViewManager) numInputsPerRow() int {
-	return 4
+	return 5
 }
 
 func (ercvm *EntryRowCreateViewManager) getActiveCoords() (row, col int) {
@@ -689,53 +714,58 @@ func (ercvm *EntryRowCreateViewManager) focus(direction meta.Sequence) {
 
 	case meta.NEXT:
 		ercvm.activeInput = 0
+		ercvm.rows[0].dateInput.Focus()
 	}
 }
 
 // Ignores an input that would make the active input go "out of bounds"
-func (ercvm *EntryRowCreateViewManager) setActiveCoords(row, col int) {
+func (ercvm *EntryRowCreateViewManager) setActiveCoords(newRow, newCol int) {
 	numRow := ercvm.numRows()
 	numPerRow := ercvm.numInputsPerRow()
 
-	if col == -1 {
-		row -= 1
-		col = numPerRow - 1
-	} else if col < -1 {
+	if newCol == -1 {
+		newRow -= 1
+		newCol = numPerRow - 1
+	} else if newCol < -1 {
 		panic("What")
-	} else if col == numPerRow {
-		row += 1
-		col = 0
-	} else if col > numPerRow {
+	} else if newCol == numPerRow {
+		newRow += 1
+		newCol = 0
+	} else if newCol > numPerRow {
 		panic("What")
 	}
 
-	if row == -1 {
+	if newRow == -1 {
 		return
-	} else if row < -1 {
+	} else if newRow < -1 {
 		panic("What")
 	}
-	if row == numRow {
+	if newRow == numRow {
 		return
-	} else if row > numRow {
+	} else if newRow > numRow {
 		panic("What")
 	}
 
 	// Blur when leaving a textinput
 	activeRow, activeCol := ercvm.getActiveCoords()
 	switch activeCol {
-	case 2:
-		ercvm.rows[activeRow].debitInput.Blur()
+	case 0:
+		ercvm.rows[activeRow].dateInput.Blur()
 	case 3:
+		ercvm.rows[activeRow].debitInput.Blur()
+	case 4:
 		ercvm.rows[activeRow].creditInput.Blur()
 	}
 
-	ercvm.activeInput = row*numPerRow + col
+	ercvm.activeInput = newRow*numPerRow + newCol
 
-	switch col {
-	case 2:
-		ercvm.rows[row].debitInput.Focus()
+	switch newCol {
+	case 0:
+		ercvm.rows[newRow].dateInput.Focus()
 	case 3:
-		ercvm.rows[row].creditInput.Focus()
+		ercvm.rows[newRow].debitInput.Focus()
+	case 4:
+		ercvm.rows[newRow].creditInput.Focus()
 	}
 }
 
@@ -798,6 +828,8 @@ func (ercvm *EntryRowCreateViewManager) addRow(after bool) (*EntryRowCreateViewM
 		ercvm.setActiveCoords(activeRow+1, 0)
 	} else {
 		// Blur old active input
+		// Just blur them all, cba to write a switch activeCol {}
+		ercvm.rows[activeRow].dateInput.Blur()
 		ercvm.rows[activeRow].debitInput.Blur()
 		ercvm.rows[activeRow].creditInput.Blur()
 		newRows = append(newRows, ercvm.rows[:activeRow]...)
