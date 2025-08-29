@@ -27,6 +27,10 @@ func (j Journal) String() string {
 	return j.Name
 }
 
+func (j Journal) CompareId() int {
+	return j.Id
+}
+
 func SetupSchemaJournals() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("journals")
 	if err != nil {

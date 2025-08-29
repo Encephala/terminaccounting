@@ -34,6 +34,10 @@ func (e Entry) Description() string {
 	return strings.Join(e.Notes, "; ")
 }
 
+func (e Entry) CompareId() int {
+	return e.Id
+}
+
 func (er EntryRow) FilterValue() string {
 	var result strings.Builder
 
@@ -163,7 +167,7 @@ func ParseCurrencyValue(input string) (CurrencyValue, error) {
 	if whole >= 0 {
 		return CurrencyValue(whole*100 + int64(decimal)), nil
 	} else {
-		panic("Why did a negative value get inserted?")
+		panic("Why did a negative value get parsed?")
 	}
 }
 

@@ -32,6 +32,10 @@ func (a Account) String() string {
 	return a.Name + " (" + strconv.Itoa(a.Id) + ")"
 }
 
+func (a Account) CompareId() int {
+	return a.Id
+}
+
 func SetupSchemaAccounts() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("accounts")
 	if err != nil {

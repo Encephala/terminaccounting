@@ -19,6 +19,24 @@ const (
 	EQUITYLEDGER    LedgerType = "EQUITY"
 )
 
+// Listen, it's a great hash function
+func (lt LedgerType) CompareId() int {
+	sum := 0
+
+	for _, r := range lt {
+		sum += int(r)
+	}
+
+	return sum
+}
+
+type Ledger struct {
+	Id    int        `db:"id"`
+	Name  string     `db:"name"`
+	Type  LedgerType `db:"type"`
+	Notes meta.Notes `db:"notes"`
+}
+
 func (l Ledger) FilterValue() string {
 	var result strings.Builder
 	result.WriteString(l.Name)
@@ -42,11 +60,8 @@ func (lt LedgerType) String() string {
 	return string(lt)
 }
 
-type Ledger struct {
-	Id    int        `db:"id"`
-	Name  string     `db:"name"`
-	Type  LedgerType `db:"type"`
-	Notes meta.Notes `db:"notes"`
+func (l Ledger) CompareId() int {
+	return l.Id
 }
 
 // TODO: All database interactions should be done asynchronously through tea.Cmds, so all these functions should
