@@ -624,23 +624,23 @@ func (ercvm *EntryRowCreateViewManager) CompileRows() ([]database.EntryRow, erro
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
 func (ercvm *EntryRowCreateViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
-	activeRow, activeCol := ercvm.getActiveCoords()
+	oldRow, oldCol := ercvm.getActiveCoords()
 
 	switch direction {
 	case meta.PREVIOUS:
-		if activeRow == 0 && activeCol == 0 {
+		if oldRow == 0 && oldCol == 0 {
 			return true, false
 		}
 
-		ercvm.setActiveCoords(activeRow, activeCol-1)
+		ercvm.setActiveCoords(oldRow, oldCol-1)
 
 	case meta.NEXT:
-		if activeRow == ercvm.numRows()-1 && activeCol == ercvm.numInputsPerRow()-1 {
-			ercvm.rows[activeRow].creditInput.Blur()
+		if oldRow == ercvm.numRows()-1 && oldCol == ercvm.numInputsPerRow()-1 {
+			ercvm.rows[oldRow].creditInput.Blur()
 			return false, true
 		}
 
-		ercvm.setActiveCoords(activeRow, activeCol+1)
+		ercvm.setActiveCoords(oldRow, oldCol+1)
 
 	default:
 		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
@@ -747,14 +747,14 @@ func (ercvm *EntryRowCreateViewManager) setActiveCoords(newRow, newCol int) {
 	}
 
 	// Blur when leaving a textinput
-	activeRow, activeCol := ercvm.getActiveCoords()
-	switch activeCol {
+	oldRow, oldCol := ercvm.getActiveCoords()
+	switch oldCol {
 	case 0:
-		ercvm.rows[activeRow].dateInput.Blur()
+		ercvm.rows[oldRow].dateInput.Blur()
 	case 3:
-		ercvm.rows[activeRow].debitInput.Blur()
+		ercvm.rows[oldRow].debitInput.Blur()
 	case 4:
-		ercvm.rows[activeRow].creditInput.Blur()
+		ercvm.rows[oldRow].creditInput.Blur()
 	}
 
 	ercvm.activeInput = newRow*numPerRow + newCol
