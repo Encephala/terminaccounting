@@ -123,6 +123,7 @@ func ParseCurrencyValue(input string) (CurrencyValue, error) {
 	parts := strings.Split(input, ".")
 
 	if len(parts) == 1 {
+		// No decimal part provided
 		parsed, err := strconv.ParseInt(parts[0], 10, 64)
 
 		return CurrencyValue(parsed * 100), err

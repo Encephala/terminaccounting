@@ -592,18 +592,18 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 
 		var value database.CurrencyValue
 		if debitValue != "" {
-			debit, err := database.ParseDecimalValue(formRow.debitInput.Value())
+			debit, err := database.ParseCurrencyValue(formRow.debitInput.Value())
 			if err != nil {
 				return nil, err
 			}
 			value = debit
 		}
 		if creditValue != "" {
-			credit, err := database.ParseDecimalValue(formRow.creditInput.Value())
+			credit, err := database.ParseCurrencyValue(formRow.creditInput.Value())
 			if err != nil {
 				return nil, err
 			}
-			value = credit
+			value = -credit
 		}
 
 		result[i] = database.EntryRow{
@@ -651,7 +651,7 @@ func (ercvm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValu
 
 	for _, row := range ercvm.rows {
 		if row.debitInput.Value() != "" {
-			change, err := database.ParseDecimalValue(row.debitInput.Value())
+			change, err := database.ParseCurrencyValue(row.debitInput.Value())
 			if err != nil {
 				return 0, err
 			}
@@ -659,7 +659,7 @@ func (ercvm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValu
 			total = total.Add(change)
 		}
 		if row.creditInput.Value() != "" {
-			change, err := database.ParseDecimalValue(row.creditInput.Value())
+			change, err := database.ParseCurrencyValue(row.creditInput.Value())
 			if err != nil {
 				return 0, err
 			}
