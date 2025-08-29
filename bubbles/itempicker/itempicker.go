@@ -10,6 +10,9 @@ import (
 
 type Item interface {
 	fmt.Stringer
+
+	// ID to be used in comparison,
+	CompareId() int
 }
 
 type Model struct {
@@ -86,7 +89,7 @@ func (m *Model) SetValue(value Item) {
 	found := false
 
 	for i, item := range m.Items {
-		if item == value {
+		if item.CompareId() == value.CompareId() {
 			index = i
 			found = true
 

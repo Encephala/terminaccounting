@@ -15,22 +15,39 @@ type testModel struct {
 
 type Item string
 
-func (i Item) String() string {
-	return string(i)
+// func (i Item) String() string {
+// 	return string(i)
+// }
+
+type testItem string
+
+func (ti testItem) String() string {
+	return string(ti)
+}
+
+// Great hash function, no?
+func (ti testItem) CompareId() int {
+	sum := 0
+
+	for _, r := range ti {
+		sum += int(r)
+	}
+
+	return sum
 }
 
 func main() {
 	items := []itempicker.Item{
-		Item("first"),
-		Item("second"),
-		Item("third"),
+		testItem("first"),
+		testItem("second"),
+		testItem("third"),
 	}
 
 	model := &testModel{
 		model: itempicker.New(items),
 	}
 
-	model.model.SetValue(Item("second"))
+	model.model.SetValue(testItem("second"))
 
 	_, err := tea.NewProgram(model).Run()
 
