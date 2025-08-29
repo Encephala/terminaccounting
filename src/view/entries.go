@@ -283,7 +283,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			// TODO: would be nice to have this async idk
 			journal, err := database.SelectJournal(entry.Journal)
 			if err != nil {
-				return nil, meta.MessageCmd(err)
+				return uv, meta.MessageCmd(err)
 			}
 			uv.journalInput.SetValue(itempicker.Item(journal))
 
