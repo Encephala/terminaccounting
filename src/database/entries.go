@@ -38,28 +38,6 @@ func (e Entry) CompareId() int {
 	return e.Id
 }
 
-func (er EntryRow) FilterValue() string {
-	var result strings.Builder
-
-	result.WriteString(strconv.Itoa(er.Id))
-
-	// TODO: Get entry name, ledger name, account name etc.
-	// Maybe I do want to maintain a `[]Ledger` array in ledgers app etc.,
-	// for this. Makes sense maybe.
-	// Then again, import loops and all. Maybe the main program needs a way to query these things?
-	// Or a just a bunch of DB queries.
-	// I mean I guess they're just lookups by primary key, that's fiiiine?
-	// Probably runs every time the search box updates, maybe it's not "fiiiine".
-	result.WriteString(strconv.Itoa(er.Entry))
-	result.WriteString(strconv.Itoa(er.Ledger))
-	result.WriteString(strconv.Itoa(*er.Account))
-
-	result.WriteString(strconv.Itoa(int(er.Value / 100)))
-	result.WriteString(strconv.Itoa(int(er.Value % 100)))
-
-	return result.String()
-}
-
 func CalculateTotal(rows []EntryRow) CurrencyValue {
 	sum := CurrencyValue(0)
 
