@@ -130,6 +130,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.fatalError = message.Error
 		return m, tea.Quit
 
+	case meta.CommandMsg:
+		return m, meta.MessageCmd(message.Command(m.apps[m.activeApp]))
+
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
 		m.viewHeight = message.Height
@@ -176,24 +179,24 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.SwitchTabMsg:
 		switch message.Direction {
 		case meta.PREVIOUS:
-			m.setActiveTab(m.activeApp - 1)
+			return m.setActiveApp(m.activeApp - 1)
 		case meta.NEXT:
-			m.setActiveTab(m.activeApp + 1)
+			return m.setActiveApp(m.activeApp + 1)
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-		return m, nil
-
 	case meta.SwitchViewMsg:
+		var cmd tea.Cmd
 		if message.App != nil {
-			m.setActiveTab(m.appIds[*message.App])
+			m, cmd = m.setActiveApp(m.appIds[*message.App])
 		}
 
-		newApp, cmd := m.apps[m.activeApp].Update(message)
+		var cmdTwo tea.Cmd
+		newApp, cmdTwo := m.apps[m.activeApp].Update(message)
 		m.apps[m.activeApp] = newApp.(meta.App)
 
-		return m, cmd
+		return m, tea.Batch(cmd, cmdTwo)
 
 	case meta.SwitchModeMsg:
 		m.switchMode(message.InputMode)
@@ -305,20 +308,19 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) setActiveTab(tab int) (*model, tea.Cmd) {
-	if tab < 0 {
+func (m *model) setActiveApp(appId int) (*model, tea.Cmd) {
+	if appId < 0 {
 		m.activeApp = len(m.apps) - 1
-	} else if tab >= len(m.apps) {
+	} else if appId >= len(m.apps) {
 		m.activeApp = 0
 	} else {
-		m.activeApp = tab
+		m.activeApp = appId
 	}
 
 	newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
 	newModel, cmdTwo := newModel.Update(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
-	m = newModel.(*model)
 
-	return m, tea.Batch(cmd, cmdTwo)
+	return newModel.(*model), tea.Batch(cmd, cmdTwo)
 }
 
 func (m *model) resetCurrentMotion() {

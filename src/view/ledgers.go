@@ -23,7 +23,7 @@ const (
 )
 
 type ledgerCreateOrUpdateView interface {
-	View
+	meta.View
 
 	title() string
 

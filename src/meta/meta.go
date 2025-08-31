@@ -27,4 +27,7 @@ type App interface {
 	// Kinda jank I guess but it works? Asserting view type rn is even more jank imo
 	// Actually much simpler: detailview holds the app and the id already. Easy fix then
 	MakeLoadRowsCmd(modelId int) tea.Cmd
+
+	// since View is an interface, this is always by reference
+	GetView() View
 }

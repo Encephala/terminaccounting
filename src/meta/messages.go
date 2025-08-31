@@ -11,6 +11,11 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
 
+// A tea.Cmd-esque function to be executed on a specific app
+type CommandMsg struct {
+	Command func(App) tea.Msg
+}
+
 type ClearErrorMsg struct{}
 
 func ClearErrorAfterDelayCmd() tea.Msg {

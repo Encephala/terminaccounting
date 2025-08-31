@@ -16,7 +16,7 @@ import (
 type EntriesApp struct {
 	viewWidth, viewHeight int
 
-	currentView view.View
+	currentView meta.View
 }
 
 func NewEntriesApp() meta.App {
@@ -62,13 +62,13 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		newView, cmd := m.currentView.Update(message)
 		// TODO: This is crashing for some reason after comitting an entry create, idk
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
@@ -82,7 +82,22 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = view.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			entry := m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Entry)
+			var entry database.Entry
+			switch data := message.Data.(type) {
+			case int:
+				var err error
+				entry, err = database.SelectEntry(data)
+				if err != nil {
+					return m, meta.MessageCmd(err)
+				}
+			case database.Entry:
+				entry = data
+			case nil:
+				// TODO: I'd like for this to also take the ID from the message.Data,
+				// but that's hard to do because the motion is created when the ListView is initialised,
+				// but we need to know the selected item later when gd is pressed
+				entry = m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Entry)
+			}
 
 			// No better model name to be had than the entry Id
 			m.currentView = view.NewDetailView(m, entry.Id, strconv.Itoa(entry.Id))
@@ -106,7 +121,7 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	newView, cmd := m.currentView.Update(message)
-	m.currentView = newView.(view.View)
+	m.currentView = newView.(meta.View)
 
 	return m, cmd
 }
@@ -181,4 +196,8 @@ func (m *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 			Data:      rows,
 		}
 	}
+}
+
+func (m *EntriesApp) GetView() meta.View {
+	return m.currentView
 }

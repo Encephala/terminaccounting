@@ -16,13 +16,6 @@ import (
 
 type activeInput int
 
-type View interface {
-	tea.Model
-
-	MotionSet() *meta.MotionSet
-	CommandSet() *meta.CommandSet
-}
-
 type ListView struct {
 	ListModel list.Model
 
@@ -257,6 +250,23 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.ModelId})
 
 	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.ModelId})
+
+	normalMotions.Insert(meta.Motion{"g", "d"}, meta.CommandMsg{
+		Command: func(entries meta.App) tea.Msg {
+			// I don't love the type assertion necessary here, but I don't hate it
+			// This is a motion on DetailView anyway, how could it ever be a different view?
+			// Well technically if the user is fast enough to insta switch to update view or smth,
+			// and that MessageCmd happens to get processed faster
+			row := entries.GetView().(*DetailView).table.Cursor()
+
+			entryId := dv.rows[row].Entry
+
+			// Stupid go not allowing to reference a const
+			targetApp := meta.ENTRIES
+
+			return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entryId}
+		},
+	})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,

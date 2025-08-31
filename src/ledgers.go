@@ -15,7 +15,7 @@ import (
 type LedgersApp struct {
 	viewWidth, viewHeight int
 
-	currentView view.View
+	currentView meta.View
 }
 
 func NewLedgersApp() meta.App {
@@ -37,7 +37,7 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewHeight = message.Height
 
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
@@ -57,7 +57,7 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
@@ -108,19 +108,19 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.SwitchFocusMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 
 	case meta.NavigateMsg:
 		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(view.View)
+		m.currentView = newView.(meta.View)
 
 		return m, cmd
 	}
 
 	newView, cmd := m.currentView.Update(message)
-	m.currentView = newView.(view.View)
+	m.currentView = newView.(meta.View)
 
 	return m, cmd
 }
@@ -192,4 +192,8 @@ func (m *LedgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
 			Data:      rows,
 		}
 	}
+}
+
+func (m *LedgersApp) GetView() meta.View {
+	return m.currentView
 }
