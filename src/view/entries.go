@@ -292,7 +292,11 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRY:
-			// TODO?: kinda weird this asserts a single value, but the other message.Models assert a slice
+			// You like how I solved this race condition?
+			if uv.availableLedgers == nil || uv.availableAccounts == nil {
+				return uv, meta.MessageCmd(message)
+			}
+
 			entry := message.Data.(database.Entry)
 			uv.startingEntry = entry
 
