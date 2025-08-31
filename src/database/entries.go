@@ -60,6 +60,16 @@ func (er EntryRow) FilterValue() string {
 	return result.String()
 }
 
+func CalculateTotal(rows []EntryRow) CurrencyValue {
+	sum := CurrencyValue(0)
+
+	for _, row := range rows {
+		sum = sum.Add(row.Value)
+	}
+
+	return sum
+}
+
 func SetupSchemaEntries() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("entries")
 	if err != nil {

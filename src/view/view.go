@@ -113,6 +113,8 @@ type DetailView struct {
 	app meta.App
 
 	ModelId int
+
+	rows []database.EntryRow
 }
 
 func NewDetailView(app meta.App, itemId int) *DetailView {
@@ -176,11 +178,10 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("Expected an EntryRow, but got %v", message.Model))
 		}
 
-		rows := message.Data.([]database.EntryRow)
+		dv.rows = message.Data.([]database.EntryRow)
 
 		var tableRows []table.Row
-
-		for _, row := range rows {
+		for _, row := range dv.rows {
 			newTableRow := table.Row{}
 
 			newTableRow = append(newTableRow, row.Date.String())
@@ -222,7 +223,11 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *DetailView) View() string {
-	return dv.table.View()
+	return lipgloss.JoinVertical(
+		lipgloss.Right,
+		dv.table.View(),
+		fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows)),
+	)
 }
 
 func (dv *DetailView) Type() meta.ViewType {
