@@ -609,12 +609,12 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 		// Assert not both nonempty, because the createview should automatically clear the other field
 		if debitValue != "" && creditValue != "" {
 			panic(fmt.Sprintf(
-				"expected only one of debit and credit nonzero in row %d, but got %s and %s",
+				"expected only one of debit and credit nonempty in row %d, but got %s and %s",
 				i, debitValue, creditValue))
 		}
 
 		if debitValue == "" && creditValue == "" {
-			return nil, fmt.Errorf("row %d had zero for both debit and credit", i)
+			return nil, fmt.Errorf("row %d had zero no value for both debit and credit", i)
 		}
 
 		var value database.CurrencyValue
