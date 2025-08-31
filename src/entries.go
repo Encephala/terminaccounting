@@ -159,10 +159,8 @@ func (m *EntriesApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *EntriesApp) MakeLoadRowsCmd() tea.Cmd {
+func (m *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 	// Aren't closures just great
-	entryId := m.currentView.(*view.DetailView).ModelId()
-
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByEntry(entryId)
 		if err != nil {

@@ -170,10 +170,8 @@ func (m *LedgersApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
+func (m *LedgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
 	// Aren't closures just great
-	ledgerId := m.currentView.(*view.DetailView).ModelId()
-
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByLedger(ledgerId)
 		if err != nil {

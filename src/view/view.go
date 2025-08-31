@@ -174,7 +174,7 @@ func (dv *DetailView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
 
 	// TODO: Also show the model metadata and not just the rows?
-	cmds = append(cmds, dv.app.MakeLoadRowsCmd())
+	cmds = append(cmds, dv.app.MakeLoadRowsCmd(dv.modelId))
 
 	return tea.Batch(cmds...)
 }
