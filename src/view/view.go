@@ -2,13 +2,15 @@ package view
 
 import (
 	"fmt"
-	"io"
+	"log/slog"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type activeInput int
@@ -104,61 +106,50 @@ func (lv *ListView) CommandSet() *meta.CommandSet {
 	return &meta.CommandSet{}
 }
 
-// A generic, placeholder view that just renders all entries on a ledger/journal/account in a list.
+// A generic, placeholder(?) view that just renders all entries on a ledger/journal/account in a list.
 type DetailView struct {
-	listModel list.Model
+	table table.Model
 
 	app meta.App
 
 	ModelId int
 }
 
-type entryRowDelegate struct {
-	style styles.DetailViewStyles
-}
-
-func (erd entryRowDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	er := item.(database.EntryRow)
-
-	var debit, credit database.CurrencyValue
-	if er.Value > 0 {
-		debit = er.Value
-	} else {
-		credit = -er.Value
-	}
-
-	line := fmt.Sprintf("%s | %-20s | %-20s | %s | %s", er.Date, "LedgerName", "AccountName", debit, credit)
-	if index == m.Index() {
-		fmt.Fprint(w, erd.style.ItemSelected.Render(line))
-	} else {
-		fmt.Fprint(w, erd.style.Item.Render(line))
-	}
-}
-
-func (erd entryRowDelegate) Height() int { return 1 }
-
-func (erd entryRowDelegate) Spacing() int { return 0 }
-
-func (erd entryRowDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-
 func NewDetailView(app meta.App, itemId int) *DetailView {
-	viewStyles := styles.NewDetailViewStyles(app.Colours())
+	tableModel := table.New(
+		table.WithColumns([]table.Column{
+			{
+				Title: "Date",
+				Width: 10,
+			},
+			{
+				Title: "Ledger",
+				Width: 20,
+			},
+			{
+				Title: "Account",
+				Width: 20,
+			},
+			{
+				Title: "Debit",
+				Width: 20,
+			},
+			{
+				Title: "Credit",
+				Width: 20,
+			},
+		}),
+	)
 
-	delegate := entryRowDelegate{
-		style: viewStyles,
-	}
+	tableStyle := table.DefaultStyles()
+	tableStyle.Selected = lipgloss.NewStyle().Foreground(app.Colours().Foreground)
+	tableModel.SetStyles(tableStyle)
 
-	model := list.New([]list.Item{}, delegate, 20, 16)
-	// TODO: Change PLACEHOLDER to, ykno, the name of the item being detail-view'd
-	model.Title = fmt.Sprintf("%s: %s", app.Name(), "PLACEHOLDER")
-	model.Styles.Title = viewStyles.Title
-	// TODO: Make this scale when outer model scales and stuff
-	// Think that's the WindowResizeMsg or smth, that should be handled
-	model.SetWidth(100)
-	model.SetShowHelp(false)
+	// I don't think we ever have to blur the table
+	tableModel.Focus()
 
 	return &DetailView{
-		listModel: model,
+		table: tableModel,
 
 		app: app,
 
@@ -185,7 +176,29 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("Expected an EntryRow, but got %v", message.Model))
 		}
 
-		dv.listModel.SetItems(message.Data.([]list.Item))
+		rows := message.Data.([]database.EntryRow)
+
+		var tableRows []table.Row
+
+		for _, row := range rows {
+			newTableRow := table.Row{}
+
+			newTableRow = append(newTableRow, row.Date.String())
+			// newTableRow = append(newTableRow, row.Ledger.String())
+			newTableRow = append(newTableRow, "LedgerName")
+			newTableRow = append(newTableRow, "AccountName")
+			if row.Value > 0 {
+				newTableRow = append(newTableRow, row.Value.String())
+				newTableRow = append(newTableRow, "")
+			} else {
+				newTableRow = append(newTableRow, "")
+				newTableRow = append(newTableRow, row.Value.String())
+			}
+
+			tableRows = append(tableRows, newTableRow)
+		}
+
+		dv.table.SetRows(tableRows)
 
 		return dv, nil
 
@@ -193,7 +206,9 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
 
 		var cmd tea.Cmd
-		dv.listModel, cmd = dv.listModel.Update(keyMsg)
+		dv.table, cmd = dv.table.Update(keyMsg)
+
+		slog.Debug(fmt.Sprintf("updated table: %#v", keyMsg))
 
 		return dv, cmd
 
@@ -207,7 +222,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *DetailView) View() string {
-	return dv.listModel.View()
+	return dv.table.View()
 }
 
 func (dv *DetailView) Type() meta.ViewType {

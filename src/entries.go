@@ -167,15 +167,10 @@ func (m *EntriesApp) MakeLoadRowsCmd() tea.Cmd {
 			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}
 
-		items := make([]list.Item, len(rows))
-		for i, row := range rows {
-			items[i] = row
-		}
-
 		return meta.DataLoadedMsg{
 			TargetApp: meta.ENTRIES,
 			Model:     meta.ENTRYROW,
-			Data:      items,
+			Data:      rows,
 		}
 	}
 }

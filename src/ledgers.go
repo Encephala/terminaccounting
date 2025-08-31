@@ -182,15 +182,10 @@ func (m *LedgersApp) MakeLoadRowsCmd() tea.Cmd {
 			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
 		}
 
-		items := make([]list.Item, len(rows))
-		for i, row := range rows {
-			items[i] = row
-		}
-
 		return meta.DataLoadedMsg{
 			TargetApp: meta.LEDGERS,
 			Model:     meta.ENTRYROW,
-			Data:      items,
+			Data:      rows,
 		}
 	}
 }
