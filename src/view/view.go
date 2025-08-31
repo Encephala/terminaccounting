@@ -89,9 +89,7 @@ func (lv *ListView) Type() meta.ViewType {
 func (lv *ListView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{
-		ViewType: meta.DETAILVIEWTYPE,
-	}) // [g]oto [d]etails
+	normalMotions.Insert(meta.Motion{"g", "d"}, lv.makeGoToDetailViewCmd()) // [g]oto [d]etails
 	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{
 		ViewType: meta.CREATEVIEWTYPE,
 	}) // [g]oto [c]reate view
@@ -101,6 +99,14 @@ func (lv *ListView) MotionSet() *meta.MotionSet {
 
 func (lv *ListView) CommandSet() *meta.CommandSet {
 	return &meta.CommandSet{}
+}
+
+func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		item := lv.ListModel.SelectedItem()
+
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: item}
+	}
 }
 
 // A generic, placeholder(?) view that just renders all entries on a ledger/journal/account in a list.
@@ -254,22 +260,7 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.ModelId})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, meta.CommandMsg(
-		func(app meta.App) tea.Msg {
-			// I don't love the type assertion necessary here, but I don't hate it
-			// This is a motion on DetailView anyway, how could it ever be a different view?
-			// Well technically if the user is fast enough to insta switch to update view or smth,
-			// and that MessageCmd happens to get processed faster
-			row := app.GetView().(*DetailView).table.Cursor()
-
-			entryId := dv.rows[row].Entry
-
-			// Stupid go not allowing to reference a const
-			targetApp := meta.ENTRIES
-
-			return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entryId}
-		},
-	))
+	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
 	return &meta.MotionSet{
 		Normal: normalMotions,
@@ -278,4 +269,21 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 
 func (dv *DetailView) CommandSet() *meta.CommandSet {
 	return &meta.CommandSet{}
+}
+
+func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		entryId := dv.rows[dv.table.Cursor()].Entry
+
+		// Do the database query for the entry here, because in the command it is asynchronous
+		entry, err := database.SelectEntry(entryId)
+
+		if err != nil {
+			return meta.MessageCmd(err)
+		}
+
+		// Stupid go not allowing to reference a const
+		targetApp := meta.ENTRIES
+		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
+	}
 }

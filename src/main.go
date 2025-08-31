@@ -116,6 +116,9 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.QuitMsg:
 		return m, tea.Quit
 
+	case tea.Cmd:
+		return m, message
+
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
 		m.displayedError = message
@@ -129,9 +132,6 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
 		m.fatalError = message.Error
 		return m, tea.Quit
-
-	case meta.CommandMsg:
-		return m, meta.MessageCmd(message(m.apps[m.activeApp]))
 
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
