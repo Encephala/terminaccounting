@@ -123,7 +123,6 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return cv, meta.MessageCmd(err)
 		}
 
-		// m.currentView = view.NewLedgersUpdateView(id, m.Colours())
 		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
 		// Or maybe this should just switch to the list view or the detail view? Idk
 
