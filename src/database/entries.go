@@ -1,8 +1,8 @@
 package database
 
 import (
-	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -104,9 +104,55 @@ func (e Entry) Insert(rows []EntryRow) (int, error) {
 	return int(id), nil
 }
 
-func (e Entry) Update(rows []EntryRow) (int, error) {
-	// TODO
-	return 0, errors.New("unimplemented")
+func (e Entry) Update(rows []EntryRow) error {
+	entryQuery := `UPDATE entries SET
+	journal = :journal,
+	notes = :notes
+	WHERE id = :id;`
+
+	tx := DB.MustBegin()
+	defer tx.Rollback()
+
+	totalChanged := 0
+
+	res, err := tx.NamedExec(entryQuery, e)
+	if err != nil {
+		return err
+	}
+	changedMain, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	totalChanged += int(changedMain)
+
+	// Delete all rows and then create new ones
+	// Brute force, but robust way to handle deleting and creating rows
+	res, err = tx.Exec(`DELETE FROM entryrows WHERE entry = $1;`, e.Id)
+	if err != nil {
+		return err
+	}
+	changedDelete, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	totalChanged += int(changedDelete)
+
+	// Inject the ID's into the new rows
+	for i := range rows {
+		rows[i].Entry = e.Id
+	}
+
+	changedInsert, err := insertRows(tx, rows)
+	if err != nil {
+		return err
+	}
+	totalChanged += changedInsert
+
+	tx.Commit()
+
+	slog.Debug(fmt.Sprintf("Updated entry %d, changed %d rows", e.Id, totalChanged))
+
+	return nil
 }
 
 type CurrencyValue int64

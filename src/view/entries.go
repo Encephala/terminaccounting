@@ -277,12 +277,17 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return uv, meta.MessageCmd(err)
 		}
 
+		if uv.startingEntry.Id == 0 {
+			panic("Updating entry but its starting value was not set")
+		}
+
 		newEntry := database.Entry{
+			Id:      uv.startingEntry.Id,
 			Journal: entryJournal.Id,
 			Notes:   meta.CompileNotes(entryNotes),
 		}
 
-		_, err = newEntry.Update(entryRows)
+		err = newEntry.Update(entryRows)
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -318,6 +323,10 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			rows := message.Data.([]database.EntryRow)
+			if len(rows) == 0 {
+				panic(fmt.Sprintf("How did entry %d end up being empty?", uv.modelId))
+			}
+
 			uv.startingEntryRows = rows
 
 			formRows := uv.decompileRows(rows, uv.availableLedgers, uv.availableAccounts)

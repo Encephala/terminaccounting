@@ -122,10 +122,6 @@ type DetailView struct {
 	rows []database.EntryRow
 }
 
-func (dv *DetailView) ModelId() int {
-	return dv.modelId
-}
-
 func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 	tableModel := table.New(
 		table.WithColumns([]table.Column{
@@ -256,9 +252,9 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
-	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.ModelId})
+	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
 
-	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.ModelId})
+	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 

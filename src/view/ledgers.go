@@ -154,7 +154,7 @@ type LedgersUpdateView struct {
 	NoteInput   textarea.Model
 	activeInput activeInput
 
-	ModelId       int
+	modelId       int
 	startingValue database.Ledger
 
 	colours styles.AppColours
@@ -182,7 +182,7 @@ func NewLedgersUpdateView(modelId int, colours styles.AppColours) *LedgersUpdate
 		NoteInput:   noteInput,
 		activeInput: NAMEINPUT,
 
-		ModelId: modelId,
+		modelId: modelId,
 
 		colours: colours,
 	}
@@ -194,7 +194,7 @@ func (uv *LedgersUpdateView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
 
-	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(uv.ModelId))
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(uv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -246,7 +246,7 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.CommitMsg:
 		currentValues := database.Ledger{
-			Id:    uv.ModelId,
+			Id:    uv.modelId,
 			Name:  uv.NameInput.Value(),
 			Type:  uv.TypeInput.Value().(database.LedgerType),
 			Notes: meta.CompileNotes(uv.NoteInput.Value()),
