@@ -302,10 +302,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 
 	m.resetCurrentMotion()
 
-	newModel, cmd := m.Update(completedMotionMsg)
-	m = newModel.(*model)
-
-	return m, cmd
+	return m, meta.MessageCmd(completedMotionMsg)
 }
 
 func (m *model) setActiveApp(appId int) (*model, tea.Cmd) {
@@ -317,10 +314,10 @@ func (m *model) setActiveApp(appId int) (*model, tea.Cmd) {
 		m.activeApp = appId
 	}
 
-	newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
-	newModel, cmdTwo := newModel.Update(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
+	cmd := meta.MessageCmd(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
+	cmdTwo := meta.MessageCmd(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
 
-	return newModel.(*model), tea.Batch(cmd, cmdTwo)
+	return m, tea.Batch(cmd, cmdTwo)
 }
 
 func (m *model) resetCurrentMotion() {
@@ -351,10 +348,7 @@ func (m *model) executeCommand(command string) (*model, tea.Cmd) {
 		return m, cmd
 	}
 
-	newModel, cmd := m.Update(commandMsg)
-	m = newModel.(*model)
-
 	m.switchMode(meta.NORMALMODE)
 
-	return m, cmd
+	return m, meta.MessageCmd(commandMsg)
 }
