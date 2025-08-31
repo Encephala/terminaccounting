@@ -174,7 +174,26 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case meta.SwitchTabMsg:
-		return m.handleTabSwitch(message.Direction)
+		switch message.Direction {
+		case meta.PREVIOUS:
+			m.setActiveTab(m.activeApp - 1)
+		case meta.NEXT:
+			m.setActiveTab(m.activeApp + 1)
+		default:
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
+		}
+
+		return m, nil
+
+	case meta.SwitchViewMsg:
+		if message.App != nil {
+			m.setActiveTab(m.appIds[*message.App])
+		}
+
+		newApp, cmd := m.apps[m.activeApp].Update(message)
+		m.apps[m.activeApp] = newApp.(meta.App)
+
+		return m, cmd
 
 	case meta.SwitchModeMsg:
 		m.switchMode(message.InputMode)
@@ -286,19 +305,13 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) handleTabSwitch(direction meta.Sequence) (*model, tea.Cmd) {
-	switch direction {
-	case meta.PREVIOUS:
-		m.activeApp = (m.activeApp - 1)
-		if m.activeApp < 0 {
-			m.activeApp += len(m.apps)
-		}
-
-	case meta.NEXT:
-		m.activeApp = (m.activeApp + 1) % len(m.apps)
-
-	default:
-		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
+func (m *model) setActiveTab(tab int) (*model, tea.Cmd) {
+	if tab < 0 {
+		m.activeApp = len(m.apps) - 1
+	} else if tab >= len(m.apps) {
+		m.activeApp = 0
+	} else {
+		m.activeApp = tab
 	}
 
 	newModel, cmd := m.Update(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))

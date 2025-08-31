@@ -62,6 +62,10 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SwitchViewMsg:
+		if message.App != nil && *message.App != m.Type() {
+			panic("wrong app type, something went wrong")
+		}
+
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
 			m.currentView = view.NewListView(m)

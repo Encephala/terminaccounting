@@ -96,7 +96,9 @@ const (
 	DELETEVIEWTYPE ViewType = "DELETE VIEW"
 )
 
+// To switch to specific View (in specific App if provided)
 type SwitchViewMsg struct {
+	App      *AppType
 	ViewType ViewType
 	Data     any
 }
