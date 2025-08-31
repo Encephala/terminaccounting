@@ -61,7 +61,7 @@ func SetupSchemaEntries() (bool, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		journal INTEGER NOT NULL,
 		notes TEXT,
-		FOREIGN KEY (journal) REFERENCES journals(id)
+		FOREIGN KEY (journal) REFERENCES journals(id) ON DELETE RESTRICT
 	) STRICT;`
 
 	_, err = DB.Exec(schema)
@@ -263,9 +263,9 @@ func SetupSchemaEntryRows() (bool, error) {
 		document TEXT,
 		value INTEGER NOT NULL,
 		reconciled INTEGER NOT NULL,
-		FOREIGN KEY (entry) REFERENCES entries(id),
-		FOREIGN KEY (ledger) REFERENCES ledgers(id),
-		FOREIGN KEY (account) REFERENCES accounts(id)
+		FOREIGN KEY (entry) REFERENCES entries(id) ON DELETE CASCADE,
+		FOREIGN KEY (ledger) REFERENCES ledgers(id) ON DELETE RESTRICT,
+		FOREIGN KEY (account) REFERENCES accounts(id) ON DELETE RESTRICT
 	) STRICT;`
 
 	_, err = DB.Exec(schema)
