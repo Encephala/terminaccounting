@@ -12,9 +12,7 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 }
 
 // A tea.Cmd-esque function to be executed on a specific app
-type CommandMsg struct {
-	Command func(App) tea.Msg
-}
+type CommandMsg func(App) tea.Msg
 
 type ClearErrorMsg struct{}
 

@@ -131,7 +131,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case meta.CommandMsg:
-		return m, meta.MessageCmd(message.Command(m.apps[m.activeApp]))
+		return m, meta.MessageCmd(message(m.apps[m.activeApp]))
 
 	case tea.WindowSizeMsg:
 		m.viewWidth = message.Width
