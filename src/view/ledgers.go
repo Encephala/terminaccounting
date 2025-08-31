@@ -421,7 +421,7 @@ func ledgersCreateUpdateViewCommandSet() *meta.CommandSet {
 }
 
 type LedgersDeleteView struct {
-	ModelId int
+	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
 	colours styles.AppColours
@@ -429,7 +429,7 @@ type LedgersDeleteView struct {
 
 func NewLedgersDeleteView(modelId int, colours styles.AppColours) *LedgersDeleteView {
 	return &LedgersDeleteView{
-		ModelId: modelId,
+		modelId: modelId,
 
 		colours: colours,
 	}
@@ -441,7 +441,7 @@ func (dv *LedgersDeleteView) Init() tea.Cmd {
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.MotionSet())))
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.CommandSet())))
 
-	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.ModelId))
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -458,7 +458,7 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
-		err := database.DeleteLedger(dv.ModelId)
+		err := database.DeleteLedger(dv.modelId)
 
 		// TODO: Add a vimesque message to inform user of successful deletion
 		var cmds []tea.Cmd
@@ -540,7 +540,7 @@ func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.ModelId})
+	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,

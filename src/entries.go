@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -77,9 +78,10 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = view.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			selectedEntry := m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Entry)
+			entry := m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Entry)
 
-			m.currentView = view.NewDetailView(m, selectedEntry.Id)
+			// No better model name to be had than the entry Id
+			m.currentView = view.NewDetailView(m, entry.Id, strconv.Itoa(entry.Id))
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewEntryCreateView(m.Colours())

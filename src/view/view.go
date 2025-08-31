@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/styles"
@@ -112,7 +113,9 @@ type DetailView struct {
 
 	app meta.App
 
-	modelId int
+	// The ledger/account etc. whose rows are being shown
+	modelId   int
+	modelName string
 
 	rows []database.EntryRow
 }
@@ -121,7 +124,7 @@ func (dv *DetailView) ModelId() int {
 	return dv.modelId
 }
 
-func NewDetailView(app meta.App, itemId int) *DetailView {
+func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 	tableModel := table.New(
 		table.WithColumns([]table.Column{
 			{
@@ -159,7 +162,8 @@ func NewDetailView(app meta.App, itemId int) *DetailView {
 
 		app: app,
 
-		ModelId: itemId,
+		modelId:   itemId,
+		modelName: itemName,
 	}
 }
 
@@ -227,11 +231,19 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *DetailView) View() string {
-	return lipgloss.JoinVertical(
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(dv.app.Colours().Background).MarginLeft(2)
+	result.WriteString(titleStyle.Render(fmt.Sprintf("%s detail view: %s", dv.app.Name(), dv.modelName)))
+	result.WriteString("\n\n")
+
+	result.WriteString(lipgloss.JoinVertical(
 		lipgloss.Right,
 		dv.table.View(),
 		fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows)),
-	)
+	))
+
+	return result.String()
 }
 
 func (dv *DetailView) Type() meta.ViewType {

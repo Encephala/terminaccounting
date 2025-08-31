@@ -67,23 +67,21 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = view.NewListView(m)
 
 		case meta.DETAILVIEWTYPE:
-			ledgerId := -1
+			var ledger database.Ledger
 			switch data := message.Data.(type) {
-			case int:
-				ledgerId = data
 			case database.Ledger:
-				ledgerId = data.Id
+				ledger = data
 			case nil:
 				// TODO: I'd like for this to also take the ID from the message.Data,
 				// but that's hard to do because the motion is created when the ListView is initialised,
 				// but we need to know the selected item later when gd is pressed
-				ledgerId = m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Ledger).Id
+				ledger = m.currentView.(*view.ListView).ListModel.SelectedItem().(database.Ledger)
 
 			default:
 				panic(fmt.Sprintf("unexpected Data: %#v", data))
 			}
 
-			m.currentView = view.NewDetailView(m, ledgerId)
+			m.currentView = view.NewDetailView(m, ledger.Id, ledger.Name)
 
 		case meta.CREATEVIEWTYPE:
 			m.currentView = view.NewLedgersCreateView(m.Colours())
