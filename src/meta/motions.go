@@ -90,10 +90,7 @@ func GlobalMotions() MotionSet {
 	})
 
 	// LEADER
-	// TODO: Delete, this make it `gc` in each specific app
-	extendMotionsBy(&normalMotions, Motion{LEADER}, []motionWithValue{
-		{Motion{"n"}, SwitchViewMsg{ViewType: CREATEVIEWTYPE}}, // [n]ew object
-	})
+	extendMotionsBy(&normalMotions, Motion{LEADER}, []motionWithValue{})
 
 	// "g"
 	extendMotionsBy(&normalMotions, Motion{"g"}, []motionWithValue{

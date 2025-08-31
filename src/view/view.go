@@ -92,6 +92,9 @@ func (lv *ListView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{
 		ViewType: meta.DETAILVIEWTYPE,
 	}) // [g]oto [d]etails
+	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{
+		ViewType: meta.CREATEVIEWTYPE,
+	}) // [g]oto [c]reate view
 
 	return &meta.MotionSet{Normal: normalMotions}
 }
