@@ -255,12 +255,12 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.ModelId})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, meta.CommandMsg(
-		func(entries meta.App) tea.Msg {
+		func(app meta.App) tea.Msg {
 			// I don't love the type assertion necessary here, but I don't hate it
 			// This is a motion on DetailView anyway, how could it ever be a different view?
 			// Well technically if the user is fast enough to insta switch to update view or smth,
 			// and that MessageCmd happens to get processed faster
-			row := entries.GetView().(*DetailView).table.Cursor()
+			row := app.GetView().(*DetailView).table.Cursor()
 
 			entryId := dv.rows[row].Entry
 
