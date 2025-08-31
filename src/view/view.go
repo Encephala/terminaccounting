@@ -112,9 +112,13 @@ type DetailView struct {
 
 	app meta.App
 
-	ModelId int
+	modelId int
 
 	rows []database.EntryRow
+}
+
+func (dv *DetailView) ModelId() int {
+	return dv.modelId
 }
 
 func NewDetailView(app meta.App, itemId int) *DetailView {
