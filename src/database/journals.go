@@ -54,7 +54,7 @@ func SetupSchemaJournals() (bool, error) {
 func (j *Journal) Insert() (int, error) {
 	_, err := DB.NamedExec(`INSERT INTO journals (name, type, notes) VALUES (:name, :type, :notes)`, j)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	queryInsertedId := DB.QueryRowx(`SELECT seq FROM sqlite_sequence WHERE name = 'journals';`)
@@ -62,7 +62,7 @@ func (j *Journal) Insert() (int, error) {
 	var insertedId int
 	err = queryInsertedId.Scan(&insertedId)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return insertedId, err

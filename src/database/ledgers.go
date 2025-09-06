@@ -107,12 +107,12 @@ func SetupSchemaLedgers() (bool, error) {
 func (l *Ledger) Insert() (int, error) {
 	result, err := DB.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes);`, l)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return int(id), err

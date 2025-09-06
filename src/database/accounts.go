@@ -59,12 +59,12 @@ func SetupSchemaAccounts() (bool, error) {
 func (a *Account) Insert() (int, error) {
 	result, err := DB.NamedExec(`INSERT INTO accounts (name, type, notes) VALUES (:name, :type, :notes)`, a)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return int(id), err
