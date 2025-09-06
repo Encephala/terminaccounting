@@ -271,7 +271,7 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		entryId := dv.rows[dv.table.Cursor()].Entry
 
-		// Do the database query for the entry here, because in the command it is asynchronous
+		// Do the database query for the entry here, because it is a command and thus asynchronous
 		entry, err := database.SelectEntry(entryId)
 
 		if err != nil {

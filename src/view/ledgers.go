@@ -461,10 +461,9 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		// TODO: Add a vimesque message to inform user of successful deletion
 		var cmds []tea.Cmd
+
 		if err != nil {
-			cmds = append(cmds, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.SwitchViewMsg{
-				ViewType: meta.LISTVIEWTYPE,
-			})))
+			cmds = append(cmds, meta.MessageCmd(err))
 		}
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))

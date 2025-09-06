@@ -38,6 +38,21 @@ func (e Entry) CompareId() int {
 	return e.Id
 }
 
+func MakeLoadEntryDetailCmd(id int) tea.Cmd {
+	return func() tea.Msg {
+		entry, err := SelectEntry(id)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ENTRY WITH ID %d: %#v", id, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ENTRIES,
+			Model:     meta.ENTRY,
+			Data:      entry,
+		}
+	}
+}
+
 func CalculateTotal(rows []EntryRow) CurrencyValue {
 	sum := CurrencyValue(0)
 
@@ -304,6 +319,12 @@ func SelectEntry(id int) (Entry, error) {
 	err := DB.Get(&result, `SELECT * FROM entries WHERE id = $1;`, id)
 
 	return result, err
+}
+
+func DeleteEntry(id int) error {
+	_, err := DB.Exec(`DELETE FROM entries WHERE id = $1;`, id)
+
+	return err
 }
 
 func SelectRows() ([]EntryRow, error) {

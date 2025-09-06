@@ -1207,3 +1207,96 @@ func entriesCreateUpdateViewCommandSet() *meta.CommandSet {
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
 }
+
+type EntryDeleteView struct {
+	modelId int // only for retrieving the model itself initially
+	model   database.Entry
+
+	colours styles.AppColours
+}
+
+func NewEntryDeleteView(modelId int, colours styles.AppColours) *EntryDeleteView {
+	return &EntryDeleteView{
+		modelId: modelId,
+
+		colours: colours,
+	}
+}
+
+func (dv *EntryDeleteView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.CommandSet())))
+
+	cmds = append(cmds, database.MakeLoadEntryDetailCmd(dv.modelId))
+
+	return tea.Batch(cmds...)
+}
+
+func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		entry := message.Data.(database.Entry)
+
+		dv.model = entry
+
+		return dv, nil
+
+	case meta.CommitMsg:
+		err := database.DeleteEntry(dv.model.Id)
+
+		// TODO: inform user of succesful deletion
+		var cmds []tea.Cmd
+
+		if err != nil {
+			cmds = append(cmds, meta.MessageCmd(err))
+		}
+
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
+
+		return dv, tea.Batch(cmds...)
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
+}
+
+func (dv *EntryDeleteView) View() string {
+	return "todo"
+}
+
+func (dv *EntryDeleteView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
+
+	return &meta.MotionSet{
+		Normal: normalMotions,
+	}
+}
+
+func (dv *EntryDeleteView) CommandSet() *meta.CommandSet {
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
+}
+
+func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		entryId := dv.model.Id
+
+		entry, err := database.SelectEntry(entryId)
+
+		if err != nil {
+			return meta.MessageCmd(err)
+		}
+
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: entry}
+	}
+}
