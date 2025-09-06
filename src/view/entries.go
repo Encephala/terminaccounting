@@ -623,7 +623,7 @@ func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
 		}
 
 		if debitValue == "" && creditValue == "" {
-			return nil, fmt.Errorf("row %d had zero no value for both debit and credit", i)
+			return nil, fmt.Errorf("row %d had no value for both debit and credit", i)
 		}
 
 		var value database.CurrencyValue
