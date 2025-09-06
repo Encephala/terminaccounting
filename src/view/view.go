@@ -199,7 +199,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				newTableRow = append(newTableRow, "")
 			} else {
 				newTableRow = append(newTableRow, "")
-				newTableRow = append(newTableRow, row.Value.String())
+				newTableRow = append(newTableRow, (-row.Value).String())
 			}
 
 			tableRows = append(tableRows, newTableRow)
