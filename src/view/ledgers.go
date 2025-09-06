@@ -539,7 +539,7 @@ func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model})
+	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
 	return &meta.MotionSet{
 		Normal: normalMotions,
@@ -553,4 +553,18 @@ func (dv *LedgersDeleteView) CommandSet() *meta.CommandSet {
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
+}
+
+func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		ledgerId := dv.model.Id
+
+		ledger, err := database.SelectLedger(ledgerId)
+
+		if err != nil {
+			return meta.MessageCmd(err)
+		}
+
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: ledger}
+	}
 }
