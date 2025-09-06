@@ -23,16 +23,20 @@ type Account struct {
 	Notes       meta.Notes  `db:"notes"`
 }
 
-func (a Account) String() string {
-	// Have id -1 to represent an invalid account
-	if a.Id == -1 {
+func (a *Account) String() string {
+	if a == nil {
 		return lipgloss.NewStyle().Italic(true).Render("None")
 	}
 
 	return a.Name + " (" + strconv.Itoa(a.Id) + ")"
 }
 
-func (a Account) CompareId() int {
+func (a *Account) CompareId() int {
+	// Since sqlite autoincrements from 1, -1 will never be a valid ID
+	if a == nil {
+		return -1
+	}
+
 	return a.Id
 }
 
