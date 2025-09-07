@@ -478,9 +478,9 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (dv *LedgersDeleteView) View() string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
 
-	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render(dv.title())))
+	result.WriteString(titleStyle.Render(dv.title()))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().

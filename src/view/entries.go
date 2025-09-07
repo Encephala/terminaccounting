@@ -1263,7 +1263,46 @@ func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *EntryDeleteView) View() string {
-	return "todo"
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
+	style := lipgloss.NewStyle().Padding(0, 1).Border(lipgloss.RoundedBorder())
+
+	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Entry: %d", dv.model.Id)))
+	result.WriteString("\n\n")
+
+	journalRendered := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Name"),
+		" ",
+		style.Render(strconv.Itoa(dv.model.Journal)),
+	)
+
+	notesRendered := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Note"),
+		" ",
+		style.Render(strings.Join(dv.model.Notes, "\n")),
+	)
+
+	var confirmRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
+	)
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			journalRendered,
+			notesRendered,
+			"",
+			confirmRow,
+		),
+	))
+
+	return result.String()
 }
 
 func (dv *EntryDeleteView) MotionSet() *meta.MotionSet {
