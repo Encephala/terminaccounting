@@ -80,11 +80,6 @@ func GlobalMotions() MotionSet {
 
 	// Single-stroke/no prefix
 	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
-		{Motion{"h"}, NavigateMsg{Direction: LEFT}},
-		{Motion{"j"}, NavigateMsg{Direction: DOWN}},
-		{Motion{"k"}, NavigateMsg{Direction: UP}},
-		{Motion{"l"}, NavigateMsg{Direction: RIGHT}},
-
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE}},
 	})
