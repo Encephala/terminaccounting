@@ -270,11 +270,19 @@ func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
+	result.Normal.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+
 	return result
 }
 
 func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
+}
+
+func (uv *LedgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
+	}
 }
 
 // The common parts of the Update function for a create- and update view

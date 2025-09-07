@@ -347,6 +347,9 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			return uv, nil
 		}
+
+	case meta.ResetInputFieldMsg:
+		panic("TODO")
 	}
 
 	return entriesCreateUpdateViewUpdate(uv, message)
@@ -357,7 +360,13 @@ func (uv *EntryUpdateView) View() string {
 }
 
 func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
-	return entriesCreateUpdateViewMotionSet()
+	result := entriesCreateUpdateViewMotionSet()
+
+	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
+
+	result.Normal.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+
+	return result
 }
 
 func (uv *EntryUpdateView) CommandSet() *meta.CommandSet {
@@ -722,6 +731,12 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 	}
 
 	return result
+}
+
+func (uv *EntryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingEntry}
+	}
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
