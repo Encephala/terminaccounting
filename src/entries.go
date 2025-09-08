@@ -73,7 +73,7 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SwitchViewMsg:
-		if message.App != nil && *message.App != m.Type() {
+		if message.App != nil && *message.App != meta.ENTRIES {
 			panic("wrong app type, something went wrong")
 		}
 
@@ -121,10 +121,6 @@ func (m *EntriesApp) View() string {
 
 func (m *EntriesApp) Name() string {
 	return "Entries"
-}
-
-func (m *EntriesApp) Type() meta.AppType {
-	return meta.ENTRIES
 }
 
 func (m *EntriesApp) Colours() styles.AppColours {
@@ -183,8 +179,4 @@ func (m *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 			Data:      rows,
 		}
 	}
-}
-
-func (m *EntriesApp) GetView() meta.View {
-	return m.currentView
 }

@@ -62,7 +62,7 @@ func (m *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case meta.SwitchViewMsg:
-		if message.App != nil && *message.App != m.Type() {
+		if message.App != nil && *message.App != meta.LEDGERS {
 			panic("wrong app type, something went wrong")
 		}
 
@@ -123,10 +123,6 @@ func (m *LedgersApp) Name() string {
 	return "Ledgers"
 }
 
-func (m *LedgersApp) Type() meta.AppType {
-	return meta.LEDGERS
-}
-
 func (m *LedgersApp) Colours() styles.AppColours {
 	return styles.LEDGERSSTYLES
 }
@@ -180,8 +176,4 @@ func (m *LedgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
 			Data:      rows,
 		}
 	}
-}
-
-func (m *LedgersApp) GetView() meta.View {
-	return m.currentView
 }

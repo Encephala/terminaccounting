@@ -162,13 +162,15 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyMsg(message)
 
 	case meta.DataLoadedMsg:
-		acceptedModels := m.appTypeToApp(message.TargetApp).AcceptedModels()
+		app := m.appTypeToApp(message.TargetApp)
+
+		acceptedModels := app.AcceptedModels()
 
 		if _, ok := acceptedModels[message.Model]; !ok {
 			panic(fmt.Sprintf("Mismatch between target app %q and loaded model:\n%#v", m.appTypeToApp(message.TargetApp).Name(), message))
 		}
 
-		newApp, cmd := m.appTypeToApp(message.TargetApp).Update(message)
+		newApp, cmd := app.Update(message)
 		m.apps[m.appIds[message.TargetApp]] = newApp.(meta.App)
 
 		return m, cmd

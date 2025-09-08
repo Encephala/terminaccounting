@@ -81,10 +81,6 @@ func (lv *ListView) View() string {
 	return lv.ListModel.View()
 }
 
-func (lv *ListView) Type() meta.ViewType {
-	return meta.LISTVIEWTYPE
-}
-
 func (lv *ListView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -244,10 +240,6 @@ func (dv *DetailView) View() string {
 	))
 
 	return result.String()
-}
-
-func (dv *DetailView) Type() meta.ViewType {
-	return meta.DETAILVIEWTYPE
 }
 
 func (dv *DetailView) MotionSet() *meta.MotionSet {

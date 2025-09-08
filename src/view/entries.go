@@ -127,7 +127,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		entryJournal := cv.journalInput.Value().(database.Journal)
 		entryNotes := cv.notesInput.Value()
 
-		entryRows, err := cv.entryRowsManager.CompileRows()
+		entryRows, err := cv.entryRowsManager.compileRows()
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
@@ -285,7 +285,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		entryJournal := uv.journalInput.Value().(database.Journal)
 		entryNotes := uv.notesInput.Value()
 
-		entryRows, err := uv.entryRowsManager.CompileRows()
+		entryRows, err := uv.entryRowsManager.compileRows()
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -446,7 +446,7 @@ func NewEntryRowCreateViewManager() *EntryRowViewManager {
 	}
 }
 
-func (ercvm *EntryRowViewManager) Update(msg tea.Msg) (*EntryRowViewManager, tea.Cmd) {
+func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		highlightRow, highlightCol := ercvm.getActiveCoords()
@@ -520,7 +520,7 @@ func (ercvm *EntryRowViewManager) Update(msg tea.Msg) (*EntryRowViewManager, tea
 	}
 }
 
-func (ercvm *EntryRowViewManager) View(style, highlightStyle lipgloss.Style, isActive bool) string {
+func (ercvm *EntryRowViewManager) view(style, highlightStyle lipgloss.Style, isActive bool) string {
 	// TODO?: render using the table bubble to have them fix all the alignment and stuff
 	var result strings.Builder
 
@@ -620,7 +620,7 @@ func (ercvm *EntryRowViewManager) View(style, highlightStyle lipgloss.Style, isA
 }
 
 // Converts a slice of EntryRow "forms" to a slice of EntryRow
-func (ercvm *EntryRowViewManager) CompileRows() ([]database.EntryRow, error) {
+func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ercvm.numRows())
 
 	total, err := ercvm.calculateCurrentTotal()
@@ -1030,7 +1030,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.Update(message)
+		manager, cmd := entryRowsManager.update(message)
 		*entryRowsManager = *manager
 
 		return view, cmd
@@ -1072,7 +1072,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			*notesInput, cmd = notesInput.Update(message)
 		case ENTRYROWINPUT:
 			var manager *EntryRowViewManager
-			manager, cmd = entryRowsManager.Update(message)
+			manager, cmd = entryRowsManager.update(message)
 			*entryRowsManager = *manager
 
 		default:
@@ -1174,7 +1174,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	result.WriteString("\n\n")
 
 	result.WriteString(style.MarginLeft(2).Render(
-		entryRowsManager.View(lipgloss.NewStyle(),
+		entryRowsManager.view(lipgloss.NewStyle(),
 			lipgloss.NewStyle().Foreground(view.getColours().Foreground),
 			*view.getActiveInput() == ENTRYROWINPUT,
 		),
