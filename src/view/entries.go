@@ -518,6 +518,17 @@ func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea
 		}
 		return ercvm, nil
 
+	case meta.JumpMsg:
+		oldRow, _ := ercvm.getActiveCoords()
+
+		if msg.ToEnd {
+			ercvm.setActiveCoords(oldRow, ercvm.numInputsPerRow()-1)
+		} else {
+			ercvm.setActiveCoords(oldRow, 0)
+		}
+
+		return ercvm, nil
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", msg))
 	}
@@ -1061,6 +1072,16 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 		return view, cmd
 
+	case meta.JumpMsg:
+		if *activeInput != ENTRYROWINPUT {
+			return view, meta.MessageCmd(fmt.Errorf("$/_ navigation only works within the entryrows"))
+		}
+
+		manager, cmd := entryRowsManager.update(message)
+		*entryRowsManager = *manager
+
+		return view, cmd
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.JOURNAL:
@@ -1230,6 +1251,10 @@ func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	// Extra horizontal navigation
+	normalMotions.Insert(meta.Motion{"$"}, meta.JumpMsg{ToEnd: true})
+	normalMotions.Insert(meta.Motion{"_"}, meta.JumpMsg{ToEnd: false})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,

@@ -67,6 +67,12 @@ const (
 	LEFT  Direction = "LEFT"
 )
 
+// Jumping to start or end of a line (row)
+// For $/_-motions
+type JumpMsg struct {
+	ToEnd bool
+}
+
 type SwitchModeMsg struct {
 	InputMode
 }
