@@ -663,6 +663,10 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 			if err != nil {
 				return nil, err
 			}
+			if debit == 0 {
+				return nil, fmt.Errorf("row %d had 0 as debit value, only nonzero allowed", i)
+			}
+
 			value = debit
 		}
 		if creditValue != "" {
@@ -670,6 +674,10 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 			if err != nil {
 				return nil, err
 			}
+			if credit == 0 {
+				return nil, fmt.Errorf("row %d had 0 as credit value, only nonzero allowed", i)
+			}
+
 			value = -credit
 		}
 
