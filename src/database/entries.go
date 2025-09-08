@@ -255,6 +255,11 @@ func ToDate(input string) (Date, error) {
 	return Date(result), err
 }
 
+func Today() *Date {
+	result := Date(time.Now())
+	return &result
+}
+
 type EntryRow struct {
 	Id         int           `db:"id"`
 	Entry      int           `db:"entry"`

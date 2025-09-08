@@ -53,7 +53,7 @@ type EntryRowCreateView struct {
 }
 
 // availableAccounts should not include the nil account (and cannot because not pointer type)
-func newEntryRowCreateView(availableLedgers []database.Ledger, availableAccounts []database.Account) *EntryRowCreateView {
+func newEntryRowCreateView(startDate *database.Date, availableLedgers []database.Ledger, availableAccounts []database.Account) *EntryRowCreateView {
 	dateInput := textinput.New()
 	dateInput.CharLimit = 10 // YYYY-MM-DD
 	dateInput.Validate = func(input string) error {
@@ -64,6 +64,9 @@ func newEntryRowCreateView(availableLedgers []database.Ledger, availableAccounts
 		}
 
 		return nil
+	}
+	if startDate != nil {
+		dateInput.SetValue(startDate.String())
 	}
 
 	ledgersAsItems := make([]itempicker.Item, len(availableLedgers))
@@ -438,8 +441,8 @@ func NewEntryRowCreateViewManager() *EntryRowViewManager {
 	rows := make([]*EntryRowCreateView, 2)
 
 	// Prefill with two empty rows
-	rows[0] = newEntryRowCreateView(nil, nil)
-	rows[1] = newEntryRowCreateView(nil, nil)
+	rows[0] = newEntryRowCreateView(database.Today(), nil, nil)
+	rows[1] = newEntryRowCreateView(database.Today(), nil, nil)
 
 	return &EntryRowViewManager{
 		rows: rows,
@@ -729,9 +732,8 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 			}
 		}
 
-		formRow := newEntryRowCreateView(availableLedgers, availableAccounts)
+		formRow := newEntryRowCreateView(&row.Date, availableLedgers, availableAccounts)
 
-		formRow.dateInput.SetValue(row.Date.String())
 		formRow.ledgerInput.SetValue(ledger)
 		formRow.accountInput.SetValue(account)
 		if row.Value > 0 {
@@ -942,11 +944,21 @@ func (ercvm *EntryRowViewManager) addRow(after bool,
 ) (*EntryRowViewManager, tea.Cmd) {
 	activeRow, _ := ercvm.getActiveCoords()
 
-	newRow := newEntryRowCreateView(availableLedgers, availableAccounts)
+	var newRow *EntryRowCreateView
+
+	// If the row that the new-row-creation was triggered from had a valid date,
+	// prefill it in the new row. Otherwise, just leave new row empty
+	prefillDate, parseErr := database.ToDate(ercvm.rows[activeRow].dateInput.Value())
+	if parseErr == nil {
+		newRow = newEntryRowCreateView(&prefillDate, availableLedgers, availableAccounts)
+	} else {
+		newRow = newEntryRowCreateView(nil, availableLedgers, availableAccounts)
+	}
 
 	newRows := make([]*EntryRowCreateView, 0, ercvm.numRows()+1)
 
 	if after {
+		// Insert after activeRow
 		newRows = append(newRows, ercvm.rows[:activeRow+1]...)
 		newRows = append(newRows, newRow)
 		newRows = append(newRows, ercvm.rows[activeRow+1:]...)
@@ -955,6 +967,7 @@ func (ercvm *EntryRowViewManager) addRow(after bool,
 
 		ercvm.setActiveCoords(activeRow+1, 0)
 	} else {
+		// Insert before activeRow
 		// Blur old active input
 		// Just blur them all, cba to write a switch activeCol {}
 		ercvm.rows[activeRow].dateInput.Blur()
