@@ -642,6 +642,10 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 		}
 
 		// TODO: Validate the date thingy
+		date, err := database.ToDate(formRow.dateInput.Value())
+		if err != nil {
+			return nil, fmt.Errorf("row %d had date %q which isn't in yyyy-MM-dd:\n%#v", i, formRow.dateInput.Value(), err)
+		}
 
 		debitValue := formRow.debitInput.Value()
 		creditValue := formRow.creditInput.Value()
@@ -683,6 +687,7 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 
 		result[i] = database.EntryRow{
 			Entry:      -1, // Will be inserted into the struct after entry itself has been inserted into db
+			Date:       date,
 			Ledger:     formLedger.Id,
 			Account:    accountId,
 			Document:   nil, // TODO

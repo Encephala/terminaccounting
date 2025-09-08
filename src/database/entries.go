@@ -249,6 +249,12 @@ func (d Date) String() string {
 	return time.Time(d).Format(DATE_FORMAT)
 }
 
+func ToDate(input string) (Date, error) {
+	result, err := time.Parse(DATE_FORMAT, input)
+
+	return Date(result), err
+}
+
 type EntryRow struct {
 	Id         int           `db:"id"`
 	Entry      int           `db:"entry"`
