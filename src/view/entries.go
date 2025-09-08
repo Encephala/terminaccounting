@@ -518,13 +518,24 @@ func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea
 		}
 		return ercvm, nil
 
-	case meta.JumpMsg:
+	case meta.JumpHorizontalMsg:
 		oldRow, _ := ercvm.getActiveCoords()
 
 		if msg.ToEnd {
 			ercvm.setActiveCoords(oldRow, ercvm.numInputsPerRow()-1)
 		} else {
 			ercvm.setActiveCoords(oldRow, 0)
+		}
+
+		return ercvm, nil
+
+	case meta.JumpVerticalMsg:
+		_, oldCol := ercvm.getActiveCoords()
+
+		if msg.ToEnd {
+			ercvm.setActiveCoords(ercvm.numRows()-1, oldCol)
+		} else {
+			ercvm.setActiveCoords(0, oldCol)
 		}
 
 		return ercvm, nil
@@ -1072,9 +1083,19 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 		return view, cmd
 
-	case meta.JumpMsg:
+	case meta.JumpHorizontalMsg:
 		if *activeInput != ENTRYROWINPUT {
 			return view, meta.MessageCmd(fmt.Errorf("$/_ navigation only works within the entryrows"))
+		}
+
+		manager, cmd := entryRowsManager.update(message)
+		*entryRowsManager = *manager
+
+		return view, cmd
+
+	case meta.JumpVerticalMsg:
+		if *activeInput != ENTRYROWINPUT {
+			return view, meta.MessageCmd(fmt.Errorf("'gg'/'G' navigation only works within the entryrows"))
 		}
 
 		manager, cmd := entryRowsManager.update(message)
@@ -1253,8 +1274,12 @@ func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
 	// Extra horizontal navigation
-	normalMotions.Insert(meta.Motion{"$"}, meta.JumpMsg{ToEnd: true})
-	normalMotions.Insert(meta.Motion{"_"}, meta.JumpMsg{ToEnd: false})
+	normalMotions.Insert(meta.Motion{"$"}, meta.JumpHorizontalMsg{ToEnd: true})
+	normalMotions.Insert(meta.Motion{"_"}, meta.JumpHorizontalMsg{ToEnd: false})
+
+	// Extra vertical navigation
+	normalMotions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
+	normalMotions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
 
 	return &meta.MotionSet{
 		Normal: normalMotions,

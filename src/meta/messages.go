@@ -68,8 +68,13 @@ const (
 )
 
 // Jumping to start or end of a line (row)
-// For $/_-motions
-type JumpMsg struct {
+// For $ and _ motions
+type JumpHorizontalMsg struct {
+	ToEnd bool
+}
+
+// gg and G motions
+type JumpVerticalMsg struct {
 	ToEnd bool
 }
 
