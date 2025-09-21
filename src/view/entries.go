@@ -345,7 +345,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			uv.startingEntryRows = rows
 
-			formRows := uv.decompileRows(rows, uv.availableLedgers, uv.availableAccounts)
+			formRows := uv.decompileRows(rows)
 			uv.getManager().rows = formRows
 
 			return uv, nil
@@ -726,14 +726,12 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
 func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
-	availableLedgers []database.Ledger,
-	availableAccounts []database.Account,
 ) []*EntryRowCreateView {
 	result := make([]*EntryRowCreateView, len(rows))
 
 	for i, row := range rows {
 		var ledger database.Ledger
-		for _, l := range availableLedgers {
+		for _, l := range uv.availableLedgers {
 			if l.Id == row.Ledger {
 				ledger = l
 			}
@@ -744,7 +742,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 
 		var account *database.Account
 		if row.Account != nil {
-			for _, a := range availableAccounts {
+			for _, a := range uv.availableAccounts {
 				if a.Id == *row.Account {
 					account = &a
 				}
@@ -754,7 +752,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 			}
 		}
 
-		formRow := newEntryRowCreateView(&row.Date, availableLedgers, availableAccounts)
+		formRow := newEntryRowCreateView(&row.Date, uv.availableLedgers, uv.availableAccounts)
 
 		formRow.ledgerInput.SetValue(ledger)
 		formRow.accountInput.SetValue(account)
