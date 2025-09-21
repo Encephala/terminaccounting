@@ -6,6 +6,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/styles"
 
+	"github.com/acarl005/stripansi"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/truncate"
 )
@@ -23,9 +24,9 @@ func statusLineView(m *model) string {
 		result.WriteString(styles.StatusLine.Render(" "))
 		resultLength += 1
 
-		motionVisual := m.currentMotion.View()
-		result.WriteString(styles.StatusLine.Render(motionVisual))
-		resultLength += len(motionVisual)
+		motionRendered := m.currentMotion.View()
+		result.WriteString(styles.Command.Render(motionRendered))
+		resultLength += len(motionRendered)
 
 	case meta.INSERTMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("12")).Padding(0, 1)
@@ -52,24 +53,16 @@ func statusLineView(m *model) string {
 		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
 	}
 
-	maxErrorLength := 24
+	messageRendered := styles.StatusLine.Render(truncate.StringWithTail(
+		m.displayedMessage,
+		uint(m.viewWidth-resultLength),
+		"...",
+	))
+	result.WriteString(messageRendered)
+	resultLength += len(stripansi.Strip(messageRendered))
 
-	numberOfEmptyCells := m.viewWidth - resultLength
-	if m.displayedError != nil {
-		numberOfEmptyCells -= min(len(m.displayedError.Error()), maxErrorLength) + 1 // +1 for right padding of the error
-	}
-	if numberOfEmptyCells >= 0 {
-		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", numberOfEmptyCells)))
-	}
-
-	if m.displayedError != nil {
-		result.WriteString(styles.StatusLineError.Render(
-			truncate.StringWithTail(
-				m.displayedError.Error(),
-				uint(maxErrorLength),
-				"...",
-			),
-		))
+	if m.viewWidth-resultLength > 0 {
+		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", m.viewWidth-resultLength)))
 	}
 
 	return result.String()

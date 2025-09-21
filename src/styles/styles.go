@@ -66,8 +66,7 @@ var StatusLine = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("252"))
 
 var StatusLineError = StatusLine.
-	Foreground(lipgloss.Color("9")).
-	PaddingRight(1)
+	Foreground(lipgloss.Color("9"))
 
 type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color

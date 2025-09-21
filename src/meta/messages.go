@@ -1,8 +1,6 @@
 package meta
 
 import (
-	"time"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -11,13 +9,8 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
 
-type ClearErrorMsg struct{}
-
-func ClearErrorAfterDelayCmd() tea.Msg {
-	// TODO: This does not debounce
-	time.Sleep(time.Second * 2)
-
-	return ClearErrorMsg{}
+type NotificationMsg struct {
+	Message string
 }
 
 type FatalErrorMsg struct {
