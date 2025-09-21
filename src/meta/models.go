@@ -36,6 +36,7 @@ func CompileNotes(input string) Notes {
 	return strings.Split(input, "\n")
 }
 
+// Joins the Notes together into a newline-delimited string.
 func (n Notes) Collapse() string {
 	return strings.Join(n, "\n")
 }

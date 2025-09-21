@@ -30,6 +30,7 @@ type EntryCreateView struct {
 	entryRowsManager *EntryRowViewManager
 	activeInput      activeInput
 
+	availableJournals []database.Journal
 	availableLedgers  []database.Ledger
 	availableAccounts []database.Account
 
@@ -199,6 +200,17 @@ func (cv *EntryCreateView) getAvailableAccounts() []database.Account {
 	return cv.availableAccounts
 }
 
+func (cv *EntryCreateView) setJournals(journals []database.Journal) {
+	cv.availableJournals = journals
+
+	asItems := make([]itempicker.Item, len(journals))
+	for i, journal := range journals {
+		asItems[i] = journal
+	}
+
+	cv.journalInput.Items = asItems
+}
+
 func (cv *EntryCreateView) setLedgers(ledgers []database.Ledger) {
 	cv.availableLedgers = ledgers
 
@@ -241,6 +253,7 @@ type EntryUpdateView struct {
 	startingEntry     database.Entry
 	startingEntryRows []database.EntryRow
 
+	availableJournals []database.Journal
 	availableLedgers  []database.Ledger
 	availableAccounts []database.Account
 
@@ -352,7 +365,26 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.ResetInputFieldMsg:
-		panic("TODO")
+		switch uv.activeInput {
+		case JOURNALINPUT:
+			for _, journal := range uv.availableJournals {
+				if journal.Id == uv.startingEntry.Journal {
+					uv.journalInput.SetValue(journal)
+					break
+				}
+			}
+
+		case NOTESINPUT:
+			uv.notesInput.SetValue(uv.startingEntry.Notes.Collapse())
+
+		case ENTRYROWINPUT:
+			uv.entryRowsManager.rows = uv.decompileRows(uv.startingEntryRows)
+
+		default:
+			panic(fmt.Sprintf("unexpected view.activeInput: %#v", uv.activeInput))
+		}
+
+		return uv, nil
 	}
 
 	return entriesCreateUpdateViewUpdate(uv, message)
@@ -402,6 +434,17 @@ func (uv *EntryUpdateView) getAvailableLedgers() []database.Ledger {
 
 func (uv *EntryUpdateView) getAvailableAccounts() []database.Account {
 	return uv.availableAccounts
+}
+
+func (uv *EntryUpdateView) setJournals(journals []database.Journal) {
+	uv.availableJournals = journals
+
+	asItems := make([]itempicker.Item, len(journals))
+	for i, journal := range journals {
+		asItems[i] = journal
+	}
+
+	uv.journalInput.Items = asItems
 }
 
 func (uv *EntryUpdateView) setLedgers(ledgers []database.Ledger) {
@@ -1020,6 +1063,7 @@ type entryCreateOrUpdateView interface {
 	getAvailableLedgers() []database.Ledger
 	getAvailableAccounts() []database.Account
 
+	setJournals([]database.Journal)
 	setLedgers([]database.Ledger)
 	setAccounts([]database.Account)
 
@@ -1104,14 +1148,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.JOURNAL:
-			journals := message.Data.([]database.Journal)
-
-			asItems := make([]itempicker.Item, len(journals))
-			for i, journal := range journals {
-				asItems[i] = journal
-			}
-
-			journalInput.Items = asItems
+			view.setJournals(message.Data.([]database.Journal))
 
 			return view, nil
 
