@@ -128,11 +128,13 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
-		m.displayedMessage = styles.StatusLineError.Render(message.Error())
+		m.messages = append(m.messages, styles.StatusLineError.Render(message.Error()))
+		m.displayMessage = true
 		return m, nil
 
 	case meta.NotificationMsg:
-		m.displayedMessage = message.Message
+		m.messages = append(m.messages, message.Message)
+		m.displayMessage = true
 
 		return m, nil
 
@@ -274,7 +276,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.displayedMessage = ""
+	m.displayMessage = false
 	m.currentMotion = append(m.currentMotion, message.String())
 
 	if !m.motionSet.ContainsPath(m.inputMode, m.currentMotion) {
@@ -344,7 +346,7 @@ func (m *model) switchMode(newMode meta.InputMode) {
 	m.inputMode = newMode
 
 	if newMode == meta.COMMANDMODE {
-		m.displayedMessage = ""
+		m.displayMessage = false
 		m.commandInput.Focus()
 	}
 }

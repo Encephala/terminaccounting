@@ -14,8 +14,9 @@ type model struct {
 	apps      []meta.App
 	appIds    map[meta.AppType]int
 
-	displayedMessage string
-	fatalError       error // To print to screen on exit
+	messages       []string
+	displayMessage bool
+	fatalError     error // To print to screen on exit
 
 	// current vimesque input mode
 	inputMode meta.InputMode

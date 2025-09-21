@@ -53,13 +53,15 @@ func statusLineView(m *model) string {
 		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
 	}
 
-	messageRendered := styles.StatusLine.Render(truncate.StringWithTail(
-		m.displayedMessage,
-		uint(m.viewWidth-resultLength),
-		"...",
-	))
-	result.WriteString(messageRendered)
-	resultLength += len(stripansi.Strip(messageRendered))
+	if m.displayMessage {
+		messageRendered := styles.StatusLine.Render(truncate.StringWithTail(
+			m.messages[len(m.messages)-1],
+			uint(m.viewWidth-resultLength),
+			"...",
+		))
+		result.WriteString(messageRendered)
+		resultLength += len(stripansi.Strip(messageRendered))
+	}
 
 	if m.viewWidth-resultLength > 0 {
 		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", m.viewWidth-resultLength)))
