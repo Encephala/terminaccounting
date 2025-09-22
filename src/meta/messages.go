@@ -13,6 +13,12 @@ type NotificationMessageMsg struct {
 	Message string
 }
 
+type ShowModalMsg struct {
+	Message string
+}
+
+type CloseModalMsg struct{}
+
 type FatalErrorMsg struct {
 	Error error
 }

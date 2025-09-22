@@ -120,3 +120,5 @@ var LEDGERSCOLOURS = AppColours{
 	Background: "#A1EEBD60",
 	Accent:     "#A1EEBDFF",
 }
+
+var ModalStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())

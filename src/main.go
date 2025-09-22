@@ -77,7 +77,9 @@ func main() {
 		commandSet: commandSet,
 	}
 
-	finalModel, err := tea.NewProgram(m).Run()
+	mm := newModalManager(m)
+
+	finalModel, err := tea.NewProgram(mm).Run()
 	if err != nil {
 		message := fmt.Sprintf("Bubbletea error: %v", err)
 		slog.Error(message)
@@ -85,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = finalModel.(*model).fatalError
+	err = finalModel.(*modalManager).main.fatalError
 	if err != nil {
 		message := fmt.Sprintf("Program exited with fatal error: %v", err)
 		fmt.Println(message)
@@ -132,6 +134,8 @@ func (m *model) Init() tea.Cmd {
 		m.apps[i] = model.(meta.App)
 		cmds = append(cmds, cmd)
 	}
+
+	cmds = append(cmds, meta.MessageCmd(meta.ShowModalMsg{Message: "aids up my ass"}))
 
 	m.motionSet.ViewMotionSet = m.apps[m.activeApp].CurrentMotionSet()
 
