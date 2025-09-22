@@ -15,6 +15,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -94,6 +95,30 @@ func main() {
 
 	slog.Info("Exited gracefully")
 	os.Exit(0)
+}
+
+type model struct {
+	viewWidth, viewHeight int
+
+	activeApp int
+	apps      []meta.App
+	appIds    map[meta.AppType]int
+
+	messages       []string
+	displayMessage bool
+	fatalError     error // To print to screen on exit
+
+	// current vimesque input mode
+	inputMode meta.InputMode
+	// current motion
+	currentMotion meta.Motion
+	// known motionSet
+	motionSet meta.CompleteMotionSet
+
+	// vimesque command input
+	commandInput textinput.Model
+	// known commandSet
+	commandSet meta.CompleteCommandSet
 }
 
 func (m *model) Init() tea.Cmd {
