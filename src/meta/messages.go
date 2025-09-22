@@ -9,7 +9,7 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
 
-type NotificationMsg struct {
+type NotificationMessageMsg struct {
 	Message string
 }
 

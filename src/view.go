@@ -5,7 +5,6 @@ import (
 	"strings"
 	"terminaccounting/meta"
 
-	"github.com/acarl005/stripansi"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/truncate"
 )
@@ -52,14 +51,24 @@ func statusLineView(m *model) string {
 		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
 	}
 
-	if m.displayMessage {
-		messageRendered := meta.StatusLineStyle.Render(truncate.StringWithTail(
-			m.messages[len(m.messages)-1],
-			uint(m.viewWidth-resultLength),
-			"...",
-		))
-		result.WriteString(messageRendered)
-		resultLength += len(stripansi.Strip(messageRendered))
+	if m.displayNotification {
+		notification := m.notifications[len(m.notifications)-1]
+
+		if notification.isError {
+			result.WriteString(meta.StatusLineErrorStyle.Render(truncate.StringWithTail(
+				notification.text,
+				uint(m.viewWidth-resultLength),
+				"...",
+			)))
+		} else {
+			result.WriteString(meta.StatusLineStyle.Render(truncate.StringWithTail(
+				m.notifications[len(m.notifications)-1].text,
+				uint(m.viewWidth-resultLength),
+				"...",
+			)))
+		}
+
+		resultLength += len(notification.text)
 	}
 
 	if m.viewWidth-resultLength > 0 {

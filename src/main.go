@@ -103,9 +103,9 @@ type model struct {
 	apps      []meta.App
 	appIds    map[meta.AppType]int
 
-	messages       []string
-	displayMessage bool
-	fatalError     error // To print to screen on exit
+	notifications       []notificationMsg
+	displayNotification bool
+	fatalError          error // To print to screen on exit
 
 	// current vimesque input mode
 	inputMode meta.InputMode
@@ -152,13 +152,21 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
-		m.messages = append(m.messages, meta.StatusLineErrorStyle.Render(message.Error()))
-		m.displayMessage = true
+		notification := notificationMsg{
+			text:    message.Error(),
+			isError: true,
+		}
+		m.notifications = append(m.notifications, notification)
+		m.displayNotification = true
 		return m, nil
 
-	case meta.NotificationMsg:
-		m.messages = append(m.messages, message.Message)
-		m.displayMessage = true
+	case meta.NotificationMessageMsg:
+		notification := notificationMsg{
+			text:    message.Message,
+			isError: false,
+		}
+		m.notifications = append(m.notifications, notification)
+		m.displayNotification = true
 
 		return m, nil
 
@@ -300,7 +308,7 @@ func (m *model) handleKeyMsg(message tea.KeyMsg) (*model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.displayMessage = false
+	m.displayNotification = false
 	m.currentMotion = append(m.currentMotion, message.String())
 
 	if !m.motionSet.ContainsPath(m.inputMode, m.currentMotion) {
@@ -370,7 +378,7 @@ func (m *model) switchMode(newMode meta.InputMode) {
 	m.inputMode = newMode
 
 	if newMode == meta.COMMANDMODE {
-		m.displayMessage = false
+		m.displayNotification = false
 		m.commandInput.Focus()
 	}
 }
@@ -389,4 +397,9 @@ func (m *model) executeCommand(command string) (*model, tea.Cmd) {
 	m.switchMode(meta.NORMALMODE)
 
 	return m, meta.MessageCmd(commandMsg)
+}
+
+type notificationMsg struct {
+	text    string
+	isError bool
 }
