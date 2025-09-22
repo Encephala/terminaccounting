@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -114,7 +113,7 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *EntriesApp) View() string {
-	style := styles.Body(m.viewWidth, m.viewHeight)
+	style := meta.BodyStyle(m.viewWidth, m.viewHeight)
 
 	return style.Render(m.currentView.View())
 }
@@ -123,8 +122,8 @@ func (m *EntriesApp) Name() string {
 	return "Entries"
 }
 
-func (m *EntriesApp) Colours() styles.AppColours {
-	return styles.ENTRIESCOLOURS
+func (m *EntriesApp) Colours() meta.AppColours {
+	return meta.ENTRIESCOLOURS
 }
 
 func (m *EntriesApp) CurrentMotionSet() *meta.MotionSet {

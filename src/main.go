@@ -8,7 +8,6 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -153,7 +152,7 @@ func (m *model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case error:
 		slog.Debug(fmt.Sprintf("Error: %v", message))
-		m.messages = append(m.messages, styles.StatusLineError.Render(message.Error()))
+		m.messages = append(m.messages, meta.StatusLineErrorStyle.Render(message.Error()))
 		m.displayMessage = true
 		return m, nil
 
@@ -264,9 +263,9 @@ func (m *model) View() string {
 	activeTabColour := m.apps[m.activeApp].Colours().Foreground
 	for i, app := range m.apps {
 		if i == m.activeApp {
-			tabs = append(tabs, styles.ActiveTab(activeTabColour).Render(app.Name()))
+			tabs = append(tabs, meta.ActiveTabStyle(activeTabColour).Render(app.Name()))
 		} else {
-			tabs = append(tabs, styles.Tab(activeTabColour).Render(app.Name()))
+			tabs = append(tabs, meta.TabStyle(activeTabColour).Render(app.Name()))
 		}
 	}
 

@@ -2,8 +2,6 @@
 package meta
 
 import (
-	"terminaccounting/styles"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -12,7 +10,7 @@ type App interface {
 
 	Name() string
 
-	Colours() styles.AppColours
+	Colours() AppColours
 
 	CurrentMotionSet() *MotionSet
 	CurrentCommandSet() *CommandSet

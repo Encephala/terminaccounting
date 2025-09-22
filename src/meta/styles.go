@@ -1,4 +1,4 @@
-package styles
+package meta
 
 import (
 	"github.com/charmbracelet/bubbles/list"
@@ -22,7 +22,7 @@ var tabBorder = lipgloss.Border{
 	BottomRight: "┴",
 }
 
-func Tab(activeTabAccentColour lipgloss.Color) lipgloss.Style {
+func TabStyle(activeTabAccentColour lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Border(tabBorder).
 		BorderBottomForeground(activeTabAccentColour).
@@ -41,7 +41,7 @@ var activeTabBorder = lipgloss.Border{
 	BottomRight: "└",
 }
 
-func ActiveTab(accentColour lipgloss.Color) lipgloss.Style {
+func ActiveTabStyle(accentColour lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Border(activeTabBorder).
 		BorderForeground(accentColour).
@@ -49,7 +49,7 @@ func ActiveTab(accentColour lipgloss.Color) lipgloss.Style {
 		AlignHorizontal(lipgloss.Center)
 }
 
-func Body(width, height int) lipgloss.Style {
+func BodyStyle(width, height int) lipgloss.Style {
 	style := lipgloss.NewStyle().
 		Width(width).
 		Height(height)
@@ -57,15 +57,15 @@ func Body(width, height int) lipgloss.Style {
 	return style
 }
 
-var Command = lipgloss.NewStyle().
+var CommandStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#00FFFF")).
 	Background(lipgloss.Color("240"))
 
-var StatusLine = lipgloss.NewStyle().
+var StatusLineStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("240")).
 	Foreground(lipgloss.Color("252"))
 
-var StatusLineError = StatusLine.
+var StatusLineErrorStyle = StatusLineStyle.
 	Foreground(lipgloss.Color("9"))
 
 type AppColours struct {
@@ -115,7 +115,7 @@ func NewDetailViewStyles(colours AppColours) DetailViewStyles {
 	}
 }
 
-var LEDGERSSTYLES = AppColours{
+var LEDGERSCOLOURS = AppColours{
 	Foreground: "#A1EEBDD0",
 	Background: "#A1EEBD60",
 	Accent:     "#A1EEBDFF",

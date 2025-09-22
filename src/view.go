@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 
 	"github.com/acarl005/stripansi"
 	"github.com/charmbracelet/lipgloss"
@@ -21,11 +20,11 @@ func statusLineView(m *model) string {
 		result.WriteString(modeStyle.Render("NORMAL"))
 		resultLength += 8 // NORMAL + padding
 
-		result.WriteString(styles.StatusLine.Render(" "))
+		result.WriteString(meta.StatusLineStyle.Render(" "))
 		resultLength += 1
 
 		motionRendered := m.currentMotion.View()
-		result.WriteString(styles.Command.Render(motionRendered))
+		result.WriteString(meta.CommandStyle.Render(motionRendered))
 		resultLength += len(motionRendered)
 
 	case meta.INSERTMODE:
@@ -34,7 +33,7 @@ func statusLineView(m *model) string {
 		result.WriteString(mode)
 		resultLength += 8 // INSERT + padding
 
-		result.WriteString(styles.StatusLine.Render(" "))
+		result.WriteString(meta.StatusLineStyle.Render(" "))
 		resultLength += 1
 
 	case meta.COMMANDMODE:
@@ -42,10 +41,10 @@ func statusLineView(m *model) string {
 		result.WriteString(modeStyle.Render("COMMAND"))
 		resultLength += 9 // COMMAND + padding
 
-		result.WriteString(styles.StatusLine.Render(" "))
+		result.WriteString(meta.StatusLineStyle.Render(" "))
 		resultLength += 1
 
-		commandInputView := styles.Command.Render(m.commandInput.View())
+		commandInputView := meta.CommandStyle.Render(m.commandInput.View())
 		result.WriteString(commandInputView)
 		resultLength += len(m.commandInput.Value()) + 1 + 1 // +1 for the commandInput.Prompt, and for its cursor
 
@@ -54,7 +53,7 @@ func statusLineView(m *model) string {
 	}
 
 	if m.displayMessage {
-		messageRendered := styles.StatusLine.Render(truncate.StringWithTail(
+		messageRendered := meta.StatusLineStyle.Render(truncate.StringWithTail(
 			m.messages[len(m.messages)-1],
 			uint(m.viewWidth-resultLength),
 			"...",
@@ -64,7 +63,7 @@ func statusLineView(m *model) string {
 	}
 
 	if m.viewWidth-resultLength > 0 {
-		result.WriteString(styles.StatusLine.Render(strings.Repeat(" ", m.viewWidth-resultLength)))
+		result.WriteString(meta.StatusLineStyle.Render(strings.Repeat(" ", m.viewWidth-resultLength)))
 	}
 
 	return result.String()

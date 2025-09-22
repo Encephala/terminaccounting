@@ -5,7 +5,6 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 
 	"local/bubbles/itempicker"
 
@@ -33,7 +32,7 @@ type ledgerCreateOrUpdateView interface {
 
 	getActiveInput() *activeInput
 
-	getColours() styles.AppColours
+	getColours() meta.AppColours
 }
 
 type LedgersCreateView struct {
@@ -42,10 +41,10 @@ type LedgersCreateView struct {
 	NoteInput   textarea.Model
 	activeInput activeInput
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
-func NewLedgersCreateView(colours styles.AppColours) *LedgersCreateView {
+func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 	types := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -100,7 +99,7 @@ func (cv *LedgersCreateView) getNoteInput() *textarea.Model {
 func (cv *LedgersCreateView) getActiveInput() *activeInput {
 	return &cv.activeInput
 }
-func (cv *LedgersCreateView) getColours() styles.AppColours {
+func (cv *LedgersCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
@@ -157,10 +156,10 @@ type LedgersUpdateView struct {
 	modelId       int
 	startingValue database.Ledger
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
-func NewLedgersUpdateView(modelId int, colours styles.AppColours) *LedgersUpdateView {
+func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateView {
 	types := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -214,7 +213,7 @@ func (uv *LedgersUpdateView) getNoteInput() *textarea.Model {
 func (uv *LedgersUpdateView) getActiveInput() *activeInput {
 	return &uv.activeInput
 }
-func (uv *LedgersUpdateView) getColours() styles.AppColours {
+func (uv *LedgersUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
@@ -431,10 +430,10 @@ type LedgersDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
-func NewLedgersDeleteView(modelId int, colours styles.AppColours) *LedgersDeleteView {
+func NewLedgersDeleteView(modelId int, colours meta.AppColours) *LedgersDeleteView {
 	return &LedgersDeleteView{
 		modelId: modelId,
 

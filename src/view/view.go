@@ -5,7 +5,6 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
@@ -22,7 +21,7 @@ type ListView struct {
 }
 
 func NewListView(app meta.App) *ListView {
-	viewStyles := styles.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
+	viewStyles := meta.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle

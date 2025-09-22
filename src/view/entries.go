@@ -8,7 +8,6 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/styles"
 	"unicode"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -34,7 +33,7 @@ type EntryCreateView struct {
 	availableLedgers  []database.Ledger
 	availableAccounts []database.Account
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
 type EntryRowViewManager struct {
@@ -95,7 +94,7 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 	return &result
 }
 
-func NewEntryCreateView(colours styles.AppColours) *EntryCreateView {
+func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
 	journalInput := itempicker.New([]itempicker.Item{})
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
@@ -188,7 +187,7 @@ func (cv *EntryCreateView) getActiveInput() *activeInput {
 	return &cv.activeInput
 }
 
-func (cv *EntryCreateView) getColours() styles.AppColours {
+func (cv *EntryCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
@@ -257,10 +256,10 @@ type EntryUpdateView struct {
 	availableLedgers  []database.Ledger
 	availableAccounts []database.Account
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
-func NewEntryUpdateView(id int, colours styles.AppColours) *EntryUpdateView {
+func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 	journalInput := itempicker.New([]itempicker.Item{})
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
@@ -424,7 +423,7 @@ func (uv *EntryUpdateView) getActiveInput() *activeInput {
 	return &uv.activeInput
 }
 
-func (uv *EntryUpdateView) getColours() styles.AppColours {
+func (uv *EntryUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
@@ -1058,7 +1057,7 @@ type entryCreateOrUpdateView interface {
 
 	getActiveInput() *activeInput
 
-	getColours() styles.AppColours
+	getColours() meta.AppColours
 
 	getAvailableLedgers() []database.Ledger
 	getAvailableAccounts() []database.Account
@@ -1334,10 +1333,10 @@ type EntryDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
-	colours styles.AppColours
+	colours meta.AppColours
 }
 
-func NewEntryDeleteView(modelId int, colours styles.AppColours) *EntryDeleteView {
+func NewEntryDeleteView(modelId int, colours meta.AppColours) *EntryDeleteView {
 	return &EntryDeleteView{
 		modelId: modelId,
 
