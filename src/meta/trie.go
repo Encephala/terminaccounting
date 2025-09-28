@@ -9,14 +9,14 @@ type Trie[T any] struct {
 	children []*Trie[T]
 }
 
-func (t *Trie[T]) getChild(key string) (index int, found bool) {
-	for i, child := range t.children {
+func (t *Trie[T]) getChild(key string) (child *Trie[T], found bool) {
+	for _, child := range t.children {
 		if child.key == key {
-			return i, true
+			return child, true
 		}
 	}
 
-	return 0, false
+	return nil, false
 }
 
 func (t *Trie[T]) get(path []string) (T, bool) {
@@ -27,10 +27,10 @@ func (t *Trie[T]) get(path []string) (T, bool) {
 	}
 
 	for _, value := range path {
-		if i, ok := t.getChild(value); !ok {
+		if child, ok := t.getChild(value); !ok {
 			return zeroResult, false
 		} else {
-			t = t.children[i]
+			t = child
 		}
 	}
 
@@ -43,10 +43,10 @@ func (t *Trie[T]) get(path []string) (T, bool) {
 
 func (t *Trie[T]) containsPath(path []string) bool {
 	for _, value := range path {
-		if i, ok := t.getChild(value); !ok {
+		if child, ok := t.getChild(value); !ok {
 			return false
 		} else {
-			t = t.children[i]
+			t = child
 		}
 	}
 
@@ -58,8 +58,8 @@ func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
 
 	for i, key := range path {
 		isFinalValue := i == len(path)-1
-		if j, ok := t.getChild(key); ok {
-			t = t.children[j]
+		if child, ok := t.getChild(key); ok {
+			t = child
 
 			// Actually, if this happens, we can drop all t's children,
 			// because as soon as a motion resolves, it executes
