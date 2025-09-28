@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -101,6 +102,10 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case meta.ShowNotificationsMsg:
+		if len(ta.notifications) == 0 {
+			return ta, meta.MessageCmd(errors.New("no messages to show"))
+		}
+
 		var rendered []string
 
 		for _, notification := range ta.notifications {
