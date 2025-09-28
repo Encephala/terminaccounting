@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,11 +11,11 @@ import (
 type modalManager struct {
 	overlay   *overlay.Model
 	showModal bool
-	main      *model
+	main      *terminaccounting
 	modal     *modalModel
 }
 
-func newModalManager(main *model) *modalManager {
+func newModalManager(main *terminaccounting) *modalManager {
 	modal := modalModel{}
 
 	return &modalManager{
@@ -49,7 +50,7 @@ func (mm *modalManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	new, cmd := mm.main.Update(message)
-	mm.main = new.(*model)
+	mm.main = new.(*terminaccounting)
 
 	return mm, cmd
 }

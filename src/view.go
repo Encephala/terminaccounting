@@ -9,11 +9,11 @@ import (
 	"github.com/muesli/reflow/truncate"
 )
 
-func statusLineView(m *model) string {
+func (ta *terminaccounting) statusLineView() string {
 	var result strings.Builder
 	resultLength := 0
 
-	switch m.inputMode {
+	switch ta.inputMode {
 	case meta.NORMALMODE:
 		modeStyle := lipgloss.NewStyle().Background(lipgloss.Color("10")).Padding(0, 1)
 		result.WriteString(modeStyle.Render("NORMAL"))
@@ -22,7 +22,7 @@ func statusLineView(m *model) string {
 		result.WriteString(meta.StatusLineStyle.Render(" "))
 		resultLength += 1
 
-		motionRendered := m.currentMotion.View()
+		motionRendered := ta.currentMotion.View()
 		result.WriteString(meta.CommandStyle.Render(motionRendered))
 		resultLength += len(motionRendered)
 
@@ -43,27 +43,27 @@ func statusLineView(m *model) string {
 		result.WriteString(meta.StatusLineStyle.Render(" "))
 		resultLength += 1
 
-		commandInputView := meta.CommandStyle.Render(m.commandInput.View())
+		commandInputView := meta.CommandStyle.Render(ta.commandInput.View())
 		result.WriteString(commandInputView)
-		resultLength += len(m.commandInput.Value()) + 1 + 1 // +1 for the commandInput.Prompt, and for its cursor
+		resultLength += len(ta.commandInput.Value()) + 1 + 1 // +1 for the commandInput.Prompt, and for its cursor
 
 	default:
-		panic(fmt.Sprintf("unexpected inputMode: %#v", m.inputMode))
+		panic(fmt.Sprintf("unexpected inputMode: %#v", ta.inputMode))
 	}
 
-	if m.displayNotification {
-		notification := m.notifications[len(m.notifications)-1]
+	if ta.displayNotification {
+		notification := ta.notifications[len(ta.notifications)-1]
 
 		if notification.isError {
 			result.WriteString(meta.StatusLineErrorStyle.Render(truncate.StringWithTail(
 				notification.text,
-				uint(m.viewWidth-resultLength),
+				uint(ta.viewWidth-resultLength),
 				"...",
 			)))
 		} else {
 			result.WriteString(meta.StatusLineStyle.Render(truncate.StringWithTail(
-				m.notifications[len(m.notifications)-1].text,
-				uint(m.viewWidth-resultLength),
+				ta.notifications[len(ta.notifications)-1].text,
+				uint(ta.viewWidth-resultLength),
 				"...",
 			)))
 		}
@@ -71,8 +71,8 @@ func statusLineView(m *model) string {
 		resultLength += len(notification.text)
 	}
 
-	if m.viewWidth-resultLength > 0 {
-		result.WriteString(meta.StatusLineStyle.Render(strings.Repeat(" ", m.viewWidth-resultLength)))
+	if ta.viewWidth-resultLength > 0 {
+		result.WriteString(meta.StatusLineStyle.Render(strings.Repeat(" ", ta.viewWidth-resultLength)))
 	}
 
 	return result.String()

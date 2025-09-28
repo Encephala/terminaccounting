@@ -72,7 +72,7 @@ type JumpHorizontalMsg struct {
 	ToEnd bool
 }
 
-// gg and G motions
+// For gg and G motions
 type JumpVerticalMsg struct {
 	ToEnd bool
 }
