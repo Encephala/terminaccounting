@@ -134,6 +134,17 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta.executeCommand(command)
 
+	case meta.TryCompleteCommandMsg:
+		commandSoFar := strings.Split(ta.commandInput.Value(), "")
+
+		completed := ta.commandSet.GetAutocompletion(commandSoFar)
+
+		if completed != nil {
+			ta.commandInput.SetValue(strings.Join(completed, ""))
+		}
+
+		return ta, nil
+
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
 	}

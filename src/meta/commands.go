@@ -26,30 +26,46 @@ func (cs *CommandSet) containsPath(path Command) bool {
 	return asTrie.containsPath(path)
 }
 
+func (cs *CommandSet) getAutocompletion(path []string) []string {
+	asTrie := Trie[tea.Msg](*cs)
+
+	return asTrie.getAutocompletion(path)
+}
+
 type CompleteCommandSet struct {
 	GlobalCommandSet CommandSet
 
 	ViewCommandSet *CommandSet
 }
 
-func (cms *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
-	if cms.ViewCommandSet != nil {
-		if msg, ok := cms.ViewCommandSet.get(path); ok {
+func (ccs *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
+	if ccs.ViewCommandSet != nil {
+		if msg, ok := ccs.ViewCommandSet.get(path); ok {
 			return msg, ok
 		}
 	}
 
-	return cms.GlobalCommandSet.get(path)
+	return ccs.GlobalCommandSet.get(path)
 }
 
-func (cms *CompleteCommandSet) ContainsPath(path Command) bool {
-	if cms.ViewCommandSet != nil {
-		if cms.ViewCommandSet.containsPath(path) {
+func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
+	if ccs.ViewCommandSet != nil {
+		if ccs.ViewCommandSet.containsPath(path) {
 			return true
 		}
 	}
 
-	return cms.GlobalCommandSet.containsPath(path)
+	return ccs.GlobalCommandSet.containsPath(path)
+}
+
+func (ccs *CompleteCommandSet) GetAutocompletion(path []string) []string {
+	viewSpecific := ccs.ViewCommandSet.getAutocompletion(path)
+
+	if viewSpecific != nil {
+		return viewSpecific
+	}
+
+	return ccs.GlobalCommandSet.getAutocompletion(path)
 }
 
 type commandWithValue struct {

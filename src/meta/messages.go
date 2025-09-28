@@ -119,6 +119,8 @@ type SwitchViewMsg struct {
 
 type ExecuteCommandMsg struct{}
 
+type TryCompleteCommandMsg struct{}
+
 // For comitting the changes from a create/update/delete view to the database
 type CommitMsg struct{}
 

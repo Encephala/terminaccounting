@@ -112,6 +112,7 @@ func GlobalMotions() MotionSet {
 
 	commandMotions := []motionWithValue{
 		{Motion{"enter"}, ExecuteCommandMsg{}},
+		{Motion{"tab"}, TryCompleteCommandMsg{}},
 		{Motion{"ctrl+c"}, SwitchModeMsg{InputMode: NORMALMODE}},
 		{Motion{"esc"}, SwitchModeMsg{InputMode: NORMALMODE}},
 	}

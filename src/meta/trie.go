@@ -20,15 +20,15 @@ func (t *Trie[T]) getChild(key string) (child *Trie[T], found bool) {
 }
 
 func (t *Trie[T]) get(path []string) (T, bool) {
-	var zeroResult T
+	var null T
 
 	if len(path) == 0 {
-		return zeroResult, false
+		return null, false
 	}
 
 	for _, value := range path {
 		if child, ok := t.getChild(value); !ok {
-			return zeroResult, false
+			return null, false
 		} else {
 			t = child
 		}
@@ -37,7 +37,7 @@ func (t *Trie[T]) get(path []string) (T, bool) {
 	if t.isLeaf {
 		return t.value, true
 	} else {
-		return zeroResult, false
+		return null, false
 	}
 }
 
@@ -51,6 +51,36 @@ func (t *Trie[T]) containsPath(path []string) bool {
 	}
 
 	return true
+}
+
+// Short-circuiting method to get a leaf node from the current path
+// Might upgrade it to not be short-circuiting anymore in the future (i.e. return [][]string, all possible autocompletions)
+// but KISS for now, I don't have that many commands anwyays
+func (t *Trie[T]) getAutocompletion(path []string) []string {
+	// Walk Trie until along the given path
+	// If child not found, there is no autocomplete to be had
+	for _, value := range path {
+		if child, ok := t.getChild(value); !ok {
+			return nil
+		} else {
+			t = child
+		}
+	}
+
+	if t.isLeaf {
+		return path
+	}
+
+	// Now keep walking the Trie along the first child (NB: first child -> short-circuiting),
+	// until a leaf is found
+	result := path
+
+	for len(t.children) > 0 {
+		t = t.children[0]
+		result = append(result, t.key)
+	}
+
+	return result
 }
 
 func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
