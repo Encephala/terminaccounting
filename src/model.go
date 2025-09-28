@@ -108,8 +108,10 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		var rendered []string
 
-		for _, notification := range ta.notifications {
-			rendered = append(rendered, notification.String())
+		for i, notification := range ta.notifications {
+			newLine := fmt.Sprintf("%d: %s", i, notification.String())
+
+			rendered = append(rendered, newLine)
 		}
 
 		return ta, meta.MessageCmd(meta.ShowModalMsg{Message: strings.Join(rendered, "\n")})
