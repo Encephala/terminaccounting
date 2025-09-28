@@ -15,6 +15,8 @@ type NotificationMessageMsg struct {
 	Message string
 }
 
+type ShowNotificationsMsg struct{}
+
 type ShowModalMsg struct {
 	Message string
 }

@@ -1,6 +1,10 @@
 package meta
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 // This file is largely analogous to ./motions.go
 
@@ -58,6 +62,7 @@ func GlobalCommands() CommandSet {
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
 		{Command{"q"}, CloseViewMsg{}},
+		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
 	})
 
 	var commandsTrie Trie[tea.Msg]

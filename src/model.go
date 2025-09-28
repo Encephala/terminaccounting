@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
@@ -98,6 +99,15 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.displayNotification = true
 
 		return ta, nil
+
+	case meta.ShowNotificationsMsg:
+		var rendered []string
+
+		for _, notification := range ta.notifications {
+			rendered = append(rendered, notification.String())
+		}
+
+		return ta, meta.MessageCmd(meta.ShowModalMsg{Message: strings.Join(rendered, "\n")})
 
 	case meta.FatalErrorMsg:
 		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
@@ -245,6 +255,14 @@ func newOverlay(main *terminaccounting) *overlay.Model {
 type notificationMsg struct {
 	text    string
 	isError bool
+}
+
+func (nm notificationMsg) String() string {
+	if nm.isError {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(nm.text)
+	}
+
+	return nm.text
 }
 
 type modalModel struct {
