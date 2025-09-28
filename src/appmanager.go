@@ -31,8 +31,6 @@ func (am *appManager) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	cmds = append(cmds, meta.MessageCmd(meta.ShowModalMsg{Message: "aids up my ass"}))
-
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
 
 	slog.Info("Initialised")

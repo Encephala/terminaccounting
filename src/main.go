@@ -67,8 +67,12 @@ func main() {
 		appIds:    appIds,
 	}
 
+	modal := &modalModel{}
+
 	ta := &terminaccounting{
 		appManager: am,
+		modal:      modal,
+		showModal:  false,
 
 		inputMode:    meta.NORMALMODE,
 		commandInput: commandInput,
@@ -79,9 +83,9 @@ func main() {
 		commandSet: commandSet,
 	}
 
-	mm := newModalManager(ta)
+	ta.overlay = newOverlay(ta)
 
-	finalModel, err := tea.NewProgram(mm).Run()
+	finalModel, err := tea.NewProgram(ta).Run()
 	if err != nil {
 		message := fmt.Sprintf("Bubbletea error: %v", err)
 		slog.Error(message)
@@ -89,7 +93,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = finalModel.(*modalManager).main.fatalError
+	err = finalModel.(*terminaccounting).fatalError
 	if err != nil {
 		message := fmt.Sprintf("Program exited with fatal error: %v", err)
 		fmt.Println(message)

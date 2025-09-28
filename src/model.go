@@ -8,11 +8,15 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {
+	overlay    *overlay.Model
 	appManager *appManager
+	modal      *modalModel
 
+	showModal             bool
 	viewWidth, viewHeight int
 
 	notifications       []notificationMsg
@@ -38,6 +42,36 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
+	case meta.ShowModalMsg:
+		ta.showModal = true
+		ta.modal.message = message.Message
+
+		return ta, nil
+
+	case meta.CloseModalMsg:
+		ta.showModal = false
+
+		return ta, nil
+
+	case meta.CloseViewMsg:
+		if ta.showModal {
+			ta.showModal = false
+
+			return ta, nil
+		}
+
+		return ta, tea.Quit
+
+	case error:
+		slog.Debug(fmt.Sprintf("Error: %v", message))
+		notification := notificationMsg{
+			text:    message.Error(),
+			isError: true,
+		}
+		ta.notifications = append(ta.notifications, notification)
+		ta.displayNotification = true
+		return ta, nil
+
 	case tea.Cmd:
 		return ta, message
 
@@ -54,16 +88,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.appManager = newAppManager.(*appManager)
 
 		return ta, cmd
-
-	case error:
-		slog.Debug(fmt.Sprintf("Error: %v", message))
-		notification := notificationMsg{
-			text:    message.Error(),
-			isError: true,
-		}
-		ta.notifications = append(ta.notifications, notification)
-		ta.displayNotification = true
-		return ta, nil
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
@@ -104,8 +128,15 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 	}
 
-	newAppManager, cmd := ta.appManager.Update(message)
-	ta.appManager = newAppManager.(*appManager)
+	if ta.showModal {
+		new, cmd := ta.modal.Update(message)
+		ta.modal = new.(*modalModel)
+
+		return ta, cmd
+	}
+
+	new, cmd := ta.appManager.Update(message)
+	ta.appManager = new.(*appManager)
 
 	return ta, cmd
 }
@@ -113,7 +144,11 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (ta *terminaccounting) View() string {
 	var result strings.Builder
 
-	result.WriteString(ta.appManager.View())
+	if ta.showModal {
+		result.WriteString(ta.overlay.View())
+	} else {
+		result.WriteString(ta.appManager.View())
+	}
 
 	result.WriteString("\n")
 
@@ -203,7 +238,34 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 	return ta, meta.MessageCmd(completedMotionMsg)
 }
 
+func newOverlay(main *terminaccounting) *overlay.Model {
+	return overlay.New(
+		main.modal,
+		main.appManager,
+		overlay.Center,
+		overlay.Center,
+		0,
+		0,
+	)
+}
+
 type notificationMsg struct {
 	text    string
 	isError bool
+}
+
+type modalModel struct {
+	message string
+}
+
+func (mm *modalModel) Init() tea.Cmd {
+	return nil
+}
+
+func (mm *modalModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	return mm, nil
+}
+
+func (mm *modalModel) View() string {
+	return meta.ModalStyle.Render(mm.message)
 }
