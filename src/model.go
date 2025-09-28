@@ -128,13 +128,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 	}
 
-	if ta.showModal {
-		new, cmd := ta.modal.Update(message)
-		ta.modal = new.(*modalModel)
-
-		return ta, cmd
-	}
-
 	new, cmd := ta.appManager.Update(message)
 	ta.appManager = new.(*appManager)
 
