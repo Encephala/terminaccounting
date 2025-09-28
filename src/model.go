@@ -38,9 +38,6 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
-	case tea.QuitMsg:
-		return ta, tea.Quit
-
 	case tea.Cmd:
 		return ta, message
 

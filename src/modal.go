@@ -47,6 +47,15 @@ func (mm *modalManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		mm.showModal = false
 
 		return mm, nil
+
+	case meta.CloseViewMsg:
+		if mm.showModal {
+			mm.showModal = false
+
+			return mm, nil
+		}
+
+		return mm, tea.Quit
 	}
 
 	new, cmd := mm.main.Update(message)

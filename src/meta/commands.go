@@ -57,7 +57,7 @@ func GlobalCommands() CommandSet {
 	commands := make([]commandWithValue, 0)
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
-		{Command{"q"}, tea.QuitMsg{}},
+		{Command{"q"}, CloseViewMsg{}},
 	})
 
 	var commandsTrie Trie[tea.Msg]
