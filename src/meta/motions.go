@@ -50,6 +50,13 @@ type CompleteMotionSet struct {
 	ViewMotionSet *MotionSet
 }
 
+func DefaultMotionSet() CompleteMotionSet {
+	return CompleteMotionSet{
+		GlobalMotionSet: globalMotions(),
+		ViewMotionSet:   &MotionSet{},
+	}
+}
+
 func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (tea.Msg, bool) {
 	if cms.ViewMotionSet != nil {
 		if msg, ok := cms.ViewMotionSet.get(mode, path); ok {
@@ -75,7 +82,7 @@ type motionWithValue struct {
 	value tea.Msg
 }
 
-func GlobalMotions() MotionSet {
+func globalMotions() MotionSet {
 	normalMotions := make([]motionWithValue, 0)
 
 	// Single-stroke/no prefix

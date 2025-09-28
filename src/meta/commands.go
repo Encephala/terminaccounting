@@ -38,6 +38,13 @@ type CompleteCommandSet struct {
 	ViewCommandSet *CommandSet
 }
 
+func DefaultCommandSet() CompleteCommandSet {
+	return CompleteCommandSet{
+		GlobalCommandSet: globalCommands(),
+		ViewCommandSet:   &CommandSet{},
+	}
+}
+
 func (ccs *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
 	if ccs.ViewCommandSet != nil {
 		if msg, ok := ccs.ViewCommandSet.get(path); ok {
@@ -73,7 +80,7 @@ type commandWithValue struct {
 	value tea.Msg
 }
 
-func GlobalCommands() CommandSet {
+func globalCommands() CommandSet {
 	commands := make([]commandWithValue, 0)
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{

@@ -46,8 +46,8 @@ func main() {
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
 
-	motionSet := meta.CompleteMotionSet{GlobalMotionSet: meta.GlobalMotions()}
-	commandSet := meta.CompleteCommandSet{GlobalCommandSet: meta.GlobalCommands()}
+	motionSet := meta.DefaultMotionSet()
+	commandSet := meta.DefaultCommandSet()
 
 	apps := make([]meta.App, 2)
 	apps[0] = NewLedgersApp()
