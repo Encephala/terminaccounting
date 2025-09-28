@@ -271,7 +271,7 @@ func newOverlay(main *terminaccounting) *overlay.Model {
 		overlay.Center,
 		overlay.Center,
 		0,
-		0,
+		1,
 	)
 }
 
