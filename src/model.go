@@ -227,23 +227,30 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 		return ta, nil
 	}
 
-	ta.currentMotion = append(ta.currentMotion, message.String())
+	newMotion := append(ta.currentMotion, message.String())
 
-	if !ta.motionSet.ContainsPath(ta.inputMode, ta.currentMotion) {
+	if completedMotionMsg, ok := ta.motionSet.Get(ta.inputMode, newMotion); ok {
+		ta.resetCurrentMotion()
+
+		return ta, meta.MessageCmd(completedMotionMsg)
+	}
+
+	if ta.motionSet.ContainsPath(ta.inputMode, newMotion) {
+		ta.currentMotion = newMotion
+
+		return ta, nil
+	}
+
+	// If this was the first button pressed/no keys before this in current motion,
+	// forward the keyMsg to the appropriate input
+	if len(ta.currentMotion) == 0 {
 		switch ta.inputMode {
 		case meta.NORMALMODE:
-			cmd := meta.MessageCmd(fmt.Errorf("invalid motion: %s", ta.currentMotion.View()))
+			// pass
 
-			ta.resetCurrentMotion()
-
-			return ta, cmd
-
-		// In INSERT and COMMAND mode, a key stroke that isn't a motion but gets sent to the appropriate input
 		case meta.INSERTMODE:
 			newAppManager, cmd := ta.appManager.Update(message)
 			ta.appManager = newAppManager.(*appManager)
-
-			ta.resetCurrentMotion()
 
 			return ta, cmd
 
@@ -251,21 +258,16 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 			var cmd tea.Cmd
 			ta.commandInput, cmd = ta.commandInput.Update(message)
 
-			ta.resetCurrentMotion()
-
 			return ta, cmd
-		}
-	}
 
-	completedMotionMsg, ok := ta.motionSet.Get(ta.inputMode, ta.currentMotion)
-	if !ok {
-		// The currentMotion is the start of an existing motion, wait for more inputs
-		return ta, nil
+		default:
+			panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
+		}
 	}
 
 	ta.resetCurrentMotion()
 
-	return ta, meta.MessageCmd(completedMotionMsg)
+	return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %s", newMotion.View()))
 }
 
 func newOverlay(main *terminaccounting) *overlay.Model {
