@@ -57,16 +57,9 @@ func BodyStyle(width, height int) lipgloss.Style {
 	return style
 }
 
-var CommandStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#00FFFF")).
-	Background(lipgloss.Color("240"))
-
 var StatusLineStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("240")).
-	Foreground(lipgloss.Color("252"))
-
-var StatusLineErrorStyle = StatusLineStyle.
-	Foreground(lipgloss.Color("9"))
+	Foreground(lipgloss.Color("#00EAEA"))
 
 type AppColours struct {
 	Foreground, Accent, Background lipgloss.Color

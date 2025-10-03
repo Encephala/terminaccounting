@@ -82,7 +82,8 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.viewHeight = message.Height
 
 		// -1 for status line
-		remainingHeight := message.Height - 1
+		// -1 for command line
+		remainingHeight := message.Height - 1 - 1
 		newAppManager, cmd := ta.appManager.Update(tea.WindowSizeMsg{
 			Width:  message.Width,
 			Height: remainingHeight,
@@ -180,6 +181,10 @@ func (ta *terminaccounting) View() string {
 
 	result.WriteString(ta.statusLineView())
 
+	result.WriteString("\n")
+
+	result.WriteString(ta.commandLineView())
+
 	return result.String()
 }
 
@@ -222,7 +227,6 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 		return ta, nil
 	}
 
-	ta.displayNotification = false
 	ta.currentMotion = append(ta.currentMotion, message.String())
 
 	if !ta.motionSet.ContainsPath(ta.inputMode, ta.currentMotion) {
