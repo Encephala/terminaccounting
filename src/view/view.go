@@ -1,6 +1,7 @@
 package view
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"terminaccounting/database"
@@ -103,6 +104,10 @@ func (lv *ListView) CommandSet() *meta.CommandSet {
 func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		item := lv.ListModel.SelectedItem()
+
+		if item == nil {
+			return errors.New("no item to goto detail view of")
+		}
 
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: item}
 	}
