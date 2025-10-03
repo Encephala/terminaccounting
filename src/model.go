@@ -162,10 +162,14 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 	}
 
-	new, cmd := ta.appManager.Update(message)
-	ta.appManager = new.(*appManager)
+	if !ta.showModal {
+		new, cmd := ta.appManager.Update(message)
+		ta.appManager = new.(*appManager)
 
-	return ta, cmd
+		return ta, cmd
+	}
+
+	return ta, nil
 }
 
 func (ta *terminaccounting) View() string {
