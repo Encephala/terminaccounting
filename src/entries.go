@@ -26,50 +26,50 @@ func NewEntriesApp() meta.App {
 	return model
 }
 
-func (m *EntriesApp) Init() tea.Cmd {
-	return m.currentView.Init()
+func (app *EntriesApp) Init() tea.Cmd {
+	return app.currentView.Init()
 }
 
-func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		m.viewWidth = message.Width
-		m.viewHeight = message.Height
+		app.viewWidth = message.Width
+		app.viewHeight = message.Height
 
-		return m, nil
+		return app, nil
 
 	case meta.SetupSchemaMsg:
 		changedEntries, err := database.SetupSchemaEntries()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
-			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
+			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		changedEntryRows, err := database.SetupSchemaEntryRows()
 		if err != nil {
 			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
-			return m, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
+			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
 		}
 
 		if changedEntries || changedEntryRows {
 			slog.Info("Set up `Entries` schema")
-			return m, nil
+			return app, nil
 		}
 
-		return m, nil
+		return app, nil
 
 	case meta.DataLoadedMsg:
-		newView, cmd := m.currentView.Update(message)
+		newView, cmd := app.currentView.Update(message)
 		// TODO: This is crashing for some reason after comitting an entry create, idk
-		m.currentView = newView.(meta.View)
+		app.currentView = newView.(meta.View)
 
-		return m, cmd
+		return app, cmd
 
 	case meta.NavigateMsg:
-		newView, cmd := m.currentView.Update(message)
-		m.currentView = newView.(meta.View)
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
 
-		return m, cmd
+		return app, cmd
 
 	case meta.SwitchViewMsg:
 		if message.App != nil && *message.App != meta.ENTRIES {
@@ -78,63 +78,63 @@ func (m *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.ViewType {
 		case meta.LISTVIEWTYPE:
-			m.currentView = view.NewListView(m)
+			app.currentView = view.NewListView(app)
 
 		case meta.DETAILVIEWTYPE:
 			entry := message.Data.(database.Entry)
 
 			// No better model name to be had than the entry Id
-			m.currentView = view.NewDetailView(m, entry.Id, strconv.Itoa(entry.Id))
+			app.currentView = view.NewDetailView(app, entry.Id, strconv.Itoa(entry.Id))
 
 		case meta.CREATEVIEWTYPE:
-			m.currentView = view.NewEntryCreateView(m.Colours())
+			app.currentView = view.NewEntryCreateView(app.Colours())
 
 		case meta.UPDATEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			m.currentView = view.NewEntryUpdateView(entryId, m.Colours())
+			app.currentView = view.NewEntryUpdateView(entryId, app.Colours())
 
 		case meta.DELETEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			m.currentView = view.NewEntryDeleteView(entryId, m.Colours())
+			app.currentView = view.NewEntryDeleteView(entryId, app.Colours())
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
 		}
 
-		return m, m.currentView.Init()
+		return app, app.currentView.Init()
 	}
 
-	newView, cmd := m.currentView.Update(message)
-	m.currentView = newView.(meta.View)
+	newView, cmd := app.currentView.Update(message)
+	app.currentView = newView.(meta.View)
 
-	return m, cmd
+	return app, cmd
 }
 
-func (m *EntriesApp) View() string {
-	style := meta.BodyStyle(m.viewWidth, m.viewHeight)
+func (app *EntriesApp) View() string {
+	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
-	return style.Render(m.currentView.View())
+	return style.Render(app.currentView.View())
 }
 
-func (m *EntriesApp) Name() string {
+func (app *EntriesApp) Name() string {
 	return "Entries"
 }
 
-func (m *EntriesApp) Colours() meta.AppColours {
+func (app *EntriesApp) Colours() meta.AppColours {
 	return meta.ENTRIESCOLOURS
 }
 
-func (m *EntriesApp) CurrentMotionSet() *meta.MotionSet {
-	return m.currentView.MotionSet()
+func (app *EntriesApp) CurrentMotionSet() *meta.MotionSet {
+	return app.currentView.MotionSet()
 }
 
-func (m *EntriesApp) CurrentCommandSet() *meta.CommandSet {
-	return m.currentView.CommandSet()
+func (app *EntriesApp) CurrentCommandSet() *meta.CommandSet {
+	return app.currentView.CommandSet()
 }
 
-func (m *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
+func (app *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRY:    {},
 		meta.ENTRYROW: {},
@@ -144,7 +144,7 @@ func (m *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (m *EntriesApp) MakeLoadListCmd() tea.Cmd {
+func (app *EntriesApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectEntries()
 		if err != nil {
@@ -164,7 +164,7 @@ func (m *EntriesApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (m *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
+func (app *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByEntry(entryId)
