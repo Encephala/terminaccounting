@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"local/bubbles/itempicker"
+	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type AccountsCreateView struct {
@@ -140,7 +142,57 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *AccountsCreateView) View() string {
-	return "TODO create view"
+	var result strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1).MarginLeft(2)
+
+	result.WriteString(titleStyle.Render("Creating new Account"))
+	result.WriteString("\n\n")
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Center)
+
+	const inputWidth = 26
+	cv.nameInput.Width = inputWidth - 2
+	cv.notesInput.SetWidth(inputWidth)
+
+	var nameRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Name"),
+		" ",
+		style.Render(cv.nameInput.View()),
+	)
+
+	var typeRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Type"),
+		" ",
+		style.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
+	)
+
+	var notesRow = lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"  ",
+		style.Render("Note"),
+		" ",
+		style.Render(cv.notesInput.View()),
+	)
+
+	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			nameRow,
+			typeRow,
+			notesRow,
+		),
+	))
+
+	return result.String()
 }
 
 func (cv *AccountsCreateView) MotionSet() *meta.MotionSet {
