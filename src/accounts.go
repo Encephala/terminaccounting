@@ -35,6 +35,11 @@ func (app *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.viewWidth = message.Width
 		app.viewHeight = message.Height
 
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
 	case meta.SetupSchemaMsg:
 		changed, err := database.SetupSchemaAccounts()
 		if err != nil {
@@ -48,15 +53,69 @@ func (app *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return app, nil
+
+	case meta.DataLoadedMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
+	case meta.SwitchViewMsg:
+		if message.App != nil && *message.App != meta.LEDGERS {
+			panic("wrong app type, something went wrong")
+		}
+
+		switch message.ViewType {
+		case meta.LISTVIEWTYPE:
+			app.currentView = view.NewListView(app)
+
+		case meta.DETAILVIEWTYPE:
+			account := message.Data.(database.Account)
+
+			app.currentView = view.NewDetailView(app, account.Id, account.Name)
+
+		case meta.CREATEVIEWTYPE:
+			// TODO
+
+		case meta.UPDATEVIEWTYPE:
+			_ = message.Data.(int)
+
+			// TODO
+
+		case meta.DELETEVIEWTYPE:
+			_ = message.Data.(int)
+
+			// TODO
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
+		}
+
+		return app, app.currentView.Init()
+
+	case meta.SwitchFocusMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
+	case meta.NavigateMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
 	}
 
-	return app, nil
+	newView, cmd := app.currentView.Update(message)
+	app.currentView = newView.(meta.View)
+
+	return app, cmd
 }
 
 func (app *AccountsApp) View() string {
 	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
-	return style.Render("TODO accounts")
+	return style.Render(app.currentView.View())
 }
 
 func (app *AccountsApp) Name() string {
