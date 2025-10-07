@@ -30,6 +30,10 @@ func (lt LedgerType) CompareId() int {
 	return sum
 }
 
+func (lt LedgerType) String() string {
+	return string(lt)
+}
+
 type Ledger struct {
 	Id    int        `db:"id"`
 	Name  string     `db:"name"`
@@ -57,10 +61,6 @@ func (l Ledger) Description() string {
 
 func (l Ledger) String() string {
 	return l.Name + " (" + strconv.Itoa(l.Id) + ")"
-}
-
-func (lt LedgerType) String() string {
-	return string(lt)
 }
 
 func (l Ledger) CompareId() int {

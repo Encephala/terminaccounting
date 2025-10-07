@@ -15,6 +15,12 @@ import (
 
 type activeInput int
 
+const (
+	NAMEINPUT activeInput = iota
+	TYPEINPUT
+	NOTEINPUT
+)
+
 type ListView struct {
 	ListModel list.Model
 

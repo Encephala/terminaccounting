@@ -17,6 +17,21 @@ const (
 	CREDITOR AccountType = "CREDITOR"
 )
 
+func (at AccountType) CompareId() int {
+	switch at {
+	case DEBTOR:
+		return 0
+	case CREDITOR:
+		return 1
+	default:
+		panic(fmt.Sprintf("unexpected database.AccountType: %#v", at))
+	}
+}
+
+func (at AccountType) String() string {
+	return string(at)
+}
+
 type Account struct {
 	Id          int         `db:"id"`
 	Name        string      `db:"name"`

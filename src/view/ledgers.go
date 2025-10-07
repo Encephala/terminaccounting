@@ -15,12 +15,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	NAMEINPUT activeInput = iota
-	TYPEINPUT
-	NOTEINPUT
-)
-
 type ledgerCreateOrUpdateView interface {
 	meta.View
 
@@ -28,7 +22,7 @@ type ledgerCreateOrUpdateView interface {
 
 	getNameInput() *textinput.Model
 	getTypeInput() *itempicker.Model
-	getNoteInput() *textarea.Model
+	getNotesInput() *textarea.Model
 
 	getActiveInput() *activeInput
 
@@ -36,16 +30,16 @@ type ledgerCreateOrUpdateView interface {
 }
 
 type LedgersCreateView struct {
-	NameInput   textinput.Model
-	TypeInput   itempicker.Model
-	NoteInput   textarea.Model
-	activeInput activeInput
+	nameInput  textinput.Model
+	typeInput  itempicker.Model
+	notesInput textarea.Model
+	activeInput
 
 	colours meta.AppColours
 }
 
 func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
-	types := []itempicker.Item{
+	ledgerTypes := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
 		database.ASSETLEDGER,
@@ -56,14 +50,13 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 	nameInput := textinput.New()
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
-	typeInput := itempicker.New(types)
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := &LedgersCreateView{
-		NameInput:   nameInput,
-		TypeInput:   typeInput,
-		NoteInput:   noteInput,
+		nameInput:   nameInput,
+		typeInput:   itempicker.New(ledgerTypes),
+		notesInput:  noteInput,
 		activeInput: NAMEINPUT,
 
 		colours: colours,
@@ -88,13 +81,13 @@ func (cv *LedgersCreateView) title() string {
 // NOTE from future me: I'm not sure why these exist?
 // I think just to take a reference without having to write & everywhere?
 func (cv *LedgersCreateView) getNameInput() *textinput.Model {
-	return &cv.NameInput
+	return &cv.nameInput
 }
 func (cv *LedgersCreateView) getTypeInput() *itempicker.Model {
-	return &cv.TypeInput
+	return &cv.typeInput
 }
-func (cv *LedgersCreateView) getNoteInput() *textarea.Model {
-	return &cv.NoteInput
+func (cv *LedgersCreateView) getNotesInput() *textarea.Model {
+	return &cv.notesInput
 }
 func (cv *LedgersCreateView) getActiveInput() *activeInput {
 	return &cv.activeInput
@@ -106,9 +99,9 @@ func (cv *LedgersCreateView) getColours() meta.AppColours {
 func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		ledgerName := cv.NameInput.Value()
-		ledgerType := cv.TypeInput.Value().(database.LedgerType)
-		ledgerNotes := cv.NoteInput.Value()
+		ledgerName := cv.nameInput.Value()
+		ledgerType := cv.typeInput.Value().(database.LedgerType)
+		ledgerNotes := cv.notesInput.Value()
 
 		newLedger := database.Ledger{
 			Name:  ledgerName,
@@ -148,9 +141,9 @@ func (cv *LedgersCreateView) CommandSet() *meta.CommandSet {
 }
 
 type LedgersUpdateView struct {
-	NameInput   textinput.Model
-	TypeInput   itempicker.Model
-	NoteInput   textarea.Model
+	nameInput   textinput.Model
+	typeInput   itempicker.Model
+	notesInput  textarea.Model
 	activeInput activeInput
 
 	modelId       int
@@ -176,9 +169,9 @@ func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateVi
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
 	return &LedgersUpdateView{
-		NameInput:   nameInput,
-		TypeInput:   typeInput,
-		NoteInput:   noteInput,
+		nameInput:   nameInput,
+		typeInput:   typeInput,
+		notesInput:  noteInput,
 		activeInput: NAMEINPUT,
 
 		modelId: modelId,
@@ -199,16 +192,16 @@ func (uv *LedgersUpdateView) Init() tea.Cmd {
 }
 
 func (uv *LedgersUpdateView) title() string {
-	return fmt.Sprintf("Update Ledger: %s", uv.NameInput.Value())
+	return fmt.Sprintf("Update Ledger: %s", uv.nameInput.Value())
 }
 func (uv *LedgersUpdateView) getNameInput() *textinput.Model {
-	return &uv.NameInput
+	return &uv.nameInput
 }
 func (uv *LedgersUpdateView) getTypeInput() *itempicker.Model {
-	return &uv.TypeInput
+	return &uv.typeInput
 }
-func (uv *LedgersUpdateView) getNoteInput() *textarea.Model {
-	return &uv.NoteInput
+func (uv *LedgersUpdateView) getNotesInput() *textarea.Model {
+	return &uv.notesInput
 }
 func (uv *LedgersUpdateView) getActiveInput() *activeInput {
 	return &uv.activeInput
@@ -225,20 +218,20 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = ledger
 
-		uv.NameInput.SetValue(ledger.Name)
-		uv.TypeInput.SetValue(ledger.Type)
-		uv.NoteInput.SetValue(ledger.Notes.Collapse())
+		uv.nameInput.SetValue(ledger.Name)
+		uv.typeInput.SetValue(ledger.Type)
+		uv.notesInput.SetValue(ledger.Notes.Collapse())
 
 		return uv, nil
 
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
 		case NAMEINPUT:
-			uv.NameInput.SetValue(uv.startingValue.Name)
+			uv.nameInput.SetValue(uv.startingValue.Name)
 		case TYPEINPUT:
-			uv.TypeInput.SetValue(uv.startingValue.Type)
+			uv.typeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
-			uv.NoteInput.SetValue(uv.startingValue.Notes.Collapse())
+			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
 		}
 
 		return uv, nil
@@ -246,9 +239,9 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.CommitMsg:
 		currentValues := database.Ledger{
 			Id:    uv.modelId,
-			Name:  uv.NameInput.Value(),
-			Type:  uv.TypeInput.Value().(database.LedgerType),
-			Notes: meta.CompileNotes(uv.NoteInput.Value()),
+			Name:  uv.nameInput.Value(),
+			Type:  uv.typeInput.Value().(database.LedgerType),
+			Notes: meta.CompileNotes(uv.notesInput.Value()),
 		}
 
 		currentValues.Update()
@@ -290,13 +283,13 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
 		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit assertion that only the right input
+		// Note from later me: might actually delete this as an implicit check that only the right input
 		// gets the update message.
 		switch *view.getActiveInput() {
 		case NAMEINPUT:
 			view.getNameInput().Blur()
 		case NOTEINPUT:
-			view.getNoteInput().Blur()
+			view.getNotesInput().Blur()
 		}
 
 		switch message.Direction {
@@ -316,7 +309,7 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 		case NAMEINPUT:
 			view.getNameInput().Focus()
 		case NOTEINPUT:
-			view.getNoteInput().Focus()
+			view.getNotesInput().Focus()
 		}
 
 		return view, nil
@@ -337,7 +330,7 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 		case TYPEINPUT:
 			*view.getTypeInput(), cmd = view.getTypeInput().Update(message)
 		case NOTEINPUT:
-			*view.getNoteInput(), cmd = view.getNoteInput().Update(message)
+			*view.getNotesInput(), cmd = view.getNotesInput().Update(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", *view.getActiveInput()))
@@ -367,7 +360,7 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 
 	const inputWidth = 26
 	view.getNameInput().Width = inputWidth - 2 // -2 because of the prompt
-	view.getNoteInput().SetWidth(inputWidth)
+	view.getNotesInput().SetWidth(inputWidth)
 
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
@@ -391,7 +384,7 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 		"  ",
 		style.Render("Note"),
 		" ",
-		style.Render(view.getNoteInput().View()),
+		style.Render(view.getNotesInput().View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
