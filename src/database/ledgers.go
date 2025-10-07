@@ -56,7 +56,7 @@ func (l Ledger) Title() string {
 }
 
 func (l Ledger) Description() string {
-	return l.Name
+	return l.Notes.Collapse()
 }
 
 func (l Ledger) String() string {

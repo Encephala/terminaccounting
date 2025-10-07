@@ -49,6 +49,15 @@ func (a Account) FilterValue() string {
 	return result.String()
 }
 
+func (a Account) Title() string {
+	return a.Name
+}
+
+func (a Account) Description() string {
+	return a.Notes.Collapse()
+}
+
+// *Account because they're nullable for the sake of the itempicker
 func (a *Account) String() string {
 	if a == nil {
 		return lipgloss.NewStyle().Italic(true).Render("None")
@@ -86,7 +95,7 @@ func SetupSchemaAccounts() (bool, error) {
 	return true, err
 }
 
-func (a *Account) Insert() (int, error) {
+func (a Account) Insert() (int, error) {
 	result, err := DB.NamedExec(`INSERT INTO accounts (name, type, notes) VALUES (:name, :type, :notes)`, a)
 	if err != nil {
 		return 0, err
