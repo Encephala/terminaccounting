@@ -121,7 +121,7 @@ func (l *Ledger) Insert() (int, error) {
 	return int(id), err
 }
 
-func (l *Ledger) Update() error {
+func (l Ledger) Update() error {
 	query := `UPDATE ledgers SET
 	name = :name,
 	type = :type,

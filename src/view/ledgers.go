@@ -237,14 +237,14 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return uv, nil
 
 	case meta.CommitMsg:
-		currentValues := database.Ledger{
+		ledger := database.Ledger{
 			Id:    uv.modelId,
 			Name:  uv.nameInput.Value(),
 			Type:  uv.typeInput.Value().(database.LedgerType),
 			Notes: meta.CompileNotes(uv.notesInput.Value()),
 		}
 
-		currentValues.Update()
+		ledger.Update()
 
 		return uv, nil
 

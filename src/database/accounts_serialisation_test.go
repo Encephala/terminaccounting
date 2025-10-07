@@ -23,10 +23,10 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	account := database.Account{
-		Id:          1,
-		Name:        "testerino",
-		AccountType: database.DEBTOR,
-		Notes:       []string{"a note"},
+		Id:    1,
+		Name:  "testerino",
+		Type:  database.DEBTOR,
+		Notes: []string{"a note"},
 	}
 
 	insertedId, err := account.Insert()
@@ -71,8 +71,8 @@ func testAccountsEqual(t *testing.T, actual, expected database.Account) {
 		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
 	}
 
-	if actual.AccountType != expected.AccountType {
-		t.Errorf("Invalid ID %q, expected %q", actual.AccountType, expected.AccountType)
+	if actual.Type != expected.Type {
+		t.Errorf("Invalid ID %q, expected %q", actual.Type, expected.Type)
 	}
 
 	if len(actual.Notes) != len(expected.Notes) {

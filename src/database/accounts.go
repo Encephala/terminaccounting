@@ -33,17 +33,17 @@ func (at AccountType) String() string {
 }
 
 type Account struct {
-	Id          int         `db:"id"`
-	Name        string      `db:"name"`
-	AccountType AccountType `db:"type"`
-	Notes       meta.Notes  `db:"notes"`
+	Id    int         `db:"id"`
+	Name  string      `db:"name"`
+	Type  AccountType `db:"type"`
+	Notes meta.Notes  `db:"notes"`
 }
 
 func (a Account) FilterValue() string {
 	var result strings.Builder
 
 	result.WriteString(a.Name)
-	result.WriteString(string(a.AccountType))
+	result.WriteString(string(a.Type))
 	result.WriteString(strings.Join(a.Notes, ";"))
 
 	return result.String()
@@ -73,6 +73,21 @@ func (a *Account) CompareId() int {
 	}
 
 	return a.Id
+}
+
+func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
+	return func() tea.Msg {
+		account, err := SelectAccount(id)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ACCOUNT WITH ID %d: %#v", id, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ACCOUNTS,
+			Model:     meta.ACCOUNT,
+			Data:      account,
+		}
+	}
 }
 
 func SetupSchemaAccounts() (bool, error) {
@@ -107,6 +122,18 @@ func (a Account) Insert() (int, error) {
 	}
 
 	return int(id), err
+}
+
+func (a Account) Update() error {
+	query := `UPDATE accounts SET
+	name = :name,
+	type = :type,
+	notes = :notes
+	WHERE id = :id;`
+
+	_, err := DB.NamedExec(query, a)
+
+	return err
 }
 
 func SelectAccounts() ([]Account, error) {

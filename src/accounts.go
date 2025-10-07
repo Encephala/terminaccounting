@@ -78,9 +78,9 @@ func (app *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewAccountsCreateView(app.Colours())
 
 		case meta.UPDATEVIEWTYPE:
-			_ = message.Data.(int)
+			accountId := message.Data.(int)
 
-			// TODO
+			app.currentView = view.NewAccountsUpdateView(accountId, app.Colours())
 
 		case meta.DELETEVIEWTYPE:
 			_ = message.Data.(int)
