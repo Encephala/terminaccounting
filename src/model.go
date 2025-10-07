@@ -216,7 +216,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 	ta.switchMode(meta.NORMALMODE)
 
 	if !ok {
-		return ta, meta.MessageCmd(fmt.Errorf("invalid command: %v", ta.commandInput.Value()))
+		return ta, meta.MessageCmd(fmt.Errorf("invalid command: %v", command))
 	}
 
 	return ta, meta.MessageCmd(commandMsg)
