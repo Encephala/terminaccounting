@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,6 +22,16 @@ type Account struct {
 	Name        string      `db:"name"`
 	AccountType AccountType `db:"type"`
 	Notes       meta.Notes  `db:"notes"`
+}
+
+func (a Account) FilterValue() string {
+	var result strings.Builder
+
+	result.WriteString(a.Name)
+	result.WriteString(string(a.AccountType))
+	result.WriteString(strings.Join(a.Notes, ";"))
+
+	return result.String()
 }
 
 func (a *Account) String() string {

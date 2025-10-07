@@ -39,8 +39,11 @@ type Ledger struct {
 
 func (l Ledger) FilterValue() string {
 	var result strings.Builder
+
 	result.WriteString(l.Name)
+	result.WriteString(string(l.Type))
 	result.WriteString(strings.Join(l.Notes, ";"))
+
 	return result.String()
 }
 

@@ -354,6 +354,14 @@ func SelectRowsByLedger(id int) ([]EntryRow, error) {
 	return result, err
 }
 
+func SelectRowsByAccount(id int) ([]EntryRow, error) {
+	result := []EntryRow{}
+
+	err := DB.Select(&result, `SELECT * FROM entryrows WHERE account = $1;`, id)
+
+	return result, err
+}
+
 func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
