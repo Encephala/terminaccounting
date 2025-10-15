@@ -12,25 +12,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type EntriesApp struct {
+type entriesApp struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
 func NewEntriesApp() meta.App {
-	model := &EntriesApp{}
+	model := &entriesApp{}
 
 	model.currentView = view.NewListView(model)
 
 	return model
 }
 
-func (app *EntriesApp) Init() tea.Cmd {
+func (app *entriesApp) Init() tea.Cmd {
 	return app.currentView.Init()
 }
 
-func (app *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		app.viewWidth = message.Width
@@ -112,29 +112,29 @@ func (app *EntriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return app, cmd
 }
 
-func (app *EntriesApp) View() string {
+func (app *entriesApp) View() string {
 	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
 	return style.Render(app.currentView.View())
 }
 
-func (app *EntriesApp) Name() string {
+func (app *entriesApp) Name() string {
 	return "Entries"
 }
 
-func (app *EntriesApp) Colours() meta.AppColours {
+func (app *entriesApp) Colours() meta.AppColours {
 	return meta.ENTRIESCOLOURS
 }
 
-func (app *EntriesApp) CurrentMotionSet() *meta.MotionSet {
+func (app *entriesApp) CurrentMotionSet() *meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *EntriesApp) CurrentCommandSet() *meta.CommandSet {
+func (app *entriesApp) CurrentCommandSet() *meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
-func (app *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
+func (app *entriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRY:    {},
 		meta.ENTRYROW: {},
@@ -144,7 +144,7 @@ func (app *EntriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (app *EntriesApp) MakeLoadListCmd() tea.Cmd {
+func (app *entriesApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectEntries()
 		if err != nil {
@@ -164,7 +164,7 @@ func (app *EntriesApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (app *EntriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
+func (app *entriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByEntry(entryId)

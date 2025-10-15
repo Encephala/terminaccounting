@@ -11,25 +11,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type JournalsApp struct {
+type journalsApp struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
 func NewJournalsApp() meta.App {
-	model := &JournalsApp{}
+	model := &journalsApp{}
 
 	model.currentView = view.NewListView(model)
 
 	return model
 }
 
-func (app *JournalsApp) Init() tea.Cmd {
+func (app *journalsApp) Init() tea.Cmd {
 	return app.currentView.Init()
 }
 
-func (app *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		app.viewWidth = message.Width
@@ -112,36 +112,36 @@ func (app *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return app, cmd
 }
 
-func (app *JournalsApp) View() string {
+func (app *journalsApp) View() string {
 	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
 	return style.Render(app.currentView.View())
 }
 
-func (app *JournalsApp) Name() string {
+func (app *journalsApp) Name() string {
 	return "Journals"
 }
 
-func (app *JournalsApp) Colours() meta.AppColours {
+func (app *journalsApp) Colours() meta.AppColours {
 	return meta.JOURNALSCOLOURS
 }
 
-func (app *JournalsApp) CurrentMotionSet() *meta.MotionSet {
+func (app *journalsApp) CurrentMotionSet() *meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *JournalsApp) CurrentCommandSet() *meta.CommandSet {
+func (app *journalsApp) CurrentCommandSet() *meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
-func (app *JournalsApp) AcceptedModels() map[meta.ModelType]struct{} {
+func (app *journalsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNAL:  {},
 		meta.ENTRYROW: {},
 	}
 }
 
-func (app *JournalsApp) MakeLoadListCmd() tea.Cmd {
+func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectJournals()
 		if err != nil {
@@ -161,7 +161,7 @@ func (app *JournalsApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (app *JournalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
+func (app *journalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByJournal(journalId)

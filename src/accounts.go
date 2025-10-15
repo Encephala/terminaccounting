@@ -11,25 +11,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type AccountsApp struct {
+type accountsApp struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
 func NewAccountsApp() meta.App {
-	model := &AccountsApp{}
+	model := &accountsApp{}
 
 	model.currentView = view.NewListView(model)
 
 	return model
 }
 
-func (app *AccountsApp) Init() tea.Cmd {
+func (app *accountsApp) Init() tea.Cmd {
 	return app.currentView.Init()
 }
 
-func (app *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		app.viewWidth = message.Width
@@ -112,36 +112,36 @@ func (app *AccountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return app, cmd
 }
 
-func (app *AccountsApp) View() string {
+func (app *accountsApp) View() string {
 	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
 	return style.Render(app.currentView.View())
 }
 
-func (app *AccountsApp) Name() string {
+func (app *accountsApp) Name() string {
 	return "Accounts"
 }
 
-func (app *AccountsApp) Colours() meta.AppColours {
+func (app *accountsApp) Colours() meta.AppColours {
 	return meta.ACCOUNTSCOLOURS
 }
 
-func (app *AccountsApp) CurrentMotionSet() *meta.MotionSet {
+func (app *accountsApp) CurrentMotionSet() *meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *AccountsApp) CurrentCommandSet() *meta.CommandSet {
+func (app *accountsApp) CurrentCommandSet() *meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
-func (app *AccountsApp) AcceptedModels() map[meta.ModelType]struct{} {
+func (app *accountsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNT:  {},
 		meta.ENTRYROW: {},
 	}
 }
 
-func (app *AccountsApp) MakeLoadListCmd() tea.Cmd {
+func (app *accountsApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectAccounts()
 		if err != nil {
@@ -161,7 +161,7 @@ func (app *AccountsApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (app *AccountsApp) MakeLoadRowsCmd(modelId int) tea.Cmd {
+func (app *accountsApp) MakeLoadRowsCmd(modelId int) tea.Cmd {
 	// Aren't closures just great (still)
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByAccount(modelId)

@@ -11,25 +11,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type LedgersApp struct {
+type ledgersApp struct {
 	viewWidth, viewHeight int
 
 	currentView meta.View
 }
 
 func NewLedgersApp() meta.App {
-	model := &LedgersApp{}
+	model := &ledgersApp{}
 
 	model.currentView = view.NewListView(model)
 
 	return model
 }
 
-func (app *LedgersApp) Init() tea.Cmd {
+func (app *ledgersApp) Init() tea.Cmd {
 	return app.currentView.Init()
 }
 
-func (app *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *ledgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		app.viewWidth = message.Width
@@ -112,36 +112,36 @@ func (app *LedgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return app, cmd
 }
 
-func (app *LedgersApp) View() string {
+func (app *ledgersApp) View() string {
 	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
 
 	return style.Render(app.currentView.View())
 }
 
-func (app *LedgersApp) Name() string {
+func (app *ledgersApp) Name() string {
 	return "Ledgers"
 }
 
-func (app *LedgersApp) Colours() meta.AppColours {
+func (app *ledgersApp) Colours() meta.AppColours {
 	return meta.LEDGERSCOLOURS
 }
 
-func (app *LedgersApp) CurrentMotionSet() *meta.MotionSet {
+func (app *ledgersApp) CurrentMotionSet() *meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *LedgersApp) CurrentCommandSet() *meta.CommandSet {
+func (app *ledgersApp) CurrentCommandSet() *meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
-func (app *LedgersApp) AcceptedModels() map[meta.ModelType]struct{} {
+func (app *ledgersApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGER:   {},
 		meta.ENTRYROW: {},
 	}
 }
 
-func (app *LedgersApp) MakeLoadListCmd() tea.Cmd {
+func (app *ledgersApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectLedgers()
 		if err != nil {
@@ -161,7 +161,7 @@ func (app *LedgersApp) MakeLoadListCmd() tea.Cmd {
 	}
 }
 
-func (app *LedgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
+func (app *ledgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByLedger(ledgerId)
