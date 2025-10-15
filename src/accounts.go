@@ -83,9 +83,9 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewAccountsUpdateView(accountId, app.Colours())
 
 		case meta.DELETEVIEWTYPE:
-			_ = message.Data.(int)
+			accountId := message.Data.(int)
 
-			// TODO
+			app.currentView = view.NewAccountsDeleteView(accountId, app.Colours())
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))

@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -76,6 +77,8 @@ func (a *Account) CompareId() int {
 }
 
 func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
+	slog.Debug("making load acc detail cmd")
+
 	return func() tea.Msg {
 		account, err := SelectAccount(id)
 		if err != nil {
@@ -150,6 +153,12 @@ func SelectAccount(id int) (Account, error) {
 	err := DB.Get(&result, `SELECT * FROM accounts WHERE id = $1;`, id)
 
 	return result, err
+}
+
+func DeleteAccount(accountId int) error {
+	_, err := DB.Exec(`DELETE FROM accounts WHERE id = $1;`, accountId)
+
+	return err
 }
 
 func MakeSelectAccountsCmd(targetApp meta.AppType) tea.Cmd {
