@@ -1434,14 +1434,6 @@ func (dv *EntryDeleteView) CommandSet() *meta.CommandSet {
 
 func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		entryId := dv.model.Id
-
-		entry, err := database.SelectEntry(entryId)
-
-		if err != nil {
-			return meta.MessageCmd(err)
-		}
-
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: entry}
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
 }

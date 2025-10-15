@@ -422,10 +422,6 @@ func (dv *LedgersDeleteView) Init() tea.Cmd {
 	return database.MakeLoadLedgersDetailCmd(dv.modelId)
 }
 
-func (dv *LedgersDeleteView) title() string {
-	return fmt.Sprintf("Delete Ledger: %s", dv.model.Name)
-}
-
 func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
@@ -457,7 +453,7 @@ func (dv *LedgersDeleteView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
 
-	result.WriteString(titleStyle.Render(dv.title()))
+	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Ledger: %s", dv.model.Name)))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().
@@ -533,14 +529,6 @@ func (dv *LedgersDeleteView) CommandSet() *meta.CommandSet {
 
 func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		ledgerId := dv.model.Id
-
-		ledger, err := database.SelectLedger(ledgerId)
-
-		if err != nil {
-			return meta.MessageCmd(err)
-		}
-
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: ledger}
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
 }
