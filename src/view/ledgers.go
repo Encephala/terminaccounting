@@ -64,12 +64,7 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 }
 
 func (cv *LedgersCreateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
-
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (cv *LedgersCreateView) title() string {
@@ -177,14 +172,7 @@ func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateVi
 }
 
 func (uv *LedgersUpdateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
-
-	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(uv.modelId))
-
-	return tea.Batch(cmds...)
+	return database.MakeLoadLedgersDetailCmd(uv.modelId)
 }
 
 func (uv *LedgersUpdateView) title() string {
@@ -431,14 +419,7 @@ func NewLedgersDeleteView(modelId int, colours meta.AppColours) *LedgersDeleteVi
 }
 
 func (dv *LedgersDeleteView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.CommandSet())))
-
-	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.modelId))
-
-	return tea.Batch(cmds...)
+	return database.MakeLoadLedgersDetailCmd(dv.modelId)
 }
 
 func (dv *LedgersDeleteView) title() string {

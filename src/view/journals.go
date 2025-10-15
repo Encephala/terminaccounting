@@ -50,9 +50,6 @@ func NewJournalsCreateView(colours meta.AppColours) *JournalsCreateView {
 func (cv *JournalsCreateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
-
 	return tea.Batch(cmds...)
 }
 

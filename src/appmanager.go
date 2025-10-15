@@ -90,16 +90,21 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.SwitchViewMsg:
+		var cmds []tea.Cmd
 		var cmd tea.Cmd
 		if message.App != nil {
 			am, cmd = am.setActiveApp(am.appIds[*message.App])
+			cmds = append(cmds, cmd)
 		}
 
-		var cmdTwo tea.Cmd
-		newApp, cmdTwo := am.apps[am.activeApp].Update(message)
+		newApp, cmd := am.apps[am.activeApp].Update(message)
 		am.apps[am.activeApp] = newApp.(meta.App)
+		cmds = append(cmds, cmd)
 
-		return am, tea.Batch(cmd, cmdTwo)
+		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
+		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(am.apps[am.activeApp].CurrentCommandSet())))
+
+		return am, tea.Batch(cmds...)
 	}
 
 	app, cmd := am.apps[am.activeApp].Update(message)

@@ -47,14 +47,7 @@ func NewListView(app meta.App) *ListView {
 }
 
 func (lv *ListView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(lv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(lv.CommandSet())))
-
-	cmds = append(cmds, lv.app.MakeLoadListCmd())
-
-	return tea.Batch(cmds...)
+	return lv.app.MakeLoadListCmd()
 }
 
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -176,15 +169,8 @@ func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 }
 
 func (dv *DetailView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.app.CurrentMotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.app.CurrentCommandSet())))
-
 	// TODO: Also show the model metadata and not just the rows?
-	cmds = append(cmds, dv.app.MakeLoadRowsCmd(dv.modelId))
-
-	return tea.Batch(cmds...)
+	return dv.app.MakeLoadRowsCmd(dv.modelId)
 }
 
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {

@@ -112,9 +112,6 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 func (cv *EntryCreateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
-
 	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
 	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
 	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
@@ -278,9 +275,6 @@ func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 
 func (uv *EntryUpdateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
 
 	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
 	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
@@ -1343,14 +1337,7 @@ func NewEntryDeleteView(modelId int, colours meta.AppColours) *EntryDeleteView {
 }
 
 func (dv *EntryDeleteView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(dv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(dv.CommandSet())))
-
-	cmds = append(cmds, database.MakeLoadEntryDetailCmd(dv.modelId))
-
-	return tea.Batch(cmds...)
+	return database.MakeLoadEntryDetailCmd(dv.modelId)
 }
 
 func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {

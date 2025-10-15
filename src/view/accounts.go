@@ -46,12 +46,7 @@ func NewAccountsCreateView(colours meta.AppColours) *AccountsCreateView {
 }
 
 func (cv *AccountsCreateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(cv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(cv.CommandSet())))
-
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -252,14 +247,7 @@ func NewAccountsUpdateView(modelId int, colours meta.AppColours) *AccountsUpdate
 }
 
 func (uv *AccountsUpdateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(uv.MotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(uv.CommandSet())))
-
-	cmds = append(cmds, database.MakeLoadAccountsDetailCmd(uv.modelId))
-
-	return tea.Batch(cmds...)
+	return database.MakeLoadAccountsDetailCmd(uv.modelId)
 }
 
 func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
