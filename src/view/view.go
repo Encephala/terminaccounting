@@ -49,8 +49,8 @@ func NewListView(app meta.App) *ListView {
 func (lv *ListView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(lv.app.CurrentMotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(lv.app.CurrentCommandSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(lv.MotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(lv.CommandSet())))
 
 	cmds = append(cmds, lv.app.MakeLoadListCmd())
 
