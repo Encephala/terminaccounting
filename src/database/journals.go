@@ -17,6 +17,21 @@ const (
 	GENERALJOURNAL  JournalType = "GENERAL"
 )
 
+func (jt JournalType) CompareId() int {
+	switch jt {
+	case INCOMEJOURNAL:
+		return 0
+	case EXPENSEJOURNAL:
+		return 1
+	case CASHFLOWJOURNAL:
+		return 2
+	case GENERALJOURNAL:
+		return 3
+	default:
+		panic(fmt.Sprintf("unexpected database.AccountType: %#v", jt))
+	}
+}
+
 type Journal struct {
 	Id    int         `db:"id"`
 	Name  string      `db:"name"`

@@ -21,13 +21,20 @@ const (
 
 // Listen, it's a great hash function
 func (lt LedgerType) CompareId() int {
-	sum := 0
-
-	for _, r := range lt {
-		sum += int(r)
+	switch lt {
+	case INCOMELEDGER:
+		return 0
+	case EXPENSELEDGER:
+		return 1
+	case ASSETLEDGER:
+		return 2
+	case LIABILITYLEDGER:
+		return 3
+	case EQUITYLEDGER:
+		return 4
+	default:
+		panic(fmt.Sprintf("unexpected database.AccountType: %#v", lt))
 	}
-
-	return sum
 }
 
 func (lt LedgerType) String() string {

@@ -20,9 +20,11 @@ type Entry struct {
 
 func (e Entry) FilterValue() string {
 	var result strings.Builder
+
 	result.WriteString(strconv.Itoa(e.Id))
 	result.WriteString(strconv.Itoa(e.Journal))
-	result.WriteString(strings.Join(e.Notes, ";"))
+	result.WriteString(e.Notes.Collapse())
+
 	return result.String()
 }
 
