@@ -60,16 +60,16 @@ func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
 		name := cv.nameInput.Value()
-		accountType := cv.typeInput.Value().(database.AccountType)
+		journalType := cv.typeInput.Value().(database.JournalType)
 		notes := cv.notesInput.Value()
 
-		newAccount := database.Account{
+		newJournal := database.Journal{
 			Name:  name,
-			Type:  accountType,
+			Type:  journalType,
 			Notes: meta.CompileNotes(notes),
 		}
 
-		id, err := newAccount.Insert()
+		id, err := newJournal.Insert()
 
 		if err != nil {
 			return cv, meta.MessageCmd(err)
@@ -198,9 +198,21 @@ func (cv *JournalsCreateView) View() string {
 }
 
 func (cv *JournalsCreateView) MotionSet() *meta.MotionSet {
-	return nil
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	return &meta.MotionSet{Normal: normalMotions}
 }
 
 func (cv *JournalsCreateView) CommandSet() *meta.CommandSet {
-	return nil
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+
+	asCommandSet := meta.CommandSet(commands)
+	return &asCommandSet
 }
