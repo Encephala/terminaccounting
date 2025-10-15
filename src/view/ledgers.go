@@ -78,8 +78,6 @@ func (cv *LedgersCreateView) title() string {
 	return "Create new Ledger"
 }
 
-// NOTE from future me: I'm not sure why these exist?
-// I think just to take a reference without having to write & everywhere?
 func (cv *LedgersCreateView) getNameInput() *textinput.Model {
 	return &cv.nameInput
 }
