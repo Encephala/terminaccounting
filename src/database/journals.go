@@ -61,6 +61,14 @@ func (j Journal) FilterValue() string {
 	return result.String()
 }
 
+func (j Journal) Title() string {
+	return j.Name
+}
+
+func (j Journal) Description() string {
+	return j.Notes.Collapse()
+}
+
 func SetupSchemaJournals() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("journals")
 	if err != nil {
