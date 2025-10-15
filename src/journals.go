@@ -1,64 +1,119 @@
 package main
 
-// import (
-// 	"fmt"
-// 	"log/slog"
-// 	"terminaccounting/meta"
-// 	"terminaccounting/styles"
-// 	"terminaccounting/utils"
+import (
+	"fmt"
+	"log/slog"
+	"terminaccounting/database"
+	"terminaccounting/meta"
+	"terminaccounting/view"
 
-// 	tea "github.com/charmbracelet/bubbletea"
-// )
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
+)
 
-// type JournalsApp struct {
-// 	viewWidth, viewHeight int
-// }
+type JournalsApp struct {
+	viewWidth, viewHeight int
 
-// func NewJournalsApp() meta.App {
-// 	return &model{}
-// }
+	currentView meta.View
+}
 
-// func (m *JournalsApp) Init() tea.Cmd {
-// 	return nil
-// }
+func NewJournalsApp() meta.App {
+	model := &JournalsApp{}
 
-// func (m *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-// 	switch message := message.(type) {
-// 	case tea.WindowSizeMsg:
-// 		m.viewWidth = message.Width
-// 		m.viewHeight = message.Height
+	model.currentView = view.NewListView(model)
 
-// 	case meta.SetupSchemaMsg:
-// 		changed, err := setupSchema()
-// 		if err != nil {
-// 			message := fmt.Errorf("COULD NOT CREATE `journals` TABLE: %v", err)
-// 			return m, utils.MessageCommand(meta.FatalErrorMsg{Error: message})
-// 		}
+	return model
+}
 
-// 		if changed != 0 {
-//			slog.Info("Set up `Journals` schema")
-// 			return m, nil
-// 		}
+func (app *JournalsApp) Init() tea.Cmd {
+	return app.currentView.Init()
+}
 
-// 		return m, nil
-// 	}
+func (app *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		app.viewWidth = message.Width
+		app.viewHeight = message.Height
 
-// 	return m, nil
-// }
+	case meta.SetupSchemaMsg:
+		changed, err := database.SetupSchemaJournals()
+		if err != nil {
+			message := fmt.Errorf("COULD NOT CREATE `journals` TABLE: %v", err)
+			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
+		}
 
-// func (m *JournalsApp) View() string {
-// 	style := styles.Body(m.viewWidth, m.viewHeight, m.Styles().Accent)
-// 	return style.Render("TODO journals")
-// }
+		if changed {
+			slog.Info("Set up `Journals` schema")
+			return app, nil
+		}
 
-// func (m *JournalsApp) Name() string {
-// 	return "Journals"
-// }
+		return app, nil
+	}
 
-// func (m *JournalsApp) Styles() styles.AppColours {
-// 	return styles.AppColours{
-// 		Foreground: "#F6D6D6D0",
-// 		Accent:     "#F6D6D680",
-// 		Background: "#F6D6D6FF",
-// 	}
-// }
+	return app, nil
+}
+
+func (app *JournalsApp) View() string {
+	style := meta.BodyStyle(app.viewWidth, app.viewHeight)
+
+	return style.Render(app.currentView.View())
+}
+
+func (app *JournalsApp) Name() string {
+	return "Journals"
+}
+
+func (app *JournalsApp) Colours() meta.AppColours {
+	return meta.JOURNALSCOLOURS
+}
+
+func (app *JournalsApp) CurrentMotionSet() *meta.MotionSet {
+	return app.currentView.MotionSet()
+}
+
+func (app *JournalsApp) CurrentCommandSet() *meta.CommandSet {
+	return app.currentView.CommandSet()
+}
+
+func (app *JournalsApp) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.JOURNAL:  {},
+		meta.ENTRYROW: {},
+	}
+}
+
+func (app *JournalsApp) MakeLoadListCmd() tea.Cmd {
+	return func() tea.Msg {
+		rows, err := database.SelectJournals()
+		if err != nil {
+			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+		}
+
+		items := make([]list.Item, len(rows))
+		for i, row := range rows {
+			items[i] = row
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.JOURNALS,
+			Model:     meta.JOURNAL,
+			Data:      items,
+		}
+	}
+}
+
+func (app *JournalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
+	// Aren't closures just great
+	return func() tea.Msg {
+		rows, err := database.SelectRowsByJournal(journalId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.JOURNALS,
+			Model:     meta.ENTRYROW,
+			Data:      rows,
+		}
+	}
+}

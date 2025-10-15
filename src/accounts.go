@@ -123,11 +123,7 @@ func (app *AccountsApp) Name() string {
 }
 
 func (app *AccountsApp) Colours() meta.AppColours {
-	return meta.AppColours{
-		Foreground: "#7BD4EA",
-		Accent:     "#7BD4EA",
-		Background: "#7BD4EA",
-	}
+	return meta.ACCOUNTSCOLOURS
 }
 
 func (app *AccountsApp) CurrentMotionSet() *meta.MotionSet {

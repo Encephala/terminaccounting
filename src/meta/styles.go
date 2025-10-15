@@ -5,12 +5,29 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var LEDGERSCOLOURS = AppColours{
+	Foreground: "#A1EEBDD0",
+	Background: "#A1EEBD60",
+	Accent:     "#A1EEBDFF",
+}
+
 var ENTRIESCOLOURS = AppColours{
 	Foreground: "#F0F1B2D0",
 	Accent:     "#F0F1B280",
 	Background: "#EBECABFF",
 }
 
+var ACCOUNTSCOLOURS = AppColours{
+	Foreground: "#7BD4EA",
+	Accent:     "#7BD4EA",
+	Background: "#7BD4EA",
+}
+
+var JOURNALSCOLOURS = AppColours{
+	Foreground: "#F6D6D6D0",
+	Accent:     "#F6D6D680",
+	Background: "#F6D6D6FF",
+}
 var tabBorder = lipgloss.Border{
 	Top:         "─",
 	Bottom:      "─",
@@ -106,12 +123,6 @@ func NewDetailViewStyles(colours AppColours) DetailViewStyles {
 		Item:         item,
 		ItemSelected: item.Foreground(ENTRIESCOLOURS.Foreground),
 	}
-}
-
-var LEDGERSCOLOURS = AppColours{
-	Foreground: "#A1EEBDD0",
-	Background: "#A1EEBD60",
-	Accent:     "#A1EEBDFF",
 }
 
 var ModalStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 4)

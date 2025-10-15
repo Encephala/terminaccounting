@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strings"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,10 +18,10 @@ const (
 )
 
 type Journal struct {
-	Id          int         `db:"id"`
-	Name        string      `db:"name"`
-	JournalType JournalType `db:"type"`
-	Notes       meta.Notes  `db:"notes"`
+	Id    int         `db:"id"`
+	Name  string      `db:"name"`
+	Type  JournalType `db:"type"`
+	Notes meta.Notes  `db:"notes"`
 }
 
 func (j Journal) String() string {
@@ -29,6 +30,16 @@ func (j Journal) String() string {
 
 func (j Journal) CompareId() int {
 	return j.Id
+}
+
+func (j Journal) FilterValue() string {
+	var result strings.Builder
+
+	result.WriteString(j.Name)
+	result.WriteString(string(j.Type))
+	result.WriteString(j.Notes.Collapse())
+
+	return result.String()
 }
 
 func SetupSchemaJournals() (bool, error) {

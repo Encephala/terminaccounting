@@ -24,10 +24,10 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	journal := database.Journal{
-		Id:          1,
-		Name:        "test",
-		JournalType: database.CASHFLOWJOURNAL,
-		Notes:       []string{"a note"},
+		Id:    1,
+		Name:  "test",
+		Type:  database.CASHFLOWJOURNAL,
+		Notes: []string{"a note"},
 	}
 
 	insertedId, err := journal.Insert()
@@ -72,8 +72,8 @@ func testJournalsEqual(t *testing.T, actual, expected database.Journal) {
 		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
 	}
 
-	if actual.JournalType != expected.JournalType {
-		t.Errorf("Invalid ID %q, expected %q", actual.JournalType, expected.JournalType)
+	if actual.Type != expected.Type {
+		t.Errorf("Invalid ID %q, expected %q", actual.Type, expected.Type)
 	}
 
 	if len(actual.Notes) != len(expected.Notes) {

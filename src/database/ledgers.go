@@ -46,7 +46,7 @@ func (l Ledger) FilterValue() string {
 
 	result.WriteString(l.Name)
 	result.WriteString(string(l.Type))
-	result.WriteString(strings.Join(l.Notes, ";"))
+	result.WriteString(l.Notes.Collapse())
 
 	return result.String()
 }

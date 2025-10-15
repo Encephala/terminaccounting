@@ -49,18 +49,18 @@ func main() {
 	motionSet := meta.DefaultMotionSet()
 	commandSet := meta.DefaultCommandSet()
 
-	apps := make([]meta.App, 3)
+	apps := make([]meta.App, 4)
 	apps[0] = NewLedgersApp()
 	apps[1] = NewEntriesApp()
 	apps[2] = NewAccountsApp()
-	// Commented while I'm refactoring a lot, to avoid having to reimplement various interfaces etc.
-	// apps[meta.JOURNALS] = journals.New()
+	apps[3] = NewJournalsApp()
 
 	// Map the name(=type) of an app to its index in `apps`
-	appIds := make(map[meta.AppType]int, 3)
+	appIds := make(map[meta.AppType]int, 4)
 	appIds[meta.LEDGERS] = 0
 	appIds[meta.ENTRIES] = 1
 	appIds[meta.ACCOUNTS] = 2
+	appIds[meta.JOURNALS] = 3
 
 	am := &appManager{
 		activeApp: 0,
