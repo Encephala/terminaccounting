@@ -32,6 +32,7 @@ func (am *appManager) Init() tea.Cmd {
 	}
 
 	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
+	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(am.apps[am.activeApp].CurrentCommandSet())))
 
 	slog.Info("Initialised")
 
