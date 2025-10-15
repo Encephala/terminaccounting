@@ -17,6 +17,10 @@ const (
 	GENERALJOURNAL  JournalType = "GENERAL"
 )
 
+func (jt JournalType) String() string {
+	return string(jt)
+}
+
 func (jt JournalType) CompareId() int {
 	switch jt {
 	case INCOMEJOURNAL:

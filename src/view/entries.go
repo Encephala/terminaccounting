@@ -36,6 +36,21 @@ type EntryCreateView struct {
 	colours meta.AppColours
 }
 
+func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
+	journalInput := itempicker.New([]itempicker.Item{})
+	noteInput := textarea.New()
+	noteInput.Cursor.SetMode(cursor.CursorStatic)
+
+	return &EntryCreateView{
+		journalInput:     journalInput,
+		notesInput:       noteInput,
+		activeInput:      JOURNALINPUT,
+		entryRowsManager: NewEntryRowCreateViewManager(),
+
+		colours: colours,
+	}
+}
+
 type EntryRowViewManager struct {
 	rows []*EntryRowCreateView
 
@@ -92,23 +107,6 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 	}
 
 	return &result
-}
-
-func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
-	journalInput := itempicker.New([]itempicker.Item{})
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
-
-	result := &EntryCreateView{
-		journalInput:     journalInput,
-		notesInput:       noteInput,
-		activeInput:      JOURNALINPUT,
-		entryRowsManager: NewEntryRowCreateViewManager(),
-
-		colours: colours,
-	}
-
-	return result
 }
 
 func (cv *EntryCreateView) Init() tea.Cmd {

@@ -35,6 +35,11 @@ func (app *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.viewWidth = message.Width
 		app.viewHeight = message.Height
 
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
 	case meta.SetupSchemaMsg:
 		changed, err := database.SetupSchemaJournals()
 		if err != nil {
@@ -48,9 +53,63 @@ func (app *JournalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return app, nil
+
+	case meta.DataLoadedMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
+	case meta.SwitchViewMsg:
+		if message.App != nil && *message.App != meta.LEDGERS {
+			panic("wrong app type, something went wrong")
+		}
+
+		switch message.ViewType {
+		case meta.LISTVIEWTYPE:
+			app.currentView = view.NewListView(app)
+
+		case meta.DETAILVIEWTYPE:
+			journal := message.Data.(database.Journal)
+
+			app.currentView = view.NewDetailView(app, journal.Id, journal.Name)
+
+		case meta.CREATEVIEWTYPE:
+			app.currentView = view.NewJournalsCreateView(app.Colours())
+
+		case meta.UPDATEVIEWTYPE:
+			// journalId := message.Data.(int)
+
+			// app.currentView = view.NewJournalsUpdateView(journalId, app.Colours())
+
+		case meta.DELETEVIEWTYPE:
+			// journalId := message.Data.(int)
+
+			// app.currentView = view.NewJournalsDeleteView(journalId, app.Colours())
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
+		}
+
+		return app, app.currentView.Init()
+
+	case meta.SwitchFocusMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
+
+	case meta.NavigateMsg:
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
 	}
 
-	return app, nil
+	newView, cmd := app.currentView.Update(message)
+	app.currentView = newView.(meta.View)
+
+	return app, cmd
 }
 
 func (app *JournalsApp) View() string {

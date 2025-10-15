@@ -53,7 +53,7 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
-	result := &LedgersCreateView{
+	return &LedgersCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(ledgerTypes),
 		notesInput:  noteInput,
@@ -61,8 +61,6 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 
 		colours: colours,
 	}
-
-	return result
 }
 
 func (cv *LedgersCreateView) Init() tea.Cmd {
