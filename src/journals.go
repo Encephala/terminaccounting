@@ -145,7 +145,7 @@ func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectJournals()
 		if err != nil {
-			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
+			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err))
 		}
 
 		items := make([]list.Item, len(rows))
@@ -166,7 +166,7 @@ func (app *journalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByJournal(journalId)
 		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
+			return fmt.Errorf("FAILED TO LOAD JOURNAL ROWS: %v", err)
 		}
 
 		return meta.DataLoadedMsg{
