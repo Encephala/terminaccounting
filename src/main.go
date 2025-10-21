@@ -28,15 +28,9 @@ func main() {
 	defer file.Close()
 	log.SetOutput(file)
 
-	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc")
+	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_pragma=foreign_keys(ON)")
 	if err != nil {
 		slog.Error("Couldn't connect to database: ", "error", err)
-		os.Exit(1)
-	}
-
-	_, err = db.Exec(`PRAGMA foreign_keys = ON;`)
-	if err != nil {
-		slog.Error("Couldn't enable foreign keys")
 		os.Exit(1)
 	}
 
