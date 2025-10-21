@@ -149,6 +149,12 @@ func SelectJournal(id int) (Journal, error) {
 	return result, err
 }
 
+func DeleteJournal(id int) error {
+	_, err := DB.Exec(`DELETE FROM journals WHERE id = $1;`, id)
+
+	return err
+}
+
 func MakeSelectJournalsCmd(targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectJournals()

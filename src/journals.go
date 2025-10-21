@@ -83,9 +83,9 @@ func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewJournalsUpdateView(journalId, app.Colours())
 
 		case meta.DELETEVIEWTYPE:
-			// journalId := message.Data.(int)
+			journalId := message.Data.(int)
 
-			// app.currentView = view.NewJournalsDeleteView(journalId, app.Colours())
+			app.currentView = view.NewJournalsDeleteView(journalId, app.Colours())
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
