@@ -78,9 +78,9 @@ func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewJournalsCreateView(app.Colours())
 
 		case meta.UPDATEVIEWTYPE:
-			// journalId := message.Data.(int)
+			journalId := message.Data.(int)
 
-			// app.currentView = view.NewJournalsUpdateView(journalId, app.Colours())
+			app.currentView = view.NewJournalsUpdateView(journalId, app.Colours())
 
 		case meta.DELETEVIEWTYPE:
 			// journalId := message.Data.(int)
@@ -162,6 +162,7 @@ func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 }
 
 func (app *journalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
+	// TODO: This should load entries, not entryrows
 	// Aren't closures just great
 	return func() tea.Msg {
 		rows, err := database.SelectRowsByJournal(journalId)

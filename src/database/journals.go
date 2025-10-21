@@ -69,6 +69,21 @@ func (j Journal) Description() string {
 	return j.Notes.Collapse()
 }
 
+func MakeLoadJournalsDetailCmd(id int) tea.Cmd {
+	return func() tea.Msg {
+		journal, err := SelectJournal(id)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD JOURNAL WITH ID %d: %#v", id, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.JOURNALS,
+			Model:     meta.JOURNAL,
+			Data:      journal,
+		}
+	}
+}
+
 func SetupSchemaJournals() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("journals")
 	if err != nil {
@@ -104,6 +119,18 @@ func (j *Journal) Insert() (int, error) {
 	}
 
 	return insertedId, err
+}
+
+func (j *Journal) Update() error {
+	query := `UPDATE journals SET
+	name = :name,
+	type = :type,
+	notes = :notes
+	WHERE id = :id;`
+
+	_, err := DB.NamedExec(query, j)
+
+	return err
 }
 
 func SelectJournals() ([]Journal, error) {
