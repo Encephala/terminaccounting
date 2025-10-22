@@ -318,7 +318,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		switch message.Model {
 		case meta.ENTRY:
 			// You like how I solved this race condition?
-			if uv.availableLedgers == nil || uv.availableAccounts == nil {
+			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
 				return uv, meta.MessageCmd(message)
 			}
 
@@ -338,7 +338,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case meta.ENTRYROW:
 			// You like how I solved this race condition?
-			if uv.availableLedgers == nil || uv.availableAccounts == nil {
+			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
 				return uv, meta.MessageCmd(message)
 			}
 
