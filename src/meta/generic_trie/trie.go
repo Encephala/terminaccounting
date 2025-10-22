@@ -3,7 +3,7 @@ package vim
 import "fmt"
 
 type trie[K comparable, V comparable] struct {
-	Children []*node[K, V]
+	children []*node[K, V]
 }
 
 type node[K comparable, V comparable] struct {
@@ -15,11 +15,11 @@ type node[K comparable, V comparable] struct {
 	// But then again that's only really going to save time when restricting to the alphabet,
 	// as then we can use rune(character) as an array index,
 	// something like hashes are way slower than search over ~10 elements probably
-	Children []*node[K, V]
+	children []*node[K, V]
 }
 
 func (t *trie[K, V]) getChild(key K) (index int, found bool) {
-	for i, child := range t.Children {
+	for i, child := range t.children {
 		if child.key == key {
 			return i, true
 		}
@@ -28,7 +28,7 @@ func (t *trie[K, V]) getChild(key K) (index int, found bool) {
 	return 0, false
 }
 func (n *node[K, V]) getChild(key K) (index int, found bool) {
-	for i, child := range n.Children {
+	for i, child := range n.children {
 		if child.key == key {
 			return i, true
 		}
@@ -44,7 +44,7 @@ func (t *trie[K, V]) Get(key []K) (value V, found bool) {
 	}
 
 	if i, ok := t.getChild(key[0]); ok {
-		return t.Children[i].get(key[1:])
+		return t.children[i].get(key[1:])
 	}
 
 	return
@@ -52,7 +52,7 @@ func (t *trie[K, V]) Get(key []K) (value V, found bool) {
 func (n *node[K, V]) get(key []K) (value V, found bool) {
 	for _, k := range key {
 		if i, ok := n.getChild(k); ok {
-			n = n.Children[i]
+			n = n.children[i]
 		} else {
 			found = false
 			return
@@ -75,7 +75,7 @@ func (t *trie[K, V]) ContainsPath(key []K) bool {
 	}
 
 	if i, ok := t.getChild(key[0]); ok {
-		result = t.Children[i].containsPath(key[1:])
+		result = t.children[i].containsPath(key[1:])
 	} else {
 		result = false
 	}
@@ -88,7 +88,7 @@ func (n *node[K, V]) containsPath(key []K) bool {
 		if i, ok := n.getChild(k); !ok {
 			return false
 		} else {
-			n = n.Children[i]
+			n = n.children[i]
 		}
 	}
 
@@ -103,12 +103,12 @@ func (t *trie[K, V]) Insert(key []K, value V) (changed bool) {
 	}
 
 	if i, ok := t.getChild(key[0]); ok {
-		changed = t.Children[i].insert(key[1:], value)
+		changed = t.children[i].insert(key[1:], value)
 	} else {
 		newChild := &node[K, V]{
 			key:      key[0],
 			isLeaf:   len(key) == 1,
-			Children: []*node[K, V]{},
+			children: []*node[K, V]{},
 		}
 
 		if newChild.isLeaf {
@@ -116,10 +116,10 @@ func (t *trie[K, V]) Insert(key []K, value V) (changed bool) {
 			return true
 		}
 
-		t.Children = append(t.Children, newChild)
+		t.children = append(t.children, newChild)
 		changed = true
 
-		t.Children[len(t.Children)-1].insert(key[1:], value)
+		t.children[len(t.children)-1].insert(key[1:], value)
 	}
 
 	return changed
@@ -131,7 +131,7 @@ func (n *node[K, V]) insert(key []K, value V) (changed bool) {
 		isLastIteration := i == len(key)-1
 
 		if j, ok := n.getChild(k); ok {
-			n = n.Children[j]
+			n = n.children[j]
 
 			if isLastIteration {
 				if !n.isLeaf {
@@ -152,17 +152,17 @@ func (n *node[K, V]) insert(key []K, value V) (changed bool) {
 		newChild := &node[K, V]{
 			key:      k,
 			isLeaf:   isLastIteration,
-			Children: []*node[K, V]{},
+			children: []*node[K, V]{},
 		}
 
 		if isLastIteration {
 			newChild.value = value
 		}
 
-		n.Children = append(n.Children, newChild)
+		n.children = append(n.children, newChild)
 		changed = true
 
-		n = n.Children[len(n.Children)-1]
+		n = n.children[len(n.children)-1]
 	}
 
 	return changed

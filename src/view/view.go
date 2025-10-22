@@ -22,7 +22,7 @@ const (
 )
 
 type ListView struct {
-	ListModel list.Model
+	listModel list.Model
 
 	app meta.App
 }
@@ -40,7 +40,7 @@ func NewListView(app meta.App) *ListView {
 	model.SetShowHelp(false)
 
 	return &ListView{
-		ListModel: model,
+		listModel: model,
 
 		app: app,
 	}
@@ -53,7 +53,7 @@ func (lv *ListView) Init() tea.Cmd {
 func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		lv.ListModel.SetItems(message.Data.([]list.Item))
+		lv.listModel.SetItems(message.Data.([]list.Item))
 
 		return lv, nil
 
@@ -61,7 +61,7 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
 
 		var cmd tea.Cmd
-		lv.ListModel, cmd = lv.ListModel.Update(keyMsg)
+		lv.listModel, cmd = lv.listModel.Update(keyMsg)
 
 		return lv, cmd
 
@@ -77,7 +77,7 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (lv *ListView) View() string {
-	return lv.ListModel.View()
+	return lv.listModel.View()
 }
 
 func (lv *ListView) MotionSet() *meta.MotionSet {
@@ -102,7 +102,7 @@ func (lv *ListView) CommandSet() *meta.CommandSet {
 
 func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		item := lv.ListModel.SelectedItem()
+		item := lv.listModel.SelectedItem()
 
 		if item == nil {
 			return errors.New("no item to goto detail view of")

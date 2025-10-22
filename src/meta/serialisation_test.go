@@ -11,13 +11,13 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 	db := setupDB(t)
 
 	type Test struct {
-		SomeId int   `db:"id"`
-		Notes  Notes `db:"notes"`
+		someId int   `db:"id"`
+		notes  Notes `db:"notes"`
 	}
 
 	expected := Test{
-		SomeId: 69,
-		Notes: Notes{
+		someId: 69,
+		notes: Notes{
 			"a note",
 			"another one",
 		},
@@ -48,14 +48,14 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 		t.Errorf("Invalid number of rows %d found, expected 1", count)
 	}
 
-	if len(result.Notes) != len(expected.Notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(result.Notes), len(expected.Notes))
+	if len(result.notes) != len(expected.notes) {
+		t.Errorf("Unequal notes lengths %d and %d", len(result.notes), len(expected.notes))
 		t.Logf("Actual notes %v, expected %v", result, expected)
 	}
 
-	for i, note := range result.Notes {
-		if note != expected.Notes[i] {
-			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.Notes[i])
+	for i, note := range result.notes {
+		if note != expected.notes[i] {
+			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.notes[i])
 		}
 	}
 }

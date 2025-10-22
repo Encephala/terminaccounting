@@ -17,7 +17,7 @@ import (
 )
 
 type JournalsDetailsView struct {
-	ListModel list.Model
+	listModel list.Model
 
 	app meta.App
 
@@ -37,7 +37,7 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDet
 	model.SetShowHelp(false)
 
 	return &JournalsDetailsView{
-		ListModel: model,
+		listModel: model,
 
 		app: app,
 
@@ -59,7 +59,7 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			asItems[i] = row
 		}
 
-		dv.ListModel.SetItems(asItems)
+		dv.listModel.SetItems(asItems)
 
 		return dv, nil
 
@@ -67,7 +67,7 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
 
 		var cmd tea.Cmd
-		dv.ListModel, cmd = dv.ListModel.Update(keyMsg)
+		dv.listModel, cmd = dv.listModel.Update(keyMsg)
 
 		return dv, cmd
 
@@ -83,7 +83,7 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *JournalsDetailsView) View() string {
-	return dv.ListModel.View()
+	return dv.listModel.View()
 }
 
 func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
@@ -109,7 +109,7 @@ func (dv *JournalsDetailsView) CommandSet() *meta.CommandSet {
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
 func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		item := dv.ListModel.SelectedItem()
+		item := dv.listModel.SelectedItem()
 
 		if item == nil {
 			return errors.New("no item to goto detail view of")
