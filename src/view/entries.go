@@ -280,8 +280,8 @@ func (uv *EntryUpdateView) Init() tea.Cmd {
 	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
 	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
 
-	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId, meta.ENTRIES))
-	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId, meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
+	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId))
 
 	return tea.Batch(cmds...)
 }

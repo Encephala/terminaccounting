@@ -390,7 +390,7 @@ func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func MakeSelectEntryCmd(entryId int, targetApp meta.AppType) tea.Cmd {
+func MakeSelectEntryCmd(entryId int) tea.Cmd {
 	// Shoutout to closures
 	return func() tea.Msg {
 		rows, err := SelectEntry(entryId)
@@ -399,7 +399,7 @@ func MakeSelectEntryCmd(entryId int, targetApp meta.AppType) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: targetApp,
+			TargetApp: meta.ENTRIES,
 			Model:     meta.ENTRY,
 			Data:      rows,
 		}
@@ -421,7 +421,7 @@ func MakeSelectEntriesByJournalCmd(journalId int) tea.Cmd {
 	}
 }
 
-func MakeSelectEntryRowsCmd(entryId int, targetApp meta.AppType) tea.Cmd {
+func MakeSelectEntryRowsCmd(entryId int) tea.Cmd {
 	return func() tea.Msg {
 		rows, err := SelectRowsByEntry(entryId)
 		if err != nil {
@@ -429,7 +429,7 @@ func MakeSelectEntryRowsCmd(entryId int, targetApp meta.AppType) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: targetApp,
+			TargetApp: meta.ENTRIES,
 			Model:     meta.ENTRYROW,
 			Data:      rows,
 		}
