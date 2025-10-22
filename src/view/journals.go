@@ -1,6 +1,7 @@
 package view
 
 import (
+	"errors"
 	"fmt"
 	"local/bubbles/itempicker"
 	"strings"
@@ -8,11 +9,116 @@ import (
 	"terminaccounting/meta"
 
 	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+type JournalsDetailsView struct {
+	ListModel list.Model
+
+	app meta.App
+
+	journal database.Journal
+}
+
+func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDetailsView {
+	viewStyles := meta.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
+
+	delegate := list.NewDefaultDelegate()
+	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
+	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
+
+	model := list.New([]list.Item{}, delegate, 20, 16)
+	model.Title = fmt.Sprintf("Journals detail view: %q", journal.Name)
+	model.Styles.Title = viewStyles.Title
+	model.SetShowHelp(false)
+
+	return &JournalsDetailsView{
+		ListModel: model,
+
+		app: app,
+
+		journal: journal,
+	}
+}
+
+func (dv *JournalsDetailsView) Init() tea.Cmd {
+	return database.MakeSelectEntriesByJournalCmd(dv.journal.Id)
+}
+
+func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		entries := message.Data.([]database.Entry)
+
+		asItems := make([]list.Item, len(entries))
+		for i, row := range entries {
+			asItems[i] = row
+		}
+
+		dv.ListModel.SetItems(asItems)
+
+		return dv, nil
+
+	case meta.NavigateMsg:
+		keyMsg := meta.NavigateMessageToKeyMsg(message)
+
+		var cmd tea.Cmd
+		dv.ListModel, cmd = dv.ListModel.Update(keyMsg)
+
+		return dv, cmd
+
+	// Returning to prevent panic
+	// Required because other views do accept these messages
+	case tea.WindowSizeMsg:
+		// TODO Maybe rescale the rendering of the inputs by the window size or something
+		return dv, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
+}
+
+func (dv *JournalsDetailsView) View() string {
+	return dv.ListModel.View()
+}
+
+func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd()) // [g]oto [d]etails
+	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{
+		ViewType: meta.CREATEVIEWTYPE,
+	}) // [g]oto [c]reate view
+
+	return &meta.MotionSet{Normal: normalMotions}
+}
+
+func (dv *JournalsDetailsView) CommandSet() *meta.CommandSet {
+	return &meta.CommandSet{}
+}
+
+// Contrary to the generic list view, going to detail view here jumps to an entries detail view
+func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		item := dv.ListModel.SelectedItem()
+
+		if item == nil {
+			return errors.New("no item to goto detail view of")
+		}
+
+		entriesAppType := meta.ENTRIES
+		return meta.SwitchViewMsg{App: &entriesAppType, ViewType: meta.DETAILVIEWTYPE, Data: item}
+	}
+}
 
 type JournalsCreateView struct {
 	nameInput  textinput.Model

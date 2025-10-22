@@ -334,6 +334,14 @@ func SelectEntry(id int) (Entry, error) {
 	return result, err
 }
 
+func SelectEntriesByJournal(journalId int) ([]Entry, error) {
+	result := []Entry{}
+
+	err := DB.Select(&result, `SELECT * FROM entries WHERE journal = $1;`, journalId)
+
+	return result, err
+}
+
 func DeleteEntry(id int) error {
 	_, err := DB.Exec(`DELETE FROM entries WHERE id = $1;`, id)
 
@@ -392,6 +400,21 @@ func MakeSelectEntryCmd(entryId int, targetApp meta.AppType) tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: targetApp,
+			Model:     meta.ENTRY,
+			Data:      rows,
+		}
+	}
+}
+
+func MakeSelectEntriesByJournalCmd(journalId int) tea.Cmd {
+	return func() tea.Msg {
+		rows, err := SelectEntriesByJournal(journalId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ENTRIES FOR JOURNAL %d: %#v", journalId, err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.JOURNALS,
 			Model:     meta.ENTRY,
 			Data:      rows,
 		}

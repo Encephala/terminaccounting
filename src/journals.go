@@ -72,7 +72,7 @@ func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			journal := message.Data.(database.Journal)
 
-			app.currentView = view.NewDetailView(app, journal.Id, journal.Name)
+			app.currentView = view.NewJournalsDetailsView(journal, app)
 
 		case meta.CREATEVIEWTYPE:
 			app.currentView = view.NewJournalsCreateView(app.Colours())
@@ -138,6 +138,7 @@ func (app *journalsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNAL:  {},
 		meta.ENTRYROW: {},
+		meta.ENTRY:    {},
 	}
 }
 
