@@ -340,9 +340,9 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1).Margin(0, 0, 0, 2)
 
-	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render(view.title())))
+	result.WriteString(titleStyle.Render(view.title()))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().
@@ -350,6 +350,7 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	const inputWidth = 26
 	view.getNameInput().Width = inputWidth - 2 // -2 because of the prompt
@@ -358,26 +359,20 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(view.getNameInput().View()),
+		rightStyle.Render(view.getNameInput().View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Type"),
-		" ",
-		style.Width(view.getTypeInput().MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(view.getTypeInput().View()),
+		rightStyle.Width(view.getTypeInput().MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(view.getTypeInput().View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.Render(view.getNotesInput().View()),
+		style.Render("Notes"),
+		rightStyle.Render(view.getNotesInput().View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
@@ -472,30 +467,25 @@ func (dv *LedgersDeleteView) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(dv.model.Name),
+		rightStyle.Render(dv.model.Name),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Type"),
-		" ",
-		style.Render(dv.model.Type.String()),
+		rightStyle.Render(dv.model.Type.String()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
+		style.Render("Notes"),
+		rightStyle.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
 	)
 
 	var confirmRow = lipgloss.JoinHorizontal(

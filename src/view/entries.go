@@ -1215,9 +1215,9 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1).Margin(0, 0, 0, 2)
 
-	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render(view.title())))
+	result.WriteString(titleStyle.Render(view.title()))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().
@@ -1232,11 +1232,13 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	entryRowsManager := view.getManager()
 
 	inputWidth := journalInput.MaxViewLength()
+
 	notesInput.SetWidth(inputWidth)
-	notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
-	notesInput.FocusedStyle.Text = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
-	notesInput.FocusedStyle.CursorLine = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
-	notesInput.FocusedStyle.LineNumber = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(view.getColours().Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	nameCol := lipgloss.JoinVertical(
 		lipgloss.Right,
@@ -1271,6 +1273,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			nameCol,
+			" ",
 			inputCol,
 		),
 	))
@@ -1384,24 +1387,21 @@ func (dv *EntryDeleteView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
 	style := lipgloss.NewStyle().Padding(0, 1).Border(lipgloss.RoundedBorder())
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Entry: %d", dv.model.Id)))
 	result.WriteString("\n\n")
 
 	journalRendered := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(strconv.Itoa(dv.model.Journal)),
+		rightStyle.Render(strconv.Itoa(dv.model.Journal)),
 	)
 
 	notesRendered := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.Render(strings.Join(dv.model.Notes, "\n")),
+		style.Render("Notes"),
+		rightStyle.Render(strings.Join(dv.model.Notes, "\n")),
 	)
 
 	var confirmRow = lipgloss.JoinHorizontal(

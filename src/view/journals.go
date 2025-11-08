@@ -271,6 +271,7 @@ func (cv *JournalsCreateView) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	const inputWidth = 26
 	cv.nameInput.Width = inputWidth - 2
@@ -278,26 +279,20 @@ func (cv *JournalsCreateView) View() string {
 
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(cv.nameInput.View()),
+		rightStyle.Render(cv.nameInput.View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Type"),
-		" ",
-		style.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
+		rightStyle.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.Render(cv.notesInput.View()),
+		style.Render("Notes"),
+		rightStyle.Render(cv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
@@ -484,9 +479,9 @@ func (uv *JournalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (uv *JournalsUpdateView) View() string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).Margin(0, 0, 0, 2)
 
-	result.WriteString(fmt.Sprintf("  %s", titleStyle.Render(fmt.Sprintf("UPDATE JOURNAL: %s", uv.startingValue.Name))))
+	result.WriteString(titleStyle.Render(fmt.Sprintf("UPDATE JOURNAL: %s", uv.startingValue.Name)))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().
@@ -494,6 +489,7 @@ func (uv *JournalsUpdateView) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	const inputWidth = 26
 	uv.nameInput.Width = inputWidth - 2 // -2 because of the prompt
@@ -502,26 +498,20 @@ func (uv *JournalsUpdateView) View() string {
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(uv.nameInput.View()),
+		rightStyle.Render(uv.nameInput.View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Type"),
-		" ",
-		style.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
+		rightStyle.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.Render(uv.notesInput.View()),
+		style.Render("Notes"),
+		rightStyle.Render(uv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
@@ -626,30 +616,25 @@ func (dv *JournalsDeleteView) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
+	rightStyle := style.Margin(0, 0, 0, 1)
 
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Name"),
-		" ",
-		style.Render(dv.model.Name),
+		rightStyle.Render(dv.model.Name),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
 		style.Render("Type"),
-		" ",
-		style.Render(dv.model.Type.String()),
+		rightStyle.Render(dv.model.Type.String()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"  ",
-		style.Render("Note"),
-		" ",
-		style.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
+		style.Render("Notes"),
+		rightStyle.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
 	)
 
 	var confirmRow = lipgloss.JoinHorizontal(
