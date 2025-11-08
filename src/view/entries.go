@@ -1166,6 +1166,11 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
+	case tea.WindowSizeMsg:
+		// TODO
+
+		return view, nil
+
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch *activeInput {
@@ -1376,6 +1381,11 @@ func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
 
 		return dv, tea.Batch(cmds...)
+
+	case tea.WindowSizeMsg:
+		// TODO
+
+		return dv, nil
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))

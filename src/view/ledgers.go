@@ -449,6 +449,11 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, tea.Batch(cmds...)
 
+	case tea.WindowSizeMsg:
+		// TODO
+
+		return dv, nil
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}

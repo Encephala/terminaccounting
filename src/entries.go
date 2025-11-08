@@ -36,7 +36,10 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.viewWidth = message.Width
 		app.viewHeight = message.Height
 
-		return app, nil
+		newView, cmd := app.currentView.Update(message)
+		app.currentView = newView.(meta.View)
+
+		return app, cmd
 
 	case meta.SetupSchemaMsg:
 		changedEntries, err := database.SetupSchemaEntries()
