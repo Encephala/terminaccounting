@@ -101,18 +101,22 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		id, err := newLedger.Insert()
-
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
 
-		// TODO: Add a vimesque message to inform the user of successful creation (when vimesque messages are implemented)
-		// Or maybe this should just switch to the list view or the detail view? Idk
+		var cmds []tea.Cmd
 
-		return cv, meta.MessageCmd(meta.SwitchViewMsg{
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully deleted Account %q", cv.nameInput.Value(),
+		)}))
+
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
-		})
+		}))
+
+		return cv, tea.Batch(cmds...)
 
 	default:
 		return ledgersCreateUpdateViewUpdate(cv, message)
@@ -228,9 +232,14 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes: meta.CompileNotes(uv.notesInput.Value()),
 		}
 
-		ledger.Update()
+		err := ledger.Update()
+		if err != nil {
+			return uv, meta.MessageCmd(err)
+		}
 
-		return uv, nil
+		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully updated Ledger %q", uv.nameInput.Value(),
+		)})
 
 	default:
 		return ledgersCreateUpdateViewUpdate(uv, message)
@@ -431,13 +440,15 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.CommitMsg:
 		err := database.DeleteLedger(dv.modelId)
+		if err != nil {
+			return dv, meta.MessageCmd(err)
+		}
 
-		// TODO: Add a vimesque message to inform user of successful deletion
 		var cmds []tea.Cmd
 
-		if err != nil {
-			cmds = append(cmds, meta.MessageCmd(err))
-		}
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully deleted Ledgers %q", dv.model.Name,
+		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
 

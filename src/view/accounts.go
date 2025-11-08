@@ -63,15 +63,22 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		id, err := newAccount.Insert()
-
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
 
-		return cv, meta.MessageCmd(meta.SwitchViewMsg{
+		var cmds []tea.Cmd
+
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully created Account %q", cv.nameInput.Value(),
+		)}))
+
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
-		})
+		}))
+
+		return cv, tea.Batch(cmds...)
 
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
@@ -284,9 +291,14 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes: meta.CompileNotes(uv.notesInput.Value()),
 		}
 
-		account.Update()
+		err := account.Update()
+		if err != nil {
+			return uv, meta.MessageCmd(err)
+		}
 
-		return uv, nil
+		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully updated Account %q", uv.nameInput.Value(),
+		)})
 
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
@@ -465,13 +477,15 @@ func (dv *AccountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.CommitMsg:
 		err := database.DeleteAccount(dv.modelId)
+		if err != nil {
+			return dv, meta.MessageCmd(err)
+		}
 
-		// TODO: Add a vimesque message to inform user of successful deletion
 		var cmds []tea.Cmd
 
-		if err != nil {
-			cmds = append(cmds, meta.MessageCmd(err))
-		}
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully deleted Account %q", dv.model.Name,
+		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
 

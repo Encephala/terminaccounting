@@ -140,10 +140,18 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return cv, meta.MessageCmd(err)
 		}
 
-		return cv, meta.MessageCmd(meta.SwitchViewMsg{
+		var cmds []tea.Cmd
+
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully created Entry %q", id,
+		)}))
+
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
-		})
+		}))
+
+		return cv, tea.Batch(cmds...)
 	}
 
 	return entriesCreateUpdateViewUpdate(cv, message)
@@ -312,7 +320,9 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return uv, meta.MessageCmd(err)
 		}
 
-		return uv, nil
+		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully updated Entry %q", uv.modelId,
+		)})
 
 	case meta.DataLoadedMsg:
 		switch message.Model {
@@ -1351,13 +1361,15 @@ func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.CommitMsg:
 		err := database.DeleteEntry(dv.model.Id)
+		if err != nil {
+			return dv, meta.MessageCmd(err)
+		}
 
-		// TODO: inform user of succesful deletion
 		var cmds []tea.Cmd
 
-		if err != nil {
-			cmds = append(cmds, meta.MessageCmd(err))
-		}
+		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
+			"Successfully deleted entry %q", dv.modelId,
+		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
 
