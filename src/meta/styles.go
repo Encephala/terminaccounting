@@ -113,7 +113,6 @@ type DetailViewStyles struct {
 }
 
 func NewDetailViewStyles(colours AppColours) DetailViewStyles {
-	// TODO: Update to match new listdelegate
 	title := list.DefaultStyles().Title
 	item := list.NewDefaultItemStyles().NormalDesc.Foreground(lipgloss.ANSIColor(7))
 
