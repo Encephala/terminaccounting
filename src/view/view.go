@@ -34,7 +34,7 @@ func NewListView(app meta.App) *ListView {
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
-	model := list.New([]list.Item{}, delegate, 20, 16)
+	model := list.New([]list.Item{}, delegate, 80, 16)
 	model.Title = app.Name()
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
@@ -68,7 +68,12 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	// Returning to prevent panic
 	// Required because other views do accept these messages
 	case tea.WindowSizeMsg:
-		// TODO Maybe rescale the rendering of the inputs by the window size or something
+		// -2 because of horizontal padding
+		lv.listModel.SetWidth(message.Width - 2)
+
+		// -1 to leave some bottom padding
+		lv.listModel.SetHeight(message.Height - 1)
+
 		return lv, nil
 
 	default:
@@ -214,7 +219,13 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, cmd
 
 	case tea.WindowSizeMsg:
-		// TODO maybe?
+		dv.updateTableWidth(message.Width)
+
+		// -3 for the title and table header (header is not considered for table width)
+		// -3 to for the total row
+		// -1 for padding at the bottom
+		dv.table.SetHeight(message.Height - 3 - 1 - 1)
+
 		return dv, nil
 
 	default:
@@ -277,4 +288,37 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 		targetApp := meta.ENTRIES
 		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
 	}
+}
+
+func (dv *DetailView) updateTableWidth(totalWidth int) {
+	// This is simply the width of a date field
+	dateWidth := 10
+
+	// -2 because of left/right padding
+	remainingWidth := totalWidth - dateWidth - 2
+	// -8 because of the 2-wide gap between columns
+	othersWidth := (remainingWidth - 8) / 4
+
+	dv.table.SetColumns([]table.Column{
+		{
+			Title: "Date",
+			Width: dateWidth,
+		},
+		{
+			Title: "Ledger",
+			Width: othersWidth,
+		},
+		{
+			Title: "Account",
+			Width: othersWidth,
+		},
+		{
+			Title: "Debit",
+			Width: othersWidth,
+		},
+		{
+			Title: "Credit",
+			Width: othersWidth,
+		},
+	})
 }
