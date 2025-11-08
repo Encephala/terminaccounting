@@ -60,7 +60,6 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		newView, cmd := app.currentView.Update(message)
-		// TODO: This is crashing for some reason after comitting an entry create, idk
 		app.currentView = newView.(meta.View)
 
 		return app, cmd
