@@ -47,16 +47,7 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		am.viewWidth = message.Width
 		am.viewHeight = message.Height
 
-		// -3 for the tabs and their borders
-		remainingHeight := message.Height - 3
-		for i, app := range am.apps {
-			model, cmd := app.Update(tea.WindowSizeMsg{
-				Width:  message.Width,
-				Height: remainingHeight,
-			})
-			am.apps[i] = model.(meta.App)
-			cmds = append(cmds, cmd)
-		}
+		cmds := am.updateAppsViewSize(message)
 
 		return am, tea.Batch(cmds...)
 
@@ -102,6 +93,8 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		am.apps[am.activeApp] = newApp.(meta.App)
 		cmds = append(cmds, cmd)
 
+		am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
+
 		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
 		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(am.apps[am.activeApp].CurrentCommandSet())))
 
@@ -146,6 +139,23 @@ func (m *appManager) View() string {
 	result = append(result, m.apps[m.activeApp].View())
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
+}
+
+func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {
+	var cmds []tea.Cmd
+
+	// -3 for the tabs and their borders
+	remainingHeight := message.Height - 3
+	for i, app := range am.apps {
+		model, cmd := app.Update(tea.WindowSizeMsg{
+			Width:  message.Width,
+			Height: remainingHeight,
+		})
+		am.apps[i] = model.(meta.App)
+		cmds = append(cmds, cmd)
+	}
+
+	return cmds
 }
 
 func (m *appManager) appTypeToApp(appType meta.AppType) meta.App {
