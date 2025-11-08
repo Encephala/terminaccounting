@@ -368,7 +368,7 @@ func (uv *AccountsUpdateView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).MarginLeft(2)
 
-	result.WriteString(titleStyle.Render("Creating new Account"))
+	result.WriteString(titleStyle.Render(fmt.Sprintf("Updating Account %q", uv.startingValue.Name)))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().

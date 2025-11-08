@@ -242,7 +242,7 @@ func (cv *EntryCreateView) setAccounts(accounts []database.Account) {
 }
 
 func (cv *EntryCreateView) title() string {
-	return "Create new Entry"
+	return "Creating new Entry"
 }
 
 type EntryUpdateView struct {

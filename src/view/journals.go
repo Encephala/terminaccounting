@@ -263,7 +263,7 @@ func (cv *JournalsCreateView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1).MarginLeft(2)
 
-	result.WriteString(titleStyle.Render("Creating new Account"))
+	result.WriteString(titleStyle.Render("Creating new Journal"))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().
