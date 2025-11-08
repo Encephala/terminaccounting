@@ -47,16 +47,20 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 		database.EQUITYLEDGER,
 	}
 
+	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
+	// -2 because of the prompt, -1 because of the cursor
+	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput.SetWidth(baseInputWidth)
 
 	return &LedgersCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(ledgerTypes),
-		notesInput:  noteInput,
+		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
 		colours: colours,
@@ -156,17 +160,21 @@ func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateVi
 		database.EQUITYLEDGER,
 	}
 
+	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
+	// -2 because of the prompt, -1 because of the cursor
+	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 	typeInput := itempicker.New(types)
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput.SetWidth(baseInputWidth)
 
 	return &LedgersUpdateView{
 		nameInput:   nameInput,
 		typeInput:   typeInput,
-		notesInput:  noteInput,
+		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
 		modelId: modelId,
@@ -311,7 +319,15 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 		return view, nil
 
 	case tea.WindowSizeMsg:
-		// TODO
+		// -18 covers padding on both sides, name column and borders
+		inputWidth := message.Width - 18
+		// -2 for title, -6 for the name/type input, -2 for its borders and -1 for padding at bottom
+		notesHeight := message.Height - 2 - 6 - 2 - 1
+
+		// -2 because of the prompt, -1 because of the cursor
+		view.getNameInput().Width = inputWidth - 2 - 1
+		view.getNotesInput().SetWidth(inputWidth)
+		view.getNotesInput().SetHeight(notesHeight)
 
 		return view, nil
 
@@ -351,10 +367,6 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 		UnsetWidth().
 		Align(lipgloss.Center)
 	rightStyle := style.Margin(0, 0, 0, 1)
-
-	const inputWidth = 26
-	view.getNameInput().Width = inputWidth - 2 // -2 because of the prompt
-	view.getNotesInput().SetWidth(inputWidth)
 
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
@@ -450,7 +462,9 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
-		// TODO
+		// Not much to do, view automatically updates with size of name/notes etc.
+		// TODO: when View() is updated to draw columns, do some stuff here to make columns max out at width of view
+		// with the truncate package
 
 		return dv, nil
 
