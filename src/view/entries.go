@@ -335,7 +335,6 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			entry := message.Data.(database.Entry)
 			uv.startingEntry = entry
 
-			// TODO: would be nice to have this async idk
 			journal, err := database.SelectJournal(entry.Journal)
 			if err != nil {
 				return uv, meta.MessageCmd(err)
