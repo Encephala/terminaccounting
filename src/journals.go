@@ -163,18 +163,5 @@ func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 }
 
 func (app *journalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
-	// TODO: This should load entries, not entryrows
-	// Aren't closures just great
-	return func() tea.Msg {
-		rows, err := database.SelectRowsByJournal(journalId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD JOURNAL ROWS: %v", err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.JOURNALS,
-			Model:     meta.ENTRYROW,
-			Data:      rows,
-		}
-	}
+	panic("Journals has its own detailsview, this shouldn't get called")
 }
