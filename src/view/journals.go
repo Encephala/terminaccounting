@@ -21,6 +21,8 @@ type JournalsDetailsView struct {
 
 	app meta.App
 
+	modelId int
+
 	journal database.Journal
 }
 
@@ -40,6 +42,8 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDet
 		listModel: model,
 
 		app: app,
+
+		modelId: journal.Id,
 
 		journal: journal,
 	}
@@ -94,10 +98,11 @@ func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd()) // [g]oto [d]etails
-	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{
-		ViewType: meta.CREATEVIEWTYPE,
-	}) // [g]oto [c]reate view
+	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
+	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{ViewType: meta.CREATEVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
 	return &meta.MotionSet{Normal: normalMotions}
 }
