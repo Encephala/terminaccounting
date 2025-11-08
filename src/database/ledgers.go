@@ -74,11 +74,6 @@ func (l Ledger) CompareId() int {
 	return l.Id
 }
 
-// TODO: All database interactions should be done asynchronously through tea.Cmds, so all these functions should
-// return a command that does the interaction.
-// Not actually relevant for a sqlite database, but out of principle and for the sake of learning.
-// Classid async struggles.
-
 func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
 	return func() tea.Msg {
 		ledger, err := SelectLedger(id)
