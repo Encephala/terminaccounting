@@ -1204,10 +1204,17 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to create one"))
 		}
 
+		var cmds []tea.Cmd
+
 		manager, cmd := entryRowsManager.addRow(message.after, view.getAvailableLedgers(), view.getAvailableAccounts())
 		*entryRowsManager = *manager
+		cmds = append(cmds, cmd)
 
-		return view, cmd
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchModeMsg{
+			InputMode: meta.INSERTMODE,
+		}))
+
+		return view, tea.Batch(cmds...)
 
 	default:
 		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
