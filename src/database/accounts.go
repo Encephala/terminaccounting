@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -77,8 +76,6 @@ func (a *Account) CompareId() int {
 }
 
 func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
-	slog.Debug("making load acc detail cmd")
-
 	return func() tea.Msg {
 		account, err := SelectAccount(id)
 		if err != nil {
