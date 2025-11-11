@@ -16,7 +16,7 @@ import (
 )
 
 type ledgerCreateOrUpdateView interface {
-	meta.View
+	View
 
 	title() string
 

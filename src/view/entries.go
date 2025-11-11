@@ -1075,7 +1075,7 @@ func (ercvm *EntryRowViewManager) addRow(after bool,
 }
 
 type entryCreateOrUpdateView interface {
-	meta.View
+	View
 
 	getJournalInput() *itempicker.Model
 	getNotesInput() *textarea.Model

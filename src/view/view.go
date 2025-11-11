@@ -13,6 +13,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type View interface {
+	tea.Model
+
+	AcceptedModels() map[meta.ModelType]struct{}
+
+	MotionSet() *meta.MotionSet
+	CommandSet() *meta.CommandSet
+}
+
 type activeInput int
 
 const (

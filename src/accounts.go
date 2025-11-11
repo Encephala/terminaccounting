@@ -14,7 +14,7 @@ import (
 type accountsApp struct {
 	viewWidth, viewHeight int
 
-	currentView meta.View
+	currentView view.View
 }
 
 func NewAccountsApp() meta.App {
@@ -36,7 +36,7 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.viewHeight = message.Height
 
 		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(meta.View)
+		app.currentView = newView.(view.View)
 
 		return app, cmd
 
@@ -56,7 +56,7 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(meta.View)
+		app.currentView = newView.(view.View)
 
 		return app, cmd
 
@@ -95,19 +95,19 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.SwitchFocusMsg:
 		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(meta.View)
+		app.currentView = newView.(view.View)
 
 		return app, cmd
 
 	case meta.NavigateMsg:
 		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(meta.View)
+		app.currentView = newView.(view.View)
 
 		return app, cmd
 	}
 
 	newView, cmd := app.currentView.Update(message)
-	app.currentView = newView.(meta.View)
+	app.currentView = newView.(view.View)
 
 	return app, cmd
 }
