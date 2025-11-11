@@ -83,6 +83,9 @@ type JumpVerticalMsg struct {
 
 type SwitchModeMsg struct {
 	InputMode
+	// vim treats search as command mode, so I am too
+	// Data = false -> command, true -> search
+	Data any
 }
 
 type Sequence string
@@ -120,6 +123,10 @@ type SwitchViewMsg struct {
 type ExecuteCommandMsg struct{}
 
 type TryCompleteCommandMsg struct{}
+
+type ExecuteSearchmsg struct {
+	Query string
+}
 
 // For comitting the changes from a create/update/delete view to the database
 type CommitMsg struct{}

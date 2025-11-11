@@ -81,6 +81,17 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// TODO Maybe rescale the rendering of the inputs by the window size or something
 		return dv, nil
 
+	case meta.ExecuteSearchmsg:
+		query := message.Query
+
+		if query == "" {
+			dv.listModel.ResetFilter()
+		} else {
+			dv.listModel.SetFilterText(query)
+		}
+
+		return dv, nil
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
@@ -98,6 +109,8 @@ func (dv *JournalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})

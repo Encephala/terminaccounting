@@ -88,7 +88,7 @@ func globalMotions() MotionSet {
 	// Single-stroke/no prefix
 	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
-		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE}},
+		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: false}}, // false -> not search mode
 	})
 
 	// LEADER

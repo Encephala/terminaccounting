@@ -99,6 +99,17 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return lv, nil
 
+	case meta.ExecuteSearchmsg:
+		query := message.Query
+
+		if query == "" {
+			lv.listModel.ResetFilter()
+		} else {
+			lv.listModel.SetFilterText(query)
+		}
+
+		return lv, nil
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
@@ -119,6 +130,8 @@ func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (lv *ListView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})

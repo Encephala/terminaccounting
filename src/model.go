@@ -35,7 +35,8 @@ type terminaccounting struct {
 	// vimesque command input
 	commandInput textinput.Model
 	// known commandSet
-	commandSet meta.CompleteCommandSet
+	commandSet             meta.CompleteCommandSet
+	currentCommandIsSearch bool
 }
 
 func (ta *terminaccounting) Init() tea.Cmd {
@@ -138,7 +139,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case meta.SwitchModeMsg:
-		ta.switchMode(message.InputMode)
+		ta.switchMode(message)
 
 		return ta, nil
 
@@ -196,30 +197,47 @@ func (ta *terminaccounting) resetCurrentMotion() {
 	ta.currentMotion = ta.currentMotion[:0]
 }
 
-func (ta *terminaccounting) switchMode(newMode meta.InputMode) {
+func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) {
 	if ta.inputMode == meta.COMMANDMODE {
 		ta.commandInput.Reset()
 		ta.commandInput.Blur()
 	}
 
-	ta.inputMode = newMode
+	ta.inputMode = message.InputMode
 
-	if newMode == meta.COMMANDMODE {
+	if message.InputMode == meta.COMMANDMODE {
 		ta.displayNotification = false
 		ta.commandInput.Focus()
+
+		isSearchMode := message.Data.(bool)
+
+		if isSearchMode {
+			ta.commandInput.Prompt = "/"
+			ta.currentCommandIsSearch = true
+		} else {
+			ta.commandInput.Prompt = ":"
+			ta.currentCommandIsSearch = false
+		}
 	}
 }
 
 func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, tea.Cmd) {
-	commandMsg, ok := ta.commandSet.Get(strings.Split(command, ""))
+	var cmd tea.Cmd
 
-	ta.switchMode(meta.NORMALMODE)
-
-	if !ok {
-		return ta, meta.MessageCmd(fmt.Errorf("invalid command: %v", command))
+	if ta.currentCommandIsSearch {
+		cmd = meta.MessageCmd(meta.ExecuteSearchmsg{Query: command})
+	} else {
+		commandMsg, ok := ta.commandSet.Get(strings.Split(command, ""))
+		if ok {
+			cmd = meta.MessageCmd(commandMsg)
+		} else {
+			cmd = meta.MessageCmd(fmt.Errorf("invalid command: %q", command))
+		}
 	}
 
-	return ta, meta.MessageCmd(commandMsg)
+	ta.switchMode(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+
+	return ta, cmd
 }
 
 func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting, tea.Cmd) {
@@ -271,7 +289,7 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 
 	ta.resetCurrentMotion()
 
-	return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %s", newMotion.View()))
+	return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %q", newMotion.View()))
 }
 
 func newOverlay(main *terminaccounting) *overlay.Model {
