@@ -533,7 +533,7 @@ func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea
 			row.accountInput, cmd = row.accountInput.Update(msg)
 		case 3:
 			if !validateNumberInput(msg) {
-				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+				return ercvm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", msg))
 			}
 			row.debitInput, cmd = row.debitInput.Update(msg)
 			if row.creditInput.Value() != "" {
@@ -541,7 +541,7 @@ func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea
 			}
 		case 4:
 			if !validateNumberInput(msg) {
-				return ercvm, meta.MessageCmd(fmt.Errorf("%s is not a valid character for a number", msg))
+				return ercvm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", msg))
 			}
 			row.creditInput, cmd = row.creditInput.Update(msg)
 			if row.debitInput.Value() != "" {
@@ -746,7 +746,7 @@ func (ercvm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 		// Assert not both nonempty, because the createview should automatically clear the other field
 		if debitValue != "" && creditValue != "" {
 			panic(fmt.Sprintf(
-				"expected only one of debit and credit nonempty in row %d, but got %s and %s",
+				"expected only one of debit and credit nonempty in row %d, but got %q and %q",
 				i, debitValue, creditValue))
 		}
 

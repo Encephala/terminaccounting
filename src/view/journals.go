@@ -494,7 +494,7 @@ func (uv *JournalsUpdateView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).Margin(0, 0, 0, 2)
 
-	result.WriteString(titleStyle.Render(fmt.Sprintf("UPDATE JOURNAL: %s", uv.startingValue.Name)))
+	result.WriteString(titleStyle.Render(fmt.Sprintf("Update Journal: %s", uv.startingValue.Name)))
 	result.WriteString("\n\n")
 
 	style := lipgloss.NewStyle().

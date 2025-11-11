@@ -185,7 +185,7 @@ func ParseCurrencyValue(input string) (CurrencyValue, error) {
 	}
 
 	if len(parts) != 2 {
-		return 0, fmt.Errorf("%s isn't a decimal value", input)
+		return 0, fmt.Errorf("%q isn't a decimal value", input)
 	}
 
 	left := parts[0]
@@ -212,7 +212,7 @@ func ParseCurrencyValue(input string) (CurrencyValue, error) {
 			return 0, err
 		}
 	} else {
-		return 0, fmt.Errorf("invalid decimal part %s", right)
+		return 0, fmt.Errorf("invalid decimal part %q", right)
 	}
 
 	if whole >= 0 {

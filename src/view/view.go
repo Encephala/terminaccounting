@@ -282,7 +282,7 @@ func (dv *DetailView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.app.Colours().Background).MarginLeft(2)
-	result.WriteString(titleStyle.Render(fmt.Sprintf("%s detail view: %s", dv.app.Name(), dv.modelName)))
+	result.WriteString(titleStyle.Render(fmt.Sprintf("%s Details: %s", dv.app.Name(), dv.modelName)))
 	result.WriteString("\n\n")
 
 	result.WriteString(lipgloss.JoinVertical(
