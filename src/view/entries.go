@@ -74,7 +74,7 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 	dateInput.Validate = func(input string) error {
 		for _, char := range input {
 			if !unicode.IsDigit(char) && char != '-' {
-				return fmt.Errorf("invalid character %s", string(char))
+				return fmt.Errorf("invalid character for date %q", string(char))
 			}
 		}
 
@@ -502,6 +502,13 @@ func (ercvm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea
 		switch highlightCol {
 		case 0:
 			row.dateInput, cmd = row.dateInput.Update(msg)
+
+			if row.dateInput.Err != nil {
+				cmd = tea.Batch(cmd, meta.MessageCmd(row.dateInput.Err))
+
+				row.dateInput.Err = nil
+			}
+
 		case 1:
 			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
 		case 2:
