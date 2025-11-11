@@ -51,10 +51,10 @@ func main() {
 
 	// Map the name(=type) of an app to its index in `apps`
 	appIds := make(map[meta.AppType]int, 4)
-	appIds[meta.LEDGERS] = 0
-	appIds[meta.ENTRIES] = 1
-	appIds[meta.ACCOUNTS] = 2
-	appIds[meta.JOURNALS] = 3
+	appIds[meta.LEDGERSAPP] = 0
+	appIds[meta.ENTRIESAPP] = 1
+	appIds[meta.ACCOUNTSAPP] = 2
+	appIds[meta.JOURNALSAPP] = 3
 
 	am := &appManager{
 		activeApp: 0,

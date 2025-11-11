@@ -61,7 +61,7 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return app, cmd
 
 	case meta.SwitchViewMsg:
-		if message.App != nil && *message.App != meta.LEDGERS {
+		if message.App != nil && *message.App != meta.LEDGERSAPP {
 			panic("wrong app type, something went wrong")
 		}
 
@@ -151,8 +151,8 @@ func (app *accountsApp) MakeLoadListCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ACCOUNTS,
-			Model:     meta.ACCOUNT,
+			TargetApp: meta.ACCOUNTSAPP,
+			Model:     meta.ACCOUNTMODEL,
 			Data:      items,
 		}
 	}
@@ -167,8 +167,8 @@ func (app *accountsApp) MakeLoadRowsCmd(modelId int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ACCOUNTS,
-			Model:     meta.ENTRYROW,
+			TargetApp: meta.ACCOUNTSAPP,
+			Model:     meta.ENTRYROWMODEL,
 			Data:      rows,
 		}
 	}

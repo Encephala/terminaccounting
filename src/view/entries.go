@@ -112,9 +112,9 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 func (cv *EntryCreateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
-	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
-	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIESAPP))
+	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIESAPP))
+	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIESAPP))
 
 	return tea.Batch(cmds...)
 }
@@ -163,9 +163,9 @@ func (cv *EntryCreateView) View() string {
 
 func (cv *EntryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.LEDGER:  {},
-		meta.ACCOUNT: {},
-		meta.JOURNAL: {},
+		meta.LEDGERMODEL:  {},
+		meta.ACCOUNTMODEL: {},
+		meta.JOURNALMODEL: {},
 	}
 }
 
@@ -292,9 +292,9 @@ func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 func (uv *EntryUpdateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIES))
-	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIES))
-	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIES))
+	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIESAPP))
+	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIESAPP))
+	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIESAPP))
 
 	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
 	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId))
@@ -334,7 +334,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.DataLoadedMsg:
 		switch message.Model {
-		case meta.ENTRY:
+		case meta.ENTRYMODEL:
 			// You like how I solved this race condition?
 			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
 				return uv, meta.MessageCmd(message)
@@ -353,7 +353,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			return uv, nil
 
-		case meta.ENTRYROW:
+		case meta.ENTRYROWMODEL:
 			// You like how I solved this race condition?
 			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
 				return uv, meta.MessageCmd(message)
@@ -404,11 +404,11 @@ func (uv *EntryUpdateView) View() string {
 
 func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.LEDGER:   {},
-		meta.ENTRY:    {},
-		meta.ENTRYROW: {},
-		meta.ACCOUNT:  {},
-		meta.JOURNAL:  {},
+		meta.LEDGERMODEL:   {},
+		meta.ENTRYMODEL:    {},
+		meta.ENTRYROWMODEL: {},
+		meta.ACCOUNTMODEL:  {},
+		meta.JOURNALMODEL:  {},
 	}
 }
 
@@ -1172,17 +1172,17 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case meta.DataLoadedMsg:
 		switch message.Model {
-		case meta.JOURNAL:
+		case meta.JOURNALMODEL:
 			view.setJournals(message.Data.([]database.Journal))
 
 			return view, nil
 
-		case meta.LEDGER:
+		case meta.LEDGERMODEL:
 			view.setLedgers(message.Data.([]database.Ledger))
 
 			return view, nil
 
-		case meta.ACCOUNT:
+		case meta.ACCOUNTMODEL:
 			view.setAccounts(message.Data.([]database.Account))
 
 			return view, nil
@@ -1466,7 +1466,7 @@ func (dv *EntryDeleteView) View() string {
 
 func (dv *EntryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ENTRY: {},
+		meta.ENTRYMODEL: {},
 	}
 }
 

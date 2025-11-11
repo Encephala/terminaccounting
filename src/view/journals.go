@@ -92,7 +92,7 @@ func (dv *JournalsDetailsView) View() string {
 
 func (dv *JournalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ENTRY: {},
+		meta.ENTRYMODEL: {},
 	}
 }
 
@@ -126,7 +126,7 @@ func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 			return errors.New("no item to goto detail view of")
 		}
 
-		entriesAppType := meta.ENTRIES
+		entriesAppType := meta.ENTRIESAPP
 		return meta.SwitchViewMsg{App: &entriesAppType, ViewType: meta.DETAILVIEWTYPE, Data: item}
 	}
 }
@@ -536,7 +536,7 @@ func (uv *JournalsUpdateView) View() string {
 
 func (uv *JournalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.JOURNAL: {},
+		meta.JOURNALMODEL: {},
 	}
 }
 
@@ -672,7 +672,7 @@ func (dv *JournalsDeleteView) View() string {
 
 func (dv *JournalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.JOURNAL: {},
+		meta.JOURNALMODEL: {},
 	}
 }
 

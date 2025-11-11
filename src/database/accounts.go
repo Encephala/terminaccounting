@@ -86,8 +86,8 @@ func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ACCOUNTS,
-			Model:     meta.ACCOUNT,
+			TargetApp: meta.ACCOUNTSAPP,
+			Model:     meta.ACCOUNTMODEL,
 			Data:      account,
 		}
 	}
@@ -170,7 +170,7 @@ func MakeSelectAccountsCmd(targetApp meta.AppType) tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: targetApp,
-			Model:     meta.ACCOUNT,
+			Model:     meta.ACCOUNTMODEL,
 			Data:      rows,
 		}
 	}

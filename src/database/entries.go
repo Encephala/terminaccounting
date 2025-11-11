@@ -48,8 +48,8 @@ func MakeLoadEntryDetailCmd(id int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.ENTRY,
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYMODEL,
 			Data:      entry,
 		}
 	}
@@ -399,8 +399,8 @@ func MakeSelectEntryCmd(entryId int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.ENTRY,
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYMODEL,
 			Data:      rows,
 		}
 	}
@@ -414,8 +414,8 @@ func MakeSelectEntriesByJournalCmd(journalId int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.JOURNALS,
-			Model:     meta.ENTRY,
+			TargetApp: meta.JOURNALSAPP,
+			Model:     meta.ENTRYMODEL,
 			Data:      rows,
 		}
 	}
@@ -429,8 +429,8 @@ func MakeSelectEntryRowsCmd(entryId int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.ENTRYROW,
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYROWMODEL,
 			Data:      rows,
 		}
 	}

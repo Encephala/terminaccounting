@@ -77,8 +77,8 @@ func MakeLoadJournalsDetailCmd(id int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.JOURNALS,
-			Model:     meta.JOURNAL,
+			TargetApp: meta.JOURNALSAPP,
+			Model:     meta.JOURNALMODEL,
 			Data:      journal,
 		}
 	}
@@ -164,7 +164,7 @@ func MakeSelectJournalsCmd(targetApp meta.AppType) tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: targetApp,
-			Model:     meta.JOURNAL,
+			Model:     meta.JOURNALMODEL,
 			Data:      rows,
 		}
 	}

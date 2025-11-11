@@ -34,20 +34,20 @@ type UpdateViewCommandSetMsg *CommandSet
 type AppType string
 
 const (
-	LEDGERS  AppType = "LEDGERS"
-	ENTRIES  AppType = "ENTRIES"
-	JOURNALS AppType = "JOURNALS"
-	ACCOUNTS AppType = "ACCOUNTS"
+	LEDGERSAPP  AppType = "LEDGERS"
+	ENTRIESAPP  AppType = "ENTRIES"
+	JOURNALSAPP AppType = "JOURNALS"
+	ACCOUNTSAPP AppType = "ACCOUNTS"
 )
 
 type ModelType string
 
 const (
-	LEDGER   ModelType = "LEDGER"
-	ENTRY    ModelType = "ENTRY"
-	ENTRYROW ModelType = "ENTRYROW"
-	JOURNAL  ModelType = "JOURNAL"
-	ACCOUNT  ModelType = "ACCOUNT"
+	LEDGERMODEL   ModelType = "LEDGER"
+	ENTRYMODEL    ModelType = "ENTRY"
+	ENTRYROWMODEL ModelType = "ENTRYROW"
+	JOURNALMODEL  ModelType = "JOURNAL"
+	ACCOUNTMODEL  ModelType = "ACCOUNT"
 )
 
 type DataLoadedMsg struct {

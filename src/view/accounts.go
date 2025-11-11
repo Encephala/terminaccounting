@@ -413,7 +413,7 @@ func (uv *AccountsUpdateView) View() string {
 
 func (uv *AccountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ACCOUNT: {},
+		meta.ACCOUNTMODEL: {},
 	}
 }
 
@@ -555,7 +555,7 @@ func (dv *AccountsDeleteView) View() string {
 
 func (dv *AccountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ACCOUNT: {},
+		meta.ACCOUNTMODEL: {},
 	}
 }
 

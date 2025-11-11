@@ -74,7 +74,7 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return app, cmd
 
 	case meta.SwitchViewMsg:
-		if message.App != nil && *message.App != meta.ENTRIES {
+		if message.App != nil && *message.App != meta.ENTRIESAPP {
 			panic("wrong app type, something went wrong")
 		}
 
@@ -153,8 +153,8 @@ func (app *entriesApp) MakeLoadListCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.ENTRY,
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYMODEL,
 			Data:      items,
 		}
 	}
@@ -169,8 +169,8 @@ func (app *entriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIES,
-			Model:     meta.ENTRYROW,
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYROWMODEL,
 			Data:      rows,
 		}
 	}

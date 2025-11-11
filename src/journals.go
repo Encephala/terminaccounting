@@ -61,7 +61,7 @@ func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return app, cmd
 
 	case meta.SwitchViewMsg:
-		if message.App != nil && *message.App != meta.LEDGERS {
+		if message.App != nil && *message.App != meta.LEDGERSAPP {
 			panic("wrong app type, something went wrong")
 		}
 
@@ -151,8 +151,8 @@ func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.JOURNALS,
-			Model:     meta.JOURNAL,
+			TargetApp: meta.JOURNALSAPP,
+			Model:     meta.JOURNALMODEL,
 			Data:      items,
 		}
 	}

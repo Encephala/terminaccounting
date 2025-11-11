@@ -96,10 +96,10 @@ func (lv *ListView) View() string {
 
 func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ACCOUNT: {},
-		meta.LEDGER:  {},
-		meta.ENTRY:   {},
-		meta.JOURNAL: {},
+		meta.ACCOUNTMODEL: {},
+		meta.LEDGERMODEL:  {},
+		meta.ENTRYMODEL:   {},
+		meta.JOURNALMODEL: {},
 	}
 }
 
@@ -199,7 +199,7 @@ func (dv *DetailView) Init() tea.Cmd {
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		if message.Model != meta.ENTRYROW {
+		if message.Model != meta.ENTRYROWMODEL {
 			panic(fmt.Sprintf("Expected an EntryRow, but got %v", message.Model))
 		}
 
@@ -269,7 +269,7 @@ func (dv *DetailView) View() string {
 
 func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ENTRYROW: {},
+		meta.ENTRYROWMODEL: {},
 	}
 }
 
@@ -309,7 +309,7 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 		}
 
 		// Stupid go not allowing to reference a const
-		targetApp := meta.ENTRIES
+		targetApp := meta.ENTRIESAPP
 		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
 	}
 }

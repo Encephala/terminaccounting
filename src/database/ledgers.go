@@ -82,8 +82,8 @@ func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
 		}
 
 		return meta.DataLoadedMsg{
-			TargetApp: meta.LEDGERS,
-			Model:     meta.LEDGER,
+			TargetApp: meta.LEDGERSAPP,
+			Model:     meta.LEDGERMODEL,
 			Data:      ledger,
 		}
 	}
@@ -166,7 +166,7 @@ func MakeSelectLedgersCmd(targetApp meta.AppType) tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: targetApp,
-			Model:     meta.LEDGER,
+			Model:     meta.LEDGERMODEL,
 			Data:      rows,
 		}
 	}

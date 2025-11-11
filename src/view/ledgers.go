@@ -264,7 +264,7 @@ func (uv *LedgersUpdateView) View() string {
 
 func (uv *LedgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.LEDGER: {},
+		meta.LEDGERMODEL: {},
 	}
 }
 
@@ -538,7 +538,7 @@ func (dv *LedgersDeleteView) View() string {
 
 func (dv *LedgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.LEDGER: {},
+		meta.LEDGERMODEL: {},
 	}
 }
 
