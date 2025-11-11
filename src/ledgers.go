@@ -135,10 +135,7 @@ func (app *ledgersApp) CurrentCommandSet() *meta.CommandSet {
 }
 
 func (app *ledgersApp) AcceptedModels() map[meta.ModelType]struct{} {
-	return map[meta.ModelType]struct{}{
-		meta.LEDGER:   {},
-		meta.ENTRYROW: {},
-	}
+	return app.currentView.AcceptedModels()
 }
 
 func (app *ledgersApp) MakeLoadListCmd() tea.Cmd {

@@ -85,6 +85,15 @@ func (lv *ListView) View() string {
 	return lv.listModel.View()
 }
 
+func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ACCOUNT: {},
+		meta.LEDGER:  {},
+		meta.ENTRY:   {},
+		meta.JOURNAL: {},
+	}
+}
+
 func (lv *ListView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -247,6 +256,12 @@ func (dv *DetailView) View() string {
 	))
 
 	return result.String()
+}
+
+func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ENTRYROW: {},
+	}
 }
 
 func (dv *DetailView) MotionSet() *meta.MotionSet {

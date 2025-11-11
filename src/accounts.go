@@ -135,10 +135,7 @@ func (app *accountsApp) CurrentCommandSet() *meta.CommandSet {
 }
 
 func (app *accountsApp) AcceptedModels() map[meta.ModelType]struct{} {
-	return map[meta.ModelType]struct{}{
-		meta.ACCOUNT:  {},
-		meta.ENTRYROW: {},
-	}
+	return app.currentView.AcceptedModels()
 }
 
 func (app *accountsApp) MakeLoadListCmd() tea.Cmd {

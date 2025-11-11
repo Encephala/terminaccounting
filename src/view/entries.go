@@ -161,6 +161,14 @@ func (cv *EntryCreateView) View() string {
 	return entriesCreateUpdateViewView(cv)
 }
 
+func (cv *EntryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGER:  {},
+		meta.ACCOUNT: {},
+		meta.JOURNAL: {},
+	}
+}
+
 type DeleteEntryRowMsg struct{}
 type CreateEntryRowMsg struct {
 	after bool
@@ -392,6 +400,16 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (uv *EntryUpdateView) View() string {
 	return entriesCreateUpdateViewView(uv)
+}
+
+func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGER:   {},
+		meta.ENTRY:    {},
+		meta.ENTRYROW: {},
+		meta.ACCOUNT:  {},
+		meta.JOURNAL:  {},
+	}
 }
 
 func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
@@ -1444,6 +1462,12 @@ func (dv *EntryDeleteView) View() string {
 	))
 
 	return result.String()
+}
+
+func (dv *EntryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ENTRY: {},
+	}
 }
 
 func (dv *EntryDeleteView) MotionSet() *meta.MotionSet {

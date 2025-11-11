@@ -131,6 +131,10 @@ func (cv *LedgersCreateView) View() string {
 	return ledgersCreateUpdateViewView(cv)
 }
 
+func (cv *LedgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{}
+}
+
 func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
 	return ledgersCreateUpdateViewMotionSet()
 }
@@ -256,6 +260,12 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (uv *LedgersUpdateView) View() string {
 	return ledgersCreateUpdateViewView(uv)
+}
+
+func (uv *LedgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGER: {},
+	}
 }
 
 func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
@@ -524,6 +534,12 @@ func (dv *LedgersDeleteView) View() string {
 	))
 
 	return result.String()
+}
+
+func (dv *LedgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGER: {},
+	}
 }
 
 func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {

@@ -137,13 +137,7 @@ func (app *entriesApp) CurrentCommandSet() *meta.CommandSet {
 }
 
 func (app *entriesApp) AcceptedModels() map[meta.ModelType]struct{} {
-	return map[meta.ModelType]struct{}{
-		meta.ENTRY:    {},
-		meta.ENTRYROW: {},
-		meta.JOURNAL:  {},
-		meta.LEDGER:   {},
-		meta.ACCOUNT:  {},
-	}
+	return app.currentView.AcceptedModels()
 }
 
 func (app *entriesApp) MakeLoadListCmd() tea.Cmd {

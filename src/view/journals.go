@@ -90,6 +90,12 @@ func (dv *JournalsDetailsView) View() string {
 	return dv.listModel.View()
 }
 
+func (dv *JournalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ENTRY: {},
+	}
+}
+
 func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -303,6 +309,10 @@ func (cv *JournalsCreateView) View() string {
 	))
 
 	return result.String()
+}
+
+func (cv *JournalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{}
 }
 
 func (cv *JournalsCreateView) MotionSet() *meta.MotionSet {
@@ -524,6 +534,12 @@ func (uv *JournalsUpdateView) View() string {
 	return result.String()
 }
 
+func (uv *JournalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.JOURNAL: {},
+	}
+}
+
 func (uv *JournalsUpdateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -652,6 +668,12 @@ func (dv *JournalsDeleteView) View() string {
 	))
 
 	return result.String()
+}
+
+func (dv *JournalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.JOURNAL: {},
+	}
 }
 
 func (dv *JournalsDeleteView) MotionSet() *meta.MotionSet {

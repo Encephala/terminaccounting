@@ -192,6 +192,10 @@ func (cv *AccountsCreateView) View() string {
 	return result.String()
 }
 
+func (cv *AccountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{}
+}
+
 func (cv *AccountsCreateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -407,6 +411,12 @@ func (uv *AccountsUpdateView) View() string {
 	return result.String()
 }
 
+func (uv *AccountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ACCOUNT: {},
+	}
+}
+
 func (uv *AccountsUpdateView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
@@ -541,6 +551,12 @@ func (dv *AccountsDeleteView) View() string {
 	))
 
 	return result.String()
+}
+
+func (dv *AccountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ACCOUNT: {},
+	}
 }
 
 func (dv *AccountsDeleteView) MotionSet() *meta.MotionSet {

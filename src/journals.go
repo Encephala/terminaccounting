@@ -135,11 +135,7 @@ func (app *journalsApp) CurrentCommandSet() *meta.CommandSet {
 }
 
 func (app *journalsApp) AcceptedModels() map[meta.ModelType]struct{} {
-	return map[meta.ModelType]struct{}{
-		meta.JOURNAL:  {},
-		meta.ENTRYROW: {},
-		meta.ENTRY:    {},
-	}
+	return app.currentView.AcceptedModels()
 }
 
 func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
