@@ -1110,13 +1110,10 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		if *activeInput != ENTRYROWINPUT {
 			switch message.Direction {
 			case meta.PREVIOUS:
-				*activeInput--
-				if *activeInput < 0 {
-					*activeInput += 3
-				}
+				activeInput.previous(3)
+
 			case meta.NEXT:
-				*activeInput++
-				*activeInput %= 3
+				activeInput.next(3)
 			}
 
 			// If it changed to entryrow input

@@ -94,14 +94,10 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			cv.activeInput--
-			if cv.activeInput < 0 {
-				cv.activeInput += 3
-			}
+			cv.activeInput.previous(3)
 
 		case meta.NEXT:
-			cv.activeInput++
-			cv.activeInput %= 3
+			cv.activeInput.next(3)
 		}
 
 		// If now on a textinput, focus it
@@ -313,14 +309,10 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			uv.activeInput--
-			if uv.activeInput < 0 {
-				uv.activeInput += 3
-			}
+			uv.activeInput.previous(3)
 
 		case meta.NEXT:
-			uv.activeInput++
-			uv.activeInput %= 3
+			uv.activeInput.next(3)
 		}
 
 		// If now on a textinput, focus it

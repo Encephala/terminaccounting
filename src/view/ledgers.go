@@ -305,14 +305,10 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			*view.getActiveInput()--
-			if *view.getActiveInput() < 0 {
-				*view.getActiveInput() += 3
-			}
+			view.getActiveInput().previous(3)
 
 		case meta.NEXT:
-			*view.getActiveInput()++
-			*view.getActiveInput() %= 3
+			view.getActiveInput().next(3)
 		}
 
 		// If now on a textinput, focus it

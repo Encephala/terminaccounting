@@ -24,6 +24,20 @@ type View interface {
 
 type activeInput int
 
+func (input *activeInput) previous(numInputs int) {
+	*input--
+
+	if *input < 0 {
+		*input += activeInput(numInputs)
+	}
+}
+
+func (input *activeInput) next(numInputs int) {
+	*input++
+
+	*input %= activeInput(numInputs)
+}
+
 const (
 	NAMEINPUT activeInput = iota
 	TYPEINPUT
