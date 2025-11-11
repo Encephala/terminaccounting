@@ -159,9 +159,7 @@ func NewJournalsCreateView(colours meta.AppColours) *JournalsCreateView {
 }
 
 func (cv *JournalsCreateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
