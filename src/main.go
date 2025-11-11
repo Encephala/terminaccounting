@@ -80,7 +80,7 @@ func main() {
 
 	ta.overlay = newOverlay(ta)
 
-	finalModel, err := tea.NewProgram(ta).Run()
+	finalModel, err := tea.NewProgram(ta, tea.WithAltScreen()).Run()
 	if err != nil {
 		message := fmt.Sprintf("Bubbletea error: %v", err)
 		slog.Error(message)
