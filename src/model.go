@@ -241,12 +241,8 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 }
 
 func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting, tea.Cmd) {
-	// ctrl+c to reset the current motion can't be handled as a motion itself,
-	// because then for instance ["g", "ctrl+c"] would be recognised as an invalid motion
-	if ta.inputMode == meta.NORMALMODE && message.Type == tea.KeyCtrlC {
-		ta.resetCurrentMotion()
-
-		return ta, nil
+	if message.Type == tea.KeyCtrlC {
+		return ta.handleCtrlC()
 	}
 
 	newMotion := append(ta.currentMotion, message.String())
@@ -290,6 +286,28 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 	ta.resetCurrentMotion()
 
 	return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %q", newMotion.View()))
+}
+
+func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
+	if len(ta.currentMotion) > 0 {
+		ta.resetCurrentMotion()
+
+		return ta, nil
+	}
+
+	switch ta.inputMode {
+	case meta.NORMALMODE:
+		return ta, nil
+
+	case meta.INSERTMODE:
+		return ta, meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+
+	case meta.COMMANDMODE:
+		return ta, meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
+	}
 }
 
 func newOverlay(main *terminaccounting) *overlay.Model {
