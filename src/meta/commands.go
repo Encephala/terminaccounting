@@ -26,10 +26,10 @@ func (cs *CommandSet) containsPath(path Command) bool {
 	return asTrie.containsPath(path)
 }
 
-func (cs *CommandSet) getAutocompletion(path []string) []string {
+func (cs *CommandSet) autocomplete(path []string) []string {
 	asTrie := Trie[tea.Msg](*cs)
 
-	return asTrie.getAutocompletion(path)
+	return asTrie.autocompletion(path)
 }
 
 type CompleteCommandSet struct {
@@ -65,14 +65,14 @@ func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
 	return ccs.globalCommandSet.containsPath(path)
 }
 
-func (ccs *CompleteCommandSet) GetAutocompletion(path []string) []string {
-	viewSpecific := ccs.ViewCommandSet.getAutocompletion(path)
+func (ccs *CompleteCommandSet) Autocomplete(path []string) []string {
+	viewSpecific := ccs.ViewCommandSet.autocomplete(path)
 
 	if viewSpecific != nil {
 		return viewSpecific
 	}
 
-	return ccs.globalCommandSet.getAutocompletion(path)
+	return ccs.globalCommandSet.autocomplete(path)
 }
 
 type commandWithValue struct {
@@ -84,7 +84,7 @@ func globalCommands() CommandSet {
 	commands := make([]commandWithValue, 0)
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
-		{Command{"q"}, CloseViewMsg{}},
+		{Command(strings.Split("quit", "")), CloseViewMsg{}},
 		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
 	})
 

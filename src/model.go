@@ -151,10 +151,11 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.TryCompleteCommandMsg:
 		commandSoFar := strings.Split(ta.commandInput.Value(), "")
 
-		completed := ta.commandSet.GetAutocompletion(commandSoFar)
+		completed := ta.commandSet.Autocomplete(commandSoFar)
 
 		if completed != nil {
 			ta.commandInput.SetValue(strings.Join(completed, ""))
+			ta.commandInput.CursorEnd()
 		}
 
 		return ta, nil
@@ -231,11 +232,21 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 			cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
 		}
 	} else {
-		commandMsg, ok := ta.commandSet.Get(strings.Split(command, ""))
+		command := strings.Split(command, "")
+
+		if completion := ta.commandSet.Autocomplete(command); completion != nil {
+			slog.Debug(fmt.Sprintf("Autocompleted command %q to %q",
+				strings.Join(command, ""), strings.Join(completion, ""),
+			))
+
+			command = completion
+		}
+
+		commandMsg, ok := ta.commandSet.Get(command)
 		if ok {
 			cmd = meta.MessageCmd(commandMsg)
 		} else {
-			cmd = meta.MessageCmd(fmt.Errorf("invalid command: %q", command))
+			cmd = meta.MessageCmd(fmt.Errorf("invalid command: %q", strings.Join(command, "")))
 		}
 	}
 

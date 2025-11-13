@@ -206,7 +206,7 @@ func (cv *AccountsCreateView) MotionSet() *meta.MotionSet {
 func (cv *AccountsCreateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
@@ -429,7 +429,7 @@ func (uv *AccountsUpdateView) MotionSet() *meta.MotionSet {
 func (uv *AccountsUpdateView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
@@ -566,7 +566,7 @@ func (dv *AccountsDeleteView) MotionSet() *meta.MotionSet {
 func (dv *AccountsDeleteView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet

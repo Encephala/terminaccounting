@@ -1361,7 +1361,7 @@ func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
 func entriesCreateUpdateViewCommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet
@@ -1482,7 +1482,7 @@ func (dv *EntryDeleteView) MotionSet() *meta.MotionSet {
 func (dv *EntryDeleteView) CommandSet() *meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
-	commands.Insert(meta.Command{"w"}, meta.CommitMsg{})
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	asCommandSet := meta.CommandSet(commands)
 	return &asCommandSet

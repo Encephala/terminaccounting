@@ -56,7 +56,7 @@ func (t *Trie[T]) containsPath(path []string) bool {
 // Short-circuiting method to get a leaf node from the current path
 // Might upgrade it to not be short-circuiting anymore in the future (i.e. return [][]string, all possible autocompletions)
 // but KISS for now, I don't have that many commands anwyays
-func (t *Trie[T]) getAutocompletion(path []string) []string {
+func (t *Trie[T]) autocompletion(path []string) []string {
 	// Walk Trie until along the given path
 	// If child not found, there is no autocomplete to be had
 	for _, value := range path {
