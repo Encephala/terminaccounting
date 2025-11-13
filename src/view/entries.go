@@ -143,7 +143,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully created Entry %q", id,
+			"Successfully created Entry \"%d\"", id,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
