@@ -329,7 +329,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully updated Entry %q", uv.modelId,
+			"Successfully updated Entry \"%d\"", uv.modelId,
 		)})
 
 	case meta.DataLoadedMsg:
@@ -1404,7 +1404,7 @@ func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully deleted entry %q", dv.modelId,
+			"Successfully deleted entry \"%d\"", dv.modelId,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
