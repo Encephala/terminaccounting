@@ -225,7 +225,11 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 	var cmd tea.Cmd
 
 	if ta.currentCommandIsSearch {
-		cmd = meta.MessageCmd(meta.ExecuteSearchmsg{Query: command})
+		if command == "" {
+			cmd = meta.MessageCmd(meta.ResetSearchMsg{})
+		} else {
+			cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
+		}
 	} else {
 		commandMsg, ok := ta.commandSet.Get(strings.Split(command, ""))
 		if ok {
@@ -276,6 +280,10 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 			var cmd tea.Cmd
 			ta.commandInput, cmd = ta.commandInput.Update(message)
 
+			if ta.currentCommandIsSearch {
+				cmd = tea.Batch(cmd, meta.MessageCmd(meta.UpdateSearchMsg{Query: ta.commandInput.Value()}))
+			}
+
 			return ta, cmd
 
 		default:
@@ -297,13 +305,21 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 
 	switch ta.inputMode {
 	case meta.NORMALMODE:
-		return ta, nil
+		return ta, meta.MessageCmd(meta.ResetSearchMsg{})
 
 	case meta.INSERTMODE:
 		return ta, meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
 
 	case meta.COMMANDMODE:
-		return ta, meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+		modeCmd := meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+
+		if ta.currentCommandIsSearch {
+			searchCmd := meta.MessageCmd(meta.ResetSearchMsg{})
+
+			return ta, tea.Batch(modeCmd, searchCmd)
+		}
+
+		return ta, modeCmd
 
 	default:
 		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))

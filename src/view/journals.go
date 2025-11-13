@@ -81,14 +81,13 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// TODO Maybe rescale the rendering of the inputs by the window size or something
 		return dv, nil
 
-	case meta.ExecuteSearchmsg:
-		query := message.Query
+	case meta.ResetSearchMsg:
+		dv.listModel.ResetFilter()
 
-		if query == "" {
-			dv.listModel.ResetFilter()
-		} else {
-			dv.listModel.SetFilterText(query)
-		}
+		return dv, nil
+
+	case meta.UpdateSearchMsg:
+		dv.listModel.SetFilterText(message.Query)
 
 		return dv, nil
 

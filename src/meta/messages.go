@@ -124,7 +124,9 @@ type ExecuteCommandMsg struct{}
 
 type TryCompleteCommandMsg struct{}
 
-type ExecuteSearchmsg struct {
+type ResetSearchMsg struct{}
+
+type UpdateSearchMsg struct {
 	Query string
 }
 

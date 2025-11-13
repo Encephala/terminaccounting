@@ -99,14 +99,13 @@ func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return lv, nil
 
-	case meta.ExecuteSearchmsg:
-		query := message.Query
+	case meta.ResetSearchMsg:
+		lv.listModel.ResetFilter()
 
-		if query == "" {
-			lv.listModel.ResetFilter()
-		} else {
-			lv.listModel.SetFilterText(query)
-		}
+		return lv, nil
+
+	case meta.UpdateSearchMsg:
+		lv.listModel.SetFilterText(message.Query)
 
 		return lv, nil
 
