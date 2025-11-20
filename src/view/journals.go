@@ -110,6 +110,7 @@ func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
+	normalMotions.Insert(meta.Motion{"ctrl+l"}, meta.ResetSearchMsg{})
 
 	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})

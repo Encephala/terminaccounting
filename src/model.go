@@ -323,7 +323,7 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 
 	switch ta.inputMode {
 	case meta.NORMALMODE:
-		return ta, meta.MessageCmd(meta.ResetSearchMsg{})
+		return ta, nil
 
 	case meta.INSERTMODE:
 		return ta, meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
