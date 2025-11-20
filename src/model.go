@@ -141,9 +141,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case meta.SwitchModeMsg:
-		ta.switchMode(message)
-
-		return ta, nil
+		return ta, ta.switchMode(message)
 
 	case meta.ExecuteCommandMsg:
 		command := ta.commandInput.Value()
@@ -200,7 +198,9 @@ func (ta *terminaccounting) resetCurrentMotion() {
 	ta.currentMotion = ta.currentMotion[:0]
 }
 
-func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) {
+func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) tea.Cmd {
+	var cmd tea.Cmd
+
 	if ta.inputMode == meta.COMMANDMODE {
 		ta.commandInput.Reset()
 		ta.commandInput.Blur()
@@ -217,11 +217,16 @@ func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) {
 		if isSearchMode {
 			ta.commandInput.Prompt = "/"
 			ta.currentCommandIsSearch = true
+
+			// If switching to search, send an empty search to views
+			cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: ""})
 		} else {
 			ta.commandInput.Prompt = ":"
 			ta.currentCommandIsSearch = false
 		}
 	}
+
+	return cmd
 }
 
 func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, tea.Cmd) {
@@ -252,9 +257,9 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 		}
 	}
 
-	ta.switchMode(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+	searchCmd := ta.switchMode(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
 
-	return ta, cmd
+	return ta, tea.Batch(cmd, searchCmd)
 }
 
 func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting, tea.Cmd) {
