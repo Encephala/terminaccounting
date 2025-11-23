@@ -122,6 +122,10 @@ func (app *accountsApp) Name() string {
 	return "Accounts"
 }
 
+func (app *accountsApp) Type() meta.AppType {
+	return meta.ACCOUNTSAPP
+}
+
 func (app *accountsApp) Colours() meta.AppColours {
 	return meta.ACCOUNTSCOLOURS
 }

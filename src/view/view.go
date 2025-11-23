@@ -173,6 +173,9 @@ type DetailView struct {
 	modelName string
 
 	rows []database.EntryRow
+
+	availableLedgers  []database.Ledger
+	availableAccounts []database.Account
 }
 
 func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
@@ -200,40 +203,35 @@ func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 
 func (dv *DetailView) Init() tea.Cmd {
 	// TODO: Also show the model metadata and not just the rows?
-	return dv.app.MakeLoadRowsCmd(dv.modelId)
+	var cmds []tea.Cmd
+	cmds = append(cmds, dv.app.MakeLoadRowsCmd(dv.modelId))
+
+	cmds = append(cmds, database.MakeSelectLedgersCmd(dv.app.Type()))
+	cmds = append(cmds, database.MakeSelectAccountsCmd(dv.app.Type()))
+
+	return tea.Batch(cmds...)
 }
 
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		if message.Model != meta.ENTRYROWMODEL {
-			panic(fmt.Sprintf("Expected an EntryRow, but got %v", message.Model))
+		switch message.Model {
+		case meta.ENTRYROWMODEL:
+			dv.rows = message.Data.([]database.EntryRow)
+
+		case meta.ACCOUNTMODEL:
+			dv.availableAccounts = message.Data.([]database.Account)
+
+		case meta.LEDGERMODEL:
+			dv.availableLedgers = message.Data.([]database.Ledger)
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
-		dv.rows = message.Data.([]database.EntryRow)
+		cmd := dv.updateTableRows()
 
-		var tableRows []table.Row
-		for _, row := range dv.rows {
-			newTableRow := table.Row{}
-
-			newTableRow = append(newTableRow, row.Date.String())
-			// newTableRow = append(newTableRow, row.Ledger.String())
-			newTableRow = append(newTableRow, "LedgerName")
-			newTableRow = append(newTableRow, "AccountName")
-			if row.Value > 0 {
-				newTableRow = append(newTableRow, row.Value.String())
-				newTableRow = append(newTableRow, "")
-			} else {
-				newTableRow = append(newTableRow, "")
-				newTableRow = append(newTableRow, (-row.Value).String())
-			}
-
-			tableRows = append(tableRows, newTableRow)
-		}
-
-		dv.table.SetRows(tableRows)
-
-		return dv, nil
+		return dv, cmd
 
 	case meta.NavigateMsg:
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
@@ -277,6 +275,8 @@ func (dv *DetailView) View() string {
 func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYROWMODEL: {},
+		meta.ACCOUNTMODEL:  {},
+		meta.LEDGERMODEL:   {},
 	}
 }
 
@@ -302,6 +302,70 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 
 func (dv *DetailView) CommandSet() *meta.CommandSet {
 	return &meta.CommandSet{}
+}
+
+func (dv *DetailView) updateTableRows() tea.Cmd {
+	var tableRows []table.Row
+	for _, row := range dv.rows {
+		newTableRow := table.Row{}
+
+		newTableRow = append(newTableRow, row.Date.String())
+
+		italicStyle := lipgloss.NewStyle().Italic(true)
+		var ledger, account string
+
+		if dv.availableLedgers != nil {
+			found := false
+			for _, l := range dv.availableLedgers {
+				if l.Id == row.Ledger {
+					ledger = l.Name
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find ledger %d", row.Ledger)})
+			}
+		} else {
+			ledger = italicStyle.Render("Ledger")
+		}
+
+		if row.Account == nil {
+			account = lipgloss.NewStyle().Italic(true).Render("None")
+		} else if dv.availableAccounts != nil {
+			found := false
+			for _, a := range dv.availableAccounts {
+				if a.Id == *row.Account {
+					account = a.Name
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find account %d", row.Ledger)})
+			}
+		} else {
+			ledger = italicStyle.Render("Account")
+		}
+
+		newTableRow = append(newTableRow, ledger)
+		newTableRow = append(newTableRow, account)
+		if row.Value > 0 {
+			newTableRow = append(newTableRow, row.Value.String())
+			newTableRow = append(newTableRow, "")
+		} else {
+			newTableRow = append(newTableRow, "")
+			newTableRow = append(newTableRow, (-row.Value).String())
+		}
+
+		tableRows = append(tableRows, newTableRow)
+	}
+
+	dv.table.SetRows(tableRows)
+
+	return nil
 }
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {

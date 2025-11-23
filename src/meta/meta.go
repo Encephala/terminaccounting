@@ -9,6 +9,7 @@ type App interface {
 	tea.Model
 
 	Name() string
+	Type() AppType
 
 	Colours() AppColours
 

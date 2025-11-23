@@ -122,6 +122,10 @@ func (app *journalsApp) Name() string {
 	return "Journals"
 }
 
+func (app *journalsApp) Type() meta.AppType {
+	return meta.JOURNALSAPP
+}
+
 func (app *journalsApp) Colours() meta.AppColours {
 	return meta.JOURNALSCOLOURS
 }

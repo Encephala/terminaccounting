@@ -122,6 +122,10 @@ func (app *ledgersApp) Name() string {
 	return "Ledgers"
 }
 
+func (app *ledgersApp) Type() meta.AppType {
+	return meta.LEDGERSAPP
+}
+
 func (app *ledgersApp) Colours() meta.AppColours {
 	return meta.LEDGERSCOLOURS
 }

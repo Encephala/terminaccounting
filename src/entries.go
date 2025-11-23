@@ -124,6 +124,10 @@ func (app *entriesApp) Name() string {
 	return "Entries"
 }
 
+func (app *entriesApp) Type() meta.AppType {
+	return meta.ENTRIESAPP
+}
+
 func (app *entriesApp) Colours() meta.AppColours {
 	return meta.ENTRIESCOLOURS
 }
