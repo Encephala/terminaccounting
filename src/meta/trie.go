@@ -60,10 +60,10 @@ func (t *Trie[T]) autocompletion(path []string) []string {
 	// Walk Trie until along the given path
 	// If child not found, there is no autocomplete to be had
 	for _, value := range path {
-		if child, ok := t.getChild(value); !ok {
-			return nil
-		} else {
+		if child, ok := t.getChild(value); ok {
 			t = child
+		} else {
+			return nil
 		}
 	}
 
