@@ -176,39 +176,15 @@ type DetailView struct {
 }
 
 func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
-	tableModel := table.New(
-		table.WithColumns([]table.Column{
-			{
-				Title: "Date",
-				Width: 10,
-			},
-			{
-				Title: "Ledger",
-				Width: 20,
-			},
-			{
-				Title: "Account",
-				Width: 20,
-			},
-			{
-				Title: "Debit",
-				Width: 20,
-			},
-			{
-				Title: "Credit",
-				Width: 20,
-			},
-		}),
-	)
+	tableModel := table.New()
+	// I don't think we ever have to blur the table
+	tableModel.Focus()
 
 	tableStyle := table.DefaultStyles()
 	tableStyle.Selected = lipgloss.NewStyle().Foreground(app.Colours().Foreground)
 	tableModel.SetStyles(tableStyle)
 
-	// I don't think we ever have to blur the table
-	tableModel.Focus()
-
-	return &DetailView{
+	view := &DetailView{
 		table: tableModel,
 
 		app: app,
@@ -216,6 +192,10 @@ func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 		modelId:   itemId,
 		modelName: itemName,
 	}
+
+	view.updateTableWidth(90)
+
+	return view
 }
 
 func (dv *DetailView) Init() tea.Cmd {
