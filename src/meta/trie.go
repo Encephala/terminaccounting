@@ -57,6 +57,10 @@ func (t *Trie[T]) containsPath(path []string) bool {
 // Might upgrade it to not be short-circuiting anymore in the future (i.e. return [][]string, all possible autocompletions)
 // but KISS for now, I don't have that many commands anwyays
 func (t *Trie[T]) autocompletion(path []string) []string {
+	if len(path) == 0 {
+		return nil
+	}
+
 	// Walk Trie until along the given path
 	// If child not found, there is no autocomplete to be had
 	for _, value := range path {
