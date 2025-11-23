@@ -238,7 +238,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 		} else {
 			cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
 		}
-	} else {
+	} else if command != "" {
 		command := strings.Split(command, "")
 
 		if completion := ta.commandSet.Autocomplete(command); completion != nil {
@@ -257,9 +257,9 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 		}
 	}
 
-	searchCmd := ta.switchMode(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
+	modeCmd := ta.switchMode(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
 
-	return ta, tea.Batch(cmd, searchCmd)
+	return ta, tea.Batch(cmd, modeCmd)
 }
 
 func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting, tea.Cmd) {
