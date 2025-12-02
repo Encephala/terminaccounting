@@ -89,8 +89,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, cmd
 
 	case meta.NotificationMessageMsg:
-		slog.Debug(fmt.Sprintf("Showing message: %q", message.Message))
-
 		notification := notificationMsg{
 			text:    message.Message,
 			isError: false,
