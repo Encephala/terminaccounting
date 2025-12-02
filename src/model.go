@@ -51,11 +51,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, nil
 
-	case meta.CloseModalMsg:
-		ta.showModal = false
-
-		return ta, nil
-
 	case meta.CloseViewMsg:
 		if ta.showModal {
 			ta.showModal = false
