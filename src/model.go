@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type terminaccounting struct {
@@ -336,4 +337,17 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 	default:
 		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
 	}
+}
+
+type notificationMsg struct {
+	text    string
+	isError bool
+}
+
+func (nm notificationMsg) String() string {
+	if nm.isError {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(nm.text)
+	}
+
+	return nm.text
 }

@@ -4,7 +4,6 @@ import (
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
@@ -33,17 +32,4 @@ func (mm textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (mm textModal) View() string {
 	return meta.ModalStyle.Render(mm.message)
-}
-
-type notificationMsg struct {
-	text    string
-	isError bool
-}
-
-func (nm notificationMsg) String() string {
-	if nm.isError {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(nm.text)
-	}
-
-	return nm.text
 }
