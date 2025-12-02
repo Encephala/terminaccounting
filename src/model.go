@@ -9,14 +9,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {
-	overlay    *overlay.Model
 	appManager *appManager
-	modal      *modalModel
+	modal      tea.Model
 
 	showModal             bool
 	viewWidth, viewHeight int
@@ -45,13 +42,16 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
-	case meta.ShowModalMsg:
+	case meta.ShowTextMsg:
 		ta.showModal = true
-		ta.modal.message = message.Message
 
-		return ta, nil
+		ta.modal = textModal{
+			message: message.Text,
+		}
 
-	case meta.CloseViewMsg:
+		return ta, ta.modal.Init()
+
+	case meta.QuitMsg:
 		if ta.showModal {
 			ta.showModal = false
 
@@ -116,7 +116,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			rendered = rendered[len(rendered)-maxMessages:]
 		}
 
-		return ta, meta.MessageCmd(meta.ShowModalMsg{Message: strings.Join(rendered, "\n")})
+		return ta, meta.MessageCmd(meta.ShowTextMsg{Text: strings.Join(rendered, "\n")})
 
 	case meta.FatalErrorMsg:
 		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
@@ -171,7 +171,7 @@ func (ta *terminaccounting) View() string {
 	var result strings.Builder
 
 	if ta.showModal {
-		result.WriteString(ta.overlay.View())
+		result.WriteString(newOverlay(ta).View())
 	} else {
 		result.WriteString(ta.appManager.View())
 	}
@@ -187,6 +187,7 @@ func (ta *terminaccounting) View() string {
 	return result.String()
 }
 
+// Purely for readability
 func (ta *terminaccounting) resetCurrentMotion() {
 	ta.currentMotion = ta.currentMotion[:0]
 }
@@ -335,44 +336,4 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 	default:
 		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
 	}
-}
-
-func newOverlay(main *terminaccounting) *overlay.Model {
-	return overlay.New(
-		main.modal,
-		main.appManager,
-		overlay.Center,
-		overlay.Center,
-		0,
-		1,
-	)
-}
-
-type notificationMsg struct {
-	text    string
-	isError bool
-}
-
-func (nm notificationMsg) String() string {
-	if nm.isError {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(nm.text)
-	}
-
-	return nm.text
-}
-
-type modalModel struct {
-	message string
-}
-
-func (mm *modalModel) Init() tea.Cmd {
-	return nil
-}
-
-func (mm *modalModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	return mm, nil
-}
-
-func (mm *modalModel) View() string {
-	return meta.ModalStyle.Render(mm.message)
 }

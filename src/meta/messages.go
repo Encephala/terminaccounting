@@ -9,16 +9,17 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
 
-type CloseViewMsg struct{}
+type QuitMsg struct{}
 
 type NotificationMessageMsg struct {
 	Message string
 }
 
+// I.e. `:messages` in vim
 type ShowNotificationsMsg struct{}
 
-type ShowModalMsg struct {
-	Message string
+type ShowTextMsg struct {
+	Text string
 }
 
 type FatalErrorMsg struct {

@@ -62,11 +62,8 @@ func main() {
 		appIds:    appIds,
 	}
 
-	modal := &modalModel{}
-
 	ta := &terminaccounting{
 		appManager: am,
-		modal:      modal,
 		showModal:  false,
 
 		inputMode:    meta.NORMALMODE,
@@ -77,8 +74,6 @@ func main() {
 
 		commandSet: commandSet,
 	}
-
-	ta.overlay = newOverlay(ta)
 
 	finalModel, err := tea.NewProgram(ta, tea.WithAltScreen()).Run()
 	if err != nil {

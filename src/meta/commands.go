@@ -84,7 +84,7 @@ func globalCommands() CommandSet {
 	commands := make([]commandWithValue, 0)
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
-		{Command(strings.Split("quit", "")), CloseViewMsg{}},
+		{Command(strings.Split("quit", "")), QuitMsg{}},
 		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
 	})
 
