@@ -9,7 +9,11 @@ func MessageCmd(message tea.Msg) tea.Cmd {
 	return func() tea.Msg { return message }
 }
 
-type QuitMsg struct{}
+// All -> quit all windows
+// !All -> quit modal if opened, otherwise quit app
+type QuitMsg struct {
+	All bool
+}
 
 type NotificationMessageMsg struct {
 	Message string

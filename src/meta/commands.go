@@ -85,6 +85,7 @@ func globalCommands() CommandSet {
 
 	extendCommandsBy(&commands, Command{}, []commandWithValue{
 		{Command(strings.Split("quit", "")), QuitMsg{}},
+		{Command{"q", "a"}, QuitMsg{All: true}},
 		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
 	})
 

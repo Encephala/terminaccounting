@@ -53,6 +53,10 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, ta.modal.Init()
 
 	case meta.QuitMsg:
+		if message.All {
+			return ta, tea.Quit
+		}
+
 		if ta.showModal {
 			ta.showModal = false
 
