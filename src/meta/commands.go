@@ -87,6 +87,7 @@ func globalCommands() CommandSet {
 		{Command(strings.Split("quit", "")), QuitMsg{}},
 		{Command{"q", "a"}, QuitMsg{All: true}},
 		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
+		{Command(strings.Split("import", "")), ShowBankImporterMsg{}},
 	})
 
 	var commandsTrie Trie[tea.Msg]

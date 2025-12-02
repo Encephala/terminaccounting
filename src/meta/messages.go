@@ -22,6 +22,13 @@ type NotificationMessageMsg struct {
 // I.e. `:messages` in vim
 type ShowNotificationsMsg struct{}
 
+// For `:import`
+type ShowBankImporterMsg struct{}
+
+type ReadBankFileMsg struct {
+	Data [][]string
+}
+
 type ShowTextMsg struct {
 	Text string
 }

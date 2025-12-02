@@ -43,15 +43,6 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
-	case meta.ShowTextMsg:
-		ta.showModal = true
-
-		ta.modal = textModal{
-			message: message.Text,
-		}
-
-		return ta, ta.modal.Init()
-
 	case meta.QuitMsg:
 		if message.All {
 			return ta, tea.Quit
@@ -92,6 +83,22 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.appManager = newAppManager.(*appManager)
 
 		return ta, cmd
+
+	case meta.ShowTextMsg:
+		ta.showModal = true
+
+		ta.modal = textModal{
+			message: message.Text,
+		}
+
+		return ta, ta.modal.Init()
+
+	case meta.ShowBankImporterMsg:
+		ta.showModal = true
+
+		ta.modal = newBankStatementImporter()
+
+		return ta, ta.modal.Init()
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
@@ -162,14 +169,17 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 	}
 
-	if !ta.showModal {
-		new, cmd := ta.appManager.Update(message)
-		ta.appManager = new.(*appManager)
+	if ta.showModal {
+		new, cmd := ta.modal.Update(message)
+		ta.modal = new
 
 		return ta, cmd
 	}
 
-	return ta, nil
+	new, cmd := ta.appManager.Update(message)
+	ta.appManager = new.(*appManager)
+
+	return ta, cmd
 }
 
 func (ta *terminaccounting) View() string {
@@ -288,6 +298,13 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 			// pass
 
 		case meta.INSERTMODE:
+			if ta.showModal {
+				new, cmd := ta.modal.Update(message)
+				ta.modal = new
+
+				return ta, cmd
+			}
+
 			newAppManager, cmd := ta.appManager.Update(message)
 			ta.appManager = newAppManager.(*appManager)
 
