@@ -135,7 +135,14 @@ func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
-	return meta.MotionSet{}
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	return meta.MotionSet{Normal: normalMotions}
 }
 
 func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
