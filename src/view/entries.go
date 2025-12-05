@@ -174,11 +174,11 @@ type CreateEntryRowMsg struct {
 	after bool
 }
 
-func (cv *EntryCreateView) MotionSet() *meta.MotionSet {
+func (cv *EntryCreateView) MotionSet() meta.MotionSet {
 	return entriesCreateUpdateViewMotionSet()
 }
 
-func (cv *EntryCreateView) CommandSet() *meta.CommandSet {
+func (cv *EntryCreateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
 }
 
@@ -412,7 +412,7 @@ func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
+func (uv *EntryUpdateView) MotionSet() meta.MotionSet {
 	result := entriesCreateUpdateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
@@ -422,7 +422,7 @@ func (uv *EntryUpdateView) MotionSet() *meta.MotionSet {
 	return result
 }
 
-func (uv *EntryUpdateView) CommandSet() *meta.CommandSet {
+func (uv *EntryUpdateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
 }
 
@@ -1323,7 +1323,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	return result.String()
 }
 
-func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
+func entriesCreateUpdateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -1353,18 +1353,17 @@ func entriesCreateUpdateViewMotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
 	normalMotions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
 
-	return &meta.MotionSet{
+	return meta.MotionSet{
 		Normal: normalMotions,
 	}
 }
 
-func entriesCreateUpdateViewCommandSet() *meta.CommandSet {
+func entriesCreateUpdateViewCommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 type EntryDeleteView struct {
@@ -1467,25 +1466,22 @@ func (dv *EntryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *EntryDeleteView) MotionSet() *meta.MotionSet {
+func (dv *EntryDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *EntryDeleteView) CommandSet() *meta.CommandSet {
+func (dv *EntryDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

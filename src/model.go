@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 	"terminaccounting/meta"
+	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,7 +15,7 @@ import (
 
 type terminaccounting struct {
 	appManager *appManager
-	modal      tea.Model
+	modal      view.View
 
 	showModal             bool
 	viewWidth, viewHeight int
@@ -87,7 +88,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ShowTextMsg:
 		ta.showModal = true
 
-		ta.modal = textModal{
+		ta.modal = &textModal{
 			message: message.Text,
 		}
 
@@ -136,12 +137,12 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, tea.Quit
 
 	case meta.UpdateViewMotionSetMsg:
-		ta.motionSet.ViewMotionSet = message
+		ta.motionSet.ViewMotionSet = meta.MotionSet(message)
 
 		return ta, nil
 
 	case meta.UpdateViewCommandSetMsg:
-		ta.commandSet.ViewCommandSet = message
+		ta.commandSet.ViewCommandSet = meta.CommandSet(message)
 
 		return ta, nil
 
@@ -170,14 +171,14 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if ta.showModal {
-		new, cmd := ta.modal.Update(message)
-		ta.modal = new
+		newModal, cmd := ta.modal.Update(message)
+		ta.modal = newModal.(view.View)
 
 		return ta, cmd
 	}
 
-	new, cmd := ta.appManager.Update(message)
-	ta.appManager = new.(*appManager)
+	newAppManager, cmd := ta.appManager.Update(message)
+	ta.appManager = newAppManager.(*appManager)
 
 	return ta, cmd
 }
@@ -299,8 +300,8 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 
 		case meta.INSERTMODE:
 			if ta.showModal {
-				new, cmd := ta.modal.Update(message)
-				ta.modal = new
+				newModal, cmd := ta.modal.Update(message)
+				ta.modal = newModal.(view.View)
 
 				return ta, cmd
 			}

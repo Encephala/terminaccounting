@@ -18,8 +18,8 @@ type View interface {
 
 	AcceptedModels() map[meta.ModelType]struct{}
 
-	MotionSet() *meta.MotionSet
-	CommandSet() *meta.CommandSet
+	MotionSet() meta.MotionSet
+	CommandSet() meta.CommandSet
 }
 
 type activeInput int
@@ -127,7 +127,7 @@ func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (lv *ListView) MotionSet() *meta.MotionSet {
+func (lv *ListView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
@@ -143,11 +143,11 @@ func (lv *ListView) MotionSet() *meta.MotionSet {
 		ViewType: meta.CREATEVIEWTYPE,
 	}) // [g]oto [c]reate view
 
-	return &meta.MotionSet{Normal: normalMotions}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (lv *ListView) CommandSet() *meta.CommandSet {
-	return &meta.CommandSet{}
+func (lv *ListView) CommandSet() meta.CommandSet {
+	return meta.CommandSet{}
 }
 
 func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
@@ -280,7 +280,7 @@ func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *DetailView) MotionSet() *meta.MotionSet {
+func (dv *DetailView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
@@ -295,13 +295,11 @@ func (dv *DetailView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *DetailView) CommandSet() *meta.CommandSet {
-	return &meta.CommandSet{}
+func (dv *DetailView) CommandSet() meta.CommandSet {
+	return meta.CommandSet{}
 }
 
 func (dv *DetailView) updateTableRows() tea.Cmd {

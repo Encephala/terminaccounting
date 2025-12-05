@@ -135,11 +135,11 @@ func (cv *LedgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *LedgersCreateView) MotionSet() *meta.MotionSet {
+func (cv *LedgersCreateView) MotionSet() meta.MotionSet {
 	return ledgersCreateUpdateViewMotionSet()
 }
 
-func (cv *LedgersCreateView) CommandSet() *meta.CommandSet {
+func (cv *LedgersCreateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
 }
 
@@ -268,7 +268,7 @@ func (uv *LedgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
+func (uv *LedgersUpdateView) MotionSet() meta.MotionSet {
 	result := ledgersCreateUpdateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
@@ -278,7 +278,7 @@ func (uv *LedgersUpdateView) MotionSet() *meta.MotionSet {
 	return result
 }
 
-func (uv *LedgersUpdateView) CommandSet() *meta.CommandSet {
+func (uv *LedgersUpdateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
 }
 
@@ -405,7 +405,7 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	return result.String()
 }
 
-func ledgersCreateUpdateViewMotionSet() *meta.MotionSet {
+func ledgersCreateUpdateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -413,16 +413,15 @@ func ledgersCreateUpdateViewMotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	return &meta.MotionSet{Normal: normalMotions}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func ledgersCreateUpdateViewCommandSet() *meta.CommandSet {
+func ledgersCreateUpdateViewCommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 type LedgersDeleteView struct {
@@ -538,25 +537,22 @@ func (dv *LedgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *LedgersDeleteView) MotionSet() *meta.MotionSet {
+func (dv *LedgersDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *LedgersDeleteView) CommandSet() *meta.CommandSet {
+func (dv *LedgersDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {

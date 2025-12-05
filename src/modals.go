@@ -27,16 +27,28 @@ type textModal struct {
 	message string
 }
 
-func (mm textModal) Init() tea.Cmd {
+func (tm *textModal) Init() tea.Cmd {
 	return nil
 }
 
-func (mm textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	return mm, nil
+func (tm *textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	return tm, nil
 }
 
-func (mm textModal) View() string {
-	return meta.ModalStyle.Render(mm.message)
+func (tm *textModal) View() string {
+	return meta.ModalStyle.Render(tm.message)
+}
+
+func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {
+	return make(map[meta.ModelType]struct{})
+}
+
+func (tm *textModal) MotionSet() meta.MotionSet {
+	return meta.MotionSet{}
+}
+
+func (tm *textModal) CommandSet() meta.CommandSet {
+	return meta.CommandSet{}
 }
 
 // Hardcoded only ING bank, who cares about other banks frfr
@@ -116,6 +128,18 @@ func (bsi *bankStatementImporter) View() string {
 	}
 
 	return meta.ModalStyle.Render(bsi.previewTable.View())
+}
+
+func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
+	return make(map[meta.ModelType]struct{})
+}
+
+func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
+	return meta.MotionSet{}
+}
+
+func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
+	return meta.CommandSet{}
 }
 
 func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {

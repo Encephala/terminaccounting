@@ -47,31 +47,27 @@ func (ms *MotionSet) containsPath(mode InputMode, path Motion) bool {
 type CompleteMotionSet struct {
 	globalMotionSet MotionSet
 
-	ViewMotionSet *MotionSet
+	ViewMotionSet MotionSet
 }
 
 func DefaultMotionSet() CompleteMotionSet {
 	return CompleteMotionSet{
 		globalMotionSet: globalMotions(),
-		ViewMotionSet:   &MotionSet{},
+		ViewMotionSet:   MotionSet{},
 	}
 }
 
 func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (tea.Msg, bool) {
-	if cms.ViewMotionSet != nil {
-		if msg, ok := cms.ViewMotionSet.get(mode, path); ok {
-			return msg, ok
-		}
+	if msg, ok := cms.ViewMotionSet.get(mode, path); ok {
+		return msg, ok
 	}
 
 	return cms.globalMotionSet.get(mode, path)
 }
 
 func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
-	if cms.ViewMotionSet != nil {
-		if cms.ViewMotionSet.containsPath(mode, path) {
-			return true
-		}
+	if cms.ViewMotionSet.containsPath(mode, path) {
+		return true
 	}
 
 	return cms.globalMotionSet.containsPath(mode, path)

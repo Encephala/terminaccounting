@@ -130,11 +130,11 @@ func (app *accountsApp) Colours() meta.AppColours {
 	return meta.ACCOUNTSCOLOURS
 }
 
-func (app *accountsApp) CurrentMotionSet() *meta.MotionSet {
+func (app *accountsApp) CurrentMotionSet() meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *accountsApp) CurrentCommandSet() *meta.CommandSet {
+func (app *accountsApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 

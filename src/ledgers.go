@@ -130,11 +130,11 @@ func (app *ledgersApp) Colours() meta.AppColours {
 	return meta.LEDGERSCOLOURS
 }
 
-func (app *ledgersApp) CurrentMotionSet() *meta.MotionSet {
+func (app *ledgersApp) CurrentMotionSet() meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *ledgersApp) CurrentCommandSet() *meta.CommandSet {
+func (app *ledgersApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 

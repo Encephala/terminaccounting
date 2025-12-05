@@ -130,11 +130,11 @@ func (app *journalsApp) Colours() meta.AppColours {
 	return meta.JOURNALSCOLOURS
 }
 
-func (app *journalsApp) CurrentMotionSet() *meta.MotionSet {
+func (app *journalsApp) CurrentMotionSet() meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *journalsApp) CurrentCommandSet() *meta.CommandSet {
+func (app *journalsApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 

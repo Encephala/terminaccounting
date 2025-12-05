@@ -35,31 +35,27 @@ func (cs *CommandSet) autocomplete(path []string) []string {
 type CompleteCommandSet struct {
 	globalCommandSet CommandSet
 
-	ViewCommandSet *CommandSet
+	ViewCommandSet CommandSet
 }
 
 func DefaultCommandSet() CompleteCommandSet {
 	return CompleteCommandSet{
 		globalCommandSet: globalCommands(),
-		ViewCommandSet:   &CommandSet{},
+		ViewCommandSet:   CommandSet{},
 	}
 }
 
 func (ccs *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
-	if ccs.ViewCommandSet != nil {
-		if msg, ok := ccs.ViewCommandSet.get(path); ok {
-			return msg, ok
-		}
+	if msg, ok := ccs.ViewCommandSet.get(path); ok {
+		return msg, ok
 	}
 
 	return ccs.globalCommandSet.get(path)
 }
 
 func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
-	if ccs.ViewCommandSet != nil {
-		if ccs.ViewCommandSet.containsPath(path) {
-			return true
-		}
+	if ccs.ViewCommandSet.containsPath(path) {
+		return true
 	}
 
 	return ccs.globalCommandSet.containsPath(path)

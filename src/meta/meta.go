@@ -13,8 +13,8 @@ type App interface {
 
 	Colours() AppColours
 
-	CurrentMotionSet() *MotionSet
-	CurrentCommandSet() *CommandSet
+	CurrentMotionSet() MotionSet
+	CurrentCommandSet() CommandSet
 
 	AcceptedModels() map[ModelType]struct{}
 

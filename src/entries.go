@@ -132,11 +132,11 @@ func (app *entriesApp) Colours() meta.AppColours {
 	return meta.ENTRIESCOLOURS
 }
 
-func (app *entriesApp) CurrentMotionSet() *meta.MotionSet {
+func (app *entriesApp) CurrentMotionSet() meta.MotionSet {
 	return app.currentView.MotionSet()
 }
 
-func (app *entriesApp) CurrentCommandSet() *meta.CommandSet {
+func (app *entriesApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 

@@ -106,7 +106,7 @@ func (dv *JournalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
+func (dv *JournalsDetailsView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
@@ -123,11 +123,11 @@ func (dv *JournalsDetailsView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
 	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	return &meta.MotionSet{Normal: normalMotions}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *JournalsDetailsView) CommandSet() *meta.CommandSet {
-	return &meta.CommandSet{}
+func (dv *JournalsDetailsView) CommandSet() meta.CommandSet {
+	return meta.CommandSet{}
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
@@ -324,7 +324,7 @@ func (cv *JournalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *JournalsCreateView) MotionSet() *meta.MotionSet {
+func (cv *JournalsCreateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -332,16 +332,15 @@ func (cv *JournalsCreateView) MotionSet() *meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	return &meta.MotionSet{Normal: normalMotions}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (cv *JournalsCreateView) CommandSet() *meta.CommandSet {
+func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 type JournalsUpdateView struct {
@@ -545,7 +544,7 @@ func (uv *JournalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *JournalsUpdateView) MotionSet() *meta.MotionSet {
+func (uv *JournalsUpdateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -557,16 +556,15 @@ func (uv *JournalsUpdateView) MotionSet() *meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
 
-	return &meta.MotionSet{Normal: normalMotions}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (uv *JournalsUpdateView) CommandSet() *meta.CommandSet {
+func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 func (uv *JournalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -686,25 +684,22 @@ func (dv *JournalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *JournalsDeleteView) MotionSet() *meta.MotionSet {
+func (dv *JournalsDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return &meta.MotionSet{
-		Normal: normalMotions,
-	}
+	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *JournalsDeleteView) CommandSet() *meta.CommandSet {
+func (dv *JournalsDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	asCommandSet := meta.CommandSet(commands)
-	return &asCommandSet
+	return meta.CommandSet(commands)
 }
 
 func (dv *JournalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
