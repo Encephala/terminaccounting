@@ -25,8 +25,8 @@ type ShowNotificationsMsg struct{}
 // For `:import`
 type ShowBankImporterMsg struct{}
 
-type ReadBankFileMsg struct {
-	Data [][]string
+type FileSelectedMsg struct {
+	File string
 }
 
 type ShowTextMsg struct {
