@@ -28,13 +28,9 @@ type terminaccounting struct {
 	inputMode meta.InputMode
 	// current motion
 	currentMotion meta.Motion
-	// known motionSet
-	motionSet meta.CompleteMotionSet
 
 	// vimesque command input
-	commandInput textinput.Model
-	// known commandSet
-	commandSet             meta.CompleteCommandSet
+	commandInput           textinput.Model
 	currentCommandIsSearch bool
 }
 
@@ -136,16 +132,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.fatalError = message.Error
 		return ta, tea.Quit
 
-	case meta.UpdateViewMotionSetMsg:
-		ta.motionSet.ViewMotionSet = meta.MotionSet(message)
-
-		return ta, nil
-
-	case meta.UpdateViewCommandSetMsg:
-		ta.commandSet.ViewCommandSet = meta.CommandSet(message)
-
-		return ta, nil
-
 	case meta.SwitchModeMsg:
 		return ta, ta.switchMode(message)
 
@@ -157,7 +143,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.TryCompleteCommandMsg:
 		commandSoFar := strings.Split(ta.commandInput.Value(), "")
 
-		completed := ta.commandSet.Autocomplete(commandSoFar)
+		completed := ta.commandSet().Autocomplete(commandSoFar)
 
 		if completed != nil {
 			ta.commandInput.SetValue(strings.Join(completed, ""))
@@ -201,6 +187,34 @@ func (ta *terminaccounting) View() string {
 	result.WriteString(ta.commandLineView())
 
 	return result.String()
+}
+
+func (ta *terminaccounting) motionSet() *meta.CompleteMotionSet {
+	var viewMotionSet meta.MotionSet
+
+	if ta.showModal {
+		viewMotionSet = ta.modal.MotionSet()
+	} else {
+		viewMotionSet = ta.appManager.CurrentMotionSet()
+	}
+
+	result := meta.NewCompleteMotionSet(viewMotionSet)
+
+	return &result
+}
+
+func (ta *terminaccounting) commandSet() *meta.CompleteCommandSet {
+	var viewCommandSet meta.CommandSet
+
+	if ta.showModal {
+		viewCommandSet = ta.modal.CommandSet()
+	} else {
+		viewCommandSet = ta.appManager.CurrentCommandSet()
+	}
+
+	result := meta.NewCompleteCommandSet(viewCommandSet)
+
+	return &result
 }
 
 // Purely for readability
@@ -251,7 +265,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 	} else if command != "" {
 		command := strings.Split(command, "")
 
-		if completion := ta.commandSet.Autocomplete(command); completion != nil {
+		if completion := ta.commandSet().Autocomplete(command); completion != nil {
 			slog.Debug(fmt.Sprintf("Autocompleted command %q to %q",
 				strings.Join(command, ""), strings.Join(completion, ""),
 			))
@@ -259,7 +273,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 			command = completion
 		}
 
-		commandMsg, ok := ta.commandSet.Get(command)
+		commandMsg, ok := ta.commandSet().Get(command)
 		if ok {
 			cmd = meta.MessageCmd(commandMsg)
 		} else {
@@ -279,13 +293,13 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 
 	newMotion := append(ta.currentMotion, message.String())
 
-	if completedMotionMsg, ok := ta.motionSet.Get(ta.inputMode, newMotion); ok {
+	if completedMotionMsg, ok := ta.motionSet().Get(ta.inputMode, newMotion); ok {
 		ta.resetCurrentMotion()
 
 		return ta, meta.MessageCmd(completedMotionMsg)
 	}
 
-	if ta.motionSet.ContainsPath(ta.inputMode, newMotion) {
+	if ta.motionSet().ContainsPath(ta.inputMode, newMotion) {
 		ta.currentMotion = newMotion
 
 		return ta, nil

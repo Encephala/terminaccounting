@@ -34,19 +34,18 @@ func (cs *CommandSet) autocomplete(path []string) []string {
 
 type CompleteCommandSet struct {
 	globalCommandSet CommandSet
-
-	ViewCommandSet CommandSet
+	viewCommandSet   CommandSet
 }
 
-func DefaultCommandSet() CompleteCommandSet {
+func NewCompleteCommandSet(viewCommandSet CommandSet) CompleteCommandSet {
 	return CompleteCommandSet{
 		globalCommandSet: globalCommands(),
-		ViewCommandSet:   CommandSet{},
+		viewCommandSet:   viewCommandSet,
 	}
 }
 
 func (ccs *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
-	if msg, ok := ccs.ViewCommandSet.get(path); ok {
+	if msg, ok := ccs.viewCommandSet.get(path); ok {
 		return msg, ok
 	}
 
@@ -54,7 +53,7 @@ func (ccs *CompleteCommandSet) Get(path Command) (tea.Msg, bool) {
 }
 
 func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
-	if ccs.ViewCommandSet.containsPath(path) {
+	if ccs.viewCommandSet.containsPath(path) {
 		return true
 	}
 
@@ -62,7 +61,7 @@ func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
 }
 
 func (ccs *CompleteCommandSet) Autocomplete(path []string) []string {
-	viewSpecific := ccs.ViewCommandSet.autocomplete(path)
+	viewSpecific := ccs.viewCommandSet.autocomplete(path)
 
 	if viewSpecific != nil {
 		return viewSpecific

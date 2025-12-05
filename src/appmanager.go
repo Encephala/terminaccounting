@@ -31,9 +31,6 @@ func (am *appManager) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
-	cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(am.apps[am.activeApp].CurrentCommandSet())))
-
 	slog.Info("Initialised")
 
 	return tea.Batch(cmds...)
@@ -74,31 +71,28 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.SwitchTabMsg:
 		switch message.Direction {
 		case meta.PREVIOUS:
-			return am.setActiveApp(am.activeApp - 1)
+			am.setActiveApp(am.activeApp - 1)
+			return am, nil
+
 		case meta.NEXT:
-			return am.setActiveApp(am.activeApp + 1)
+			am.setActiveApp(am.activeApp + 1)
+			return am, nil
+
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
 	case meta.SwitchViewMsg:
-		var cmds []tea.Cmd
-		var cmd tea.Cmd
 		if message.App != nil {
-			am, cmd = am.setActiveApp(am.appIds[*message.App])
-			cmds = append(cmds, cmd)
+			am.setActiveApp(am.appIds[*message.App])
 		}
 
 		newApp, cmd := am.apps[am.activeApp].Update(message)
 		am.apps[am.activeApp] = newApp.(meta.App)
-		cmds = append(cmds, cmd)
 
 		am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
 
-		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewMotionSetMsg(am.apps[am.activeApp].CurrentMotionSet())))
-		cmds = append(cmds, meta.MessageCmd(meta.UpdateViewCommandSetMsg(am.apps[am.activeApp].CurrentCommandSet())))
-
-		return am, tea.Batch(cmds...)
+		return am, cmd
 	}
 
 	app, cmd := am.apps[am.activeApp].Update(message)
@@ -141,6 +135,14 @@ func (m *appManager) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
+func (am *appManager) CurrentMotionSet() meta.MotionSet {
+	return am.apps[am.activeApp].CurrentMotionSet()
+}
+
+func (am *appManager) CurrentCommandSet() meta.CommandSet {
+	return am.apps[am.activeApp].CurrentCommandSet()
+}
+
 func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {
 	var cmds []tea.Cmd
 
@@ -162,7 +164,7 @@ func (m *appManager) appTypeToApp(appType meta.AppType) meta.App {
 	return m.apps[m.appIds[appType]]
 }
 
-func (m *appManager) setActiveApp(appId int) (*appManager, tea.Cmd) {
+func (m *appManager) setActiveApp(appId int) {
 	if appId < 0 {
 		m.activeApp = len(m.apps) - 1
 	} else if appId >= len(m.apps) {
@@ -170,9 +172,4 @@ func (m *appManager) setActiveApp(appId int) (*appManager, tea.Cmd) {
 	} else {
 		m.activeApp = appId
 	}
-
-	cmd := meta.MessageCmd(meta.UpdateViewMotionSetMsg(m.apps[m.activeApp].CurrentMotionSet()))
-	cmdTwo := meta.MessageCmd(meta.UpdateViewCommandSetMsg(m.apps[m.activeApp].CurrentCommandSet()))
-
-	return m, tea.Batch(cmd, cmdTwo)
 }

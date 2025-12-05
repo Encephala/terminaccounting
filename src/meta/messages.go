@@ -37,10 +37,6 @@ type FatalErrorMsg struct {
 	Error error
 }
 
-type UpdateViewMotionSetMsg MotionSet
-
-type UpdateViewCommandSetMsg CommandSet
-
 type AppType string
 
 const (

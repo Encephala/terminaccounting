@@ -40,9 +40,6 @@ func main() {
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
 
-	motionSet := meta.DefaultMotionSet()
-	commandSet := meta.DefaultCommandSet()
-
 	apps := make([]meta.App, 4)
 	apps[0] = NewLedgersApp()
 	apps[1] = NewEntriesApp()
@@ -70,9 +67,6 @@ func main() {
 		commandInput: commandInput,
 
 		currentMotion: make(meta.Motion, 0),
-		motionSet:     motionSet,
-
-		commandSet: commandSet,
 	}
 
 	finalModel, err := tea.NewProgram(ta, tea.WithAltScreen()).Run()
