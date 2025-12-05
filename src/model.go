@@ -152,6 +152,13 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, nil
 
+	case meta.SwitchViewMsg:
+		// Always switch view in AppManager, can't switch view within a modal
+		am, cmd := ta.appManager.Update(message)
+		ta.appManager = am.(*appManager)
+
+		return ta, cmd
+
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
 	}

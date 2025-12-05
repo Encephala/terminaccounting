@@ -4,10 +4,15 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"terminaccounting/database"
 	"terminaccounting/meta"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/ncruces/zenity"
 	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
@@ -115,6 +120,66 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return bsi, cmd
 
+	case meta.CommitMsg:
+		entry := database.Entry{
+			Journal: 5, // TODO: add journal selector
+			Notes:   meta.Notes{},
+		}
+
+		var rows []database.EntryRow
+
+		for _, row := range bsi.previewTable.Rows() {
+			date, err := time.Parse("20060102", row[0])
+			if err != nil {
+				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			}
+
+			// TODO: allow selecting which column is value etc?
+			valueParts := strings.Split(row[6], ",")
+
+			whole, err := strconv.Atoi(valueParts[0])
+			if err != nil {
+				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			}
+			decimal, err := strconv.Atoi(valueParts[1])
+			if err != nil {
+				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			}
+
+			value := whole * 100
+			if whole >= 0 {
+				value += decimal
+			} else {
+				value -= decimal
+			}
+
+			entryRow := database.EntryRow{
+				Date:       database.Date(date),
+				Ledger:     14, // TODO: what to make of this?
+				Account:    nil,
+				Document:   nil,
+				Value:      database.CurrencyValue(value),
+				Reconciled: false,
+			}
+
+			rows = append(rows, entryRow)
+		}
+
+		createdEntryId, err := entry.Insert(rows)
+		if err != nil {
+			return bsi, meta.MessageCmd(err)
+		}
+
+		entries := meta.ENTRIESAPP
+
+		return bsi, tea.Batch(
+			meta.MessageCmd(meta.QuitMsg{}),
+			meta.MessageCmd(meta.SwitchViewMsg{
+				App:      &entries,
+				ViewType: meta.UPDATEVIEWTYPE,
+				Data:     createdEntryId,
+			}))
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 
@@ -127,7 +192,14 @@ func (bsi *bankStatementImporter) View() string {
 		return ""
 	}
 
-	return meta.ModalStyle.Render(bsi.previewTable.View())
+	var result strings.Builder
+	result.WriteString(bsi.previewTable.View())
+
+	result.WriteString("\n\n")
+
+	result.WriteString(lipgloss.NewStyle().Italic(true).Render("Type :write to create the entry"))
+
+	return meta.ModalStyle.Render(result.String())
 }
 
 func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
@@ -146,7 +218,11 @@ func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
 }
 
 func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+	var result meta.Trie[tea.Msg]
+
+	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
+
+	return meta.CommandSet(result)
 }
 
 func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {

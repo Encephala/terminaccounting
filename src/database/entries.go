@@ -263,12 +263,13 @@ func Today() *Date {
 }
 
 type EntryRow struct {
-	Id         int           `db:"id"`
-	Entry      int           `db:"entry"`
-	Date       Date          `db:"date"`
-	Ledger     int           `db:"ledger"`
-	Account    *int          `db:"account"`
-	Document   *string       `db:"document"`
+	Id       int     `db:"id"`
+	Entry    int     `db:"entry"`
+	Date     Date    `db:"date"`
+	Ledger   int     `db:"ledger"`
+	Account  *int    `db:"account"`
+	Document *string `db:"document"`
+	// TODO: add description field
 	Value      CurrencyValue `db:"value"`
 	Reconciled bool          `db:"reconciled"`
 }
