@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,13 +26,9 @@ func (am *appManager) Init() tea.Cmd {
 		cmds = append(cmds, app.Init())
 	}
 
-	for i, app := range am.apps {
-		model, cmd := app.Update(meta.SetupSchemaMsg{})
-		am.apps[i] = model.(meta.App)
-		cmds = append(cmds, cmd)
-	}
+	cmds = append(cmds, database.InitSchemas())
 
-	slog.Info("Initialised")
+	slog.Info("Initialising")
 
 	return tea.Batch(cmds...)
 }

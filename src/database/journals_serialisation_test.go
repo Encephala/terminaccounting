@@ -1,7 +1,6 @@
-package database_test
+package database
 
 import (
-	"terminaccounting/database"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -11,8 +10,8 @@ import (
 func setupDBJournals(t *testing.T) {
 	t.Helper()
 
-	database.DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := database.SetupSchemaJournals()
+	DB = sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaJournals()
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
@@ -23,10 +22,10 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 	setupDBJournals(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	journal := database.Journal{
+	journal := Journal{
 		Id:    1,
 		Name:  "test",
-		Type:  database.CASHFLOWJOURNAL,
+		Type:  CASHFLOWJOURNAL,
 		Notes: []string{"a note"},
 	}
 
@@ -39,12 +38,12 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 		t.Fatalf("Expected id of first inserted journal to be %d, found %d", journal.Id, insertedId)
 	}
 
-	rows, err := database.DB.Queryx(`SELECT * FROM journals;`)
+	rows, err := DB.Queryx(`SELECT * FROM journals;`)
 	if err != nil {
 		t.Fatalf("Couldn't get rows from database: %v", err)
 	}
 
-	var result database.Journal
+	var result Journal
 	count := 0
 	for rows.Next() {
 		count++
@@ -61,7 +60,7 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 	testJournalsEqual(t, result, journal)
 }
 
-func testJournalsEqual(t *testing.T, actual, expected database.Journal) {
+func testJournalsEqual(t *testing.T, actual, expected Journal) {
 	t.Helper()
 
 	if actual.Id != expected.Id {

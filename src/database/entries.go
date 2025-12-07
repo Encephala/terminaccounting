@@ -65,7 +65,7 @@ func CalculateTotal(rows []EntryRow) CurrencyValue {
 	return sum
 }
 
-func SetupSchemaEntries() (bool, error) {
+func setupSchemaEntries() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("entries")
 	if err != nil {
 		return false, err
@@ -274,7 +274,7 @@ type EntryRow struct {
 	Reconciled  bool          `db:"reconciled"`
 }
 
-func SetupSchemaEntryRows() (bool, error) {
+func setupSchemaEntryRows() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("entryrows")
 	if err != nil {
 		return false, err

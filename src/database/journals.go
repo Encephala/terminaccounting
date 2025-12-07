@@ -87,7 +87,7 @@ func MakeLoadJournalsDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func SetupSchemaJournals() (bool, error) {
+func setupSchemaJournals() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("journals")
 	if err != nil {
 		return false, err

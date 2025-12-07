@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"terminaccounting/database"
 	"terminaccounting/meta"
@@ -40,26 +39,6 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.currentView = newView.(view.View)
 
 		return app, cmd
-
-	case meta.SetupSchemaMsg:
-		changedEntries, err := database.SetupSchemaEntries()
-		if err != nil {
-			message := fmt.Errorf("COULD NOT CREATE `entries` TABLE: %v", err)
-			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
-		}
-
-		changedEntryRows, err := database.SetupSchemaEntryRows()
-		if err != nil {
-			message := fmt.Errorf("COULD NOT CREATE `entryrows` TABLE: %v", err)
-			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
-		}
-
-		if changedEntries || changedEntryRows {
-			slog.Info("Set up `Entries` schema")
-			return app, nil
-		}
-
-		return app, nil
 
 	case meta.DataLoadedMsg:
 		newView, cmd := app.currentView.Update(message)

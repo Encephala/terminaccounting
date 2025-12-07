@@ -93,7 +93,7 @@ func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func SetupSchemaAccounts() (bool, error) {
+func setupSchemaAccounts() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("accounts")
 	if err != nil {
 		return false, err

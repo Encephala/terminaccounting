@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -39,20 +38,6 @@ func (app *ledgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.currentView = newView.(view.View)
 
 		return app, cmd
-
-	case meta.SetupSchemaMsg:
-		changed, err := database.SetupSchemaLedgers()
-		if err != nil {
-			message := fmt.Errorf("COULD NOT CREATE `ledgers` TABLE: %v", err)
-			return app, meta.MessageCmd(meta.FatalErrorMsg{Error: message})
-		}
-
-		if changed {
-			slog.Info("Set up `ledgers` schema")
-			return app, nil
-		}
-
-		return app, nil
 
 	case meta.DataLoadedMsg:
 		newView, cmd := app.currentView.Update(message)

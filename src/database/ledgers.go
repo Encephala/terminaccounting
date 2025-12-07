@@ -92,7 +92,7 @@ func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func SetupSchemaLedgers() (bool, error) {
+func setupSchemaLedgers() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("ledgers")
 	if err != nil {
 		return false, err

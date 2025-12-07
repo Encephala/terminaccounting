@@ -1,7 +1,6 @@
-package database_test
+package database
 
 import (
-	"terminaccounting/database"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -11,8 +10,8 @@ import (
 func setupDBLedgers(t *testing.T) {
 	t.Helper()
 
-	database.DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := database.SetupSchemaLedgers()
+	DB = sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaLedgers()
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
@@ -23,7 +22,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	setupDBLedgers(t)
 
 	// Note: relying in sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	ledger := database.Ledger{
+	ledger := Ledger{
 		Id:   1,
 		Name: "test",
 		Type: "INCOME",
@@ -42,12 +41,12 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		t.Fatalf("Expected id of first inserted ledger to be %d, found %d", ledger.Id, insertedId)
 	}
 
-	rows, err := database.DB.Queryx(`SELECT * FROM ledgers;`)
+	rows, err := DB.Queryx(`SELECT * FROM ledgers;`)
 	if err != nil {
 		t.Fatalf("Couldn't query rows from database: %v", err)
 	}
 
-	var result database.Ledger
+	var result Ledger
 	count := 0
 	for rows.Next() {
 		count++
@@ -64,7 +63,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	testLedgersEqual(t, result, ledger)
 }
 
-func testLedgersEqual(t *testing.T, actual, expected database.Ledger) {
+func testLedgersEqual(t *testing.T, actual, expected Ledger) {
 	t.Helper()
 
 	if actual.Id != expected.Id {

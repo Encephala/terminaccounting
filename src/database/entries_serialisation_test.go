@@ -1,7 +1,6 @@
-package database_test
+package database
 
 import (
-	"terminaccounting/database"
 	"terminaccounting/meta"
 	"testing"
 	"time"
@@ -12,13 +11,13 @@ import (
 func setupDBEntries(t *testing.T) {
 	t.Helper()
 
-	database.DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := database.SetupSchemaEntries()
+	DB = sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaEntries()
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
 	}
 
-	_, err = database.SetupSchemaEntryRows()
+	_, err = setupSchemaEntryRows()
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
 	}
@@ -28,27 +27,27 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	setupDBEntries(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	entry := database.Entry{
+	entry := Entry{
 		Id:      1,
 		Journal: 0,
 		Notes:   meta.Notes{},
 	}
 
-	time1, err := time.Parse(database.DATE_FORMAT, "1234-05-06")
+	time1, err := time.Parse(DATE_FORMAT, "1234-05-06")
 	if err != nil {
 		panic(err)
 	}
-	time2, err := time.Parse(database.DATE_FORMAT, "7890-01-02")
+	time2, err := time.Parse(DATE_FORMAT, "7890-01-02")
 	if err != nil {
 		panic(err)
 	}
 
 	// SQLITE autoincrements from 1
-	entryRows := []database.EntryRow{
+	entryRows := []EntryRow{
 		{
 			Id:         1,
 			Entry:      0,
-			Date:       database.Date(time1),
+			Date:       Date(time1),
 			Ledger:     0,
 			Account:    nil,
 			Document:   nil,
@@ -58,7 +57,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 		{
 			Id:         2,
 			Entry:      0,
-			Date:       database.Date(time2),
+			Date:       Date(time2),
 			Ledger:     1,
 			Account:    nil,
 			Document:   nil,
@@ -76,12 +75,12 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 		t.Fatalf("Expected id of first inserted journal to be %d, found %d", entry.Id, insertedId)
 	}
 
-	rows, err := database.DB.Queryx(`SELECT * FROM entries;`)
+	rows, err := DB.Queryx(`SELECT * FROM entries;`)
 	if err != nil {
 		t.Fatalf("Couldn't get rows from database: %v", err)
 	}
 
-	var result database.Entry
+	var result Entry
 	count := 0
 	for rows.Next() {
 		count++
@@ -97,12 +96,12 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 
 	testEntriesEqual(t, result, entry)
 
-	rowsEntryRow, err := database.DB.Queryx(`SELECT * FROM entryrows;`)
+	rowsEntryRow, err := DB.Queryx(`SELECT * FROM entryrows;`)
 	if err != nil {
 		t.Fatalf("Couldn't get rows from database: %v", err)
 	}
 
-	var row1, row2 database.EntryRow
+	var row1, row2 EntryRow
 
 	rowsEntryRow.Next()
 	err = rowsEntryRow.StructScan(&row1)
@@ -129,7 +128,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	testEntryRowsEqual(t, row2, entryRows[1])
 }
 
-func testEntriesEqual(t *testing.T, actual, expected database.Entry) {
+func testEntriesEqual(t *testing.T, actual, expected Entry) {
 	t.Helper()
 
 	if actual.Id != expected.Id {
@@ -152,7 +151,7 @@ func testEntriesEqual(t *testing.T, actual, expected database.Entry) {
 	}
 }
 
-func testEntryRowsEqual(t *testing.T, actual, expected database.EntryRow) {
+func testEntryRowsEqual(t *testing.T, actual, expected EntryRow) {
 	t.Helper()
 
 	if actual.Id != expected.Id {

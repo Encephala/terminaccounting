@@ -1,7 +1,6 @@
-package database_test
+package database
 
 import (
-	"terminaccounting/database"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -10,8 +9,8 @@ import (
 func setupDBAccounts(t *testing.T) {
 	t.Helper()
 
-	database.DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := database.SetupSchemaAccounts()
+	DB = sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaAccounts()
 
 	if err != nil {
 		t.Fatalf("Couldn't setup db: %v", err)
@@ -22,10 +21,10 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 	setupDBAccounts(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	account := database.Account{
+	account := Account{
 		Id:    1,
 		Name:  "testerino",
-		Type:  database.DEBTOR,
+		Type:  DEBTOR,
 		Notes: []string{"a note"},
 	}
 
@@ -38,12 +37,12 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 		t.Fatalf("Expected id of first inserted account to be %d, found %d", account.Id, insertedId)
 	}
 
-	rows, err := database.DB.Queryx(`SELECT * FROM accounts;`)
+	rows, err := DB.Queryx(`SELECT * FROM accounts;`)
 	if err != nil {
 		t.Fatalf("Couldn't get rows from database: %v", err)
 	}
 
-	var result database.Account
+	var result Account
 	count := 0
 	for rows.Next() {
 		count++
@@ -60,7 +59,7 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 	testAccountsEqual(t, result, account)
 }
 
-func testAccountsEqual(t *testing.T, actual, expected database.Account) {
+func testAccountsEqual(t *testing.T, actual, expected Account) {
 	t.Helper()
 
 	if actual.Id != expected.Id {
