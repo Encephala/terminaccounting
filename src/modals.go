@@ -103,7 +103,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		data, err := bsi.readFile(message.File)
 
 		if err != nil {
-			return nil, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
 		rows, columns := buildTableColumns(data)
