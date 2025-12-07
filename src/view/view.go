@@ -342,10 +342,10 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 			}
 
 			if !found {
-				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find account %d", row.Ledger)})
+				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find account %d", row.Account)})
 			}
 		} else {
-			ledger = italicStyle.Render("Account")
+			account = italicStyle.Render("Account")
 		}
 
 		newTableRow = append(newTableRow, ledger)
