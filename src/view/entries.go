@@ -507,6 +507,10 @@ func NewEntryRowViewManager() *EntryRowViewManager {
 
 func (ervm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// TODO
+		return ervm, nil
+
 	case tea.KeyMsg:
 		highlightRow, highlightCol := ervm.getActiveCoords()
 
