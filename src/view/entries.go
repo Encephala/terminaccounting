@@ -610,8 +610,12 @@ func (ervm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.
 	}
 }
 
-func (ervm *EntryRowViewManager) view(style, highlightStyle lipgloss.Style, isActive bool) string {
-	// TODO?: render using the table bubble to have them fix all the alignment and stuff
+func (ervm *EntryRowViewManager) view(isActive bool, highlightColour lipgloss.Color) string {
+	columnStyle := lipgloss.NewStyle().MaxWidth(40)
+	baseStyle := lipgloss.NewStyle()
+	highlightStyle := baseStyle.Foreground(highlightColour)
+
+	// TODO?: render using the table bubble to have that fix all the alignment and stuff
 	var result strings.Builder
 
 	length := ervm.numRows() + 1
@@ -634,13 +638,13 @@ func (ervm *EntryRowViewManager) view(style, highlightStyle lipgloss.Style, isAc
 	creditCol[0] = "Credit"
 
 	for i, row := range ervm.rows {
-		idStyle := style
-		dateStyle := style
-		ledgerStyle := style
-		accountStyle := style
-		descriptionStyle := style
-		debitStyle := style
-		creditStyle := style
+		idStyle := baseStyle
+		dateStyle := baseStyle
+		ledgerStyle := baseStyle
+		accountStyle := baseStyle
+		descriptionStyle := baseStyle
+		debitStyle := baseStyle
+		creditStyle := baseStyle
 
 		if isActive && i == highlightRow {
 			switch highlightCol {
@@ -670,30 +674,24 @@ func (ervm *EntryRowViewManager) view(style, highlightStyle lipgloss.Style, isAc
 		creditCol[i+1] = creditStyle.Render(row.creditInput.View())
 	}
 
-	idRendered := lipgloss.JoinVertical(lipgloss.Left, idCol...)
-	dateRendered := lipgloss.JoinVertical(lipgloss.Left, dateCol...)
-	ledgerRendered := lipgloss.JoinVertical(lipgloss.Left, ledgerCol...)
-	accountRendered := lipgloss.JoinVertical(lipgloss.Left, accountCol...)
-	descriptionRendered := lipgloss.JoinVertical(lipgloss.Left, descriptionCol...)
-	debitRendered := lipgloss.JoinVertical(lipgloss.Left, debitCol...)
-	creditRendered := lipgloss.JoinVertical(lipgloss.Left, creditCol...)
+	idRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, idCol...))
+	dateRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, dateCol...))
+	ledgerRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, ledgerCol...))
+	accountRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, accountCol...))
+	descriptionRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, descriptionCol...))
+	debitRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, debitCol...))
+	creditRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, creditCol...))
 
-	entryRows := style.Render(lipgloss.JoinHorizontal(
+	entryRows := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		idRendered,
-		" ",
-		dateRendered,
-		" ",
-		ledgerRendered,
-		" ",
-		accountRendered,
-		" ",
-		descriptionRendered,
-		" ",
-		debitRendered,
-		" ",
+		idRendered, " ",
+		dateRendered, " ",
+		ledgerRendered, " ",
+		accountRendered, " ",
+		descriptionRendered, " ",
+		debitRendered, " ",
 		creditRendered,
-	))
+	)
 
 	total, err := ervm.calculateCurrentTotal()
 	var totalRendered string
@@ -1266,12 +1264,12 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	result.WriteString(titleStyle.Render(view.title()))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
-	highlightStyle := style.Foreground(view.getColours().Foreground)
+	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
 
 	journalInput := view.getJournalInput()
 	notesInput := view.getNotesInput()
@@ -1288,8 +1286,8 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 
 	nameCol := lipgloss.JoinVertical(
 		lipgloss.Right,
-		style.Render("Journal"),
-		style.Render("Notes"),
+		sectionStyle.Render("Journal"),
+		sectionStyle.Render("Notes"),
 	)
 
 	var inputCol string
@@ -1297,21 +1295,21 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 		inputCol = lipgloss.JoinVertical(
 			lipgloss.Left,
 			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(view.getJournalInput().View()),
-			style.Render(notesInput.View()),
+			sectionStyle.Render(notesInput.View()),
 		)
 	} else if *view.getActiveInput() == NOTESINPUT {
 		notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
 
 		inputCol = lipgloss.JoinVertical(
 			lipgloss.Left,
-			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
-			style.Render(notesInput.View()),
+			sectionStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
+			sectionStyle.Render(notesInput.View()),
 		)
 	} else {
 		inputCol = lipgloss.JoinVertical(
 			lipgloss.Left,
-			style.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
-			style.Render(notesInput.View()),
+			sectionStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
+			sectionStyle.Render(notesInput.View()),
 		)
 	}
 
@@ -1325,11 +1323,10 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	))
 	result.WriteString("\n\n")
 
-	result.WriteString(style.MarginLeft(2).Render(
+	result.WriteString(sectionStyle.MarginLeft(2).Render(
 		entryRowsManager.view(
-			lipgloss.NewStyle(),
-			lipgloss.NewStyle().Foreground(view.getColours().Foreground),
 			*view.getActiveInput() == ENTRYROWINPUT,
+			view.getColours().Foreground,
 		),
 	))
 
