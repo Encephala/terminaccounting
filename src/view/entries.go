@@ -71,15 +71,6 @@ type EntryRowCreateView struct {
 func newEntryRowCreateView(startDate *database.Date, availableLedgers []database.Ledger, availableAccounts []database.Account) *EntryRowCreateView {
 	dateInput := textinput.New()
 	dateInput.CharLimit = 10 // YYYY-MM-DD
-	dateInput.Validate = func(input string) error {
-		for _, char := range input {
-			if !unicode.IsDigit(char) && char != '-' {
-				return fmt.Errorf("invalid character for date %q", string(char))
-			}
-		}
-
-		return nil
-	}
 	if startDate != nil {
 		dateInput.SetValue(startDate.String())
 	}
