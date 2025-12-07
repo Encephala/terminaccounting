@@ -10,6 +10,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Globally accessible list of available accounts
+var AvailableAccounts []Account
+
 type AccountType string
 
 const (
@@ -137,9 +140,12 @@ func (a Account) Update() error {
 }
 
 func SelectAccounts() ([]Account, error) {
-	result := []Account{}
+	var result []Account
 
 	err := DB.Select(&result, `SELECT * FROM accounts;`)
+	if err == nil {
+		AvailableAccounts = result
+	}
 
 	return result, err
 }

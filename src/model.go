@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
 
@@ -35,7 +36,12 @@ type terminaccounting struct {
 }
 
 func (ta *terminaccounting) Init() tea.Cmd {
-	return ta.appManager.Init()
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, ta.appManager.Init())
+	cmds = append(cmds, database.InitCaches())
+
+	return tea.Batch(cmds...)
 }
 
 func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {

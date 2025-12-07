@@ -8,6 +8,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Globally accessible list of available journals
+var AvailableJournals []Journal
+
 type JournalType string
 
 const (
@@ -134,9 +137,12 @@ func (j *Journal) Update() error {
 }
 
 func SelectJournals() ([]Journal, error) {
-	result := []Journal{}
+	var result []Journal
 
 	err := DB.Select(&result, `SELECT * FROM journals;`)
+	if err == nil {
+		AvailableJournals = result
+	}
 
 	return result, err
 }

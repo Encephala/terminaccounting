@@ -2,7 +2,9 @@ package database
 
 import (
 	"fmt"
+	"terminaccounting/meta"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,4 +24,23 @@ func DatabaseTableIsSetUp(name string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func InitCaches() tea.Cmd {
+	_, err := SelectJournals()
+	if err != nil {
+		return meta.MessageCmd(err)
+	}
+
+	_, err = SelectAccounts()
+	if err != nil {
+		return meta.MessageCmd(err)
+	}
+
+	_, err = SelectJournals()
+	if err != nil {
+		return meta.MessageCmd(err)
+	}
+
+	return nil
 }

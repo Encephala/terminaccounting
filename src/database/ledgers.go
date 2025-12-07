@@ -9,6 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Globally accessible list of available ledgers
+var AvailableLedgers []Ledger
+
 type LedgerType string
 
 const (
@@ -136,9 +139,12 @@ func (l Ledger) Update() error {
 }
 
 func SelectLedgers() ([]Ledger, error) {
-	result := []Ledger{}
+	var result []Ledger
 
 	err := DB.Select(&result, `SELECT * FROM ledgers;`)
+	if err == nil {
+		AvailableLedgers = result
+	}
 
 	return result, err
 }
