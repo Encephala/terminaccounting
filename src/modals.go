@@ -126,43 +126,9 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes:   meta.Notes{},
 		}
 
-		var rows []database.EntryRow
-
-		for _, row := range bsi.previewTable.Rows() {
-			date, err := time.Parse("20060102", row[0])
-			if err != nil {
-				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
-			}
-
-			// TODO: allow selecting which column is value etc?
-			valueParts := strings.Split(row[6], ",")
-
-			whole, err := strconv.Atoi(valueParts[0])
-			if err != nil {
-				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
-			}
-			decimal, err := strconv.Atoi(valueParts[1])
-			if err != nil {
-				return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
-			}
-
-			value := whole * 100
-			if whole >= 0 {
-				value += decimal
-			} else {
-				value -= decimal
-			}
-
-			entryRow := database.EntryRow{
-				Date:       database.Date(date),
-				Ledger:     14, // TODO: what to make of this?
-				Account:    nil,
-				Document:   nil,
-				Value:      database.CurrencyValue(value),
-				Reconciled: false,
-			}
-
-			rows = append(rows, entryRow)
+		rows, err := bsi.compileRows()
+		if err != nil {
+			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
 		createdEntryId, err := entry.Insert(rows)
@@ -252,7 +218,7 @@ func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
 	for i, row := range data {
 		// Set column width to widest value in column, up to a maximum width
 		for i, val := range row {
-			colWidths[i] = min(max(colWidths[i], len(val)), 20)
+			colWidths[i] = min(max(colWidths[i], len(val)), 30)
 		}
 
 		if i > 0 {
@@ -269,4 +235,48 @@ func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
 	}
 
 	return rows, columns
+}
+
+func (bsi *bankStatementImporter) compileRows() ([]database.EntryRow, error) {
+	var result []database.EntryRow
+
+	for _, row := range bsi.previewTable.Rows() {
+		date, err := time.Parse("20060102", row[0])
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: allow selecting which column is value etc?
+		valueParts := strings.Split(row[6], ",")
+
+		whole, err := strconv.Atoi(valueParts[0])
+		if err != nil {
+			return nil, err
+		}
+		decimal, err := strconv.Atoi(valueParts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		value := whole * 100
+		if whole >= 0 {
+			value += decimal
+		} else {
+			value -= decimal
+		}
+
+		entryRow := database.EntryRow{
+			Date:        database.Date(date),
+			Ledger:      14, // TODO: what to make of this?
+			Account:     nil,
+			Description: row[8],
+			Document:    nil,
+			Value:       database.CurrencyValue(value),
+			Reconciled:  false,
+		}
+
+		result = append(result, entryRow)
+	}
+
+	return result, nil
 }
