@@ -350,6 +350,7 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 
 		newTableRow = append(newTableRow, ledger)
 		newTableRow = append(newTableRow, account)
+		newTableRow = append(newTableRow, row.Description)
 		if row.Value > 0 {
 			newTableRow = append(newTableRow, row.Value.String())
 			newTableRow = append(newTableRow, "")
@@ -390,7 +391,7 @@ func (dv *DetailView) updateTableWidth(totalWidth int) {
 	// -2 because of left/right padding
 	remainingWidth := totalWidth - dateWidth - 2
 	// -8 because of the 2-wide gap between columns
-	othersWidth := (remainingWidth - 8) / 4
+	othersWidth := (remainingWidth - 10) / 5
 
 	dv.table.SetColumns([]table.Column{
 		{
@@ -403,6 +404,10 @@ func (dv *DetailView) updateTableWidth(totalWidth int) {
 		},
 		{
 			Title: "Account",
+			Width: othersWidth,
+		},
+		{
+			Title: "Description",
 			Width: othersWidth,
 		},
 		{

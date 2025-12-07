@@ -263,15 +263,15 @@ func Today() *Date {
 }
 
 type EntryRow struct {
-	Id       int     `db:"id"`
-	Entry    int     `db:"entry"`
-	Date     Date    `db:"date"`
-	Ledger   int     `db:"ledger"`
-	Account  *int    `db:"account"`
-	Document *string `db:"document"`
-	// TODO: add description field
-	Value      CurrencyValue `db:"value"`
-	Reconciled bool          `db:"reconciled"`
+	Id          int           `db:"id"`
+	Entry       int           `db:"entry"`
+	Date        Date          `db:"date"`
+	Ledger      int           `db:"ledger"`
+	Account     *int          `db:"account"`
+	Description string        `db:"description"`
+	Document    *string       `db:"document"`
+	Value       CurrencyValue `db:"value"`
+	Reconciled  bool          `db:"reconciled"`
 }
 
 func SetupSchemaEntryRows() (bool, error) {
@@ -289,6 +289,7 @@ func SetupSchemaEntryRows() (bool, error) {
 		date TEXT NOT NULL,
 		ledger INTEGER NOT NULL,
 		account INTEGER,
+		description TEXT,
 		document TEXT,
 		value INTEGER NOT NULL,
 		reconciled INTEGER NOT NULL,
@@ -303,9 +304,9 @@ func SetupSchemaEntryRows() (bool, error) {
 
 func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 	query := `INSERT INTO entryrows
-	(entry, date, ledger, account, document, value, reconciled)
+	(entry, date, ledger, account, description, document, value, reconciled)
 	VALUES
-	(:entry, :date, :ledger, :account, :document, :value, :reconciled);`
+	(:entry, :date, :ledger, :account, :description, :document, :value, :reconciled);`
 
 	result, err := transaction.NamedExec(query, rows)
 	if err != nil {
