@@ -518,13 +518,10 @@ func (ervm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.
 		var cmd tea.Cmd
 		switch highlightCol {
 		case 0:
-			row.dateInput, cmd = row.dateInput.Update(msg)
-
-			if row.dateInput.Err != nil {
-				cmd = tea.Batch(cmd, meta.MessageCmd(row.dateInput.Err))
-
-				row.dateInput.Err = nil
+			if !validateDateInput(msg) {
+				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a date", msg))
 			}
+			row.dateInput, cmd = row.dateInput.Update(msg)
 
 		case 1:
 			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
@@ -991,6 +988,26 @@ func (ervm *EntryRowViewManager) setActiveCoords(newRow, newCol int) {
 	case 5:
 		ervm.rows[newRow].creditInput.Focus()
 	}
+}
+
+// Checks if input is a digit or a hyphen
+func validateDateInput(msg tea.KeyMsg) bool {
+	// These are (likely) control flow stuff, allow it
+	if len(msg.Runes) > 1 || len(msg.Runes) == 0 {
+		return true
+	}
+
+	character := msg.Runes[0]
+
+	if unicode.IsDigit(character) {
+		return true
+	}
+
+	if character == '-' {
+		return true
+	}
+
+	return false
 }
 
 // Checks if input is a digit or a period.
