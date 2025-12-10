@@ -395,22 +395,24 @@ func (uv *JournalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		uv.startingValue = journal
 
 		uv.nameInput.SetValue(journal.Name)
-		uv.typeInput.SetValue(journal.Type)
+		err := uv.typeInput.SetValue(journal.Type)
 		uv.notesInput.SetValue(journal.Notes.Collapse())
 
-		return uv, nil
+		return uv, meta.MessageCmd(err)
 
 	case meta.ResetInputFieldMsg:
+		var err error
+
 		switch uv.activeInput {
 		case NAMEINPUT:
 			uv.nameInput.SetValue(uv.startingValue.Name)
 		case TYPEINPUT:
-			uv.typeInput.SetValue(uv.startingValue.Type)
+			err = uv.typeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
 			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
 		}
 
-		return uv, nil
+		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
 		journal := database.Journal{

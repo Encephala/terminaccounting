@@ -260,22 +260,23 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		uv.startingValue = account
 
 		uv.nameInput.SetValue(account.Name)
-		uv.typeInput.SetValue(account.Type)
+		err := uv.typeInput.SetValue(account.Type)
 		uv.notesInput.SetValue(account.Notes.Collapse())
 
-		return uv, nil
+		return uv, meta.MessageCmd(err)
 
 	case meta.ResetInputFieldMsg:
+		var err error
 		switch uv.activeInput {
 		case NAMEINPUT:
 			uv.nameInput.SetValue(uv.startingValue.Name)
 		case TYPEINPUT:
-			uv.typeInput.SetValue(uv.startingValue.Type)
+			err = uv.typeInput.SetValue(uv.startingValue.Type)
 		case NOTEINPUT:
 			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
 		}
 
-		return uv, nil
+		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
 		account := database.Account{

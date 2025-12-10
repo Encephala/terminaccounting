@@ -310,7 +310,11 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
-			uv.journalInput.SetValue(itempicker.Item(journal))
+
+			err = uv.journalInput.SetValue(itempicker.Item(journal))
+			if err != nil {
+				return uv, meta.MessageCmd(err)
+			}
 
 			uv.notesInput.SetValue(entry.Notes.Collapse())
 
@@ -326,7 +330,11 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			uv.startingEntryRows = rows
 
-			formRows := uv.decompileRows(rows)
+			formRows, err := uv.decompileRows(rows)
+			if err != nil {
+				return uv, meta.MessageCmd(err)
+			}
+
 			uv.getManager().rows = formRows
 
 			return uv, nil
@@ -337,7 +345,10 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case JOURNALINPUT:
 			for _, journal := range database.AvailableJournals {
 				if journal.Id == uv.startingEntry.Journal {
-					uv.journalInput.SetValue(journal)
+					err := uv.journalInput.SetValue(journal)
+					if err != nil {
+						panic("This can't happen")
+					}
 					break
 				}
 			}
@@ -346,7 +357,12 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			uv.notesInput.SetValue(uv.startingEntry.Notes.Collapse())
 
 		case ENTRYROWINPUT:
-			uv.entryRowsManager.rows = uv.decompileRows(uv.startingEntryRows)
+			var err error
+			uv.entryRowsManager.rows, err = uv.decompileRows(uv.startingEntryRows)
+
+			if err != nil {
+				return uv, meta.MessageCmd(err)
+			}
 
 		default:
 			panic(fmt.Sprintf("unexpected view.activeInput: %#v", uv.activeInput))
@@ -757,8 +773,7 @@ func (ervm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
-func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
-) []*EntryRowCreateView {
+func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow) ([]*EntryRowCreateView, error) {
 	result := make([]*EntryRowCreateView, len(rows))
 
 	for i, row := range rows {
@@ -786,9 +801,18 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 
 		formRow := newEntryRowCreateView(&row.Date)
 
-		formRow.ledgerInput.SetValue(ledger)
-		formRow.accountInput.SetValue(account)
+		err := formRow.ledgerInput.SetValue(ledger)
+		if err != nil {
+			return nil, err
+		}
+
+		err = formRow.accountInput.SetValue(account)
+		if err != nil {
+			return nil, err
+		}
+
 		formRow.descriptionInput.SetValue(row.Description)
+
 		if row.Value > 0 {
 			formRow.debitInput.SetValue(row.Value.String())
 		} else if row.Value < 0 {
@@ -798,7 +822,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 		result[i] = formRow
 	}
 
-	return result
+	return result, nil
 }
 
 func (uv *EntryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
