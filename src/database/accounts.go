@@ -124,7 +124,13 @@ func (a Account) Insert() (int, error) {
 		return 0, err
 	}
 
-	return int(id), err
+	// Update database cache
+	_, err = SelectAccounts()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
 }
 
 func (a Account) Update() error {
@@ -135,6 +141,12 @@ func (a Account) Update() error {
 	WHERE id = :id;`
 
 	_, err := DB.NamedExec(query, a)
+	if err != nil {
+		return err
+	}
+
+	// Update database cache
+	_, err = SelectAccounts()
 
 	return err
 }
@@ -160,6 +172,11 @@ func SelectAccount(id int) (Account, error) {
 
 func DeleteAccount(accountId int) error {
 	_, err := DB.Exec(`DELETE FROM accounts WHERE id = $1;`, accountId)
+	if err != nil {
+		return err
+	}
+
+	_, err = SelectAccounts()
 
 	return err
 }

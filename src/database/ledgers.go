@@ -123,7 +123,12 @@ func (l *Ledger) Insert() (int, error) {
 		return 0, err
 	}
 
-	return int(id), err
+	_, err = SelectLedgers()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
 }
 
 func (l Ledger) Update() error {
@@ -134,6 +139,11 @@ func (l Ledger) Update() error {
 	WHERE id = :id;`
 
 	_, err := DB.NamedExec(query, l)
+	if err != nil {
+		return err
+	}
+
+	_, err = SelectLedgers()
 
 	return err
 }
@@ -159,6 +169,11 @@ func SelectLedger(ledgerId int) (Ledger, error) {
 
 func DeleteLedger(ledgerId int) error {
 	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = $1;`, ledgerId)
+	if err != nil {
+		return err
+	}
+
+	_, err = SelectLedgers()
 
 	return err
 }

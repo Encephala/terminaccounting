@@ -113,15 +113,21 @@ func (j *Journal) Insert() (int, error) {
 		return 0, err
 	}
 
-	queryInsertedId := DB.QueryRowx(`SELECT seq FROM sqlite_sequence WHERE name = 'journals';`)
+	queryId := DB.QueryRowx(`SELECT seq FROM sqlite_sequence WHERE name = 'journals';`)
 
-	var insertedId int
-	err = queryInsertedId.Scan(&insertedId)
+	var id int
+	err = queryId.Scan(&id)
 	if err != nil {
 		return 0, err
 	}
 
-	return insertedId, err
+	// Update cache
+	_, err = SelectJournals()
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func (j *Journal) Update() error {
@@ -132,6 +138,11 @@ func (j *Journal) Update() error {
 	WHERE id = :id;`
 
 	_, err := DB.NamedExec(query, j)
+	if err != nil {
+		return err
+	}
+
+	_, err = SelectJournals()
 
 	return err
 }
@@ -157,6 +168,11 @@ func SelectJournal(id int) (Journal, error) {
 
 func DeleteJournal(id int) error {
 	_, err := DB.Exec(`DELETE FROM journals WHERE id = $1;`, id)
+	if err != nil {
+		return err
+	}
+
+	_, err = SelectJournals()
 
 	return err
 }
