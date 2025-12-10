@@ -10,6 +10,8 @@ import (
 	"terminaccounting/meta"
 	"time"
 
+	"local/bubbles/itempicker"
+
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,14 +24,23 @@ type bankStatementImporter struct {
 	fileLoaded bool
 
 	previewTable table.Model
+
+	bankStatementParser
 }
 
-func NewBankStatementImporter() *bankStatementImporter {
+type bankStatementParser interface {
+	itempicker.Item
+
+	compileRows(data []table.Row) ([]database.EntryRow, error)
+}
+
+func NewBankStatementImporter(parser bankStatementParser) *bankStatementImporter {
 	table := table.New()
 	table.Focus()
 
 	return &bankStatementImporter{
-		previewTable: table,
+		previewTable:        table,
+		bankStatementParser: parser,
 	}
 }
 
@@ -86,7 +97,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes:   meta.Notes{},
 		}
 
-		rows, err := bsi.compileRows()
+		rows, err := bsi.bankStatementParser.compileRows(bsi.previewTable.Rows())
 		if err != nil {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
@@ -197,16 +208,17 @@ func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
 	return rows, columns
 }
 
-func (bsi *bankStatementImporter) compileRows() ([]database.EntryRow, error) {
+type IngParser struct{}
+
+func (p IngParser) compileRows(data []table.Row) ([]database.EntryRow, error) {
 	var result []database.EntryRow
 
-	for _, row := range bsi.previewTable.Rows() {
+	for _, row := range data {
 		date, err := time.Parse("20060102", row[0])
 		if err != nil {
 			return nil, err
 		}
 
-		// TODO: allow selecting which column is value etc?
 		valueParts := strings.Split(row[6], ",")
 
 		whole, err := strconv.Atoi(valueParts[0])
@@ -218,11 +230,10 @@ func (bsi *bankStatementImporter) compileRows() ([]database.EntryRow, error) {
 			return nil, err
 		}
 
-		value := whole * 100
-		if whole >= 0 {
-			value += decimal
-		} else {
-			value -= decimal
+		value := whole*100 + decimal
+
+		if row[5] == "Debit" {
+			value *= -1
 		}
 
 		entryRow := database.EntryRow{
@@ -235,8 +246,18 @@ func (bsi *bankStatementImporter) compileRows() ([]database.EntryRow, error) {
 			Reconciled:  false,
 		}
 
+		// TODO: add counterpart entryrow
+
 		result = append(result, entryRow)
 	}
 
 	return result, nil
+}
+
+func (p IngParser) String() string {
+	return "ING"
+}
+
+func (p IngParser) CompareId() int {
+	return 0
 }
