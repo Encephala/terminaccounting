@@ -246,9 +246,19 @@ func (p IngParser) compileRows(data []table.Row) ([]database.EntryRow, error) {
 			Reconciled:  false,
 		}
 
-		// TODO: add counterpart entryrow
-
 		result = append(result, entryRow)
+
+		counterpartRow := database.EntryRow{
+			Date:        database.Date(date),
+			Ledger:      14,
+			Account:     nil,
+			Description: row[8],
+			Document:    nil,
+			Value:       database.CurrencyValue(-value),
+			Reconciled:  false,
+		}
+
+		result = append(result, counterpartRow)
 	}
 
 	return result, nil
