@@ -1,4 +1,4 @@
-package main
+package modals
 
 import (
 	"encoding/csv"
@@ -14,47 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ncruces/zenity"
-	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
-
-func newOverlay(main *terminaccounting) *overlay.Model {
-	return overlay.New(
-		main.modal,
-		main.appManager,
-		overlay.Center,
-		overlay.Center,
-		0,
-		1,
-	)
-}
-
-type textModal struct {
-	message string
-}
-
-func (tm *textModal) Init() tea.Cmd {
-	return nil
-}
-
-func (tm *textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	return tm, nil
-}
-
-func (tm *textModal) View() string {
-	return meta.ModalStyle.Render(tm.message)
-}
-
-func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {
-	return make(map[meta.ModelType]struct{})
-}
-
-func (tm *textModal) MotionSet() meta.MotionSet {
-	return meta.MotionSet{}
-}
-
-func (tm *textModal) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
-}
 
 // Hardcoded only ING bank, who cares about other banks frfr
 // Also hardcoded: semicolon-separated values, decimal commas
@@ -64,7 +24,7 @@ type bankStatementImporter struct {
 	previewTable table.Model
 }
 
-func newBankStatementImporter() *bankStatementImporter {
+func NewBankStatementImporter() *bankStatementImporter {
 	table := table.New()
 	table.Focus()
 

@@ -7,11 +7,13 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
+	"terminaccounting/modals"
 	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {
@@ -90,16 +92,14 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ShowTextMsg:
 		ta.showModal = true
 
-		ta.modal = &textModal{
-			message: message.Text,
-		}
+		ta.modal = modals.NewTextModal(message.Text)
 
 		return ta, ta.modal.Init()
 
 	case meta.ShowBankImporterMsg:
 		ta.showModal = true
 
-		ta.modal = newBankStatementImporter()
+		ta.modal = modals.NewBankStatementImporter()
 
 		return ta, ta.modal.Init()
 
@@ -399,4 +399,15 @@ func (nm notificationMsg) String() string {
 	}
 
 	return nm.text
+}
+
+func newOverlay(main *terminaccounting) *overlay.Model {
+	return overlay.New(
+		main.modal,
+		main.appManager,
+		overlay.Center,
+		overlay.Center,
+		0,
+		1,
+	)
 }
