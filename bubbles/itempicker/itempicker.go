@@ -98,7 +98,7 @@ func (m *Model) SetValue(value Item) {
 	}
 
 	if !found {
-		panic(fmt.Sprintf("Setting itempicker value to %v but only valid choices are %v", value, m.Items))
+		panic(fmt.Sprintf("Setting itempicker value to %q but only valid choices are %v", value, m.Items))
 	}
 
 	m.activeItem = index
