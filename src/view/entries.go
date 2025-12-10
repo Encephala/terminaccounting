@@ -29,10 +29,6 @@ type EntryCreateView struct {
 	entryRowsManager *EntryRowViewManager
 	activeInput      activeInput
 
-	availableJournals []database.Journal
-	availableLedgers  []database.Ledger
-	availableAccounts []database.Account
-
 	colours meta.AppColours
 }
 
@@ -62,8 +58,7 @@ type EntryRowCreateView struct {
 	creditInput textinput.Model
 }
 
-// availableAccounts should not include the nil account (and cannot because not pointer type)
-func newEntryRowCreateView(startDate *database.Date, availableLedgers []database.Ledger, availableAccounts []database.Account) *EntryRowCreateView {
+func newEntryRowCreateView(startDate *database.Date) *EntryRowCreateView {
 	dateInput := textinput.New()
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
@@ -72,16 +67,16 @@ func newEntryRowCreateView(startDate *database.Date, availableLedgers []database
 		dateInput.SetValue(startDate.String())
 	}
 
-	ledgersAsItems := make([]itempicker.Item, len(availableLedgers))
-	for i, ledger := range availableLedgers {
+	ledgersAsItems := make([]itempicker.Item, len(database.AvailableLedgers))
+	for i, ledger := range database.AvailableLedgers {
 		ledgersAsItems[i] = ledger
 	}
 	ledgerInput := itempicker.New(ledgersAsItems)
 
-	accountsAsItems := make([]itempicker.Item, len(availableAccounts)+1)
+	accountsAsItems := make([]itempicker.Item, len(database.AvailableAccounts)+1)
 	var nilAccount *database.Account
 	accountsAsItems[0] = nilAccount
-	for i, account := range availableAccounts {
+	for i, account := range database.AvailableAccounts {
 		accountsAsItems[i+1] = &account
 	}
 	accountInput := itempicker.New(accountsAsItems)
@@ -191,17 +186,7 @@ func (cv *EntryCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (cv *EntryCreateView) getAvailableLedgers() []database.Ledger {
-	return cv.availableLedgers
-}
-
-func (cv *EntryCreateView) getAvailableAccounts() []database.Account {
-	return cv.availableAccounts
-}
-
 func (cv *EntryCreateView) setJournals(journals []database.Journal) {
-	cv.availableJournals = journals
-
 	asItems := make([]itempicker.Item, len(journals))
 	for i, journal := range journals {
 		asItems[i] = journal
@@ -211,8 +196,6 @@ func (cv *EntryCreateView) setJournals(journals []database.Journal) {
 }
 
 func (cv *EntryCreateView) setLedgers(ledgers []database.Ledger) {
-	cv.availableLedgers = ledgers
-
 	asItems := make([]itempicker.Item, len(ledgers))
 	for i, ledger := range ledgers {
 		asItems[i] = ledger
@@ -224,8 +207,6 @@ func (cv *EntryCreateView) setLedgers(ledgers []database.Ledger) {
 }
 
 func (cv *EntryCreateView) setAccounts(accounts []database.Account) {
-	cv.availableAccounts = accounts
-
 	asItems := make([]itempicker.Item, len(accounts)+1)
 	var nilAccount *database.Account
 	asItems[0] = nilAccount
@@ -251,10 +232,6 @@ type EntryUpdateView struct {
 	modelId           int
 	startingEntry     database.Entry
 	startingEntryRows []database.EntryRow
-
-	availableJournals []database.Journal
-	availableLedgers  []database.Ledger
-	availableAccounts []database.Account
 
 	colours meta.AppColours
 }
@@ -324,10 +301,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRYMODEL:
-			// You like how I solved this race condition?
-			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
-				return uv, meta.MessageCmd(message)
-			}
+			// NOTE: I assume a valid state of the database cache (ledgers/accounts/journals)
 
 			entry := message.Data.(database.Entry)
 			uv.startingEntry = entry
@@ -343,10 +317,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return uv, nil
 
 		case meta.ENTRYROWMODEL:
-			// You like how I solved this race condition?
-			if uv.availableLedgers == nil || uv.availableAccounts == nil || uv.availableJournals == nil {
-				return uv, meta.MessageCmd(message)
-			}
+			// NOTE: I assume a valid state of the database cache (ledgers/accounts/journals)
 
 			rows := message.Data.([]database.EntryRow)
 			if len(rows) == 0 {
@@ -364,7 +335,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
 		case JOURNALINPUT:
-			for _, journal := range uv.availableJournals {
+			for _, journal := range database.AvailableJournals {
 				if journal.Id == uv.startingEntry.Journal {
 					uv.journalInput.SetValue(journal)
 					break
@@ -435,17 +406,7 @@ func (uv *EntryUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
-func (uv *EntryUpdateView) getAvailableLedgers() []database.Ledger {
-	return uv.availableLedgers
-}
-
-func (uv *EntryUpdateView) getAvailableAccounts() []database.Account {
-	return uv.availableAccounts
-}
-
 func (uv *EntryUpdateView) setJournals(journals []database.Journal) {
-	uv.availableJournals = journals
-
 	asItems := make([]itempicker.Item, len(journals))
 	for i, journal := range journals {
 		asItems[i] = journal
@@ -455,8 +416,6 @@ func (uv *EntryUpdateView) setJournals(journals []database.Journal) {
 }
 
 func (uv *EntryUpdateView) setLedgers(ledgers []database.Ledger) {
-	uv.availableLedgers = ledgers
-
 	asItems := make([]itempicker.Item, len(ledgers))
 	for i, ledger := range ledgers {
 		asItems[i] = ledger
@@ -468,8 +427,6 @@ func (uv *EntryUpdateView) setLedgers(ledgers []database.Ledger) {
 }
 
 func (uv *EntryUpdateView) setAccounts(accounts []database.Account) {
-	uv.availableAccounts = accounts
-
 	asItems := make([]itempicker.Item, len(accounts)+1)
 	var nilAccount *database.Account
 	asItems[0] = nilAccount
@@ -497,8 +454,8 @@ func NewEntryRowViewManager() *EntryRowViewManager {
 	// Prefill with two empty rows
 	rows := make([]*EntryRowCreateView, 2)
 
-	rows[0] = newEntryRowCreateView(database.Today(), nil, nil)
-	rows[1] = newEntryRowCreateView(database.Today(), nil, nil)
+	rows[0] = newEntryRowCreateView(database.Today())
+	rows[1] = newEntryRowCreateView(database.Today())
 
 	return &EntryRowViewManager{
 		rows: rows,
@@ -806,7 +763,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 
 	for i, row := range rows {
 		var ledger database.Ledger
-		for _, l := range uv.availableLedgers {
+		for _, l := range database.AvailableLedgers {
 			if l.Id == row.Ledger {
 				ledger = l
 			}
@@ -817,7 +774,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 
 		var account *database.Account
 		if row.Account != nil {
-			for _, a := range uv.availableAccounts {
+			for _, a := range database.AvailableAccounts {
 				if a.Id == *row.Account {
 					account = &a
 				}
@@ -827,7 +784,7 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow,
 			}
 		}
 
-		formRow := newEntryRowCreateView(&row.Date, uv.availableLedgers, uv.availableAccounts)
+		formRow := newEntryRowCreateView(&row.Date)
 
 		formRow.ledgerInput.SetValue(ledger)
 		formRow.accountInput.SetValue(account)
@@ -1059,10 +1016,7 @@ func (ervm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 	return ervm, nil
 }
 
-func (ervm *EntryRowViewManager) addRow(after bool,
-	availableLedgers []database.Ledger,
-	availableAccounts []database.Account,
-) (*EntryRowViewManager, tea.Cmd) {
+func (ervm *EntryRowViewManager) addRow(after bool) (*EntryRowViewManager, tea.Cmd) {
 	activeRow, _ := ervm.getActiveCoords()
 
 	var newRow *EntryRowCreateView
@@ -1071,9 +1025,9 @@ func (ervm *EntryRowViewManager) addRow(after bool,
 	// prefill it in the new row. Otherwise, just leave new row empty
 	prefillDate, parseErr := database.ToDate(ervm.rows[activeRow].dateInput.Value())
 	if parseErr == nil {
-		newRow = newEntryRowCreateView(&prefillDate, availableLedgers, availableAccounts)
+		newRow = newEntryRowCreateView(&prefillDate)
 	} else {
-		newRow = newEntryRowCreateView(nil, availableLedgers, availableAccounts)
+		newRow = newEntryRowCreateView(nil)
 	}
 
 	newRows := make([]*EntryRowCreateView, 0, ervm.numRows()+1)
@@ -1115,9 +1069,6 @@ type entryCreateOrUpdateView interface {
 	getActiveInput() *activeInput
 
 	getColours() meta.AppColours
-
-	getAvailableLedgers() []database.Ledger
-	getAvailableAccounts() []database.Account
 
 	setJournals([]database.Journal)
 	setLedgers([]database.Ledger)
@@ -1259,7 +1210,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 		var cmds []tea.Cmd
 
-		manager, cmd := entryRowsManager.addRow(message.after, view.getAvailableLedgers(), view.getAvailableAccounts())
+		manager, cmd := entryRowsManager.addRow(message.after)
 		*entryRowsManager = *manager
 		cmds = append(cmds, cmd)
 

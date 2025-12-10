@@ -173,9 +173,6 @@ type DetailView struct {
 	modelName string
 
 	rows []database.EntryRow
-
-	availableLedgers  []database.Ledger
-	availableAccounts []database.Account
 }
 
 func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
@@ -220,10 +217,10 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			dv.rows = message.Data.([]database.EntryRow)
 
 		case meta.ACCOUNTMODEL:
-			dv.availableAccounts = message.Data.([]database.Account)
+			database.AvailableAccounts = message.Data.([]database.Account)
 
 		case meta.LEDGERMODEL:
-			dv.availableLedgers = message.Data.([]database.Ledger)
+			database.AvailableLedgers = message.Data.([]database.Ledger)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
@@ -312,9 +309,9 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 		italicStyle := lipgloss.NewStyle().Italic(true)
 		var ledger, account string
 
-		if dv.availableLedgers != nil {
+		if database.AvailableLedgers != nil {
 			found := false
-			for _, l := range dv.availableLedgers {
+			for _, l := range database.AvailableLedgers {
 				if l.Id == row.Ledger {
 					ledger = l.Name
 					found = true
@@ -331,9 +328,9 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 
 		if row.Account == nil {
 			account = lipgloss.NewStyle().Italic(true).Render("None")
-		} else if dv.availableAccounts != nil {
+		} else if database.AvailableAccounts != nil {
 			found := false
-			for _, a := range dv.availableAccounts {
+			for _, a := range database.AvailableAccounts {
 				if a.Id == *row.Account {
 					account = a.Name
 					found = true
