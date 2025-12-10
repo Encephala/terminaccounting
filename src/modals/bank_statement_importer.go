@@ -25,14 +25,17 @@ type bankStatementImporter struct {
 
 	activeInput int
 
-	previewTable table.Model
-	parserPicker itempicker.Model
+	previewTable        table.Model
+	parserPicker        itempicker.Model
+	journalPicker       itempicker.Model
+	accountLedgerPicker itempicker.Model
+	bankLedgerPicker    itempicker.Model
 }
 
 type bankStatementParser interface {
 	itempicker.Item
 
-	compileRows(data []table.Row) ([]database.EntryRow, error)
+	compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error)
 }
 
 func NewBankStatementImporter() *bankStatementImporter {
@@ -40,10 +43,16 @@ func NewBankStatementImporter() *bankStatementImporter {
 	table.Focus()
 
 	parserPicker := itempicker.New([]itempicker.Item{IngParser{}})
+	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
+	accountLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
+	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
 	return &bankStatementImporter{
-		previewTable: table,
-		parserPicker: parserPicker,
+		previewTable:        table,
+		parserPicker:        parserPicker,
+		journalPicker:       journalPicker,
+		accountLedgerPicker: accountLedgerPicker,
+		bankLedgerPicker:    bankLedgerPicker,
 	}
 }
 
@@ -87,7 +96,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return bsi, nil
 
 	case meta.SwitchFocusMsg:
-		numInputs := 2
+		numInputs := 5
 
 		switch message.Direction {
 		case meta.NEXT:
@@ -100,6 +109,8 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			if bsi.activeInput < 0 {
 				bsi.activeInput += numInputs
 			}
+
+			// TODO: when switching to table, highlight last row
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
@@ -116,6 +127,24 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return bsi, cmd
 
 		case 1:
+			new, cmd := bsi.journalPicker.Update(message)
+			bsi.journalPicker = new
+
+			return bsi, cmd
+
+		case 2:
+			new, cmd := bsi.accountLedgerPicker.Update(message)
+			bsi.accountLedgerPicker = new
+
+			return bsi, cmd
+
+		case 3:
+			new, cmd := bsi.bankLedgerPicker.Update(message)
+			bsi.bankLedgerPicker = new
+
+			return bsi, cmd
+
+		case 4:
 			// Pass
 			return bsi, nil
 
@@ -124,8 +153,8 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.NavigateMsg:
-		if bsi.activeInput != 1 {
-			return bsi, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the table"))
+		if bsi.activeInput != 4 {
+			return bsi, meta.MessageCmd(fmt.Errorf("jk navigation only works within the table"))
 		}
 
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
@@ -137,11 +166,15 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.CommitMsg:
 		entry := database.Entry{
-			Journal: 5, // TODO: add journal selector
+			Journal: bsi.journalPicker.Value().(database.Journal).Id,
 			Notes:   meta.Notes{},
 		}
 
-		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(bsi.previewTable.Rows())
+		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(
+			bsi.previewTable.Rows(),
+			bsi.accountLedgerPicker.Value().(database.Ledger).Id,
+			bsi.bankLedgerPicker.Value().(database.Ledger).Id,
+		)
 		if err != nil {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
@@ -174,29 +207,66 @@ func (bsi *bankStatementImporter) View() string {
 
 	style := lipgloss.NewStyle()
 	highlightStyle := table.DefaultStyles().Selected
+	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).Margin(0, 1)
 
 	formatSelectorStyle := style
+	journalSelectorStyle := style
+	accountLedgerSelectorStyle := style
+	bankLedgerSelectorStyle := style
 	previewTableStyles := table.DefaultStyles()
 	previewTableStyles.Selected = lipgloss.NewStyle()
 
 	switch bsi.activeInput {
 	case 0:
 		formatSelectorStyle = highlightStyle
-
 	case 1:
+		journalSelectorStyle = highlightStyle
+	case 2:
+		accountLedgerSelectorStyle = highlightStyle
+	case 3:
+		bankLedgerSelectorStyle = highlightStyle
+	case 4:
 		previewTableStyles.Selected = highlightStyle
-
 	default:
 		panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
 	}
 
 	var result strings.Builder
 
-	result.WriteString(lipgloss.JoinHorizontal(
+	formatSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"File format",
 		" ",
 		formatSelectorStyle.Render(bsi.parserPicker.View()),
+	))
+
+	journalSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"Journal",
+		" ",
+		journalSelectorStyle.Render(bsi.journalPicker.View()),
+	))
+
+	accountLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"Accounts ledger",
+		" ",
+		accountLedgerSelectorStyle.Render(bsi.accountLedgerPicker.View()),
+	))
+
+	bankLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"Bank ledger",
+		" ",
+		bankLedgerSelectorStyle.Render(bsi.bankLedgerPicker.View()),
+	))
+
+	result.WriteString(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		formatSelectorRendered,
+		journalSelectorRendered,
+		accountLedgerSelectorRendered,
+		bankLedgerSelectorRendered,
 	))
 
 	result.WriteString("\n\n")
@@ -283,7 +353,7 @@ func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
 
 type IngParser struct{}
 
-func (p IngParser) compileRows(data []table.Row) ([]database.EntryRow, error) {
+func (p IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error) {
 	var result []database.EntryRow
 
 	for _, row := range data {
@@ -311,26 +381,24 @@ func (p IngParser) compileRows(data []table.Row) ([]database.EntryRow, error) {
 
 		entryRow := database.EntryRow{
 			Date:        database.Date(date),
-			Ledger:      14, // TODO: what to make of this?
+			Ledger:      accountLedger,
 			Account:     nil,
 			Description: row[8],
 			Document:    nil,
 			Value:       database.CurrencyValue(value),
 			Reconciled:  false,
 		}
-
 		result = append(result, entryRow)
 
 		counterpartRow := database.EntryRow{
 			Date:        database.Date(date),
-			Ledger:      14,
+			Ledger:      bankLedger,
 			Account:     nil,
 			Description: row[8],
 			Document:    nil,
 			Value:       database.CurrencyValue(-value),
 			Reconciled:  false,
 		}
-
 		result = append(result, counterpartRow)
 	}
 

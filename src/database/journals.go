@@ -2,14 +2,29 @@ package database
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"terminaccounting/meta"
+
+	"local/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 // Globally accessible list of available journals
 var AvailableJournals []Journal
+
+func AvailableJournalsAsItempickerItems() []itempicker.Item {
+	var result []itempicker.Item
+
+	for _, journal := range AvailableJournals {
+		result = append(result, journal)
+	}
+
+	slog.Debug(fmt.Sprintf("Journals %#v", result))
+
+	return result
+}
 
 type JournalType string
 

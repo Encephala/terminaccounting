@@ -33,7 +33,7 @@ type EntryCreateView struct {
 }
 
 func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
-	journalInput := itempicker.New([]itempicker.Item{})
+	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
@@ -45,8 +45,6 @@ func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
 
 		colours: colours,
 	}
-
-	result.setJournals(database.AvailableJournals)
 
 	return result
 }
@@ -71,19 +69,8 @@ func newEntryRowCreateView(startDate *database.Date) *EntryRowCreateView {
 		dateInput.SetValue(startDate.String())
 	}
 
-	ledgersAsItems := make([]itempicker.Item, len(database.AvailableLedgers))
-	for i, ledger := range database.AvailableLedgers {
-		ledgersAsItems[i] = ledger
-	}
-	ledgerInput := itempicker.New(ledgersAsItems)
-
-	accountsAsItems := make([]itempicker.Item, len(database.AvailableAccounts)+1)
-	var nilAccount *database.Account
-	accountsAsItems[0] = nilAccount
-	for i, account := range database.AvailableAccounts {
-		accountsAsItems[i+1] = &account
-	}
-	accountInput := itempicker.New(accountsAsItems)
+	ledgerInput := itempicker.New(database.AvailableLedgersAsItempickerItems())
+	accountInput := itempicker.New(database.AvailableAccountsAsItempickerItems())
 
 	result := EntryRowCreateView{
 		dateInput:        dateInput,
@@ -184,15 +171,6 @@ func (cv *EntryCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (cv *EntryCreateView) setJournals(journals []database.Journal) {
-	asItems := make([]itempicker.Item, len(journals))
-	for i, journal := range journals {
-		asItems[i] = journal
-	}
-
-	cv.journalInput.Items = asItems
-}
-
 func (cv *EntryCreateView) title() string {
 	return "Creating new Entry"
 }
@@ -211,7 +189,7 @@ type EntryUpdateView struct {
 }
 
 func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
-	journalInput := itempicker.New([]itempicker.Item{})
+	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
@@ -227,14 +205,10 @@ func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 		colours: colours,
 	}
 
-	result.setJournals(database.AvailableJournals)
-
 	return result
 }
 
 func (uv *EntryUpdateView) Init() tea.Cmd {
-	uv.setJournals(database.AvailableJournals)
-
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
@@ -395,15 +369,6 @@ func (uv *EntryUpdateView) getActiveInput() *activeInput {
 
 func (uv *EntryUpdateView) getColours() meta.AppColours {
 	return uv.colours
-}
-
-func (uv *EntryUpdateView) setJournals(journals []database.Journal) {
-	asItems := make([]itempicker.Item, len(journals))
-	for i, journal := range journals {
-		asItems[i] = journal
-	}
-
-	uv.journalInput.Items = asItems
 }
 
 func (uv *EntryUpdateView) title() string {

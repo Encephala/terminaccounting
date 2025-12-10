@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -12,6 +13,16 @@ import (
 
 // Globally accessible list of available accounts
 var AvailableAccounts []Account
+
+func AvailableAccountsAsItempickerItems() []itempicker.Item {
+	var result []itempicker.Item
+
+	for _, account := range AvailableAccounts {
+		result = append(result, &account)
+	}
+
+	return result
+}
 
 type AccountType string
 

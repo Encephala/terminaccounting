@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
@@ -11,6 +12,16 @@ import (
 
 // Globally accessible list of available ledgers
 var AvailableLedgers []Ledger
+
+func AvailableLedgersAsItempickerItems() []itempicker.Item {
+	var result []itempicker.Item
+
+	for _, ledger := range AvailableLedgers {
+		result = append(result, ledger)
+	}
+
+	return result
+}
 
 type LedgerType string
 
