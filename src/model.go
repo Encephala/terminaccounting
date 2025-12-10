@@ -167,6 +167,13 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
+
+	case meta.DebugPrintCacheMsg:
+		slog.Debug(fmt.Sprintf("Ledgers: %#v", database.AvailableLedgers))
+		slog.Debug(fmt.Sprintf("Accounts: %#v", database.AvailableAccounts))
+		slog.Debug(fmt.Sprintf("Journals: %#v", database.AvailableJournals))
+
+		return ta, nil
 	}
 
 	if ta.showModal {
