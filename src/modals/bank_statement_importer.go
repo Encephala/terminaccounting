@@ -23,9 +23,10 @@ import (
 type bankStatementImporter struct {
 	fileLoaded bool
 
-	previewTable table.Model
+	activeInput int
 
-	bankStatementParser
+	previewTable table.Model
+	parserPicker itempicker.Model
 }
 
 type bankStatementParser interface {
@@ -34,13 +35,15 @@ type bankStatementParser interface {
 	compileRows(data []table.Row) ([]database.EntryRow, error)
 }
 
-func NewBankStatementImporter(parser bankStatementParser) *bankStatementImporter {
+func NewBankStatementImporter() *bankStatementImporter {
 	table := table.New()
 	table.Focus()
 
+	parserPicker := itempicker.New([]itempicker.Item{IngParser{}})
+
 	return &bankStatementImporter{
-		previewTable:        table,
-		bankStatementParser: parser,
+		previewTable: table,
+		parserPicker: parserPicker,
 	}
 }
 
@@ -83,7 +86,48 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return bsi, nil
 
+	case meta.SwitchFocusMsg:
+		numInputs := 2
+
+		switch message.Direction {
+		case meta.NEXT:
+			bsi.activeInput++
+			bsi.activeInput %= numInputs
+
+		case meta.PREVIOUS:
+			bsi.activeInput--
+
+			if bsi.activeInput < 0 {
+				bsi.activeInput += numInputs
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
+		}
+
+		return bsi, nil
+
+	case tea.KeyMsg:
+		switch bsi.activeInput {
+		case 0:
+			new, cmd := bsi.parserPicker.Update(message)
+			bsi.parserPicker = new
+
+			return bsi, cmd
+
+		case 1:
+			// Pass
+			return bsi, nil
+
+		default:
+			panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
+		}
+
 	case meta.NavigateMsg:
+		if bsi.activeInput != 1 {
+			return bsi, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the table"))
+		}
+
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
 
 		new, cmd := bsi.previewTable.Update(keyMsg)
@@ -97,7 +141,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Notes:   meta.Notes{},
 		}
 
-		rows, err := bsi.bankStatementParser.compileRows(bsi.previewTable.Rows())
+		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(bsi.previewTable.Rows())
 		if err != nil {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
@@ -119,7 +163,6 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-
 	}
 }
 
@@ -129,7 +172,36 @@ func (bsi *bankStatementImporter) View() string {
 		return ""
 	}
 
+	style := lipgloss.NewStyle()
+	highlightStyle := table.DefaultStyles().Selected
+
+	formatSelectorStyle := style
+	previewTableStyles := table.DefaultStyles()
+	previewTableStyles.Selected = lipgloss.NewStyle()
+
+	switch bsi.activeInput {
+	case 0:
+		formatSelectorStyle = highlightStyle
+
+	case 1:
+		previewTableStyles.Selected = highlightStyle
+
+	default:
+		panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
+	}
+
 	var result strings.Builder
+
+	result.WriteString(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		"File format",
+		" ",
+		formatSelectorStyle.Render(bsi.parserPicker.View()),
+	))
+
+	result.WriteString("\n\n")
+
+	bsi.previewTable.SetStyles(previewTableStyles)
 	result.WriteString(bsi.previewTable.View())
 
 	result.WriteString("\n\n")
@@ -146,10 +218,11 @@ func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
 func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 
 	return meta.MotionSet{Normal: normalMotions}
 }

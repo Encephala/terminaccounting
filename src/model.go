@@ -99,7 +99,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ShowBankImporterMsg:
 		ta.showModal = true
 
-		ta.modal = modals.NewBankStatementImporter(modals.IngParser{})
+		ta.modal = modals.NewBankStatementImporter()
 
 		return ta, ta.modal.Init()
 
