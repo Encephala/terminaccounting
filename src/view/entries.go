@@ -37,7 +37,7 @@ func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
-	return &EntryCreateView{
+	result := &EntryCreateView{
 		journalInput:     journalInput,
 		notesInput:       noteInput,
 		activeInput:      JOURNALINPUT,
@@ -45,6 +45,10 @@ func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
 
 		colours: colours,
 	}
+
+	result.setJournals(database.AvailableJournals)
+
+	return result
 }
 
 type EntryRowCreateView struct {
@@ -94,13 +98,7 @@ func newEntryRowCreateView(startDate *database.Date) *EntryRowCreateView {
 }
 
 func (cv *EntryCreateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
-
-	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIESAPP))
-	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIESAPP))
-	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIESAPP))
-
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -195,30 +193,6 @@ func (cv *EntryCreateView) setJournals(journals []database.Journal) {
 	cv.journalInput.Items = asItems
 }
 
-func (cv *EntryCreateView) setLedgers(ledgers []database.Ledger) {
-	asItems := make([]itempicker.Item, len(ledgers))
-	for i, ledger := range ledgers {
-		asItems[i] = ledger
-	}
-
-	for _, row := range cv.entryRowsManager.rows {
-		row.ledgerInput.Items = asItems
-	}
-}
-
-func (cv *EntryCreateView) setAccounts(accounts []database.Account) {
-	asItems := make([]itempicker.Item, len(accounts)+1)
-	var nilAccount *database.Account
-	asItems[0] = nilAccount
-	for i, account := range accounts {
-		asItems[i+1] = &account
-	}
-
-	for _, row := range cv.entryRowsManager.rows {
-		row.accountInput.Items = asItems
-	}
-}
-
 func (cv *EntryCreateView) title() string {
 	return "Creating new Entry"
 }
@@ -238,6 +212,7 @@ type EntryUpdateView struct {
 
 func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 	journalInput := itempicker.New([]itempicker.Item{})
+
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
 
@@ -252,15 +227,15 @@ func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 		colours: colours,
 	}
 
+	result.setJournals(database.AvailableJournals)
+
 	return result
 }
 
 func (uv *EntryUpdateView) Init() tea.Cmd {
-	var cmds []tea.Cmd
+	uv.setJournals(database.AvailableJournals)
 
-	cmds = append(cmds, database.MakeSelectJournalsCmd(meta.ENTRIESAPP))
-	cmds = append(cmds, database.MakeSelectLedgersCmd(meta.ENTRIESAPP))
-	cmds = append(cmds, database.MakeSelectAccountsCmd(meta.ENTRIESAPP))
+	var cmds []tea.Cmd
 
 	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
 	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId))
@@ -429,30 +404,6 @@ func (uv *EntryUpdateView) setJournals(journals []database.Journal) {
 	}
 
 	uv.journalInput.Items = asItems
-}
-
-func (uv *EntryUpdateView) setLedgers(ledgers []database.Ledger) {
-	asItems := make([]itempicker.Item, len(ledgers))
-	for i, ledger := range ledgers {
-		asItems[i] = ledger
-	}
-
-	for _, row := range uv.entryRowsManager.rows {
-		row.ledgerInput.Items = asItems
-	}
-}
-
-func (uv *EntryUpdateView) setAccounts(accounts []database.Account) {
-	asItems := make([]itempicker.Item, len(accounts)+1)
-	var nilAccount *database.Account
-	asItems[0] = nilAccount
-	for i, account := range accounts {
-		asItems[i+1] = &account
-	}
-
-	for _, row := range uv.entryRowsManager.rows {
-		row.accountInput.Items = asItems
-	}
 }
 
 func (uv *EntryUpdateView) title() string {
@@ -1094,10 +1045,6 @@ type entryCreateOrUpdateView interface {
 
 	getColours() meta.AppColours
 
-	setJournals([]database.Journal)
-	setLedgers([]database.Ledger)
-	setAccounts([]database.Account)
-
 	title() string
 }
 
@@ -1172,27 +1119,6 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		*entryRowsManager = *manager
 
 		return view, cmd
-
-	case meta.DataLoadedMsg:
-		switch message.Model {
-		case meta.JOURNALMODEL:
-			view.setJournals(message.Data.([]database.Journal))
-
-			return view, nil
-
-		case meta.LEDGERMODEL:
-			view.setLedgers(message.Data.([]database.Ledger))
-
-			return view, nil
-
-		case meta.ACCOUNTMODEL:
-			view.setAccounts(message.Data.([]database.Account))
-
-			return view, nil
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
-		}
 
 	case tea.WindowSizeMsg:
 		// TODO
