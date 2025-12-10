@@ -84,7 +84,7 @@ func (m Model) Value() Item {
 
 // Sets the currently selected item to the given value.
 // Panics if the value isn't in the set of selectable items.
-func (m *Model) SetValue(value Item) {
+func (m *Model) SetValue(value Item) error {
 	var index int
 	found := false
 
@@ -98,10 +98,12 @@ func (m *Model) SetValue(value Item) {
 	}
 
 	if !found {
-		panic(fmt.Sprintf("Setting itempicker value to %q but only valid choices are %v", value, m.Items))
+		return fmt.Errorf("setting itempicker value to %q but only valid choices are %v", value, m.Items)
 	}
 
 	m.activeItem = index
+
+	return nil
 }
 
 func (m Model) MaxViewLength() int {
