@@ -3,6 +3,7 @@ package view
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
@@ -306,43 +307,28 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 
 		newTableRow = append(newTableRow, row.Date.String())
 
-		italicStyle := lipgloss.NewStyle().Italic(true)
 		var ledger, account string
 
-		if database.AvailableLedgers != nil {
-			found := false
-			for _, l := range database.AvailableLedgers {
-				if l.Id == row.Ledger {
-					ledger = l.Name
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find ledger %d", row.Ledger)})
-			}
-		} else {
-			ledger = italicStyle.Render("Ledger")
+		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+			return ledger.Id == row.Ledger
+		})
+		if availableLedgerIndex == -1 {
+			return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find ledger %d", row.Ledger)})
 		}
+
+		ledger = database.AvailableLedgers[availableLedgerIndex].Name
 
 		if row.Account == nil {
 			account = lipgloss.NewStyle().Italic(true).Render("None")
-		} else if database.AvailableAccounts != nil {
-			found := false
-			for _, a := range database.AvailableAccounts {
-				if a.Id == *row.Account {
-					account = a.Name
-					found = true
-					break
-				}
-			}
+		} else {
+			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+				return account.Id == *row.Account
+			})
 
-			if !found {
+			if availableAccountIndex == -1 {
 				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find account %d", row.Account)})
 			}
-		} else {
-			account = italicStyle.Render("Account")
+			account = database.AvailableAccounts[availableAccountIndex].Name
 		}
 
 		newTableRow = append(newTableRow, ledger)

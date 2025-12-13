@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"local/bubbles/itempicker"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"terminaccounting/database"
@@ -292,14 +293,17 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
 		case JOURNALINPUT:
-			for _, journal := range database.AvailableJournals {
-				if journal.Id == uv.startingEntry.Journal {
-					err := uv.journalInput.SetValue(journal)
-					if err != nil {
-						panic("This can't happen")
-					}
-					break
-				}
+			availableJournalIndex := slices.IndexFunc(database.AvailableJournals, func(journal database.Journal) bool {
+				return journal.Id == uv.startingEntry.Journal
+			})
+
+			if availableJournalIndex == -1 {
+				panic("This won't happen, surely")
+			}
+
+			err := uv.journalInput.SetValue(database.AvailableJournals[availableJournalIndex])
+			if err != nil {
+				panic("This can't happen")
 			}
 
 		case NOTESINPUT:
@@ -693,26 +697,25 @@ func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow) ([]*EntryRowC
 	result := make([]*EntryRowCreateView, len(rows))
 
 	for i, row := range rows {
-		var ledger database.Ledger
-		for _, l := range database.AvailableLedgers {
-			if l.Id == row.Ledger {
-				ledger = l
-			}
-		}
-		if ledger.Id == 0 {
+		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+			return ledger.Id == row.Ledger
+		})
+		if availableLedgerIndex == -1 {
 			panic(fmt.Sprintf("Ledger not found for %#v", row))
 		}
 
+		ledger := database.AvailableLedgers[availableLedgerIndex]
+
 		var account *database.Account
 		if row.Account != nil {
-			for _, a := range database.AvailableAccounts {
-				if a.Id == *row.Account {
-					account = &a
-				}
-			}
-			if account == nil {
+			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+				return account.Id == *row.Account
+			})
+			if availableAccountIndex == -1 {
 				panic(fmt.Sprintf("Account not found for %#v", row))
 			}
+
+			account = &database.AvailableAccounts[availableAccountIndex]
 		}
 
 		formRow := newEntryRowCreateView(&row.Date)
