@@ -17,6 +17,8 @@ var AvailableAccounts []Account
 func AvailableAccountsAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
+	result = append(result, (*Account)(nil))
+
 	for _, account := range AvailableAccounts {
 		result = append(result, &account)
 	}
