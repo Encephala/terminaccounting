@@ -2,6 +2,7 @@ package itempicker
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -85,19 +86,11 @@ func (m Model) Value() Item {
 // Sets the currently selected item to the given value.
 // Panics if the value isn't in the set of selectable items.
 func (m *Model) SetValue(value Item) error {
-	var index int
-	found := false
+	index := slices.IndexFunc(m.Items, func(item Item) bool {
+		return item.CompareId() == value.CompareId()
+	})
 
-	for i, item := range m.Items {
-		if item.CompareId() == value.CompareId() {
-			index = i
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
+	if index == -1 {
 		return fmt.Errorf("setting itempicker value to %q but only valid choices are %v", value, m.Items)
 	}
 
