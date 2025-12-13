@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 	"terminaccounting/meta"
 
@@ -20,8 +19,6 @@ func AvailableJournalsAsItempickerItems() []itempicker.Item {
 	for _, journal := range AvailableJournals {
 		result = append(result, journal)
 	}
-
-	slog.Debug(fmt.Sprintf("Journals %#v", result))
 
 	return result
 }
