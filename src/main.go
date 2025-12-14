@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"terminaccounting/database"
@@ -22,15 +21,15 @@ func main() {
 
 	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
 	if err != nil {
-		slog.Error("Couldn't create logger: ", "error", err)
+		slog.Error("Couldn't create logger:", "error", err)
 		os.Exit(1)
 	}
 	defer file.Close()
-	log.SetOutput(file)
+	slog.SetDefault(slog.New(slog.NewJSONHandler(file, nil)))
 
 	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
 	if err != nil {
-		slog.Error("Couldn't connect to database: ", "error", err)
+		slog.Error("Couldn't connect to database:", "error", err)
 		os.Exit(1)
 	}
 
