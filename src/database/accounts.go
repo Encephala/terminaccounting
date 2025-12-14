@@ -137,10 +137,9 @@ func (a Account) Insert() (int, error) {
 		return 0, err
 	}
 
-	// Update database cache
-	_, err = SelectAccounts()
+	err = UpdateAccountsCache()
 	if err != nil {
-		return 0, err
+		return int(id), err
 	}
 
 	return int(id), nil
@@ -158,8 +157,7 @@ func (a Account) Update() error {
 		return err
 	}
 
-	// Update database cache
-	_, err = SelectAccounts()
+	err = UpdateAccountsCache()
 
 	return err
 }
@@ -168,11 +166,19 @@ func SelectAccounts() ([]Account, error) {
 	var result []Account
 
 	err := DB.Select(&result, `SELECT * FROM accounts;`)
-	if err == nil {
-		AvailableAccounts = result
-	}
 
 	return result, err
+}
+
+func UpdateAccountsCache() error {
+	accounts, err := SelectAccounts()
+	if err != nil {
+		return err
+	}
+
+	AvailableAccounts = accounts
+
+	return nil
 }
 
 func SelectAccount(id int) (Account, error) {
@@ -189,7 +195,7 @@ func DeleteAccount(accountId int) error {
 		return err
 	}
 
-	_, err = SelectAccounts()
+	err = UpdateAccountsCache()
 
 	return err
 }

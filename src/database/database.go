@@ -77,18 +77,18 @@ func InitSchemas() tea.Cmd {
 	}
 }
 
-func SetCaches() error {
-	_, err := SelectLedgers()
+func UpdateCache() error {
+	err := UpdateLedgersCache()
 	if err != nil {
 		return err
 	}
 
-	_, err = SelectAccounts()
+	err = UpdateAccountsCache()
 	if err != nil {
 		return err
 	}
 
-	_, err = SelectJournals()
+	err = UpdateLedgersCache()
 	if err != nil {
 		return err
 	}

@@ -133,10 +133,9 @@ func (j *Journal) Insert() (int, error) {
 		return 0, err
 	}
 
-	// Update cache
-	_, err = SelectJournals()
+	err = UpdateJournalsCache()
 	if err != nil {
-		return 0, err
+		return int(id), err
 	}
 
 	return id, nil
@@ -154,7 +153,7 @@ func (j *Journal) Update() error {
 		return err
 	}
 
-	_, err = SelectJournals()
+	err = UpdateJournalsCache()
 
 	return err
 }
@@ -163,11 +162,19 @@ func SelectJournals() ([]Journal, error) {
 	var result []Journal
 
 	err := DB.Select(&result, `SELECT * FROM journals;`)
-	if err == nil {
-		AvailableJournals = result
-	}
 
 	return result, err
+}
+
+func UpdateJournalsCache() error {
+	journals, err := SelectJournals()
+	if err != nil {
+		return err
+	}
+
+	AvailableJournals = journals
+
+	return nil
 }
 
 func SelectJournal(id int) (Journal, error) {
@@ -184,7 +191,7 @@ func DeleteJournal(id int) error {
 		return err
 	}
 
-	_, err = SelectJournals()
+	err = UpdateJournalsCache()
 
 	return err
 }

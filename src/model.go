@@ -42,9 +42,9 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 	cmds = append(cmds, ta.appManager.Init())
 
-	err := database.SetCaches()
+	err := database.UpdateCache()
 	if err != nil {
-		cmds = append(cmds, meta.MessageCmd(database.SetCaches()))
+		cmds = append(cmds, meta.MessageCmd(err))
 	}
 
 	return tea.Batch(cmds...)
@@ -173,7 +173,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 
 	case meta.RefreshCacheMsg:
-		err := database.SetCaches()
+		err := database.UpdateCache()
 		if err != nil {
 			return ta, meta.MessageCmd(err)
 		}

@@ -134,9 +134,9 @@ func (l *Ledger) Insert() (int, error) {
 		return 0, err
 	}
 
-	_, err = SelectLedgers()
+	err = UpdateLedgersCache()
 	if err != nil {
-		return 0, err
+		return int(id), err
 	}
 
 	return int(id), nil
@@ -154,7 +154,7 @@ func (l Ledger) Update() error {
 		return err
 	}
 
-	_, err = SelectLedgers()
+	err = UpdateLedgersCache()
 
 	return err
 }
@@ -163,11 +163,19 @@ func SelectLedgers() ([]Ledger, error) {
 	var result []Ledger
 
 	err := DB.Select(&result, `SELECT * FROM ledgers;`)
-	if err == nil {
-		AvailableLedgers = result
-	}
 
 	return result, err
+}
+
+func UpdateLedgersCache() error {
+	ledgers, err := SelectLedgers()
+	if err != nil {
+		return err
+	}
+
+	AvailableLedgers = ledgers
+
+	return nil
 }
 
 func SelectLedger(ledgerId int) (Ledger, error) {
@@ -184,7 +192,7 @@ func DeleteLedger(ledgerId int) error {
 		return err
 	}
 
-	_, err = SelectLedgers()
+	err = UpdateLedgersCache()
 
 	return err
 }
