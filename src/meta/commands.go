@@ -29,7 +29,7 @@ func (cs *CommandSet) containsPath(path Command) bool {
 func (cs *CommandSet) autocomplete(path []string) []string {
 	asTrie := Trie[tea.Msg](*cs)
 
-	return asTrie.autocompletion(path)
+	return asTrie.autocomplete(path)
 }
 
 type CompleteCommandSet struct {

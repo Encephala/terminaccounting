@@ -56,7 +56,7 @@ func (t *Trie[T]) containsPath(path []string) bool {
 // Short-circuiting method to get a leaf node from the current path
 // Might upgrade it to not be short-circuiting anymore in the future (i.e. return [][]string, all possible autocompletions)
 // but KISS for now, I don't have that many commands anwyays
-func (t *Trie[T]) autocompletion(path []string) []string {
+func (t *Trie[T]) autocomplete(path []string) []string {
 	if len(path) == 0 {
 		return nil
 	}
@@ -71,8 +71,10 @@ func (t *Trie[T]) autocompletion(path []string) []string {
 		}
 	}
 
+	// Don't communicate that an autocompletion was found if the provided path is already a complete command.
+	// I.e. `w` -> `write` is an autocompletion, but `write` -> `write` is not an autocompletion.
 	if t.isLeaf {
-		return path
+		return nil
 	}
 
 	// Now keep walking the Trie along the first child (NB: first child -> short-circuiting),
