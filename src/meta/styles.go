@@ -6,15 +6,15 @@ import (
 )
 
 var LEDGERSCOLOURS = AppColours{
-	Foreground: "#A1EEBDD0",
-	Background: "#A1EEBD60",
-	Accent:     "#A1EEBDFF",
+	Foreground: "#A1EEBD",
+	Background: "#A1EEBD",
+	Accent:     "#A1EEBD",
 }
 
 var ENTRIESCOLOURS = AppColours{
-	Foreground: "#F0F1B2D0",
-	Accent:     "#F0F1B280",
-	Background: "#EBECABFF",
+	Foreground: "#F0F1B2",
+	Accent:     "#F0F1B2",
+	Background: "#EBECAB",
 }
 
 var ACCOUNTSCOLOURS = AppColours{
@@ -24,9 +24,9 @@ var ACCOUNTSCOLOURS = AppColours{
 }
 
 var JOURNALSCOLOURS = AppColours{
-	Foreground: "#F6D6D6D0",
-	Accent:     "#F6D6D680",
-	Background: "#F6D6D6FF",
+	Foreground: "#F6D6D6",
+	Accent:     "#F6D6D6",
+	Background: "#F6D6D6",
 }
 var tabBorder = lipgloss.Border{
 	Top:         "─",
