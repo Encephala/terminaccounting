@@ -83,6 +83,7 @@ func globalCommands() CommandSet {
 		{Command{"q", "a"}, QuitMsg{All: true}},
 		{Command(strings.Split("messages", "")), ShowNotificationsMsg{}},
 		{Command(strings.Split("import", "")), ShowBankImporterMsg{}},
+		{Command(strings.Split("refreshcache", "")), RefreshCacheMsg{}},
 		{Command(strings.Split("debugcache", "")), DebugPrintCacheMsg{}},
 	})
 

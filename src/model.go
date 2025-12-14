@@ -41,7 +41,7 @@ func (ta *terminaccounting) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, ta.appManager.Init())
-	cmds = append(cmds, database.InitCaches())
+	cmds = append(cmds, database.SetCaches())
 
 	return tea.Batch(cmds...)
 }
@@ -167,6 +167,9 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
+
+	case meta.RefreshCacheMsg:
+		return ta, database.SetCaches()
 
 	case meta.DebugPrintCacheMsg:
 		slog.Debug(fmt.Sprintf("Ledgers: %#v", database.AvailableLedgers))

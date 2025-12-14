@@ -170,4 +170,6 @@ func NavigateMessageToKeyMsg(message NavigateMsg) tea.KeyMsg {
 	return keyMsg
 }
 
+type RefreshCacheMsg struct{}
+
 type DebugPrintCacheMsg struct{}

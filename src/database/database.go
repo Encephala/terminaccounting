@@ -77,7 +77,7 @@ func InitSchemas() tea.Cmd {
 	}
 }
 
-func InitCaches() tea.Cmd {
+func SetCaches() tea.Cmd {
 	_, err := SelectJournals()
 	if err != nil {
 		return meta.MessageCmd(err)
