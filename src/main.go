@@ -70,9 +70,8 @@ func main() {
 
 	finalModel, err := tea.NewProgram(ta, tea.WithAltScreen()).Run()
 	if err != nil {
-		message := fmt.Sprintf("Bubbletea error: %v", err)
-		slog.Error(message)
-		fmt.Println(message)
+		slog.Error("Bubbletea error", "error", err)
+		fmt.Println(fmt.Sprintf("Bubbletea error: %v", err))
 		os.Exit(1)
 	}
 

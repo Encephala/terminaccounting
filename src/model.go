@@ -65,7 +65,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, tea.Quit
 
 	case error:
-		slog.Debug(fmt.Sprintf("Error: %v", message))
+		slog.Debug("Error", "error", message)
 		notification := notificationMsg{
 			text:    message.Error(),
 			isError: true,
@@ -136,7 +136,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, meta.MessageCmd(meta.ShowTextMsg{Text: strings.Join(rendered, "\n")})
 
 	case meta.FatalErrorMsg:
-		slog.Error(fmt.Sprintf("Fatal error: %v", message.Error))
+		slog.Error("Fatal error", "error", message.Error)
 		ta.fatalError = message.Error
 		return ta, tea.Quit
 
@@ -179,9 +179,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case meta.DebugPrintCacheMsg:
-		slog.Debug(fmt.Sprintf("Ledgers: %#v", database.AvailableLedgers))
-		slog.Debug(fmt.Sprintf("Accounts: %#v", database.AvailableAccounts))
-		slog.Debug(fmt.Sprintf("Journals: %#v", database.AvailableJournals))
+		slog.Debug("Database cache", "ledgers", database.AvailableLedgers, "accounts", database.AvailableAccounts, "journals", database.AvailableJournals)
 
 		return ta, nil
 	}

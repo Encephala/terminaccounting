@@ -167,7 +167,7 @@ func (e Entry) Update(rows []EntryRow) error {
 
 	tx.Commit()
 
-	slog.Debug(fmt.Sprintf("Updated entry %d, changed %d rows", e.Id, totalChanged))
+	slog.Debug("Updated entry", "id", e.Id, "changed", totalChanged)
 
 	return nil
 }
