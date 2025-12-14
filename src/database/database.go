@@ -77,20 +77,20 @@ func InitSchemas() tea.Cmd {
 	}
 }
 
-func SetCaches() tea.Cmd {
+func SetCaches() error {
 	_, err := SelectJournals()
 	if err != nil {
-		return meta.MessageCmd(err)
+		return err
 	}
 
 	_, err = SelectAccounts()
 	if err != nil {
-		return meta.MessageCmd(err)
+		return err
 	}
 
 	_, err = SelectJournals()
 	if err != nil {
-		return meta.MessageCmd(err)
+		return err
 	}
 
 	return nil
