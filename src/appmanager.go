@@ -33,7 +33,7 @@ func (am *appManager) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		am.viewWidth = message.Width
@@ -91,7 +91,7 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return am, tea.Batch(cmds...)
 
-	case meta.RefreshViewMsg:
+	case meta.ReloadViewMsg:
 		reloadCmd := am.apps[am.activeApp].ReloadView()
 
 		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})

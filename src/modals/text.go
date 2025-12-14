@@ -26,7 +26,7 @@ func (tm *textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (tm *textModal) View() string {
-	return meta.ModalStyle.Render(tm.message)
+	return tm.message
 }
 
 func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {

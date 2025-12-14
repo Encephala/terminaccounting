@@ -8,17 +8,16 @@ import (
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/modals"
-	"terminaccounting/view"
 
+	overlay "github.com/Encephala/bubbletea-overlay"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {
-	appManager *appManager
-	modal      view.View
+	appManager   *appManager
+	modalManager *modals.ModalManager
 
 	showModal             bool
 	viewWidth, viewHeight int
@@ -85,27 +84,26 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// -1 for status line
 		// -1 for command line
 		remainingHeight := message.Height - 1 - 1
-		newAppManager, cmd := ta.appManager.Update(tea.WindowSizeMsg{
+
+		var cmd tea.Cmd
+		ta.appManager, cmd = ta.appManager.Update(tea.WindowSizeMsg{
 			Width:  message.Width,
 			Height: remainingHeight,
 		})
-		ta.appManager = newAppManager.(*appManager)
 
 		return ta, cmd
 
 	case meta.ShowTextMsg:
+		ta.modalManager.Modal = modals.NewTextModal(message.Text)
 		ta.showModal = true
 
-		ta.modal = modals.NewTextModal(message.Text)
-
-		return ta, ta.modal.Init()
+		return ta, ta.modalManager.Init()
 
 	case meta.ShowBankImporterMsg:
+		ta.modalManager.Modal = modals.NewBankStatementImporter()
 		ta.showModal = true
 
-		ta.modal = modals.NewBankStatementImporter()
-
-		return ta, ta.modal.Init()
+		return ta, ta.modalManager.Init()
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
@@ -164,8 +162,8 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.SwitchViewMsg:
 		// Always switch view in AppManager, can't switch view within a modal
-		am, cmd := ta.appManager.Update(message)
-		ta.appManager = am.(*appManager)
+		var cmd tea.Cmd
+		ta.appManager, cmd = ta.appManager.Update(message)
 
 		return ta, cmd
 
@@ -189,14 +187,14 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if ta.showModal {
-		newModal, cmd := ta.modal.Update(message)
-		ta.modal = newModal.(view.View)
+		var cmd tea.Cmd
+		ta.modalManager, cmd = ta.modalManager.Update(message)
 
 		return ta, cmd
 	}
 
-	newAppManager, cmd := ta.appManager.Update(message)
-	ta.appManager = newAppManager.(*appManager)
+	var cmd tea.Cmd
+	ta.appManager, cmd = ta.appManager.Update(message)
 
 	return ta, cmd
 }
@@ -225,7 +223,7 @@ func (ta *terminaccounting) motionSet() *meta.CompleteMotionSet {
 	var viewMotionSet meta.MotionSet
 
 	if ta.showModal {
-		viewMotionSet = ta.modal.MotionSet()
+		viewMotionSet = ta.modalManager.CurrentMotionSet()
 	} else {
 		viewMotionSet = ta.appManager.CurrentMotionSet()
 	}
@@ -239,7 +237,7 @@ func (ta *terminaccounting) commandSet() *meta.CompleteCommandSet {
 	var viewCommandSet meta.CommandSet
 
 	if ta.showModal {
-		viewCommandSet = ta.modal.CommandSet()
+		viewCommandSet = ta.modalManager.CurrentCommandSet()
 	} else {
 		viewCommandSet = ta.appManager.CurrentCommandSet()
 	}
@@ -341,15 +339,14 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 			// pass
 
 		case meta.INSERTMODE:
+			var cmd tea.Cmd
 			if ta.showModal {
-				newModal, cmd := ta.modal.Update(message)
-				ta.modal = newModal.(view.View)
+				ta.modalManager, cmd = ta.modalManager.Update(message)
 
 				return ta, cmd
 			}
 
-			newAppManager, cmd := ta.appManager.Update(message)
-			ta.appManager = newAppManager.(*appManager)
+			ta.appManager, cmd = ta.appManager.Update(message)
 
 			return ta, cmd
 
@@ -418,7 +415,7 @@ func (nm notificationMsg) String() string {
 
 func newOverlay(main *terminaccounting) *overlay.Model {
 	return overlay.New(
-		main.modal,
+		main.modalManager,
 		main.appManager,
 		overlay.Center,
 		overlay.Center,

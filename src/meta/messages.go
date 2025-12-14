@@ -126,7 +126,7 @@ type SwitchViewMsg struct {
 	Data     any
 }
 
-type RefreshViewMsg struct{}
+type ReloadViewMsg struct{}
 
 type ExecuteCommandMsg struct{}
 

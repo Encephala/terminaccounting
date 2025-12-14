@@ -279,7 +279,7 @@ func (bsi *bankStatementImporter) View() string {
 
 	result.WriteString(lipgloss.NewStyle().Italic(true).Render("Type :write to create the entry"))
 
-	return meta.ModalStyle.Render(result.String())
+	return result.String()
 }
 
 func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
