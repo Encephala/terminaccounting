@@ -277,11 +277,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 	var cmd tea.Cmd
 
 	if ta.currentCommandIsSearch {
-		if command == "" {
-			cmd = meta.MessageCmd(meta.ResetSearchMsg{})
-		} else {
-			cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
-		}
+		cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
 	} else if command != "" {
 		command := strings.Split(command, "")
 
@@ -383,7 +379,7 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 		modeCmd := meta.MessageCmd(meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
 
 		if ta.currentCommandIsSearch {
-			searchCmd := meta.MessageCmd(meta.ResetSearchMsg{})
+			searchCmd := meta.MessageCmd(meta.UpdateSearchMsg{Query: ""})
 
 			return ta, tea.Batch(modeCmd, searchCmd)
 		}
