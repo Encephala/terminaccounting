@@ -84,6 +84,7 @@ func globalMotions() MotionSet {
 	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: false}}, // false -> not search mode
+		{Motion{"ctrl+l"}, RefreshViewMsg{}},
 	})
 
 	// LEADER

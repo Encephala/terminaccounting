@@ -158,3 +158,9 @@ func (app *entriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
 		}
 	}
 }
+
+func (app *entriesApp) ReloadView() tea.Cmd {
+	app.currentView = app.currentView.Reload()
+
+	return app.currentView.Init()
+}

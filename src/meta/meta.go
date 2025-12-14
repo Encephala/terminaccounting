@@ -20,4 +20,6 @@ type App interface {
 
 	MakeLoadListCmd() tea.Cmd
 	MakeLoadRowsCmd(modelId int) tea.Cmd
+
+	ReloadView() tea.Cmd
 }

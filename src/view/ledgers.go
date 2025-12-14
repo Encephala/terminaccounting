@@ -143,6 +143,10 @@ func (cv *LedgersCreateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
 }
 
+func (cv *LedgersCreateView) Reload() View {
+	return NewLedgersCreateView(cv.colours)
+}
+
 type LedgersUpdateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
@@ -282,6 +286,10 @@ func (uv *LedgersUpdateView) MotionSet() meta.MotionSet {
 
 func (uv *LedgersUpdateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
+}
+
+func (uv *LedgersUpdateView) Reload() View {
+	return NewLedgersUpdateView(uv.modelId, uv.colours)
 }
 
 func (uv *LedgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -555,6 +563,10 @@ func (dv *LedgersDeleteView) CommandSet() meta.CommandSet {
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (dv *LedgersDeleteView) Reload() View {
+	return NewLedgersDeleteView(dv.modelId, dv.colours)
 }
 
 func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {

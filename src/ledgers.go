@@ -162,3 +162,9 @@ func (app *ledgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
 		}
 	}
 }
+
+func (app *ledgersApp) ReloadView() tea.Cmd {
+	app.currentView = app.currentView.Reload()
+
+	return app.currentView.Init()
+}

@@ -211,6 +211,10 @@ func (cv *AccountsCreateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
+func (cv *AccountsCreateView) Reload() View {
+	return NewAccountsCreateView(cv.colours)
+}
+
 type AccountsUpdateView struct {
 	nameInput  textinput.Model
 	typeInput  itempicker.Model
@@ -432,6 +436,10 @@ func (uv *AccountsUpdateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
+func (uv *AccountsUpdateView) Reload() View {
+	return NewAccountsUpdateView(uv.modelId, uv.colours)
+}
+
 func (uv *AccountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
@@ -564,6 +572,10 @@ func (dv *AccountsDeleteView) CommandSet() meta.CommandSet {
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (dv *AccountsDeleteView) Reload() View {
+	return NewAccountsDeleteView(dv.modelId, dv.colours)
 }
 
 func (dv *AccountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

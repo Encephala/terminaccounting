@@ -34,8 +34,6 @@ func (am *appManager) Init() tea.Cmd {
 }
 
 func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := []tea.Cmd{}
-
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		am.viewWidth = message.Width
@@ -84,14 +82,28 @@ func (am *appManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			am.setActiveApp(am.appIds[*message.App])
 		}
 
-		newApp, cmd := am.apps[am.activeApp].Update(message)
+		newApp, updateCmd := am.apps[am.activeApp].Update(message)
 		am.apps[am.activeApp] = newApp.(meta.App)
 
-		am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
+		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
 
-		return am, cmd
+		cmds := append(windowSizeCmds, updateCmd)
+
+		return am, tea.Batch(cmds...)
+
+	case meta.RefreshViewMsg:
+		reloadCmd := am.apps[am.activeApp].ReloadView()
+
+		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
+
+		notificationCmd := meta.MessageCmd(meta.NotificationMessageMsg{Message: "Refreshed view"})
+
+		cmds := append(windowSizeCmds, reloadCmd, notificationCmd)
+
+		return am, tea.Batch(cmds...)
 	}
 
+	var cmds []tea.Cmd
 	app, cmd := am.apps[am.activeApp].Update(message)
 	am.apps[am.activeApp] = app.(meta.App)
 	cmds = append(cmds, cmd)

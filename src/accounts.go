@@ -162,3 +162,9 @@ func (app *accountsApp) MakeLoadRowsCmd(modelId int) tea.Cmd {
 		}
 	}
 }
+
+func (app *accountsApp) ReloadView() tea.Cmd {
+	app.currentView = app.currentView.Reload()
+
+	return app.currentView.Init()
+}

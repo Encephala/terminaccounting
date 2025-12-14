@@ -21,6 +21,8 @@ type View interface {
 
 	MotionSet() meta.MotionSet
 	CommandSet() meta.CommandSet
+
+	Reload() View
 }
 
 type activeInput int
@@ -151,6 +153,10 @@ func (lv *ListView) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
 }
 
+func (lv *ListView) Reload() View {
+	return NewListView(lv.app)
+}
+
 func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		item := lv.listModel.SelectedItem()
@@ -176,7 +182,7 @@ type DetailView struct {
 	rows []database.EntryRow
 }
 
-func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
+func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
 	tableModel := table.New()
 	// I don't think we ever have to blur the table
 	tableModel.Focus()
@@ -190,8 +196,8 @@ func NewDetailView(app meta.App, itemId int, itemName string) *DetailView {
 
 		app: app,
 
-		modelId:   itemId,
-		modelName: itemName,
+		modelId:   modelId,
+		modelName: modelName,
 	}
 
 	view.updateTableWidth(90)
@@ -298,6 +304,10 @@ func (dv *DetailView) MotionSet() meta.MotionSet {
 
 func (dv *DetailView) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
+}
+
+func (dv *DetailView) Reload() View {
+	return NewDetailView(dv.app, dv.modelId, dv.modelName)
 }
 
 func (dv *DetailView) updateTableRows() tea.Cmd {

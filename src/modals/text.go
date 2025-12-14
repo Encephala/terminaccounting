@@ -2,6 +2,7 @@ package modals
 
 import (
 	"terminaccounting/meta"
+	"terminaccounting/view"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -38,4 +39,8 @@ func (tm *textModal) MotionSet() meta.MotionSet {
 
 func (tm *textModal) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
+}
+
+func (tm *textModal) Reload() view.View {
+	return NewTextModal(tm.message)
 }

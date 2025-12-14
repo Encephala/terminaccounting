@@ -8,6 +8,7 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
+	"terminaccounting/view"
 	"time"
 
 	"local/bubbles/itempicker"
@@ -303,6 +304,10 @@ func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(result)
+}
+
+func (bsi *bankStatementImporter) Reload() view.View {
+	return NewBankStatementImporter()
 }
 
 func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {

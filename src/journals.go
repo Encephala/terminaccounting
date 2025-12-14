@@ -150,3 +150,9 @@ func (app *journalsApp) MakeLoadListCmd() tea.Cmd {
 func (app *journalsApp) MakeLoadRowsCmd(journalId int) tea.Cmd {
 	panic("Journals has its own detailsview, this shouldn't get called")
 }
+
+func (app *journalsApp) ReloadView() tea.Cmd {
+	app.currentView = app.currentView.Reload()
+
+	return app.currentView.Init()
+}

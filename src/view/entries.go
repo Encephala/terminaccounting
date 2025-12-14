@@ -152,6 +152,10 @@ func (cv *EntryCreateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
 }
 
+func (cv *EntryCreateView) Reload() View {
+	return NewEntryCreateView(cv.colours)
+}
+
 func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
 	return &cv.journalInput
 }
@@ -189,7 +193,7 @@ type EntryUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
+func NewEntryUpdateView(modelId int, colours meta.AppColours) *EntryUpdateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	noteInput := textarea.New()
@@ -201,7 +205,7 @@ func NewEntryUpdateView(id int, colours meta.AppColours) *EntryUpdateView {
 		activeInput:      JOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
-		modelId: id,
+		modelId: modelId,
 
 		colours: colours,
 	}
@@ -353,6 +357,10 @@ func (uv *EntryUpdateView) MotionSet() meta.MotionSet {
 
 func (uv *EntryUpdateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
+}
+
+func (uv *EntryUpdateView) Reload() View {
+	return NewEntryUpdateView(uv.modelId, uv.colours)
 }
 
 func (uv *EntryUpdateView) getJournalInput() *itempicker.Model {
@@ -1382,6 +1390,10 @@ func (dv *EntryDeleteView) CommandSet() meta.CommandSet {
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (dv *EntryDeleteView) Reload() View {
+	return NewEntryDeleteView(dv.modelId, dv.colours)
 }
 
 func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

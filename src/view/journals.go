@@ -130,6 +130,10 @@ func (dv *JournalsDetailsView) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
 }
 
+func (dv *JournalsDetailsView) Reload() View {
+	return NewJournalsDetailsView(dv.journal, dv.app)
+}
+
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
 func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
@@ -341,6 +345,10 @@ func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (cv *JournalsCreateView) Reload() View {
+	return NewJournalsCreateView(cv.colours)
 }
 
 type JournalsUpdateView struct {
@@ -569,6 +577,10 @@ func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
+func (uv *JournalsUpdateView) Reload() View {
+	return NewJournalsUpdateView(uv.modelId, uv.colours)
+}
+
 func (uv *JournalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
@@ -582,9 +594,9 @@ type JournalsDeleteView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsDeleteView(id int, colours meta.AppColours) *JournalsDeleteView {
+func NewJournalsDeleteView(modelId int, colours meta.AppColours) *JournalsDeleteView {
 	return &JournalsDeleteView{
-		modelId: id,
+		modelId: modelId,
 
 		colours: colours,
 	}
@@ -702,6 +714,10 @@ func (dv *JournalsDeleteView) CommandSet() meta.CommandSet {
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (dv *JournalsDeleteView) Reload() View {
+	return NewJournalsDeleteView(dv.modelId, dv.colours)
 }
 
 func (dv *JournalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
