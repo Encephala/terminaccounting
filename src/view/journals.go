@@ -33,6 +33,7 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDet
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
+	// List dimensions will be updated according to tea.WindowSizeMsg
 	model := list.New([]list.Item{}, delegate, 20, 16)
 	model.Title = fmt.Sprintf("Journals detail view: %q", journal.Name)
 	model.Styles.Title = viewStyles.Title

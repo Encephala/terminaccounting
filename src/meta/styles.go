@@ -28,6 +28,7 @@ var JOURNALSCOLOURS = AppColours{
 	Accent:     "#F6D6D6",
 	Background: "#F6D6D6",
 }
+
 var tabBorder = lipgloss.Border{
 	Top:         "─",
 	Bottom:      "─",

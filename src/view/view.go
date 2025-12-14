@@ -60,6 +60,7 @@ func NewListView(app meta.App) *ListView {
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
 	delegate.Styles.SelectedDesc = viewStyles.ListDelegateSelectedDesc
 
+	// List dimensions will be updated according to tea.WindowSizeMsg
 	model := list.New([]list.Item{}, delegate, 80, 16)
 	model.Title = app.Name()
 	model.Styles.Title = viewStyles.Title
