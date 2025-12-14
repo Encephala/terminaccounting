@@ -78,7 +78,7 @@ func InitSchemas() tea.Cmd {
 }
 
 func SetCaches() error {
-	_, err := SelectJournals()
+	_, err := SelectLedgers()
 	if err != nil {
 		return err
 	}
