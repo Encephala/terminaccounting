@@ -40,6 +40,12 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 }
 
 func (mm *ModalManager) View() string {
+	view := mm.Modal.View()
+
+	if view == "" {
+		return ""
+	}
+
 	return meta.ModalStyle.Render(mm.Modal.View())
 }
 
