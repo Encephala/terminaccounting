@@ -15,8 +15,9 @@ import (
 )
 
 func main() {
+	logLevel := slog.LevelInfo
 	if os.Getenv("LOG_LEVEL") == "DEBUG" {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
+		logLevel = slog.LevelDebug
 	}
 
 	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
@@ -25,7 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer file.Close()
-	slog.SetDefault(slog.New(slog.NewJSONHandler(file, nil)))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: logLevel})))
 
 	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
 	if err != nil {
