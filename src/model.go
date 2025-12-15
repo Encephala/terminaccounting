@@ -108,6 +108,8 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.notifications = append(ta.notifications, notification)
 		ta.displayNotification = true
 
+		slog.Debug("Showed notification", "notification", notification)
+
 		return ta, nil
 
 	case meta.ShowNotificationsMsg:
@@ -404,6 +406,13 @@ func (nm notificationMsg) String() string {
 	}
 
 	return nm.text
+}
+
+func (nm notificationMsg) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("text", nm.text),
+		slog.Bool("isError", nm.isError),
+	)
 }
 
 func newOverlay(main *terminaccounting) *overlay.Model {
