@@ -9,10 +9,10 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/modals"
 
-	overlay "github.com/Encephala/bubbletea-overlay"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {

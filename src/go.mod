@@ -3,13 +3,13 @@ module terminaccounting
 go 1.25.4
 
 require (
-	github.com/Encephala/bubbletea-overlay v0.4.0
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/ncruces/zenity v0.10.14
+	github.com/rmhubbert/bubbletea-overlay v0.6.1
 	local/bubbles v0.0.0
 )
 
