@@ -29,7 +29,7 @@ type FileSelectedMsg struct {
 	File string
 }
 
-type ShowTextMsg struct {
+type ShowTextModalMsg struct {
 	Text string
 }
 

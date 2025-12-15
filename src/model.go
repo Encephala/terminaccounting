@@ -93,17 +93,12 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, cmd
 
-	case meta.ShowTextMsg:
-		ta.modalManager.Modal = modals.NewTextModal(message.Text)
+	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
+		var cmd tea.Cmd
+		ta.modalManager, cmd = ta.modalManager.Update(message)
 		ta.showModal = true
 
-		return ta, ta.modalManager.Init()
-
-	case meta.ShowBankImporterMsg:
-		ta.modalManager.Modal = modals.NewBankStatementImporter()
-		ta.showModal = true
-
-		return ta, ta.modalManager.Init()
+		return ta, cmd
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
@@ -133,7 +128,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			rendered = rendered[len(rendered)-maxMessages:]
 		}
 
-		return ta, meta.MessageCmd(meta.ShowTextMsg{Text: strings.Join(rendered, "\n")})
+		return ta, meta.MessageCmd(meta.ShowTextModalMsg{Text: strings.Join(rendered, "\n")})
 
 	case meta.FatalErrorMsg:
 		slog.Error("Fatal error", "error", message.Error)

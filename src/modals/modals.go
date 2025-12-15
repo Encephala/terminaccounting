@@ -16,11 +16,27 @@ func (mm *ModalManager) Init() tea.Cmd {
 }
 
 func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
-	// TODO: handle ReloadViewMsg
+	switch message := message.(type) {
+	case meta.ShowTextModalMsg:
+		mm.Modal = NewTextModal(message.Text)
 
-	// TODO: Send message to current modal
+		return mm, mm.Modal.Init()
 
-	return mm, nil
+	case meta.ShowBankImporterMsg:
+		mm.Modal = NewBankStatementImporter()
+
+		return mm, mm.Modal.Init()
+
+	case meta.ReloadViewMsg:
+		mm.Modal = mm.Modal.Reload().(view.View)
+
+		return mm, mm.Modal.Init()
+	}
+
+	newModal, cmd := mm.Modal.Update(message)
+	mm.Modal = newModal.(view.View)
+
+	return mm, cmd
 }
 
 func (mm *ModalManager) View() string {
