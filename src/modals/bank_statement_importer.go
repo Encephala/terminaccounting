@@ -358,13 +358,19 @@ func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
 
 type IngParser struct{}
 
-func (p IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error) {
+func (ip IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error) {
 	var result []database.EntryRow
 
 	for _, row := range data {
 		date, err := time.Parse("20060102", row[0])
 		if err != nil {
 			return nil, err
+		}
+
+		rowDescription := row[8]
+		parsedDescription := ip.parseDescription(rowDescription)
+		if parsedDescription != nil {
+			rowDescription = *parsedDescription
 		}
 
 		valueParts := strings.Split(row[6], ",")
@@ -388,7 +394,7 @@ func (p IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) 
 			Date:        database.Date(date),
 			Ledger:      accountLedger,
 			Account:     nil,
-			Description: row[8],
+			Description: rowDescription,
 			Document:    nil,
 			Value:       database.CurrencyValue(value),
 			Reconciled:  false,
@@ -399,7 +405,7 @@ func (p IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) 
 			Date:        database.Date(date),
 			Ledger:      bankLedger,
 			Account:     nil,
-			Description: row[8],
+			Description: rowDescription,
 			Document:    nil,
 			Value:       database.CurrencyValue(-value),
 			Reconciled:  false,
@@ -410,10 +416,23 @@ func (p IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) 
 	return result, nil
 }
 
-func (p IngParser) String() string {
+func (ip IngParser) String() string {
 	return "ING"
 }
 
-func (p IngParser) CompareId() int {
+func (ip IngParser) CompareId() int {
 	return 0
+}
+
+func (p IngParser) parseDescription(description string) *string {
+	indexDescription := strings.Index(description, "Description:")
+	if indexDescription == -1 {
+		return nil
+	}
+
+	indexIBAN := strings.Index(description, "IBAN:")
+
+	result := description[indexDescription+len("Description: ") : indexIBAN]
+
+	return &result
 }
