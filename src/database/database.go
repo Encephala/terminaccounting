@@ -88,7 +88,7 @@ func UpdateCache() error {
 		return err
 	}
 
-	err = UpdateLedgersCache()
+	err = UpdateJournalsCache()
 	if err != nil {
 		return err
 	}
