@@ -6,6 +6,7 @@ import (
 	"os"
 	"terminaccounting/database"
 	"terminaccounting/meta"
+	"terminaccounting/modals"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -59,9 +60,12 @@ func main() {
 		appIds:    appIds,
 	}
 
+	mm := &modals.ModalManager{}
+
 	ta := &terminaccounting{
-		appManager: am,
-		showModal:  false,
+		appManager:   am,
+		modalManager: mm,
+		showModal:    false,
 
 		inputMode:    meta.NORMALMODE,
 		commandInput: commandInput,
