@@ -14,11 +14,37 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type accountsActiveInput int
+
+func (input *accountsActiveInput) previous() {
+	*input--
+
+	if *input < 0 {
+		*input += accountsActiveInput(NUMACCOUNTSINPUTS)
+	}
+}
+
+func (input *accountsActiveInput) next() {
+	*input++
+
+	*input %= accountsActiveInput(NUMACCOUNTSINPUTS)
+}
+
+const (
+	ACCOUNTSNAMEINPUT accountsActiveInput = iota
+	ACCOUNTSTYPEINPUT
+	ACCOUNTSBANKNUMBERSINPUT
+	ACCOUNTSNOTESINPUT
+)
+
+const NUMACCOUNTSINPUTS int = 4
+
 type AccountsCreateView struct {
-	nameInput  textinput.Model
-	typeInput  itempicker.Model
-	notesInput textarea.Model
-	activeInput
+	nameInput        textinput.Model
+	typeInput        itempicker.Model
+	bankNumbersInput textarea.Model
+	notesInput       textarea.Model
+	activeInput      accountsActiveInput
 
 	colours meta.AppColours
 }
@@ -32,14 +58,17 @@ func NewAccountsCreateView() *AccountsCreateView {
 	nameInput := textinput.New()
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+	bankNumbersInput := textarea.New()
+	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
 	return &AccountsCreateView{
-		nameInput:   nameInput,
-		typeInput:   itempicker.New(accountTypes),
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		nameInput:        nameInput,
+		typeInput:        itempicker.New(accountTypes),
+		notesInput:       notesInput,
+		bankNumbersInput: bankNumbersInput,
+		activeInput:      ACCOUNTSNAMEINPUT,
 
 		colours: meta.ACCOUNTSCOLOURS,
 	}
@@ -86,25 +115,29 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// Note from later me: might actually delete this as an implicit check that only the right input
 		// gets the update message.
 		switch cv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			cv.nameInput.Blur()
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			cv.bankNumbersInput.Blur()
+		case ACCOUNTSNOTESINPUT:
 			cv.notesInput.Blur()
 		}
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			cv.activeInput.previous(3)
+			cv.activeInput.previous()
 
 		case meta.NEXT:
-			cv.activeInput.next(3)
+			cv.activeInput.next()
 		}
 
 		// If now on a textinput, focus it
 		switch cv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			cv.nameInput.Focus()
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			cv.bankNumbersInput.Focus()
+		case ACCOUNTSNOTESINPUT:
 			cv.notesInput.Focus()
 		}
 
@@ -121,11 +154,13 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch cv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			cv.nameInput, cmd = cv.nameInput.Update(message)
-		case TYPEINPUT:
+		case ACCOUNTSTYPEINPUT:
 			cv.typeInput, cmd = cv.typeInput.Update(message)
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			cv.bankNumbersInput, cmd = cv.bankNumbersInput.Update(message)
+		case ACCOUNTSNOTESINPUT:
 			cv.notesInput, cmd = cv.notesInput.Update(message)
 
 		default:
@@ -147,40 +182,80 @@ func (cv *AccountsCreateView) View() string {
 	result.WriteString(titleStyle.Render("Creating new Account"))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
-		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
 
 	const inputWidth = 26
 	cv.nameInput.Width = inputWidth - 2
+	cv.bankNumbersInput.SetWidth(inputWidth)
 	cv.notesInput.SetWidth(inputWidth)
 
-	var nameRow = lipgloss.JoinHorizontal(
+	notesFocusStyle := lipgloss.NewStyle().Foreground(cv.colours.Foreground)
+	cv.bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
+	cv.bankNumbersInput.FocusedStyle.Text = notesFocusStyle
+	cv.bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
+	cv.bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
+	cv.notesInput.FocusedStyle.Prompt = notesFocusStyle
+	cv.notesInput.FocusedStyle.Text = notesFocusStyle
+	cv.notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	cv.notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
+	nameStyle := sectionStyle
+	typeStyle := sectionStyle
+
+	switch cv.activeInput {
+	case ACCOUNTSNAMEINPUT:
+		nameStyle = highlightStyle
+	case ACCOUNTSTYPEINPUT:
+		typeStyle = highlightStyle
+	// textareas have FocusedStyle set, don't manually render with highlightStyle
+	case ACCOUNTSBANKNUMBERSINPUT:
+	case ACCOUNTSNOTESINPUT:
+	default:
+		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", cv.activeInput))
+	}
+
+	// +2 for padding
+	maxNameColWidth := len("Bank numbers") + 2
+
+	nameRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(cv.nameInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Name"),
+		" ",
+		nameStyle.Render(cv.nameInput.View()),
 	)
 
-	var typeRow = lipgloss.JoinHorizontal(
+	typeRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
+		" ",
+		typeStyle.Render(cv.typeInput.View()),
 	)
 
-	var notesRow = lipgloss.JoinHorizontal(
+	bankNumbersRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(cv.notesInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Bank numbers"),
+		" ",
+		sectionStyle.Render(cv.bankNumbersInput.View()),
+	)
+
+	notesRow := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		" ",
+		sectionStyle.Render(cv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
 		lipgloss.JoinVertical(
-			lipgloss.Left,
+			lipgloss.Top,
 			nameRow,
 			typeRow,
+			bankNumbersRow,
 			notesRow,
 		),
 	))
