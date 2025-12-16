@@ -220,7 +220,7 @@ type EntryUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewEntryUpdateView(modelId int, colours meta.AppColours) *EntryUpdateView {
+func NewEntryUpdateView(modelId int) *EntryUpdateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	noteInput := textarea.New()
@@ -234,7 +234,7 @@ func NewEntryUpdateView(modelId int, colours meta.AppColours) *EntryUpdateView {
 
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.ENTRIESCOLOURS,
 	}
 
 	return result
@@ -390,7 +390,7 @@ func (uv *EntryUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *EntryUpdateView) Reload() View {
-	return NewEntryUpdateView(uv.modelId, uv.colours)
+	return NewEntryUpdateView(uv.modelId)
 }
 
 func (uv *EntryUpdateView) getJournalInput() *itempicker.Model {
@@ -1317,11 +1317,11 @@ type EntryDeleteView struct {
 	colours meta.AppColours
 }
 
-func NewEntryDeleteView(modelId int, colours meta.AppColours) *EntryDeleteView {
+func NewEntryDeleteView(modelId int) *EntryDeleteView {
 	return &EntryDeleteView{
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.ENTRIESCOLOURS,
 	}
 }
 
@@ -1429,7 +1429,7 @@ func (dv *EntryDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *EntryDeleteView) Reload() View {
-	return NewEntryDeleteView(dv.modelId, dv.colours)
+	return NewEntryDeleteView(dv.modelId)
 }
 
 func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

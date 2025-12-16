@@ -156,7 +156,7 @@ type JournalsCreateView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsCreateView(colours meta.AppColours) *JournalsCreateView {
+func NewJournalsCreateView() *JournalsCreateView {
 	journalTypes := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -176,7 +176,7 @@ func NewJournalsCreateView(colours meta.AppColours) *JournalsCreateView {
 		notesInput:  noteInput,
 		activeInput: NAMEINPUT,
 
-		colours: colours,
+		colours: meta.JOURNALSCOLOURS,
 	}
 }
 
@@ -347,7 +347,7 @@ func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *JournalsCreateView) Reload() View {
-	return NewJournalsCreateView(cv.colours)
+	return NewJournalsCreateView()
 }
 
 type JournalsUpdateView struct {
@@ -362,7 +362,7 @@ type JournalsUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsUpdateView(modelId int, colours meta.AppColours) *JournalsUpdateView {
+func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
 	types := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -385,7 +385,7 @@ func NewJournalsUpdateView(modelId int, colours meta.AppColours) *JournalsUpdate
 
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.JOURNALSCOLOURS,
 	}
 }
 
@@ -577,7 +577,7 @@ func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *JournalsUpdateView) Reload() View {
-	return NewJournalsUpdateView(uv.modelId, uv.colours)
+	return NewJournalsUpdateView(uv.modelId)
 }
 
 func (uv *JournalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -593,11 +593,11 @@ type JournalsDeleteView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsDeleteView(modelId int, colours meta.AppColours) *JournalsDeleteView {
+func NewJournalsDeleteView(modelId int) *JournalsDeleteView {
 	return &JournalsDeleteView{
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.JOURNALSCOLOURS,
 	}
 }
 
@@ -716,7 +716,7 @@ func (dv *JournalsDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *JournalsDeleteView) Reload() View {
-	return NewJournalsDeleteView(dv.modelId, dv.colours)
+	return NewJournalsDeleteView(dv.modelId)
 }
 
 func (dv *JournalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

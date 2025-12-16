@@ -38,7 +38,7 @@ type LedgersCreateView struct {
 	colours meta.AppColours
 }
 
-func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
+func NewLedgersCreateView() *LedgersCreateView {
 	ledgerTypes := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -63,7 +63,7 @@ func NewLedgersCreateView(colours meta.AppColours) *LedgersCreateView {
 		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
-		colours: colours,
+		colours: meta.LEDGERSCOLOURS,
 	}
 }
 
@@ -144,7 +144,7 @@ func (cv *LedgersCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *LedgersCreateView) Reload() View {
-	return NewLedgersCreateView(cv.colours)
+	return NewLedgersCreateView()
 }
 
 type LedgersUpdateView struct {
@@ -159,7 +159,7 @@ type LedgersUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateView {
+func NewLedgersUpdateView(modelId int) *LedgersUpdateView {
 	types := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -187,7 +187,7 @@ func NewLedgersUpdateView(modelId int, colours meta.AppColours) *LedgersUpdateVi
 
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.LEDGERSCOLOURS,
 	}
 }
 
@@ -289,7 +289,7 @@ func (uv *LedgersUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *LedgersUpdateView) Reload() View {
-	return NewLedgersUpdateView(uv.modelId, uv.colours)
+	return NewLedgersUpdateView(uv.modelId)
 }
 
 func (uv *LedgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -441,11 +441,11 @@ type LedgersDeleteView struct {
 	colours meta.AppColours
 }
 
-func NewLedgersDeleteView(modelId int, colours meta.AppColours) *LedgersDeleteView {
+func NewLedgersDeleteView(modelId int) *LedgersDeleteView {
 	return &LedgersDeleteView{
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.LEDGERSCOLOURS,
 	}
 }
 
@@ -566,7 +566,7 @@ func (dv *LedgersDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *LedgersDeleteView) Reload() View {
-	return NewLedgersDeleteView(dv.modelId, dv.colours)
+	return NewLedgersDeleteView(dv.modelId)
 }
 
 func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {

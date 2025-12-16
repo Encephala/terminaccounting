@@ -60,17 +60,17 @@ func (app *ledgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewDetailView(app, ledger.Id, ledger.Name)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewLedgersCreateView(app.Colours())
+			app.currentView = view.NewLedgersCreateView()
 
 		case meta.UPDATEVIEWTYPE:
 			ledgerId := message.Data.(int)
 
-			app.currentView = view.NewLedgersUpdateView(ledgerId, app.Colours())
+			app.currentView = view.NewLedgersUpdateView(ledgerId)
 
 		case meta.DELETEVIEWTYPE:
 			ledgerId := message.Data.(int)
 
-			app.currentView = view.NewLedgersDeleteView(ledgerId, app.Colours())
+			app.currentView = view.NewLedgersDeleteView(ledgerId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))

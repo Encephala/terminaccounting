@@ -23,7 +23,7 @@ type AccountsCreateView struct {
 	colours meta.AppColours
 }
 
-func NewAccountsCreateView(colours meta.AppColours) *AccountsCreateView {
+func NewAccountsCreateView() *AccountsCreateView {
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -41,7 +41,7 @@ func NewAccountsCreateView(colours meta.AppColours) *AccountsCreateView {
 		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
-		colours: colours,
+		colours: meta.ACCOUNTSCOLOURS,
 	}
 }
 
@@ -212,7 +212,7 @@ func (cv *AccountsCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *AccountsCreateView) Reload() View {
-	return NewAccountsCreateView(cv.colours)
+	return NewAccountsCreateView()
 }
 
 type AccountsUpdateView struct {
@@ -227,7 +227,7 @@ type AccountsUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewAccountsUpdateView(modelId int, colours meta.AppColours) *AccountsUpdateView {
+func NewAccountsUpdateView(modelId int) *AccountsUpdateView {
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -247,7 +247,7 @@ func NewAccountsUpdateView(modelId int, colours meta.AppColours) *AccountsUpdate
 
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.ACCOUNTSCOLOURS,
 	}
 }
 
@@ -439,7 +439,7 @@ func (uv *AccountsUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *AccountsUpdateView) Reload() View {
-	return NewAccountsUpdateView(uv.modelId, uv.colours)
+	return NewAccountsUpdateView(uv.modelId)
 }
 
 func (uv *AccountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -455,11 +455,11 @@ type AccountsDeleteView struct {
 	colours meta.AppColours
 }
 
-func NewAccountsDeleteView(modelId int, colours meta.AppColours) *AccountsDeleteView {
+func NewAccountsDeleteView(modelId int) *AccountsDeleteView {
 	return &AccountsDeleteView{
 		modelId: modelId,
 
-		colours: colours,
+		colours: meta.ACCOUNTSCOLOURS,
 	}
 }
 
@@ -577,7 +577,7 @@ func (dv *AccountsDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *AccountsDeleteView) Reload() View {
-	return NewAccountsDeleteView(dv.modelId, dv.colours)
+	return NewAccountsDeleteView(dv.modelId)
 }
 
 func (dv *AccountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

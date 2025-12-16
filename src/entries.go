@@ -73,12 +73,12 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case meta.UPDATEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			app.currentView = view.NewEntryUpdateView(entryId, app.Colours())
+			app.currentView = view.NewEntryUpdateView(entryId)
 
 		case meta.DELETEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			app.currentView = view.NewEntryDeleteView(entryId, app.Colours())
+			app.currentView = view.NewEntryDeleteView(entryId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
