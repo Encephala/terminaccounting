@@ -958,7 +958,7 @@ func (ervm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 	// If trying to delete the last row in the entry
 	// CBA handling weird edge cases here
 	if ervm.numRows() == 1 {
-		return ervm, meta.MessageCmd(fmt.Errorf("cannot delete the final entryrow"))
+		return ervm, meta.MessageCmd(errors.New("cannot delete the final entryrow"))
 	}
 
 	// If about to delete the bottom-most row
@@ -1081,7 +1081,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case meta.NavigateMsg:
 		if *activeInput != ENTRYROWINPUT {
-			return view, meta.MessageCmd(fmt.Errorf("hjkl navigation only works within the entryrows"))
+			return view, meta.MessageCmd(errors.New("hjkl navigation only works within the entryrows"))
 		}
 
 		manager, cmd := entryRowsManager.update(message)
@@ -1091,7 +1091,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case meta.JumpHorizontalMsg:
 		if *activeInput != ENTRYROWINPUT {
-			return view, meta.MessageCmd(fmt.Errorf("$/_ navigation only works within the entryrows"))
+			return view, meta.MessageCmd(errors.New("$/_ navigation only works within the entryrows"))
 		}
 
 		manager, cmd := entryRowsManager.update(message)
@@ -1101,7 +1101,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case meta.JumpVerticalMsg:
 		if *activeInput != ENTRYROWINPUT {
-			return view, meta.MessageCmd(fmt.Errorf("'gg'/'G' navigation only works within the entryrows"))
+			return view, meta.MessageCmd(errors.New("'gg'/'G' navigation only works within the entryrows"))
 		}
 
 		manager, cmd := entryRowsManager.update(message)
@@ -1134,7 +1134,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case DeleteEntryRowMsg:
 		if *activeInput != ENTRYROWINPUT {
-			return view, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to delete one"))
+			return view, meta.MessageCmd(errors.New("no entry row highlighted while trying to delete one"))
 		}
 
 		manager, cmd := entryRowsManager.deleteRow()
@@ -1144,7 +1144,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	case CreateEntryRowMsg:
 		if *activeInput != ENTRYROWINPUT {
-			return view, meta.MessageCmd(fmt.Errorf("no entry row highlighted while trying to create one"))
+			return view, meta.MessageCmd(errors.New("no entry row highlighted while trying to create one"))
 		}
 
 		var cmds []tea.Cmd

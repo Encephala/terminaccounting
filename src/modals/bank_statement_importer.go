@@ -156,7 +156,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.NavigateMsg:
 		if bsi.activeInput != 4 {
-			return bsi, meta.MessageCmd(fmt.Errorf("jk navigation only works within the table"))
+			return bsi, meta.MessageCmd(errors.New("jk navigation only works within the table"))
 		}
 
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
