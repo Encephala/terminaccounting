@@ -80,6 +80,10 @@ func (m Model) View() string {
 
 // Allows to manually retrieve the currently selected value.
 func (m Model) Value() Item {
+	if len(m.Items) == 0 {
+		return nil
+	}
+
 	return m.Items[m.activeItem]
 }
 
