@@ -1,6 +1,7 @@
 package database
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -20,12 +21,12 @@ func setupDBAccounts(t *testing.T) {
 func TestMarshalUnmarshalAccount(t *testing.T) {
 	setupDBAccounts(t)
 
-	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	account := Account{
-		Id:    1,
-		Name:  "testerino",
-		Type:  DEBTOR,
-		Notes: []string{"a note"},
+		Id:          1, // Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
+		Name:        "testerino",
+		Type:        DEBTOR,
+		BankNumbers: []string{"NL02ABNA0123456789"},
+		Notes:       []string{"a note"},
 	}
 
 	insertedId, err := account.Insert()
@@ -74,14 +75,17 @@ func testAccountsEqual(t *testing.T, actual, expected Account) {
 		t.Errorf("Invalid ID %q, expected %q", actual.Type, expected.Type)
 	}
 
-	if len(actual.Notes) != len(expected.Notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
-		t.Logf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
+	if len(actual.BankNumbers) != len(expected.BankNumbers) {
+		t.Logf("Unequal bank numbers lengths %d and %d", len(actual.BankNumbers), len(expected.BankNumbers))
+	}
+	if !slices.Equal(actual.BankNumbers, expected.BankNumbers) {
+		t.Errorf("Actual bank numbers %v, expected %v", actual.BankNumbers, expected.BankNumbers)
 	}
 
-	for i, note := range actual.Notes {
-		if note != expected.Notes[i] {
-			t.Errorf("Invalid note %q at index %d, expected %q", actual.Notes, i, expected.Notes)
-		}
+	if len(actual.Notes) != len(expected.Notes) {
+		t.Logf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
+	}
+	if !slices.Equal(actual.Notes, expected.Notes) {
+		t.Errorf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
 	}
 }

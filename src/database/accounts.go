@@ -49,10 +49,11 @@ func (at AccountType) String() string {
 }
 
 type Account struct {
-	Id    int         `db:"id"`
-	Name  string      `db:"name"`
-	Type  AccountType `db:"type"`
-	Notes meta.Notes  `db:"notes"`
+	Id          int         `db:"id"`
+	Name        string      `db:"name"`
+	Type        AccountType `db:"type"`
+	BankNumbers meta.Notes  `db:"banknumbers"`
+	Notes       meta.Notes  `db:"notes"`
 }
 
 func (a Account) FilterValue() string {
@@ -119,6 +120,7 @@ func setupSchemaAccounts() (bool, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		type INTEGER NOT NULL,
+		banknumbers TEXT,
 		notes TEXT
 	) STRICT;`
 
@@ -127,7 +129,10 @@ func setupSchemaAccounts() (bool, error) {
 }
 
 func (a Account) Insert() (int, error) {
-	result, err := DB.NamedExec(`INSERT INTO accounts (name, type, notes) VALUES (:name, :type, :notes)`, a)
+	result, err := DB.NamedExec(
+		`INSERT INTO accounts (name, type, banknumbers, notes) VALUES (:name, :type, :banknumbers, :notes)`,
+		a,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -149,6 +154,7 @@ func (a Account) Update() error {
 	query := `UPDATE accounts SET
 	name = :name,
 	type = :type,
+	banknumbers = :banknumbers,
 	notes = :notes
 	WHERE id = :id;`
 
