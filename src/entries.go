@@ -68,7 +68,7 @@ func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewDetailView(app, entry.Id, strconv.Itoa(entry.Id))
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewEntryCreateView(app.Colours())
+			app.currentView = view.NewEntryCreateView()
 
 		case meta.UPDATEVIEWTYPE:
 			entryId := message.Data.(int)

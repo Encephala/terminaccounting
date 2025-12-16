@@ -34,7 +34,7 @@ type EntryCreateView struct {
 	colours meta.AppColours
 }
 
-func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
+func NewEntryCreateView() *EntryCreateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	noteInput := textarea.New()
 	noteInput.Cursor.SetMode(cursor.CursorStatic)
@@ -45,10 +45,33 @@ func NewEntryCreateView(colours meta.AppColours) *EntryCreateView {
 		activeInput:      JOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
-		colours: colours,
+		colours: meta.ENTRIESCOLOURS,
 	}
 
 	return result
+}
+
+type EntryPrefillData struct {
+	Journal database.Journal
+	Rows    []database.EntryRow
+	Notes   meta.Notes
+}
+
+// Make an EntryCreateView with the provided journal, rows prefilled into forms
+func NewEntryCreateViewPrefilled(data EntryPrefillData) (*EntryCreateView, error) {
+	result := NewEntryCreateView()
+
+	result.journalInput.SetValue(data.Journal)
+	result.notesInput.SetValue(data.Notes.Collapse())
+
+	entryRowCreateView, err := decompileRows(data.Rows)
+	if err != nil {
+		return nil, err
+	}
+
+	result.entryRowsManager.rows = entryRowCreateView
+
+	return result, nil
 }
 
 type EntryRowCreateView struct {
@@ -157,7 +180,7 @@ func (cv *EntryCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *EntryCreateView) Reload() View {
-	return NewEntryCreateView(cv.colours)
+	return NewEntryCreateView()
 }
 
 func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
@@ -291,7 +314,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			uv.startingEntryRows = rows
 
-			formRows, err := uv.decompileRows(rows)
+			formRows, err := decompileRows(rows)
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
@@ -322,7 +345,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case ENTRYROWINPUT:
 			var err error
-			uv.entryRowsManager.rows, err = uv.decompileRows(uv.startingEntryRows)
+			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows)
 
 			if err != nil {
 				return uv, meta.MessageCmd(err)
@@ -713,58 +736,6 @@ func (ervm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 	return result, nil
 }
 
-// Converts a slice of EntryRow to a slice of EntryRowCreateView
-func (uv *EntryUpdateView) decompileRows(rows []database.EntryRow) ([]*EntryRowCreateView, error) {
-	result := make([]*EntryRowCreateView, len(rows))
-
-	for i, row := range rows {
-		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
-			return ledger.Id == row.Ledger
-		})
-		if availableLedgerIndex == -1 {
-			panic(fmt.Sprintf("Ledger not found for %#v", row))
-		}
-
-		ledger := database.AvailableLedgers[availableLedgerIndex]
-
-		var account *database.Account
-		if row.Account != nil {
-			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
-				return account.Id == *row.Account
-			})
-			if availableAccountIndex == -1 {
-				panic(fmt.Sprintf("Account not found for %#v", row))
-			}
-
-			account = &database.AvailableAccounts[availableAccountIndex]
-		}
-
-		formRow := newEntryRowCreateView(&row.Date)
-
-		err := formRow.ledgerInput.SetValue(ledger)
-		if err != nil {
-			return nil, err
-		}
-
-		err = formRow.accountInput.SetValue(account)
-		if err != nil {
-			return nil, err
-		}
-
-		formRow.descriptionInput.SetValue(row.Description)
-
-		if row.Value > 0 {
-			formRow.debitInput.SetValue(row.Value.String())
-		} else if row.Value < 0 {
-			formRow.creditInput.SetValue((-row.Value).String())
-		}
-
-		result[i] = formRow
-	}
-
-	return result, nil
-}
-
 func (uv *EntryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingEntry}
@@ -909,6 +880,58 @@ func (ervm *EntryRowViewManager) setActiveCoords(newRow, newCol int) {
 	case 5:
 		ervm.rows[newRow].creditInput.Focus()
 	}
+}
+
+// Converts a slice of EntryRow to a slice of EntryRowCreateView
+func decompileRows(rows []database.EntryRow) ([]*EntryRowCreateView, error) {
+	result := make([]*EntryRowCreateView, len(rows))
+
+	for i, row := range rows {
+		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+			return ledger.Id == row.Ledger
+		})
+		if availableLedgerIndex == -1 {
+			panic(fmt.Sprintf("Ledger not found for %#v", row))
+		}
+
+		ledger := database.AvailableLedgers[availableLedgerIndex]
+
+		var account *database.Account
+		if row.Account != nil {
+			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+				return account.Id == *row.Account
+			})
+			if availableAccountIndex == -1 {
+				panic(fmt.Sprintf("Account not found for %#v", row))
+			}
+
+			account = &database.AvailableAccounts[availableAccountIndex]
+		}
+
+		formRow := newEntryRowCreateView(&row.Date)
+
+		err := formRow.ledgerInput.SetValue(ledger)
+		if err != nil {
+			return nil, err
+		}
+
+		err = formRow.accountInput.SetValue(account)
+		if err != nil {
+			return nil, err
+		}
+
+		formRow.descriptionInput.SetValue(row.Description)
+
+		if row.Value > 0 {
+			formRow.debitInput.SetValue(row.Value.String())
+		} else if row.Value < 0 {
+			formRow.creditInput.SetValue((-row.Value).String())
+		}
+
+		result[i] = formRow
+	}
+
+	return result, nil
 }
 
 // Checks if input is a digit or a hyphen
