@@ -283,10 +283,12 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
+		typeInput := uv.typeInput.Value()
+
 		account := database.Account{
 			Id:    uv.modelId,
 			Name:  uv.nameInput.Value(),
-			Type:  uv.typeInput.Value().(database.AccountType),
+			Type:  typeInput.(database.AccountType),
 			Notes: meta.CompileNotes(uv.notesInput.Value()),
 		}
 

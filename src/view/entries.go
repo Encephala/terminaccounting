@@ -1,6 +1,7 @@
 package view
 
 import (
+	"errors"
 	"fmt"
 	"local/bubbles/itempicker"
 	"log/slog"
@@ -92,7 +93,10 @@ func (cv *EntryCreateView) Init() tea.Cmd {
 func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		entryJournal := cv.journalInput.Value().(database.Journal)
+		entryJournal := cv.journalInput.Value()
+		if entryJournal == nil {
+			return cv, meta.MessageCmd(errors.New("no journal selected (none available)"))
+		}
 		entryNotes := cv.notesInput.Value()
 
 		entryRows, err := cv.entryRowsManager.compileRows()
@@ -101,7 +105,7 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		newEntry := database.Entry{
-			Journal: entryJournal.Id,
+			Journal: entryJournal.(database.Journal).Id,
 			Notes:   meta.CompileNotes(entryNotes),
 		}
 
@@ -225,7 +229,10 @@ func (uv *EntryUpdateView) Init() tea.Cmd {
 func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		entryJournal := uv.journalInput.Value().(database.Journal)
+		entryJournal := uv.journalInput.Value()
+		if entryJournal == nil {
+			return uv, meta.MessageCmd(errors.New("no journal selected (none available)"))
+		}
 		entryNotes := uv.notesInput.Value()
 
 		entryRows, err := uv.entryRowsManager.compileRows()
@@ -239,7 +246,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		newEntry := database.Entry{
 			Id:      uv.startingEntry.Id,
-			Journal: entryJournal.Id,
+			Journal: entryJournal.(database.Journal).Id,
 			Notes:   meta.CompileNotes(entryNotes),
 		}
 
@@ -632,12 +639,18 @@ func (ervm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 	}
 
 	for i, formRow := range ervm.rows {
-		formLedger := formRow.ledgerInput.Value().(database.Ledger)
+		formLedger := formRow.ledgerInput.Value()
+		if formLedger == nil {
+			return nil, fmt.Errorf("invalid ledger selected in row %d (none available)", i)
+		}
 
-		formAccount := formRow.accountInput.Value().(*database.Account)
+		formAccount := formRow.accountInput.Value()
+		if formAccount == nil {
+			return nil, fmt.Errorf("invalid account selected in row %d (none available)", i)
+		}
 		var accountId *int
-		if formAccount != nil {
-			accountId = &formAccount.Id
+		if formAccount.(*database.Account) != nil {
+			accountId = &formAccount.(*database.Account).Id
 		}
 
 		// TODO: Validate the date thingy
@@ -688,7 +701,7 @@ func (ervm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
 		result[i] = database.EntryRow{
 			Entry:       -1, // Will be inserted into the struct after entry itself has been inserted into db
 			Date:        date,
-			Ledger:      formLedger.Id,
+			Ledger:      formLedger.(database.Ledger).Id,
 			Account:     accountId,
 			Description: formDescription,
 			Document:    nil, // TODO

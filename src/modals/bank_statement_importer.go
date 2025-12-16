@@ -2,6 +2,7 @@ package modals
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -166,15 +167,29 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return bsi, cmd
 
 	case meta.CommitMsg:
+		journal := bsi.journalPicker.Value()
+		if journal == nil {
+			return bsi, meta.MessageCmd(errors.New("no journal selected (none available)"))
+		}
 		entry := database.Entry{
-			Journal: bsi.journalPicker.Value().(database.Journal).Id,
+			Journal: journal.(database.Journal).Id,
 			Notes:   meta.Notes{},
+		}
+
+		accountLedger := bsi.accountLedgerPicker.Value()
+		if accountLedger == nil {
+			return bsi, meta.MessageCmd(errors.New("no account ledger selected (none available)"))
+		}
+
+		bankLedger := bsi.bankLedgerPicker.Value()
+		if bankLedger == nil {
+			return bsi, meta.MessageCmd(errors.New("no bank ledger selected (none available)"))
 		}
 
 		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(
 			bsi.previewTable.Rows(),
-			bsi.accountLedgerPicker.Value().(database.Ledger).Id,
-			bsi.bankLedgerPicker.Value().(database.Ledger).Id,
+			accountLedger.(database.Ledger).Id,
+			bankLedger.(database.Ledger).Id,
 		)
 		if err != nil {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
