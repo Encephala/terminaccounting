@@ -171,10 +171,6 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		if journal == nil {
 			return bsi, meta.MessageCmd(errors.New("no journal selected (none available)"))
 		}
-		entry := database.Entry{
-			Journal: journal.(database.Journal).Id,
-			Notes:   meta.Notes{},
-		}
 
 		accountLedger := bsi.accountLedgerPicker.Value()
 		if accountLedger == nil {
@@ -195,19 +191,18 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
-		createdEntryId, err := entry.Insert(rows)
-		if err != nil {
-			return bsi, meta.MessageCmd(err)
-		}
-
-		entries := meta.ENTRIESAPP
+		entriesAppType := meta.ENTRIESAPP
 
 		return bsi, tea.Batch(
 			meta.MessageCmd(meta.QuitMsg{}),
 			meta.MessageCmd(meta.SwitchViewMsg{
-				App:      &entries,
-				ViewType: meta.UPDATEVIEWTYPE,
-				Data:     createdEntryId,
+				App:      &entriesAppType,
+				ViewType: meta.CREATEVIEWTYPE,
+				Data: view.EntryPrefillData{
+					Journal: journal.(database.Journal),
+					Rows:    rows,
+					Notes:   meta.Notes{fmt.Sprintf("Bank import %s", time.Now().Format("2006-01-02 15:04:05"))},
+				},
 			}))
 
 	default:
