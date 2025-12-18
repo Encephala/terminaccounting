@@ -125,11 +125,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			rendered = append(rendered, newLine)
 		}
 
-		maxMessages := 20
-		if len(rendered) > maxMessages {
-			rendered = rendered[len(rendered)-maxMessages:]
-		}
-
 		return ta, meta.MessageCmd(meta.ShowTextModalMsg{Text: strings.Join(rendered, "\n")})
 
 	case meta.FatalErrorMsg:
