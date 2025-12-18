@@ -101,6 +101,31 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return bsi, nil
 
 	case meta.SwitchFocusMsg:
+		if bsi.activeInput == numInputs-1 {
+			switch message.Direction {
+			case meta.NEXT:
+				if bsi.previewTable.Cursor() == len(bsi.previewTable.Rows())-1 {
+					// Don't change table, just move focus to input 0
+					break
+				}
+
+				bsi.previewTable.MoveDown(1)
+				return bsi, nil
+
+			case meta.PREVIOUS:
+				if bsi.previewTable.Cursor() == 0 {
+					// Don't change table, just move focus to input 0
+					break
+				}
+
+				bsi.previewTable.MoveUp(1)
+				return bsi, nil
+
+			default:
+				panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
+			}
+		}
+
 		switch message.Direction {
 		case meta.NEXT:
 			bsi.activeInput++
