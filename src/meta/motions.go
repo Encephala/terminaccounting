@@ -82,6 +82,7 @@ func globalMotions() MotionSet {
 
 	// Single-stroke/no prefix
 	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
+		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: false}}, // false -> not search mode
 		{Motion{"ctrl+l"}, ReloadViewMsg{}},
@@ -102,6 +103,7 @@ func globalMotions() MotionSet {
 	}
 
 	insertMotions := []motionWithValue{
+		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
 		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
 		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
 	}
@@ -112,9 +114,9 @@ func globalMotions() MotionSet {
 	}
 
 	commandMotions := []motionWithValue{
+		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
 		{Motion{"enter"}, ExecuteCommandMsg{}},
 		{Motion{"tab"}, TryCompleteCommandMsg{}},
-		{Motion{"esc"}, SwitchModeMsg{InputMode: NORMALMODE}},
 	}
 
 	var command Trie[tea.Msg]
