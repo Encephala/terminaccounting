@@ -640,29 +640,37 @@ func (dv *AccountsDeleteView) View() string {
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Center)
+		UnsetWidth()
 	rightStyle := style.Margin(0, 0, 0, 1)
 
-	var nameRow = lipgloss.JoinHorizontal(
+	// +2 for padding
+	maxNameColWidth := len("Bank numbers") + 2
+
+	nameRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
+		style.Width(maxNameColWidth).Render("Name"),
 		rightStyle.Render(dv.model.Name),
 	)
 
-	var typeRow = lipgloss.JoinHorizontal(
+	typeRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
+		style.Width(maxNameColWidth).Render("Type"),
 		rightStyle.Render(dv.model.Type.String()),
 	)
 
-	var notesRow = lipgloss.JoinHorizontal(
+	bankNumbersRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
+		style.Width(maxNameColWidth).Render("Bank Numbers"),
+		rightStyle.Render(dv.model.BankNumbers.Collapse()),
+	)
+
+	notesRow := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		style.Width(maxNameColWidth).Render("Notes"),
 		rightStyle.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
 	)
 
-	var confirmRow = lipgloss.JoinHorizontal(
+	confirmRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
 	)
@@ -672,6 +680,7 @@ func (dv *AccountsDeleteView) View() string {
 			lipgloss.Left,
 			nameRow,
 			typeRow,
+			bankNumbersRow,
 			notesRow,
 			"",
 			confirmRow,
