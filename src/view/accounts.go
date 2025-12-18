@@ -291,10 +291,11 @@ func (cv *AccountsCreateView) Reload() View {
 }
 
 type AccountsUpdateView struct {
-	nameInput  textinput.Model
-	typeInput  itempicker.Model
-	notesInput textarea.Model
-	activeInput
+	nameInput        textinput.Model
+	typeInput        itempicker.Model
+	bankNumbersInput textarea.Model
+	notesInput       textarea.Model
+	activeInput      accountsActiveInput
 
 	modelId       int
 	startingValue database.Account
@@ -311,14 +312,17 @@ func NewAccountsUpdateView(modelId int) *AccountsUpdateView {
 	nameInput := textinput.New()
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+	bankNumbersInput := textarea.New()
+	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
 	return &AccountsUpdateView{
-		nameInput:   nameInput,
-		typeInput:   itempicker.New(accountTypes),
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		nameInput:        nameInput,
+		typeInput:        itempicker.New(accountTypes),
+		bankNumbersInput: bankNumbersInput,
+		notesInput:       notesInput,
+		activeInput:      ACCOUNTSNAMEINPUT,
 
 		modelId: modelId,
 
@@ -340,6 +344,7 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.nameInput.SetValue(account.Name)
 		err := uv.typeInput.SetValue(account.Type)
+		uv.bankNumbersInput.SetValue(account.BankNumbers.Collapse())
 		uv.notesInput.SetValue(account.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
@@ -347,11 +352,13 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ResetInputFieldMsg:
 		var err error
 		switch uv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			uv.nameInput.SetValue(uv.startingValue.Name)
-		case TYPEINPUT:
+		case ACCOUNTSTYPEINPUT:
 			err = uv.typeInput.SetValue(uv.startingValue.Type)
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			uv.bankNumbersInput.SetValue(uv.startingValue.BankNumbers.Collapse())
+		case ACCOUNTSNOTESINPUT:
 			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
 		}
 
@@ -361,10 +368,11 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		typeInput := uv.typeInput.Value()
 
 		account := database.Account{
-			Id:    uv.modelId,
-			Name:  uv.nameInput.Value(),
-			Type:  typeInput.(database.AccountType),
-			Notes: meta.CompileNotes(uv.notesInput.Value()),
+			Id:          uv.modelId,
+			Name:        uv.nameInput.Value(),
+			Type:        typeInput.(database.AccountType),
+			BankNumbers: meta.CompileNotes(uv.bankNumbersInput.Value()),
+			Notes:       meta.CompileNotes(uv.notesInput.Value()),
 		}
 
 		err := account.Update()
@@ -382,25 +390,29 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		// Note from later me: might actually delete this as an implicit check that only the right input
 		// gets the update message.
 		switch uv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			uv.nameInput.Blur()
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			uv.bankNumbersInput.Blur()
+		case ACCOUNTSNOTESINPUT:
 			uv.notesInput.Blur()
 		}
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			uv.activeInput.previous(3)
+			uv.activeInput.previous()
 
 		case meta.NEXT:
-			uv.activeInput.next(3)
+			uv.activeInput.next()
 		}
 
 		// If now on a textinput, focus it
 		switch uv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			uv.nameInput.Focus()
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			uv.bankNumbersInput.Focus()
+		case ACCOUNTSNOTESINPUT:
 			uv.notesInput.Focus()
 		}
 
@@ -417,11 +429,13 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch uv.activeInput {
-		case NAMEINPUT:
+		case ACCOUNTSNAMEINPUT:
 			uv.nameInput, cmd = uv.nameInput.Update(message)
-		case TYPEINPUT:
+		case ACCOUNTSTYPEINPUT:
 			uv.typeInput, cmd = uv.typeInput.Update(message)
-		case NOTEINPUT:
+		case ACCOUNTSBANKNUMBERSINPUT:
+			uv.bankNumbersInput, cmd = uv.bankNumbersInput.Update(message)
+		case ACCOUNTSNOTESINPUT:
 			uv.notesInput, cmd = uv.notesInput.Update(message)
 
 		default:
@@ -440,43 +454,83 @@ func (uv *AccountsUpdateView) View() string {
 
 	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).MarginLeft(2)
 
-	result.WriteString(titleStyle.Render(fmt.Sprintf("Updating Account %q", uv.startingValue.Name)))
+	result.WriteString(titleStyle.Render("Creating new Account"))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
-		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
 
 	const inputWidth = 26
 	uv.nameInput.Width = inputWidth - 2
+	uv.bankNumbersInput.SetWidth(inputWidth)
 	uv.notesInput.SetWidth(inputWidth)
 
-	var nameRow = lipgloss.JoinHorizontal(
+	notesFocusStyle := lipgloss.NewStyle().Foreground(uv.colours.Foreground)
+	uv.bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
+	uv.bankNumbersInput.FocusedStyle.Text = notesFocusStyle
+	uv.bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
+	uv.bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
+	uv.notesInput.FocusedStyle.Prompt = notesFocusStyle
+	uv.notesInput.FocusedStyle.Text = notesFocusStyle
+	uv.notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	uv.notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
+	nameStyle := sectionStyle
+	typeStyle := sectionStyle
+
+	switch uv.activeInput {
+	case ACCOUNTSNAMEINPUT:
+		nameStyle = highlightStyle
+	case ACCOUNTSTYPEINPUT:
+		typeStyle = highlightStyle
+	// textareas have FocusedStyle set, don't manually render with highlightStyle
+	case ACCOUNTSBANKNUMBERSINPUT:
+	case ACCOUNTSNOTESINPUT:
+	default:
+		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", uv.activeInput))
+	}
+
+	// +2 for padding
+	maxNameColWidth := len("Bank numbers") + 2
+
+	nameRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(uv.nameInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Name"),
+		" ",
+		nameStyle.Render(uv.nameInput.View()),
 	)
 
-	var typeRow = lipgloss.JoinHorizontal(
+	typeRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
+		" ",
+		typeStyle.Render(uv.typeInput.View()),
 	)
 
-	var notesRow = lipgloss.JoinHorizontal(
+	bankNumbersRow := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(uv.notesInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Bank numbers"),
+		" ",
+		sectionStyle.Render(uv.bankNumbersInput.View()),
+	)
+
+	notesRow := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		" ",
+		sectionStyle.Render(uv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
 		lipgloss.JoinVertical(
-			lipgloss.Left,
+			lipgloss.Top,
 			nameRow,
 			typeRow,
+			bankNumbersRow,
 			notesRow,
 		),
 	))
