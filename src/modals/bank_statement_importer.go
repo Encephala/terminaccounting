@@ -79,6 +79,8 @@ func (bsi *bankStatementImporter) Init() tea.Cmd {
 }
 
 func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	numInputs := 5
+
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		return bsi, nil
@@ -99,8 +101,6 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return bsi, nil
 
 	case meta.SwitchFocusMsg:
-		numInputs := 5
-
 		switch message.Direction {
 		case meta.NEXT:
 			bsi.activeInput++
@@ -162,7 +162,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case meta.NavigateMsg:
-		if bsi.activeInput != 4 {
+		if bsi.activeInput != numInputs-1 {
 			return bsi, meta.MessageCmd(errors.New("jk navigation only works within the table"))
 		}
 
@@ -172,6 +172,19 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		bsi.previewTable = new
 
 		return bsi, cmd
+
+	case meta.JumpVerticalMsg:
+		if bsi.activeInput != numInputs-1 {
+			return bsi, meta.MessageCmd(errors.New("gg/G navigation only supported in preview table"))
+		}
+
+		if message.ToEnd {
+			bsi.previewTable.GotoBottom()
+		} else {
+			bsi.previewTable.GotoTop()
+		}
+
+		return bsi, nil
 
 	case meta.CommitMsg:
 		journal := bsi.journalPicker.Value()
@@ -311,6 +324,9 @@ func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+
+	normalMotions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
+	normalMotions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
 
 	return meta.MotionSet{Normal: normalMotions}
 }
