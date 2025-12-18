@@ -106,6 +106,10 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			bsi.activeInput++
 			bsi.activeInput %= numInputs
 
+			if bsi.activeInput == numInputs-1 {
+				bsi.previewTable.GotoTop()
+			}
+
 		case meta.PREVIOUS:
 			bsi.activeInput--
 
@@ -113,7 +117,9 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				bsi.activeInput += numInputs
 			}
 
-			// TODO: when switching to table, highlight last row
+			if bsi.activeInput == numInputs-1 {
+				bsi.previewTable.GotoBottom()
+			}
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
