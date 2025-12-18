@@ -81,14 +81,13 @@ func (cv *AccountsCreateView) Init() tea.Cmd {
 func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		name := cv.nameInput.Value()
 		accountType := cv.typeInput.Value().(database.AccountType)
-		notes := cv.notesInput.Value()
 
 		newAccount := database.Account{
-			Name:  name,
-			Type:  accountType,
-			Notes: meta.CompileNotes(notes),
+			Name:        cv.nameInput.Value(),
+			Type:        accountType,
+			BankNumbers: meta.CompileNotes(cv.bankNumbersInput.Value()),
+			Notes:       meta.CompileNotes(cv.notesInput.Value()),
 		}
 
 		id, err := newAccount.Insert()
