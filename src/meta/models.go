@@ -33,7 +33,27 @@ func (n Notes) Value() (driver.Value, error) {
 }
 
 func CompileNotes(input string) Notes {
-	return strings.Split(input, "\n")
+	var result Notes
+
+	lines := strings.Split(input, "\n")
+
+	i := 0
+	for !allNextLinesBlank(lines[i:]) {
+		result = append(result, lines[i])
+		i++
+	}
+
+	return result
+}
+
+func allNextLinesBlank(nextLines []string) bool {
+	for _, line := range nextLines {
+		if line != "" {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Joins the Notes together into a newline-delimited string.
