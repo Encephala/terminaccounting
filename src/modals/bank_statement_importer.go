@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"terminaccounting/database"
@@ -383,6 +384,15 @@ func (ip IngParser) compileRows(data []table.Row, accountLedger, bankLedger int)
 			rowDescription = *parsedDescription
 		}
 
+		counterpartyAccount := row[3]
+		var matchedAccountId *int
+		indexMatchedAccount := slices.IndexFunc(database.AvailableAccounts, func(a database.Account) bool {
+			return a.HasBankNumber(counterpartyAccount)
+		})
+		if indexMatchedAccount != -1 {
+			matchedAccountId = &database.AvailableAccounts[indexMatchedAccount].Id
+		}
+
 		valueParts := strings.Split(row[6], ",")
 
 		whole, err := strconv.Atoi(valueParts[0])
@@ -403,7 +413,7 @@ func (ip IngParser) compileRows(data []table.Row, accountLedger, bankLedger int)
 		entryRow := database.EntryRow{
 			Date:        database.Date(date),
 			Ledger:      accountLedger,
-			Account:     nil,
+			Account:     matchedAccountId,
 			Description: rowDescription,
 			Document:    nil,
 			Value:       database.CurrencyValue(value),
@@ -414,7 +424,7 @@ func (ip IngParser) compileRows(data []table.Row, accountLedger, bankLedger int)
 		counterpartRow := database.EntryRow{
 			Date:        database.Date(date),
 			Ledger:      bankLedger,
-			Account:     nil,
+			Account:     matchedAccountId,
 			Description: rowDescription,
 			Document:    nil,
 			Value:       database.CurrencyValue(-value),

@@ -168,6 +168,16 @@ func (a Account) Update() error {
 	return err
 }
 
+func (a Account) HasBankNumber(bankNumber string) bool {
+	for _, bn := range a.BankNumbers {
+		if bn == bankNumber {
+			return true
+		}
+	}
+
+	return false
+}
+
 func SelectAccounts() ([]Account, error) {
 	var result []Account
 
