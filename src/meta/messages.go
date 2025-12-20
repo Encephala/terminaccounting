@@ -142,6 +142,12 @@ type CommitMsg struct{}
 // For resetting the value of an active input to the default value
 type ResetInputFieldMsg struct{}
 
+type ReconcileMsg struct{}
+
+type RefreshCacheMsg struct{}
+
+type DebugPrintCacheMsg struct{}
+
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a Navigate message
 // When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbles package),
@@ -169,7 +175,3 @@ func NavigateMessageToKeyMsg(message NavigateMsg) tea.KeyMsg {
 
 	return keyMsg
 }
-
-type RefreshCacheMsg struct{}
-
-type DebugPrintCacheMsg struct{}

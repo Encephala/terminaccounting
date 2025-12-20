@@ -122,7 +122,7 @@ func (e Entry) Insert(rows []EntryRow) (int, error) {
 }
 
 func (e Entry) Update(rows []EntryRow) error {
-	entryQuery := `UPDATE entries SET
+	query := `UPDATE entries SET
 	journal = :journal,
 	notes = :notes
 	WHERE id = :id;`
@@ -132,7 +132,7 @@ func (e Entry) Update(rows []EntryRow) error {
 
 	totalChanged := 0
 
-	res, err := tx.NamedExec(entryQuery, e)
+	res, err := tx.NamedExec(query, e)
 	if err != nil {
 		return err
 	}
@@ -390,6 +390,33 @@ func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	err := DB.Select(&result, `SELECT * FROM entryrows WHERE entry = $1;`, id)
 
 	return result, err
+}
+
+func SetReconciled(rows []EntryRow) (int, error) {
+	// Transaction to ensure all reconciling goes through.
+	// Otherwise db in insane state, where reconciled rows don't add to 0
+	tx := DB.MustBegin()
+	defer tx.Rollback()
+
+	query := `UPDATE entryrows SET reconciled = :reconciled WHERE id = :id;`
+	totalChanged := 0
+
+	for _, row := range rows {
+		res, err := tx.NamedExec(query, row)
+		if err != nil {
+			return 0, err
+		}
+
+		changed, err := res.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+		totalChanged += int(changed)
+	}
+
+	tx.Commit()
+
+	return totalChanged, nil
 }
 
 func MakeSelectEntryCmd(entryId int) tea.Cmd {

@@ -242,6 +242,35 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, cmd
 
+	case meta.ReconcileMsg:
+		currentReconciledStatus := dv.rows[dv.table.Cursor()].Reconciled
+		dv.rows[dv.table.Cursor()].Reconciled = !currentReconciledStatus
+
+		return dv, nil
+
+	case meta.CommitMsg:
+		var reconciledRows []database.EntryRow
+
+		for _, row := range dv.rows {
+			if row.Reconciled {
+				reconciledRows = append(reconciledRows, row)
+			}
+		}
+
+		total := database.CalculateTotal(reconciledRows)
+		if total != 0 {
+			return dv, meta.MessageCmd(fmt.Errorf("reconciled row total not 0 but %d", total))
+		}
+
+		changed, err := database.SetReconciled(dv.rows)
+		if err != nil {
+			return dv, meta.MessageCmd(err)
+		}
+
+		notification := meta.NotificationMessageMsg{Message: fmt.Sprintf("set reconciled status, updated %d rows", changed)}
+
+		return dv, meta.MessageCmd(notification)
+
 	case tea.WindowSizeMsg:
 		dv.updateTableWidth(message.Width)
 
@@ -298,11 +327,17 @@ func (dv *DetailView) MotionSet() meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
+	normalMotions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
+
 	return meta.MotionSet{Normal: normalMotions}
 }
 
 func (dv *DetailView) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+	var result meta.Trie[tea.Msg]
+
+	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
+
+	return meta.CommandSet(result)
 }
 
 func (dv *DetailView) Reload() View {
