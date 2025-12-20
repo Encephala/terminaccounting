@@ -232,9 +232,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
-		cmd := dv.updateTableRows()
-
-		return dv, cmd
+		return dv, nil
 
 	case meta.NavigateMsg:
 		keyMsg := meta.NavigateMessageToKeyMsg(message)
@@ -261,6 +259,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (dv *DetailView) View() string {
 	var result strings.Builder
+
+	dv.updateTableRows()
 
 	titleStyle := lipgloss.NewStyle().Background(dv.app.Colours().Background).MarginLeft(2)
 	result.WriteString(titleStyle.Render(fmt.Sprintf("%s Details: %s", dv.app.Name(), dv.modelName)))
@@ -309,7 +309,7 @@ func (dv *DetailView) Reload() View {
 	return NewDetailView(dv.app, dv.modelId, dv.modelName)
 }
 
-func (dv *DetailView) updateTableRows() tea.Cmd {
+func (dv *DetailView) updateTableRows() {
 	var tableRows []table.Row
 	for _, row := range dv.rows {
 		newTableRow := table.Row{}
@@ -321,11 +321,11 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
 			return ledger.Id == row.Ledger
 		})
-		if availableLedgerIndex == -1 {
-			return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find ledger %d", row.Ledger)})
+		if availableLedgerIndex != -1 {
+			ledger = database.AvailableLedgers[availableLedgerIndex].Name
+		} else {
+			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 		}
-
-		ledger = database.AvailableLedgers[availableLedgerIndex].Name
 
 		if row.Account == nil {
 			account = lipgloss.NewStyle().Italic(true).Render("None")
@@ -334,10 +334,11 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 				return account.Id == *row.Account
 			})
 
-			if availableAccountIndex == -1 {
-				return meta.MessageCmd(meta.FatalErrorMsg{Error: fmt.Errorf("couldn't find account %d", row.Account)})
+			if availableAccountIndex != -1 {
+				account = database.AvailableAccounts[availableAccountIndex].Name
+			} else {
+				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 			}
-			account = database.AvailableAccounts[availableAccountIndex].Name
 		}
 
 		newTableRow = append(newTableRow, ledger)
@@ -355,8 +356,6 @@ func (dv *DetailView) updateTableRows() tea.Cmd {
 	}
 
 	dv.table.SetRows(tableRows)
-
-	return nil
 }
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
