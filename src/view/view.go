@@ -352,10 +352,24 @@ func (dv *DetailView) updateTableRows() {
 			newTableRow = append(newTableRow, (-row.Value).String())
 		}
 
+		newTableRow = append(newTableRow, renderReconciled(row.Reconciled))
+
 		tableRows = append(tableRows, newTableRow)
 	}
 
 	dv.table.SetRows(tableRows)
+}
+
+func renderReconciled(reconciled bool) string {
+	result := "    "
+
+	if reconciled {
+		result += "✅️"
+	} else {
+		result += "☐"
+	}
+
+	return result
 }
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
@@ -378,11 +392,12 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 func (dv *DetailView) updateTableWidth(totalWidth int) {
 	// This is simply the width of a date field
 	dateWidth := 10
+	reconciledWidth := len("Reconciled")
 
 	// -2 because of left/right padding
-	remainingWidth := totalWidth - dateWidth - 2
-	// -8 because of the 2-wide gap between columns
-	othersWidth := (remainingWidth - 10) / 5
+	remainingWidth := totalWidth - dateWidth - reconciledWidth - 2
+	// -12 because of the 2-wide padding between columns, 6x
+	othersWidth := (remainingWidth - 12) / 5
 
 	dv.table.SetColumns([]table.Column{
 		{
@@ -408,6 +423,10 @@ func (dv *DetailView) updateTableWidth(totalWidth int) {
 		{
 			Title: "Credit",
 			Width: othersWidth,
+		},
+		{
+			Title: "Reconciled",
+			Width: reconciledWidth,
 		},
 	})
 }
