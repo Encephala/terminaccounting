@@ -3,6 +3,7 @@ package view
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"terminaccounting/database"
@@ -257,7 +258,12 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, cmd
 
 	case meta.ToggleShowReconciledMsg:
+		selectedEntryRow := dv.viewer.activeEntryRow()
+
 		dv.showReconciled = !dv.showReconciled
+		dv.updateViewRows()
+
+		dv.viewer.setFocusToEntryRow(selectedEntryRow)
 
 		return dv, nil
 
@@ -509,22 +515,16 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 				erv.activeRow++
 			}
 
-			if erv.activeRow >= erv.viewport.YOffset+erv.height {
-				erv.viewport.ScrollDown(1)
-			}
-
 		case meta.UP:
 			if erv.activeRow != 0 {
 				erv.activeRow--
 			}
 
-			if erv.activeRow < erv.viewport.YOffset {
-				erv.viewport.ScrollUp(1)
-			}
-
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
+
+		erv.scrollViewport()
 
 		return erv, nil
 
@@ -545,7 +545,16 @@ func (erv *entryRowViewer) View() string {
 	return result.String()
 }
 
-// Returns the index
+func (erv *entryRowViewer) scrollViewport() {
+	if erv.activeRow >= erv.viewport.YOffset+erv.height {
+		erv.viewport.ScrollDown(erv.activeRow - erv.viewport.YOffset - erv.height + 1)
+	}
+
+	if erv.activeRow < erv.viewport.YOffset {
+		erv.viewport.ScrollUp(erv.viewport.YOffset - erv.activeRow)
+	}
+}
+
 func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
 	return erv.entryRows[erv.activeRow]
 }
@@ -599,4 +608,16 @@ func (erv *entryRowViewer) renderRow(values []string) string {
 	}
 
 	return result.String()
+}
+
+func (erv *entryRowViewer) setFocusToEntryRow(entryRow *database.EntryRow) {
+	slog.Debug("a")
+	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
+
+	if index == -1 {
+		panic("This can't happen (surely)")
+	}
+
+	erv.activeRow = index
+	erv.scrollViewport()
 }
