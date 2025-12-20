@@ -3,7 +3,6 @@ package view
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"slices"
 	"strings"
 	"terminaccounting/database"
@@ -249,6 +248,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
+		dv.updateViewRows()
+
 		return dv, nil
 
 	case meta.NavigateMsg:
@@ -270,6 +271,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.ReconcileMsg:
 		activeEntryRow := dv.viewer.activeEntryRow()
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
+
+		dv.updateViewRows()
 
 		return dv, nil
 
@@ -295,8 +298,6 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (dv *DetailView) View() string {
 	var result strings.Builder
-
-	dv.updateViewRows()
 
 	marginLeftStyle := lipgloss.NewStyle().MarginLeft(2)
 
@@ -471,8 +472,9 @@ type entryRowViewer struct {
 	width, height int
 
 	viewport viewport.Model
-	// The EntryRows that are being rendered
-	entryRows []*database.EntryRow
+	viewRows [][]string
+	// The EntryRows that are being shown
+	viewedEntryRows []*database.EntryRow
 
 	activeRow      int
 	highlightStyle lipgloss.Style
@@ -536,7 +538,9 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 func (erv *entryRowViewer) View() string {
 	var result strings.Builder
 
-	result.WriteString(erv.renderRow(erv.headers))
+	erv.setViewportContent()
+
+	result.WriteString(erv.renderRow(erv.headers, false))
 
 	result.WriteString("\n")
 
@@ -556,7 +560,7 @@ func (erv *entryRowViewer) scrollViewport() {
 }
 
 func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
-	return erv.entryRows[erv.activeRow]
+	return erv.viewedEntryRows[erv.activeRow]
 }
 
 func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
@@ -574,24 +578,23 @@ func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 	return colWidths
 }
 
-func (erv *entryRowViewer) setRows(rowText [][]string, rawRows []*database.EntryRow) {
-	erv.entryRows = rawRows
-
-	var rowsRendered []string
-	for i, row := range rowText {
-		if i == erv.activeRow {
-			for j := range row {
-				row[j] = erv.highlightStyle.Render(row[j])
-			}
-		}
-
-		rowsRendered = append(rowsRendered, erv.renderRow(row))
-	}
-
-	erv.viewport.SetContent(strings.Join(rowsRendered, "\n"))
+func (erv *entryRowViewer) setRows(viewRows [][]string, rawRows []*database.EntryRow) {
+	erv.viewRows = viewRows
+	erv.viewedEntryRows = rawRows
 }
 
-func (erv *entryRowViewer) renderRow(values []string) string {
+func (erv *entryRowViewer) setViewportContent() {
+	var content []string
+
+	for i, row := range erv.viewRows {
+		doHighlight := i == erv.activeRow
+		content = append(content, erv.renderRow(row, doHighlight))
+	}
+
+	erv.viewport.SetContent(strings.Join(content, "\n"))
+}
+
+func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
 	if len(erv.colWidths) != len(values) {
 		panic("You absolute dingus")
 	}
@@ -599,7 +602,13 @@ func (erv *entryRowViewer) renderRow(values []string) string {
 	var result strings.Builder
 
 	for i := range values {
-		style := lipgloss.NewStyle().Width(erv.colWidths[i])
+		style := lipgloss.NewStyle()
+		if highlight {
+			style = erv.highlightStyle
+		}
+
+		style = style.Width(erv.colWidths[i])
+
 		if i != len(values)-1 {
 			style = style.MarginRight(2)
 		}
@@ -611,8 +620,7 @@ func (erv *entryRowViewer) renderRow(values []string) string {
 }
 
 func (erv *entryRowViewer) setFocusToEntryRow(entryRow *database.EntryRow) {
-	slog.Debug("a")
-	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
+	index := slices.IndexFunc(erv.viewedEntryRows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {
 		panic("This can't happen (surely)")
