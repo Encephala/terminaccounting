@@ -190,6 +190,8 @@ type DetailView struct {
 	rows           []*database.EntryRow
 	viewer         *entryRowViewer
 	showReconciled bool
+
+	showTotalReconciled bool
 }
 
 func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
@@ -274,6 +276,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.ReconcileMsg:
+		dv.showTotalReconciled = true
+
 		activeEntryRow := dv.viewer.activeEntryRow()
 
 		if activeEntryRow == nil {
@@ -337,15 +341,17 @@ func (dv *DetailView) View() string {
 
 	result.WriteString("\n")
 
-	totalReconciled := database.CalculateTotal(dv.getReconciledRows())
-	var totalReconciledRendered string
-	if totalReconciled == 0 {
-		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-		totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
-	} else {
-		totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
+	if dv.showTotalReconciled {
+		totalReconciled := database.CalculateTotal(dv.getReconciledRows())
+		var totalReconciledRendered string
+		if totalReconciled == 0 {
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+			totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
+		} else {
+			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
+		}
+		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
 	}
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
 
 	return result.String()
 }
