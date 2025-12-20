@@ -286,7 +286,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.CommitMsg:
 		total := database.CalculateTotal(dv.getReconciledRows())
 		if total != 0 {
-			return dv, meta.MessageCmd(fmt.Errorf("reconciled row total not 0 but %d", total))
+			return dv, meta.MessageCmd(fmt.Errorf("total of reconciled rows not 0 but %s", total))
 		}
 
 		changed, err := database.SetReconciled(dv.rows)
