@@ -390,14 +390,15 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 func (dv *DetailView) updateTableWidth(totalWidth int) {
-	// This is simply the width of a date field
-	dateWidth := 10
+	dateWidth := 10 // This is simply the width of a date field
 	reconciledWidth := len("Reconciled")
 
 	// -2 because of left/right padding
 	remainingWidth := totalWidth - dateWidth - reconciledWidth - 2
+	descriptionWidth := remainingWidth / 3
+
 	// -12 because of the 2-wide padding between columns, 6x
-	othersWidth := (remainingWidth - 12) / 5
+	othersWidth := (remainingWidth - descriptionWidth - 12) / 4
 
 	dv.table.SetColumns([]table.Column{
 		{
@@ -414,7 +415,7 @@ func (dv *DetailView) updateTableWidth(totalWidth int) {
 		},
 		{
 			Title: "Description",
-			Width: othersWidth,
+			Width: descriptionWidth,
 		},
 		{
 			Title: "Debit",
