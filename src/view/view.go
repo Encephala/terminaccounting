@@ -186,6 +186,7 @@ type DetailView struct {
 	modelId   int
 	modelName string
 
+	originalRows   []database.EntryRow
 	rows           []*database.EntryRow
 	viewer         *entryRowViewer
 	showReconciled bool
@@ -235,6 +236,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		switch message.Model {
 		case meta.ENTRYROWMODEL:
 			for _, row := range message.Data.([]database.EntryRow) {
+				dv.originalRows = append(dv.originalRows, row)
 				dv.rows = append(dv.rows, &row)
 			}
 
@@ -284,6 +286,16 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
+		rowsAreUnchanged := slices.EqualFunc(
+			dv.rows,
+			dv.originalRows,
+			func(row *database.EntryRow, originalRow database.EntryRow) bool { return *row == originalRow },
+		)
+
+		if rowsAreUnchanged {
+			return dv, meta.MessageCmd(meta.NotificationMessageMsg{Message: "there are no changes in reconciliation to commit"})
+		}
+
 		total := database.CalculateTotal(dv.getReconciledRows())
 		if total != 0 {
 			return dv, meta.MessageCmd(fmt.Errorf("total of reconciled rows not 0 but %s", total))
