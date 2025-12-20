@@ -2,8 +2,8 @@ package view
 
 import (
 	"fmt"
-	"local/bubbles/itempicker"
 	"strings"
+	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 

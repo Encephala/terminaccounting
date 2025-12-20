@@ -11,10 +11,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/ncruces/zenity v0.10.14
 	github.com/rmhubbert/bubbletea-overlay v0.6.1
-	local/bubbles v0.0.0
 )
-
-replace local/bubbles v0.0.0 => ../bubbles/
 
 require (
 	github.com/akavel/rsrc v0.10.2 // indirect

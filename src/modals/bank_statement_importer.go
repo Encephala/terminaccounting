@@ -13,7 +13,7 @@ import (
 	"terminaccounting/view"
 	"time"
 
-	"local/bubbles/itempicker"
+	"terminaccounting/bubbles/itempicker"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"

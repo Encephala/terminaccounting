@@ -6,7 +6,7 @@ import (
 	"terminaccounting/database"
 	"terminaccounting/meta"
 
-	"local/bubbles/itempicker"
+	"terminaccounting/bubbles/itempicker"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"

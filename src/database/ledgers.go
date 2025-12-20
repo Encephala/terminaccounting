@@ -2,9 +2,9 @@ package database
 
 import (
 	"fmt"
-	"local/bubbles/itempicker"
 	"strconv"
 	"strings"
+	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"

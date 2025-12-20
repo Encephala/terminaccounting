@@ -3,11 +3,11 @@ package view
 import (
 	"errors"
 	"fmt"
-	"local/bubbles/itempicker"
 	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
+	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"unicode"

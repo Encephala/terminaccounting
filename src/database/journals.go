@@ -5,7 +5,7 @@ import (
 	"strings"
 	"terminaccounting/meta"
 
-	"local/bubbles/itempicker"
+	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

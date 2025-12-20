@@ -3,8 +3,8 @@ package main
 // This file is for quick ad-hoc testing of functionality
 
 import (
-	"bubbles/itempicker"
 	"fmt"
+	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
