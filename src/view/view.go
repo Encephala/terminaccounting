@@ -322,7 +322,7 @@ func (dv *DetailView) updateTableRows() {
 			return ledger.Id == row.Ledger
 		})
 		if availableLedgerIndex != -1 {
-			ledger = database.AvailableLedgers[availableLedgerIndex].Name
+			ledger = database.AvailableLedgers[availableLedgerIndex].String()
 		} else {
 			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 		}
@@ -335,7 +335,7 @@ func (dv *DetailView) updateTableRows() {
 			})
 
 			if availableAccountIndex != -1 {
-				account = database.AvailableAccounts[availableAccountIndex].Name
+				account = database.AvailableAccounts[availableAccountIndex].String()
 			} else {
 				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 			}
