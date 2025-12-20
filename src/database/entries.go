@@ -55,7 +55,7 @@ func MakeLoadEntryDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func CalculateTotal(rows []EntryRow) CurrencyValue {
+func CalculateTotal(rows []*EntryRow) CurrencyValue {
 	sum := CurrencyValue(0)
 
 	for _, row := range rows {
@@ -392,7 +392,7 @@ func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func SetReconciled(rows []EntryRow) (int, error) {
+func SetReconciled(rows []*EntryRow) (int, error) {
 	// Transaction to ensure all reconciling goes through.
 	// Otherwise db in insane state, where reconciled rows don't add to 0
 	tx := DB.MustBegin()

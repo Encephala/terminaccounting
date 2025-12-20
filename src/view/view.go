@@ -186,7 +186,7 @@ type DetailView struct {
 	modelId   int
 	modelName string
 
-	rows           []database.EntryRow
+	rows           []*database.EntryRow
 	viewer         *entryRowViewer
 	showReconciled bool
 }
@@ -234,7 +234,9 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRYROWMODEL:
-			dv.rows = message.Data.([]database.EntryRow)
+			for _, row := range message.Data.([]database.EntryRow) {
+				dv.rows = append(dv.rows, &row)
+			}
 
 		case meta.ACCOUNTMODEL:
 			database.AvailableAccounts = message.Data.([]database.Account)
@@ -260,8 +262,8 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.ReconcileMsg:
-		// TODO: This doesn't play nice with filtering by reconciledness
-		dv.rows[dv.viewer.activeRow].Reconciled = !dv.rows[dv.viewer.activeRow].Reconciled
+		activeEntryRow := dv.viewer.activeEntryRow()
+		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
 
 		return dv, nil
 
@@ -362,7 +364,7 @@ func (dv *DetailView) Reload() View {
 }
 
 func (dv *DetailView) updateViewRows() {
-	var shownRows []database.EntryRow
+	var shownRows []*database.EntryRow
 	if dv.showReconciled {
 		shownRows = dv.rows
 	} else {
@@ -415,11 +417,11 @@ func (dv *DetailView) updateViewRows() {
 		viewRows = append(viewRows, viewRow)
 	}
 
-	dv.viewer.setRows(viewRows)
+	dv.viewer.setRows(viewRows, shownRows)
 }
 
-func (dv *DetailView) getUnreconciledRows() []database.EntryRow {
-	var result []database.EntryRow
+func (dv *DetailView) getUnreconciledRows() []*database.EntryRow {
+	var result []*database.EntryRow
 
 	for _, row := range dv.rows {
 		if !row.Reconciled {
@@ -430,8 +432,8 @@ func (dv *DetailView) getUnreconciledRows() []database.EntryRow {
 	return result
 }
 
-func (dv *DetailView) getReconciledRows() []database.EntryRow {
-	var result []database.EntryRow
+func (dv *DetailView) getReconciledRows() []*database.EntryRow {
+	var result []*database.EntryRow
 
 	for _, row := range dv.rows {
 		if row.Reconciled {
@@ -443,28 +445,28 @@ func (dv *DetailView) getReconciledRows() []database.EntryRow {
 }
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
-	// TODO
-	return nil
-	// return func() tea.Msg {
-	// 	entryId := dv.rows[dv.table.selectedRow()].Entry
+	return func() tea.Msg {
+		entryId := dv.viewer.activeEntryRow().Entry
 
-	// 	// Do the database query for the entry here, because it is a command and thus asynchronous
-	// 	entry, err := database.SelectEntry(entryId)
+		// Do the database query for the entry here, because it is a command and thus asynchronous
+		entry, err := database.SelectEntry(entryId)
 
-	// 	if err != nil {
-	// 		return meta.MessageCmd(err)
-	// 	}
+		if err != nil {
+			return meta.MessageCmd(err)
+		}
 
-	// 	// Stupid go not allowing to reference a const
-	// 	targetApp := meta.ENTRIESAPP
-	// 	return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
-	// }
+		// Stupid go not allowing to reference a const
+		targetApp := meta.ENTRIESAPP
+		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
+	}
 }
 
 type entryRowViewer struct {
 	width, height int
 
 	viewport viewport.Model
+	// The EntryRows that are being rendered
+	entryRows []*database.EntryRow
 
 	activeRow      int
 	highlightStyle lipgloss.Style
@@ -543,6 +545,11 @@ func (erv *entryRowViewer) View() string {
 	return result.String()
 }
 
+// Returns the index
+func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
+	return erv.entryRows[erv.activeRow]
+}
+
 func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 	dateWidth := 10 // This is simply the width of a date field
 	reconciledWidth := len("Reconciled")
@@ -558,21 +565,21 @@ func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 	return colWidths
 }
 
-func (erv *entryRowViewer) setRows(rows [][]string) {
-	var result []string
+func (erv *entryRowViewer) setRows(rowText [][]string, rawRows []*database.EntryRow) {
+	erv.entryRows = rawRows
 
-	for i, row := range rows {
-		// Highlight if active row
+	var rowsRendered []string
+	for i, row := range rowText {
 		if i == erv.activeRow {
-			for i := range row {
-				row[i] = erv.highlightStyle.Render(row[i])
+			for j := range row {
+				row[j] = erv.highlightStyle.Render(row[j])
 			}
 		}
 
-		result = append(result, erv.renderRow(row))
+		rowsRendered = append(rowsRendered, erv.renderRow(row))
 	}
 
-	erv.viewport.SetContent(strings.Join(result, "\n"))
+	erv.viewport.SetContent(strings.Join(rowsRendered, "\n"))
 }
 
 func (erv *entryRowViewer) renderRow(values []string) string {
