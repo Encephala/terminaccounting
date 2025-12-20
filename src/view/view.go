@@ -198,7 +198,7 @@ func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
 		modelId:   modelId,
 		modelName: modelName,
 
-		viewer:         newEntryRowViewer(),
+		viewer:         newEntryRowViewer(app.Colours()),
 		showReconciled: false,
 	}
 }
@@ -220,7 +220,14 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		var cmd tea.Cmd
-		dv.viewer, cmd = dv.viewer.Update(message)
+
+		dv.viewer, cmd = dv.viewer.Update(tea.WindowSizeMsg{
+			// -4 for padding on each side
+			Width: message.Width - 4,
+			// -4 for the title and table header (header is not considered for table width)
+			// -4 to for the total rows their vertical margin
+			Height: message.Height - 4 - 4,
+		})
 
 		return dv, cmd
 
@@ -253,10 +260,10 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.ReconcileMsg:
-		var cmd tea.Cmd
-		dv.viewer, cmd = dv.viewer.Update(message)
+		// TODO: This doesn't play nice with filtering by reconciledness
+		dv.rows[dv.viewer.activeRow].Reconciled = !dv.rows[dv.viewer.activeRow].Reconciled
 
-		return dv, cmd
+		return dv, nil
 
 	case meta.CommitMsg:
 		total := database.CalculateTotal(dv.getReconciledRows())
@@ -366,7 +373,6 @@ func (dv *DetailView) updateViewRows() {
 
 	var viewRows [][]string
 	for _, row := range shownRows {
-		// TODO highlight active row
 		var viewRow []string
 		viewRow = append(viewRow, row.Date.String())
 
@@ -458,16 +464,22 @@ func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type entryRowViewer struct {
-	viewport    viewport.Model
-	selectedRow int
+	width, height int
+
+	viewport viewport.Model
+
+	activeRow      int
+	highlightStyle lipgloss.Style
 
 	headers   []string
 	colWidths []int
 }
 
-func newEntryRowViewer() *entryRowViewer {
+func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
 	return &entryRowViewer{
 		viewport: viewport.New(0, 0),
+
+		highlightStyle: lipgloss.NewStyle().Foreground(colours.Foreground),
 
 		headers: []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
@@ -482,22 +494,37 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		erv.colWidths = erv.calculateColumnWidths(message.Width)
 
-		// -4 for padding on each side
-		erv.viewport.Width = message.Width - 4
+		erv.width = message.Width
+		erv.height = message.Height
 
-		// -4 for the title and table header (header is not considered for table width)
-		// -4 to for the total rows their vertical margin
-		erv.viewport.Height = message.Height - 4 - 4
+		erv.viewport.Width = message.Width
+		erv.viewport.Height = message.Height
 
 		return erv, nil
 
 	case meta.NavigateMsg:
-		// TODO
+		switch message.Direction {
+		case meta.DOWN:
+			if erv.activeRow != erv.viewport.TotalLineCount()-1 {
+				erv.activeRow++
+			}
 
-		return erv, nil
+			if erv.activeRow >= erv.viewport.YOffset+erv.height {
+				erv.viewport.ScrollDown(1)
+			}
 
-	case meta.ReconcileMsg:
-		// TODO
+		case meta.UP:
+			if erv.activeRow != 0 {
+				erv.activeRow--
+			}
+
+			if erv.activeRow < erv.viewport.YOffset {
+				erv.viewport.ScrollUp(1)
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
+		}
 
 		return erv, nil
 
@@ -536,7 +563,14 @@ func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 func (erv *entryRowViewer) setRows(rows [][]string) {
 	var result []string
 
-	for _, row := range rows {
+	for i, row := range rows {
+		// Highlight if active row
+		if i == erv.activeRow {
+			for i := range row {
+				row[i] = erv.highlightStyle.Render(row[i])
+			}
+		}
+
 		result = append(result, erv.renderRow(row))
 	}
 
