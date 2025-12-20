@@ -276,8 +276,6 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.ReconcileMsg:
-		dv.showTotalReconciled = true
-
 		activeEntryRow := dv.viewer.activeEntryRow()
 
 		if activeEntryRow == nil {
@@ -287,16 +285,16 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
 		dv.updateViewRows()
 
+		if dv.rowsAreChanged() {
+			dv.showTotalReconciled = true
+		} else {
+			dv.showTotalReconciled = false
+		}
+
 		return dv, nil
 
 	case meta.CommitMsg:
-		rowsAreUnchanged := slices.EqualFunc(
-			dv.rows,
-			dv.originalRows,
-			func(row *database.EntryRow, originalRow database.EntryRow) bool { return *row == originalRow },
-		)
-
-		if rowsAreUnchanged {
+		if !dv.rowsAreChanged() {
 			return dv, meta.MessageCmd(meta.NotificationMessageMsg{Message: "there are no changes in reconciliation to commit"})
 		}
 
@@ -311,6 +309,12 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		notification := meta.NotificationMessageMsg{Message: fmt.Sprintf("set reconciled status, updated %d rows", changed)}
+
+		// Reset dv.originalRows
+		for i, row := range dv.rows {
+			dv.originalRows[i] = *row
+			dv.showTotalReconciled = false
+		}
 
 		return dv, meta.MessageCmd(notification)
 
@@ -393,6 +397,14 @@ func (dv *DetailView) CommandSet() meta.CommandSet {
 
 func (dv *DetailView) Reload() View {
 	return NewDetailView(dv.app, dv.modelId, dv.modelName)
+}
+
+func (dv *DetailView) rowsAreChanged() bool {
+	return !slices.EqualFunc(
+		dv.rows,
+		dv.originalRows,
+		func(row *database.EntryRow, originalRow database.EntryRow) bool { return *row == originalRow },
+	)
 }
 
 func (dv *DetailView) updateViewRows() {
