@@ -74,7 +74,7 @@ func NewEntryCreateViewPrefilled(data EntryPrefillData) (*EntryCreateView, error
 	return result, nil
 }
 
-type EntryRowCreateView struct {
+type entryRowCreator struct {
 	dateInput        textinput.Model
 	ledgerInput      itempicker.Model
 	accountInput     itempicker.Model
@@ -85,7 +85,7 @@ type EntryRowCreateView struct {
 	creditInput textinput.Model
 }
 
-func newEntryRowCreateView(startDate *database.Date) *EntryRowCreateView {
+func newEntryRowCreator(startDate *database.Date) *entryRowCreator {
 	dateInput := textinput.New()
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
@@ -97,7 +97,7 @@ func newEntryRowCreateView(startDate *database.Date) *EntryRowCreateView {
 	ledgerInput := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	accountInput := itempicker.New(database.AvailableAccountsAsItempickerItems())
 
-	result := EntryRowCreateView{
+	result := entryRowCreator{
 		dateInput:        dateInput,
 		ledgerInput:      ledgerInput,
 		accountInput:     accountInput,
@@ -419,17 +419,17 @@ func (uv *EntryUpdateView) title() string {
 }
 
 type EntryRowViewManager struct {
-	rows []*EntryRowCreateView
+	rows []*entryRowCreator
 
 	activeInput int
 }
 
 func NewEntryRowViewManager() *EntryRowViewManager {
 	// Prefill with two empty rows
-	rows := make([]*EntryRowCreateView, 2)
+	rows := make([]*entryRowCreator, 2)
 
-	rows[0] = newEntryRowCreateView(database.Today())
-	rows[1] = newEntryRowCreateView(database.Today())
+	rows[0] = newEntryRowCreator(database.Today())
+	rows[1] = newEntryRowCreator(database.Today())
 
 	return &EntryRowViewManager{
 		rows: rows,
@@ -883,8 +883,8 @@ func (ervm *EntryRowViewManager) setActiveCoords(newRow, newCol int) {
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
-func decompileRows(rows []database.EntryRow) ([]*EntryRowCreateView, error) {
-	result := make([]*EntryRowCreateView, len(rows))
+func decompileRows(rows []database.EntryRow) ([]*entryRowCreator, error) {
+	result := make([]*entryRowCreator, len(rows))
 
 	for i, row := range rows {
 		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
@@ -908,7 +908,7 @@ func decompileRows(rows []database.EntryRow) ([]*EntryRowCreateView, error) {
 			account = &database.AvailableAccounts[availableAccountIndex]
 		}
 
-		formRow := newEntryRowCreateView(&row.Date)
+		formRow := newEntryRowCreator(&row.Date)
 
 		err := formRow.ledgerInput.SetValue(ledger)
 		if err != nil {
@@ -1006,18 +1006,18 @@ func (ervm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 func (ervm *EntryRowViewManager) addRow(after bool) (*EntryRowViewManager, tea.Cmd) {
 	activeRow, _ := ervm.getActiveCoords()
 
-	var newRow *EntryRowCreateView
+	var newRow *entryRowCreator
 
 	// If the row that the new-row-creation was triggered from had a valid date,
 	// prefill it in the new row. Otherwise, just leave new row empty
 	prefillDate, parseErr := database.ToDate(ervm.rows[activeRow].dateInput.Value())
 	if parseErr == nil {
-		newRow = newEntryRowCreateView(&prefillDate)
+		newRow = newEntryRowCreator(&prefillDate)
 	} else {
-		newRow = newEntryRowCreateView(nil)
+		newRow = newEntryRowCreator(nil)
 	}
 
-	newRows := make([]*EntryRowCreateView, 0, ervm.numRows()+1)
+	newRows := make([]*entryRowCreator, 0, ervm.numRows()+1)
 
 	if after {
 		// Insert after activeRow

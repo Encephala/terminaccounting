@@ -9,9 +9,10 @@ import (
 	"terminaccounting/meta"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type View interface {
@@ -46,6 +47,15 @@ const (
 	TYPEINPUT
 	NOTEINPUT
 )
+
+func renderBoolean(reconciled bool) string {
+	if reconciled {
+		// Font Awesome checkbox because it's monospace, standard emoji is too wide
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("")
+	} else {
+		return "□"
+	}
+}
 
 type ListView struct {
 	listModel list.Model
@@ -170,38 +180,27 @@ func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
 
 // A generic, placeholder(?) view that just renders all entries on a ledger/journal/account in a list.
 type DetailView struct {
-	table table.Model
-
 	app meta.App
 
 	// The ledger/account etc. whose rows are being shown
 	modelId   int
 	modelName string
 
-	rows []database.EntryRow
+	rows           []database.EntryRow
+	viewer         *entryRowViewer
+	showReconciled bool
 }
 
 func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
-	tableModel := table.New()
-	// I don't think we ever have to blur the table
-	tableModel.Focus()
-
-	tableStyle := table.DefaultStyles()
-	tableStyle.Selected = lipgloss.NewStyle().Foreground(app.Colours().Foreground)
-	tableModel.SetStyles(tableStyle)
-
-	view := &DetailView{
-		table: tableModel,
-
+	return &DetailView{
 		app: app,
 
 		modelId:   modelId,
 		modelName: modelName,
+
+		viewer:         newEntryRowViewer(),
+		showReconciled: false,
 	}
-
-	view.updateTableWidth(90)
-
-	return view
 }
 
 func (dv *DetailView) Init() tea.Cmd {
@@ -212,11 +211,19 @@ func (dv *DetailView) Init() tea.Cmd {
 	cmds = append(cmds, database.MakeSelectLedgersCmd(dv.app.Type()))
 	cmds = append(cmds, database.MakeSelectAccountsCmd(dv.app.Type()))
 
+	cmds = append(cmds, dv.viewer.Init())
+
 	return tea.Batch(cmds...)
 }
 
 func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		var cmd tea.Cmd
+		dv.viewer, cmd = dv.viewer.Update(message)
+
+		return dv, cmd
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRYROWMODEL:
@@ -235,29 +242,24 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, nil
 
 	case meta.NavigateMsg:
-		keyMsg := meta.NavigateMessageToKeyMsg(message)
-
 		var cmd tea.Cmd
-		dv.table, cmd = dv.table.Update(keyMsg)
+		dv.viewer, cmd = dv.viewer.Update(message)
 
 		return dv, cmd
 
-	case meta.ReconcileMsg:
-		currentReconciledStatus := dv.rows[dv.table.Cursor()].Reconciled
-		dv.rows[dv.table.Cursor()].Reconciled = !currentReconciledStatus
+	case meta.ToggleShowReconciledMsg:
+		dv.showReconciled = !dv.showReconciled
 
 		return dv, nil
 
+	case meta.ReconcileMsg:
+		var cmd tea.Cmd
+		dv.viewer, cmd = dv.viewer.Update(message)
+
+		return dv, cmd
+
 	case meta.CommitMsg:
-		var reconciledRows []database.EntryRow
-
-		for _, row := range dv.rows {
-			if row.Reconciled {
-				reconciledRows = append(reconciledRows, row)
-			}
-		}
-
-		total := database.CalculateTotal(reconciledRows)
+		total := database.CalculateTotal(dv.getReconciledRows())
 		if total != 0 {
 			return dv, meta.MessageCmd(fmt.Errorf("reconciled row total not 0 but %d", total))
 		}
@@ -271,16 +273,6 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return dv, meta.MessageCmd(notification)
 
-	case tea.WindowSizeMsg:
-		dv.updateTableWidth(message.Width)
-
-		// -3 for the title and table header (header is not considered for table width)
-		// -3 to for the total row
-		// -1 for padding at the bottom
-		dv.table.SetHeight(message.Height - 3 - 1 - 1)
-
-		return dv, nil
-
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
@@ -289,17 +281,36 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (dv *DetailView) View() string {
 	var result strings.Builder
 
-	dv.updateTableRows()
+	dv.updateViewRows()
 
-	titleStyle := lipgloss.NewStyle().Background(dv.app.Colours().Background).MarginLeft(2)
+	marginLeftStyle := lipgloss.NewStyle().MarginLeft(2)
+
+	titleStyle := marginLeftStyle.Background(dv.app.Colours().Background).Padding(0, 1)
 	result.WriteString(titleStyle.Render(fmt.Sprintf("%s Details: %s", dv.app.Name(), dv.modelName)))
+
+	result.WriteString("\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(dv.showReconciled))))
+
 	result.WriteString("\n\n")
 
-	result.WriteString(lipgloss.JoinVertical(
-		lipgloss.Right,
-		dv.table.View(),
-		fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows)),
-	))
+	result.WriteString(marginLeftStyle.Render(dv.viewer.View()))
+
+	result.WriteString("\n\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows))))
+
+	result.WriteString("\n")
+
+	totalReconciled := database.CalculateTotal(dv.getReconciledRows())
+	var totalReconciledRendered string
+	if totalReconciled == 0 {
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+		totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
+	} else {
+		totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
+	}
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
 
 	return result.String()
 }
@@ -327,6 +338,7 @@ func (dv *DetailView) MotionSet() meta.MotionSet {
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
+	normalMotions.Insert(meta.Motion{"s", "r"}, meta.ToggleShowReconciledMsg{}) // [S]how [R]econciled
 	normalMotions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
 
 	return meta.MotionSet{Normal: normalMotions}
@@ -344,12 +356,19 @@ func (dv *DetailView) Reload() View {
 	return NewDetailView(dv.app, dv.modelId, dv.modelName)
 }
 
-func (dv *DetailView) updateTableRows() {
-	var tableRows []table.Row
-	for _, row := range dv.rows {
-		newTableRow := table.Row{}
+func (dv *DetailView) updateViewRows() {
+	var shownRows []database.EntryRow
+	if dv.showReconciled {
+		shownRows = dv.rows
+	} else {
+		shownRows = dv.getUnreconciledRows()
+	}
 
-		newTableRow = append(newTableRow, row.Date.String())
+	var viewRows [][]string
+	for _, row := range shownRows {
+		// TODO highlight active row
+		var viewRow []string
+		viewRow = append(viewRow, row.Date.String())
 
 		var ledger, account string
 
@@ -376,93 +395,169 @@ func (dv *DetailView) updateTableRows() {
 			}
 		}
 
-		newTableRow = append(newTableRow, ledger)
-		newTableRow = append(newTableRow, account)
-		newTableRow = append(newTableRow, row.Description)
+		viewRow = append(viewRow, ledger)
+		viewRow = append(viewRow, account)
+		viewRow = append(viewRow, row.Description)
 		if row.Value > 0 {
-			newTableRow = append(newTableRow, row.Value.String())
-			newTableRow = append(newTableRow, "")
+			viewRow = append(viewRow, row.Value.String())
+			viewRow = append(viewRow, "")
 		} else {
-			newTableRow = append(newTableRow, "")
-			newTableRow = append(newTableRow, (-row.Value).String())
+			viewRow = append(viewRow, "")
+			viewRow = append(viewRow, (-row.Value).String())
 		}
 
-		newTableRow = append(newTableRow, renderReconciled(row.Reconciled))
+		viewRow = append(viewRow, "    "+renderBoolean(row.Reconciled))
 
-		tableRows = append(tableRows, newTableRow)
+		viewRows = append(viewRows, viewRow)
 	}
 
-	dv.table.SetRows(tableRows)
+	dv.viewer.setRows(viewRows)
 }
 
-func renderReconciled(reconciled bool) string {
-	result := "    "
+func (dv *DetailView) getUnreconciledRows() []database.EntryRow {
+	var result []database.EntryRow
 
-	if reconciled {
-		result += "✅️"
-	} else {
-		result += "☐"
+	for _, row := range dv.rows {
+		if !row.Reconciled {
+			result = append(result, row)
+		}
+	}
+
+	return result
+}
+
+func (dv *DetailView) getReconciledRows() []database.EntryRow {
+	var result []database.EntryRow
+
+	for _, row := range dv.rows {
+		if row.Reconciled {
+			result = append(result, row)
+		}
 	}
 
 	return result
 }
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
-	return func() tea.Msg {
-		entryId := dv.rows[dv.table.Cursor()].Entry
+	// TODO
+	return nil
+	// return func() tea.Msg {
+	// 	entryId := dv.rows[dv.table.selectedRow()].Entry
 
-		// Do the database query for the entry here, because it is a command and thus asynchronous
-		entry, err := database.SelectEntry(entryId)
+	// 	// Do the database query for the entry here, because it is a command and thus asynchronous
+	// 	entry, err := database.SelectEntry(entryId)
 
-		if err != nil {
-			return meta.MessageCmd(err)
-		}
+	// 	if err != nil {
+	// 		return meta.MessageCmd(err)
+	// 	}
 
-		// Stupid go not allowing to reference a const
-		targetApp := meta.ENTRIESAPP
-		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
+	// 	// Stupid go not allowing to reference a const
+	// 	targetApp := meta.ENTRIESAPP
+	// 	return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
+	// }
+}
+
+type entryRowViewer struct {
+	viewport    viewport.Model
+	selectedRow int
+
+	headers   []string
+	colWidths []int
+}
+
+func newEntryRowViewer() *entryRowViewer {
+	return &entryRowViewer{
+		viewport: viewport.New(0, 0),
+
+		headers: []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
 }
 
-func (dv *DetailView) updateTableWidth(totalWidth int) {
+func (erv *entryRowViewer) Init() tea.Cmd {
+	return nil
+}
+
+func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
+	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		erv.colWidths = erv.calculateColumnWidths(message.Width)
+
+		// -4 for padding on each side
+		erv.viewport.Width = message.Width - 4
+
+		// -4 for the title and table header (header is not considered for table width)
+		// -4 to for the total rows their vertical margin
+		erv.viewport.Height = message.Height - 4 - 4
+
+		return erv, nil
+
+	case meta.NavigateMsg:
+		// TODO
+
+		return erv, nil
+
+	case meta.ReconcileMsg:
+		// TODO
+
+		return erv, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
+}
+
+func (erv *entryRowViewer) View() string {
+	var result strings.Builder
+
+	result.WriteString(erv.renderRow(erv.headers))
+
+	result.WriteString("\n")
+
+	result.WriteString(erv.viewport.View())
+
+	return result.String()
+}
+
+func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 	dateWidth := 10 // This is simply the width of a date field
 	reconciledWidth := len("Reconciled")
 
 	// -2 because of left/right padding
-	remainingWidth := totalWidth - dateWidth - reconciledWidth - 2
+	remainingWidth := totalWidth - dateWidth - reconciledWidth - 4
 	descriptionWidth := remainingWidth / 3
 
 	// -12 because of the 2-wide padding between columns, 6x
 	othersWidth := (remainingWidth - descriptionWidth - 12) / 4
+	colWidths := []int{dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth, reconciledWidth}
 
-	dv.table.SetColumns([]table.Column{
-		{
-			Title: "Date",
-			Width: dateWidth,
-		},
-		{
-			Title: "Ledger",
-			Width: othersWidth,
-		},
-		{
-			Title: "Account",
-			Width: othersWidth,
-		},
-		{
-			Title: "Description",
-			Width: descriptionWidth,
-		},
-		{
-			Title: "Debit",
-			Width: othersWidth,
-		},
-		{
-			Title: "Credit",
-			Width: othersWidth,
-		},
-		{
-			Title: "Reconciled",
-			Width: reconciledWidth,
-		},
-	})
+	return colWidths
+}
+
+func (erv *entryRowViewer) setRows(rows [][]string) {
+	var result []string
+
+	for _, row := range rows {
+		result = append(result, erv.renderRow(row))
+	}
+
+	erv.viewport.SetContent(strings.Join(result, "\n"))
+}
+
+func (erv *entryRowViewer) renderRow(values []string) string {
+	if len(erv.colWidths) != len(values) {
+		panic("You absolute dingus")
+	}
+
+	var result strings.Builder
+
+	for i := range values {
+		style := lipgloss.NewStyle().Width(erv.colWidths[i])
+		if i != len(values)-1 {
+			style = style.MarginRight(2)
+		}
+
+		result.WriteString(style.Render(ansi.Truncate(values[i], erv.colWidths[i], "…")))
+	}
+
+	return result.String()
 }

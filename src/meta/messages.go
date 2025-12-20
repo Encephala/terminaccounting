@@ -142,6 +142,8 @@ type CommitMsg struct{}
 // For resetting the value of an active input to the default value
 type ResetInputFieldMsg struct{}
 
+type ToggleShowReconciledMsg struct{}
+
 type ReconcileMsg struct{}
 
 type RefreshCacheMsg struct{}
