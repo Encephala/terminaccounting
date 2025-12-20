@@ -259,19 +259,26 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return dv, cmd
 
 	case meta.ToggleShowReconciledMsg:
-		selectedEntryRow := dv.viewer.activeEntryRow()
+		activeEntryRow := dv.viewer.activeEntryRow()
 
 		dv.showReconciled = !dv.showReconciled
+
 		dv.updateViewRows()
 
-		dv.viewer.setFocusToEntryRow(selectedEntryRow)
+		if activeEntryRow != nil {
+			dv.viewer.setFocusToEntryRow(activeEntryRow)
+		}
 
 		return dv, nil
 
 	case meta.ReconcileMsg:
 		activeEntryRow := dv.viewer.activeEntryRow()
-		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
 
+		if activeEntryRow == nil {
+			return dv, meta.MessageCmd(errors.New("there are no rows to reconcile"))
+		}
+
+		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
 		dv.updateViewRows()
 
 		return dv, nil
@@ -453,7 +460,13 @@ func (dv *DetailView) getReconciledRows() []*database.EntryRow {
 
 func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		entryId := dv.viewer.activeEntryRow().Entry
+		activeEntryRow := dv.viewer.activeEntryRow()
+
+		if activeEntryRow == nil {
+			return meta.MessageCmd(errors.New("there is no row to view details of"))
+		}
+
+		entryId := activeEntryRow.Entry
 
 		// Do the database query for the entry here, because it is a command and thus asynchronous
 		entry, err := database.SelectEntry(entryId)
@@ -474,7 +487,7 @@ type entryRowViewer struct {
 	viewport viewport.Model
 	viewRows [][]string
 	// The EntryRows that are being shown
-	viewedEntryRows []*database.EntryRow
+	entryRows []*database.EntryRow
 
 	activeRow      int
 	highlightStyle lipgloss.Style
@@ -560,7 +573,11 @@ func (erv *entryRowViewer) scrollViewport() {
 }
 
 func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
-	return erv.viewedEntryRows[erv.activeRow]
+	if len(erv.entryRows) == 0 {
+		return nil
+	}
+
+	return erv.entryRows[erv.activeRow]
 }
 
 func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
@@ -580,7 +597,7 @@ func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 
 func (erv *entryRowViewer) setRows(viewRows [][]string, rawRows []*database.EntryRow) {
 	erv.viewRows = viewRows
-	erv.viewedEntryRows = rawRows
+	erv.entryRows = rawRows
 }
 
 func (erv *entryRowViewer) setViewportContent() {
@@ -620,9 +637,14 @@ func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
 }
 
 func (erv *entryRowViewer) setFocusToEntryRow(entryRow *database.EntryRow) {
-	index := slices.IndexFunc(erv.viewedEntryRows, func(row *database.EntryRow) bool { return row == entryRow })
+	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {
+		if len(erv.viewRows) == 0 {
+			// All good, there simply is no row to highlight
+			return
+		}
+
 		panic("This can't happen (surely)")
 	}
 
