@@ -640,12 +640,8 @@ func (erv *entryRowViewer) setFocusToEntryRow(entryRow *database.EntryRow) {
 	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {
-		if len(erv.viewRows) == 0 {
-			// All good, there simply is no row to highlight
-			return
-		}
-
-		panic("This can't happen (surely)")
+		// This means that the row that was highlighted is reconciled and is now hidden, all good
+		return
 	}
 
 	erv.activeRow = index
