@@ -424,7 +424,8 @@ type entryRowViewManager struct {
 
 	activeInput int
 
-	viewport viewport.Model
+	colWidths []int
+	viewport  viewport.Model
 }
 
 func NewEntryRowViewManager() *entryRowViewManager {
@@ -434,10 +435,14 @@ func NewEntryRowViewManager() *entryRowViewManager {
 	rows[0] = newEntryRowCreator(database.Today())
 	rows[1] = newEntryRowCreator(database.Today())
 
+	totalWidth := 130
+	colWidths := []int{3, 13, 20, 20, 30, 15, 15}
+
 	return &entryRowViewManager{
 		rows: rows,
 
-		viewport: viewport.New(80, 16),
+		colWidths: colWidths,
+		viewport:  viewport.New(totalWidth, 16),
 	}
 }
 
@@ -553,7 +558,7 @@ func (ervm *entryRowViewManager) View(isActive bool) string {
 	var result strings.Builder
 
 	headers := []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"}
-	result.WriteString(strings.Join(headers, "  "))
+	result.WriteString(ervm.renderRow(headers))
 
 	result.WriteString("\n")
 
@@ -625,11 +630,31 @@ func (ervm *entryRowViewManager) updateContent(isActive bool) {
 		currentRow = append(currentRow, debitStyle.Render(row.debitInput.View()))
 		currentRow = append(currentRow, creditStyle.Render(row.creditInput.View()))
 
-		result.WriteString(strings.Join(currentRow, "  ") + "\n")
+		result.WriteString(ervm.renderRow(currentRow) + "\n")
 	}
 
 	ervm.viewport.SetContent(result.String())
 	ervm.scrollViewport()
+}
+
+func (ervm *entryRowViewManager) renderRow(values []string) string {
+	if len(values) != len(ervm.colWidths) {
+		panic("you absolute dingus")
+	}
+
+	newStyle := lipgloss.NewStyle()
+
+	var result strings.Builder
+	for i := range values {
+		style := newStyle.Width(ervm.colWidths[i])
+		if i != len(values)-1 {
+			style = style.MarginRight(2)
+		}
+
+		result.WriteString(style.Render(values[i]))
+	}
+
+	return result.String()
 }
 
 func (ervm *entryRowViewManager) scrollViewport() {
