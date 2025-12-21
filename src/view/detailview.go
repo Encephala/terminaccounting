@@ -119,7 +119,6 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
-		// TODO: this manual inspection of viewer from the outside feels wrong, improper separation of concerns
 		if !dv.showReconciled && dv.viewer.activeRow == len(dv.viewer.viewRows)-1 {
 			dv.viewer.activeRow = max(0, dv.viewer.activeRow-1)
 		}
