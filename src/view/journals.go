@@ -157,6 +157,8 @@ type JournalsCreateView struct {
 }
 
 func NewJournalsCreateView() *JournalsCreateView {
+	colours := meta.JOURNALSCOLOURS
+
 	journalTypes := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -167,16 +169,22 @@ func NewJournalsCreateView() *JournalsCreateView {
 	nameInput := textinput.New()
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	return &JournalsCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(journalTypes),
-		notesInput:  noteInput,
+		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
-		colours: meta.JOURNALSCOLOURS,
+		colours: colours,
 	}
 }
 
@@ -282,33 +290,50 @@ func (cv *JournalsCreateView) View() string {
 	result.WriteString(titleStyle.Render("Creating new Journal"))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
+	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
+
+	nameStyle := sectionStyle
+	typeStyle := sectionStyle
+
+	switch cv.activeInput {
+	case NAMEINPUT:
+		nameStyle = highlightStyle
+	case TYPEINPUT:
+		typeStyle = highlightStyle
+	case NOTEINPUT:
+		// has FocusedStyle set, don't manually render with highlightStyle
+	default:
+		panic(fmt.Sprintf("unexpected view.activeInput: %#v", cv.activeInput))
+	}
 
 	const inputWidth = 26
 	cv.nameInput.Width = inputWidth - 2
 	cv.notesInput.SetWidth(inputWidth)
 
+	// +2 for padding
+	maxNameColWidth := len("Notes") + 2
+
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(cv.nameInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Name"),
+		nameStyle.Render(cv.nameInput.View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
+		typeStyle.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(cv.notesInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		sectionStyle.Render(cv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
@@ -363,6 +388,8 @@ type JournalsUpdateView struct {
 }
 
 func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
+	colours := meta.JOURNALSCOLOURS
+
 	types := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -374,18 +401,24 @@ func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
 	nameInput.Focus()
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 	typeInput := itempicker.New(types)
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	return &JournalsUpdateView{
 		nameInput:   nameInput,
 		typeInput:   typeInput,
-		notesInput:  noteInput,
+		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
 		modelId: modelId,
 
-		colours: meta.JOURNALSCOLOURS,
+		colours: colours,
 	}
 }
 
@@ -505,34 +538,50 @@ func (uv *JournalsUpdateView) View() string {
 	result.WriteString(titleStyle.Render(fmt.Sprintf("Update Journal: %s", uv.startingValue.Name)))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
+	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
+
+	nameStyle := sectionStyle
+	typeStyle := sectionStyle
+
+	switch uv.activeInput {
+	case NAMEINPUT:
+		nameStyle = highlightStyle
+	case TYPEINPUT:
+		typeStyle = highlightStyle
+	case NOTEINPUT:
+		// has FocusedStyle set, don't manually render with highlightStyle
+	default:
+		panic(fmt.Sprintf("unexpected view.activeInput: %#v", uv.activeInput))
+	}
 
 	const inputWidth = 26
-	uv.nameInput.Width = inputWidth - 2 // -2 because of the prompt
+	uv.nameInput.Width = inputWidth - 2
 	uv.notesInput.SetWidth(inputWidth)
 
-	// TODO: Render active input with a different colour
+	// +2 for padding
+	maxNameColWidth := len("Notes") + 2
+
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(uv.nameInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Name"),
+		nameStyle.Render(uv.nameInput.View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
+		typeStyle.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(uv.notesInput.View()),
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		sectionStyle.Render(uv.notesInput.View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(

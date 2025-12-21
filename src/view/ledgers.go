@@ -55,10 +55,10 @@ func NewLedgersCreateView() *LedgersCreateView {
 	// -2 because of the prompt, -1 because of the cursor
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
-
 	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
