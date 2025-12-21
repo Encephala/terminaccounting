@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -28,7 +29,7 @@ const (
 type EntryCreateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
-	entryRowsManager *EntryRowViewManager
+	entryRowsManager *entryRowViewManager
 	activeInput      activeInput
 
 	colours meta.AppColours
@@ -191,7 +192,7 @@ func (cv *EntryCreateView) getNotesInput() *textarea.Model {
 	return &cv.notesInput
 }
 
-func (cv *EntryCreateView) getManager() *EntryRowViewManager {
+func (cv *EntryCreateView) getManager() *entryRowViewManager {
 	return cv.entryRowsManager
 }
 
@@ -210,7 +211,7 @@ func (cv *EntryCreateView) title() string {
 type EntryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
-	entryRowsManager *EntryRowViewManager
+	entryRowsManager *entryRowViewManager
 	activeInput      activeInput
 
 	modelId           int
@@ -401,7 +402,7 @@ func (uv *EntryUpdateView) getNotesInput() *textarea.Model {
 	return &uv.notesInput
 }
 
-func (uv *EntryUpdateView) getManager() *EntryRowViewManager {
+func (uv *EntryUpdateView) getManager() *entryRowViewManager {
 	return uv.entryRowsManager
 }
 
@@ -418,25 +419,29 @@ func (uv *EntryUpdateView) title() string {
 	return fmt.Sprintf("Update Entry: %s", "TODO")
 }
 
-type EntryRowViewManager struct {
+type entryRowViewManager struct {
 	rows []*entryRowCreator
 
 	activeInput int
+
+	viewport viewport.Model
 }
 
-func NewEntryRowViewManager() *EntryRowViewManager {
+func NewEntryRowViewManager() *entryRowViewManager {
 	// Prefill with two empty rows
 	rows := make([]*entryRowCreator, 2)
 
 	rows[0] = newEntryRowCreator(database.Today())
 	rows[1] = newEntryRowCreator(database.Today())
 
-	return &EntryRowViewManager{
+	return &entryRowViewManager{
 		rows: rows,
+
+		viewport: viewport.New(80, 16),
 	}
 }
 
-func (ervm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.Cmd) {
+func (ervm *entryRowViewManager) Update(msg tea.Msg) (*entryRowViewManager, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		// TODO
@@ -542,34 +547,49 @@ func (ervm *EntryRowViewManager) update(msg tea.Msg) (*EntryRowViewManager, tea.
 	}
 }
 
-func (ervm *EntryRowViewManager) view(isActive bool, highlightColour lipgloss.Color) string {
-	columnStyle := lipgloss.NewStyle().MaxWidth(40)
-	baseStyle := lipgloss.NewStyle()
-	highlightStyle := baseStyle.Foreground(highlightColour)
+func (ervm *entryRowViewManager) View(isActive bool) string {
+	ervm.updateContent(isActive)
 
-	// TODO?: render using the table bubble to have that fix all the alignment and stuff
 	var result strings.Builder
 
-	length := ervm.numRows() + 1
+	headers := []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"}
+	result.WriteString(strings.Join(headers, "  "))
+
+	result.WriteString("\n")
+
+	result.WriteString(ervm.viewport.View())
+
+	total, err := ervm.calculateCurrentTotal()
+	var totalRendered string
+	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
+	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
+	if err == nil {
+		if total == 0 {
+			totalRendered = fmt.Sprintf("Total: %s", green.Render(total.String()))
+		} else {
+			totalRendered = fmt.Sprintf("Total: %s", total)
+		}
+	} else {
+		totalRendered = red.Render("error")
+	}
+
+	result.WriteString("\n")
+
+	result.WriteString(totalRendered)
+
+	return result.String()
+}
+
+func (ervm *entryRowViewManager) updateContent(isActive bool) {
+	baseStyle := lipgloss.NewStyle()
+	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOURS.Foreground)
+
+	var result strings.Builder
+
 	highlightRow, highlightCol := ervm.getActiveCoords()
 
-	var idCol []string = make([]string, length)
-	var dateCol []string = make([]string, length)
-	var ledgerCol []string = make([]string, length)
-	var accountCol []string = make([]string, length)
-	var descriptionCol []string = make([]string, length)
-	var debitCol []string = make([]string, length)
-	var creditCol []string = make([]string, length)
-
-	idCol[0] = "Row"
-	dateCol[0] = "Date"
-	ledgerCol[0] = "Ledger"
-	accountCol[0] = "Account"
-	descriptionCol[0] = "Description"
-	debitCol[0] = "Debit"
-	creditCol[0] = "Credit"
-
 	for i, row := range ervm.rows {
+		var currentRow []string
 		idStyle := baseStyle
 		dateStyle := baseStyle
 		ledgerStyle := baseStyle
@@ -597,59 +617,35 @@ func (ervm *EntryRowViewManager) view(isActive bool, highlightColour lipgloss.Co
 			}
 		}
 
-		idCol[i+1] = idStyle.Render(strconv.Itoa(i))
-		dateCol[i+1] = dateStyle.Render(row.dateInput.View())
-		ledgerCol[i+1] = ledgerStyle.Render(row.ledgerInput.View())
-		accountCol[i+1] = accountStyle.Render(row.accountInput.View())
-		descriptionCol[i+1] = descriptionStyle.Render(row.descriptionInput.View())
-		debitCol[i+1] = debitStyle.Render(row.debitInput.View())
-		creditCol[i+1] = creditStyle.Render(row.creditInput.View())
+		currentRow = append(currentRow, idStyle.Render(strconv.Itoa(i)))
+		currentRow = append(currentRow, dateStyle.Render(row.dateInput.View()))
+		currentRow = append(currentRow, ledgerStyle.Render(row.ledgerInput.View()))
+		currentRow = append(currentRow, accountStyle.Render(row.accountInput.View()))
+		currentRow = append(currentRow, descriptionStyle.Render(row.descriptionInput.View()))
+		currentRow = append(currentRow, debitStyle.Render(row.debitInput.View()))
+		currentRow = append(currentRow, creditStyle.Render(row.creditInput.View()))
+
+		result.WriteString(strings.Join(currentRow, "  ") + "\n")
 	}
 
-	idRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, idCol...))
-	dateRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, dateCol...))
-	ledgerRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, ledgerCol...))
-	accountRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, accountCol...))
-	descriptionRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, descriptionCol...))
-	debitRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, debitCol...))
-	creditRendered := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, creditCol...))
+	ervm.viewport.SetContent(result.String())
+	ervm.scrollViewport()
+}
 
-	entryRows := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		idRendered, " ",
-		dateRendered, " ",
-		ledgerRendered, " ",
-		accountRendered, " ",
-		descriptionRendered, " ",
-		debitRendered, " ",
-		creditRendered,
-	)
+func (ervm *entryRowViewManager) scrollViewport() {
+	activeRow, _ := ervm.getActiveCoords()
 
-	total, err := ervm.calculateCurrentTotal()
-	var totalRendered string
-	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
-	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
-	if err == nil {
-		if total == 0 {
-			totalRendered = fmt.Sprintf("Total: %s", green.Render(total.String()))
-		} else {
-			totalRendered = fmt.Sprintf("Total: %s", total)
-		}
-	} else {
-		totalRendered = red.Render("error")
+	if activeRow >= ervm.viewport.YOffset+ervm.viewport.Height {
+		ervm.viewport.ScrollDown(activeRow - ervm.viewport.YOffset - ervm.viewport.Height + 1)
 	}
 
-	result.WriteString(lipgloss.JoinVertical(
-		lipgloss.Right,
-		entryRows,
-		totalRendered,
-	))
-
-	return result.String()
+	if activeRow < ervm.viewport.YOffset {
+		ervm.viewport.ScrollUp(ervm.viewport.YOffset - activeRow)
+	}
 }
 
 // Converts a slice of EntryRow "forms" to a slice of EntryRow
-func (ervm *EntryRowViewManager) compileRows() ([]database.EntryRow, error) {
+func (ervm *entryRowViewManager) compileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ervm.numRows())
 
 	total, err := ervm.calculateCurrentTotal()
@@ -743,7 +739,7 @@ func (uv *EntryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
-func (ervm *EntryRowViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+func (ervm *entryRowViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	oldRow, oldCol := ervm.getActiveCoords()
 
 	switch direction {
@@ -770,7 +766,7 @@ func (ervm *EntryRowViewManager) switchFocus(direction meta.Sequence) (preceeded
 	return false, false
 }
 
-func (ervm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
+func (ervm *entryRowViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
 	var total database.CurrencyValue
 
 	for _, row := range ervm.rows {
@@ -795,24 +791,24 @@ func (ervm *EntryRowViewManager) calculateCurrentTotal() (database.CurrencyValue
 	return total, nil
 }
 
-func (ervm *EntryRowViewManager) numRows() int {
+func (ervm *entryRowViewManager) numRows() int {
 	return len(ervm.rows)
 }
 
-func (ervm *EntryRowViewManager) numInputs() int {
+func (ervm *entryRowViewManager) numInputs() int {
 	return ervm.numRows() * ervm.numInputsPerRow()
 }
 
-func (ervm *EntryRowViewManager) numInputsPerRow() int {
+func (ervm *entryRowViewManager) numInputsPerRow() int {
 	return 6
 }
 
-func (ervm *EntryRowViewManager) getActiveCoords() (row, col int) {
+func (ervm *entryRowViewManager) getActiveCoords() (row, col int) {
 	inputsPerRow := ervm.numInputsPerRow()
 	return ervm.activeInput / inputsPerRow, ervm.activeInput % inputsPerRow
 }
 
-func (ervm *EntryRowViewManager) focus(direction meta.Sequence) {
+func (ervm *entryRowViewManager) focus(direction meta.Sequence) {
 	numInputs := ervm.numInputs()
 
 	switch direction {
@@ -827,7 +823,7 @@ func (ervm *EntryRowViewManager) focus(direction meta.Sequence) {
 }
 
 // Ignores an input that would make the active input go "out of bounds"
-func (ervm *EntryRowViewManager) setActiveCoords(newRow, newCol int) {
+func (ervm *entryRowViewManager) setActiveCoords(newRow, newCol int) {
 	numRow := ervm.numRows()
 	numPerRow := ervm.numInputsPerRow()
 
@@ -975,7 +971,7 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 	return false
 }
 
-func (ervm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
+func (ervm *entryRowViewManager) deleteRow() (*entryRowViewManager, tea.Cmd) {
 	activeRow, activeCol := ervm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
@@ -1003,7 +999,7 @@ func (ervm *EntryRowViewManager) deleteRow() (*EntryRowViewManager, tea.Cmd) {
 	return ervm, nil
 }
 
-func (ervm *EntryRowViewManager) addRow(after bool) (*EntryRowViewManager, tea.Cmd) {
+func (ervm *entryRowViewManager) addRow(after bool) (*entryRowViewManager, tea.Cmd) {
 	activeRow, _ := ervm.getActiveCoords()
 
 	var newRow *entryRowCreator
@@ -1051,7 +1047,7 @@ type entryCreateOrUpdateView interface {
 
 	getJournalInput() *itempicker.Model
 	getNotesInput() *textarea.Model
-	getManager() *EntryRowViewManager
+	getManager() *entryRowViewManager
 
 	getActiveInput() *activeInput
 
@@ -1107,7 +1103,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, meta.MessageCmd(errors.New("hjkl navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.update(message)
+		manager, cmd := entryRowsManager.Update(message)
 		*entryRowsManager = *manager
 
 		return view, cmd
@@ -1117,7 +1113,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, meta.MessageCmd(errors.New("$/_ navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.update(message)
+		manager, cmd := entryRowsManager.Update(message)
 		*entryRowsManager = *manager
 
 		return view, cmd
@@ -1127,7 +1123,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			return view, meta.MessageCmd(errors.New("'gg'/'G' navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.update(message)
+		manager, cmd := entryRowsManager.Update(message)
 		*entryRowsManager = *manager
 
 		return view, cmd
@@ -1145,8 +1141,8 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		case ENTRIESNOTESINPUT:
 			*notesInput, cmd = notesInput.Update(message)
 		case ENTRIESROWINPUT:
-			var manager *EntryRowViewManager
-			manager, cmd = entryRowsManager.update(message)
+			var manager *entryRowViewManager
+			manager, cmd = entryRowsManager.Update(message)
 			*entryRowsManager = *manager
 
 		default:
@@ -1202,7 +1198,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
-		Align(lipgloss.Center)
+		Align(lipgloss.Left)
 	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
 
 	journalInput := view.getJournalInput()
@@ -1258,10 +1254,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	result.WriteString("\n\n")
 
 	result.WriteString(sectionStyle.MarginLeft(2).Render(
-		entryRowsManager.view(
-			*view.getActiveInput() == ENTRIESROWINPUT,
-			view.getColours().Foreground,
-		),
+		entryRowsManager.View(*view.getActiveInput() == ENTRIESROWINPUT),
 	))
 
 	return result.String()
