@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -29,13 +28,11 @@ func main() {
 	defer file.Close()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: logLevel})))
 
-	db, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
+	err = database.Connect()
 	if err != nil {
 		slog.Error("Couldn't connect to database:", "error", err)
 		os.Exit(1)
 	}
-
-	database.DB = db
 
 	commandInput := textinput.New()
 	commandInput.Cursor.SetMode(cursor.CursorStatic)

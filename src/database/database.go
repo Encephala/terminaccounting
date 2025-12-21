@@ -11,6 +11,13 @@ import (
 
 var DB *sqlx.DB
 
+func Connect() error {
+	var err error
+	DB, err = sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
+
+	return err
+}
+
 func DatabaseTableIsSetUp(name string) (bool, error) {
 	// Kinda hacky, whatever
 	result, err := DB.Query("SELECT name FROM sqlite_master WHERE type='table' AND name=$1", name)
