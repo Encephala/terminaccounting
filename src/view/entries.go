@@ -65,7 +65,7 @@ func NewEntryCreateViewPrefilled(data EntryPrefillData) (*EntryCreateView, error
 	result.journalInput.SetValue(data.Journal)
 	result.notesInput.SetValue(data.Notes.Collapse())
 
-	entryRowCreateView, err := decompileRows(data.Rows)
+	entryRowCreateView, err := decompileRows(data.Rows, result.entryRowsManager.colWidths)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ type entryRowCreator struct {
 	creditInput textinput.Model
 }
 
-func newEntryRowCreator(startDate *database.Date) *entryRowCreator {
+func newEntryRowCreator(startDate *database.Date, colWidths []int) *entryRowCreator {
 	dateInput := textinput.New()
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
@@ -98,13 +98,21 @@ func newEntryRowCreator(startDate *database.Date) *entryRowCreator {
 	ledgerInput := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	accountInput := itempicker.New(database.AvailableAccountsAsItempickerItems())
 
+	// -3 is for prompt and cursor
+	descriptionInput := textinput.New()
+	descriptionInput.Width = colWidths[4] - 3
+	debitInput := textinput.New()
+	debitInput.Width = colWidths[5] - 3
+	creditInput := textinput.New()
+	creditInput.Width = colWidths[6] - 3
+
 	result := entryRowCreator{
 		dateInput:        dateInput,
 		ledgerInput:      ledgerInput,
 		accountInput:     accountInput,
-		descriptionInput: textinput.New(),
-		debitInput:       textinput.New(),
-		creditInput:      textinput.New(),
+		descriptionInput: descriptionInput,
+		debitInput:       debitInput,
+		creditInput:      creditInput,
 	}
 
 	return &result
@@ -315,7 +323,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 			uv.startingEntryRows = rows
 
-			formRows, err := decompileRows(rows)
+			formRows, err := decompileRows(rows, uv.entryRowsManager.colWidths)
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
@@ -346,7 +354,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		case ENTRIESROWINPUT:
 			var err error
-			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows)
+			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows, uv.entryRowsManager.colWidths)
 
 			if err != nil {
 				return uv, meta.MessageCmd(err)
@@ -432,11 +440,11 @@ func NewEntryRowViewManager() *entryRowViewManager {
 	// Prefill with two empty rows
 	rows := make([]*entryRowCreator, 2)
 
-	rows[0] = newEntryRowCreator(database.Today())
-	rows[1] = newEntryRowCreator(database.Today())
+	colWidths := []int{3, 13, 20, 20, 30, 15, 15}
+	rows[0] = newEntryRowCreator(database.Today(), colWidths)
+	rows[1] = newEntryRowCreator(database.Today(), colWidths)
 
 	totalWidth := 130
-	colWidths := []int{3, 13, 20, 20, 30, 15, 15}
 
 	return &entryRowViewManager{
 		rows: rows,
@@ -904,7 +912,7 @@ func (ervm *entryRowViewManager) setActiveCoords(newRow, newCol int) {
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
-func decompileRows(rows []database.EntryRow) ([]*entryRowCreator, error) {
+func decompileRows(rows []database.EntryRow, colWidths []int) ([]*entryRowCreator, error) {
 	result := make([]*entryRowCreator, len(rows))
 
 	for i, row := range rows {
@@ -929,7 +937,7 @@ func decompileRows(rows []database.EntryRow) ([]*entryRowCreator, error) {
 			account = &database.AvailableAccounts[availableAccountIndex]
 		}
 
-		formRow := newEntryRowCreator(&row.Date)
+		formRow := newEntryRowCreator(&row.Date, colWidths)
 
 		err := formRow.ledgerInput.SetValue(ledger)
 		if err != nil {
@@ -1033,9 +1041,9 @@ func (ervm *entryRowViewManager) addRow(after bool) (*entryRowViewManager, tea.C
 	// prefill it in the new row. Otherwise, just leave new row empty
 	prefillDate, parseErr := database.ToDate(ervm.rows[activeRow].dateInput.Value())
 	if parseErr == nil {
-		newRow = newEntryRowCreator(&prefillDate)
+		newRow = newEntryRowCreator(&prefillDate, ervm.colWidths)
 	} else {
-		newRow = newEntryRowCreator(nil)
+		newRow = newEntryRowCreator(nil, ervm.colWidths)
 	}
 
 	newRows := make([]*entryRowCreator, 0, ervm.numRows()+1)
