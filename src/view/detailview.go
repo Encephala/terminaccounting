@@ -14,7 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// A generic, placeholder(?) view that just renders all entries on a ledger/journal/account in a list.
+// A generic, placeholder view that just renders all entries on a ledger/account in a list.
 type DetailView struct {
 	app meta.App
 
@@ -106,7 +106,7 @@ func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		dv.updateViewRows()
 
 		if activeEntryRow != nil {
-			dv.viewer.setFocusToEntryRow(activeEntryRow)
+			dv.viewer.activateEntryRow(activeEntryRow)
 		}
 
 		return dv, nil
@@ -506,7 +506,7 @@ func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
 	return result.String()
 }
 
-func (erv *entryRowViewer) setFocusToEntryRow(entryRow *database.EntryRow) {
+func (erv *entryRowViewer) activateEntryRow(entryRow *database.EntryRow) {
 	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {
