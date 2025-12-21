@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// TODO: Prefix entries to prevent clashes
 const (
 	JOURNALINPUT activeInput = iota
 	NOTESINPUT

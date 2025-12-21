@@ -50,6 +50,8 @@ type AccountsCreateView struct {
 }
 
 func NewAccountsCreateView() *AccountsCreateView {
+	colours := meta.ACCOUNTSCOLOURS
+
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -63,6 +65,16 @@ func NewAccountsCreateView() *AccountsCreateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
+	bankNumbersInput.FocusedStyle.Text = notesFocusStyle
+	bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
+	bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
 	return &AccountsCreateView{
 		nameInput:        nameInput,
 		typeInput:        itempicker.New(accountTypes),
@@ -70,7 +82,7 @@ func NewAccountsCreateView() *AccountsCreateView {
 		bankNumbersInput: bankNumbersInput,
 		activeInput:      ACCOUNTSNAMEINPUT,
 
-		colours: meta.ACCOUNTSCOLOURS,
+		colours: colours,
 	}
 }
 
@@ -192,16 +204,6 @@ func (cv *AccountsCreateView) View() string {
 	cv.nameInput.Width = inputWidth - 2
 	cv.bankNumbersInput.SetWidth(inputWidth)
 	cv.notesInput.SetWidth(inputWidth)
-
-	notesFocusStyle := lipgloss.NewStyle().Foreground(cv.colours.Foreground)
-	cv.bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
-	cv.bankNumbersInput.FocusedStyle.Text = notesFocusStyle
-	cv.bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
-	cv.bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
-	cv.notesInput.FocusedStyle.Prompt = notesFocusStyle
-	cv.notesInput.FocusedStyle.Text = notesFocusStyle
-	cv.notesInput.FocusedStyle.CursorLine = notesFocusStyle
-	cv.notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	nameStyle := sectionStyle
 	typeStyle := sectionStyle

@@ -39,6 +39,8 @@ type LedgersCreateView struct {
 }
 
 func NewLedgersCreateView() *LedgersCreateView {
+	colours := meta.LEDGERSCOLOURS
+
 	ledgerTypes := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -57,13 +59,19 @@ func NewLedgersCreateView() *LedgersCreateView {
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
 
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
 	return &LedgersCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(ledgerTypes),
 		notesInput:  notesInput,
 		activeInput: NAMEINPUT,
 
-		colours: meta.LEDGERSCOLOURS,
+		colours: colours,
 	}
 }
 
@@ -377,30 +385,50 @@ func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
 	result.WriteString(titleStyle.Render(view.title()))
 	result.WriteString("\n\n")
 
-	style := lipgloss.NewStyle().
+	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		UnsetWidth().
-		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
+
+	nameStyle := sectionStyle
+	typeStyle := sectionStyle
+
+	switch *view.getActiveInput() {
+	case NAMEINPUT:
+		nameStyle = highlightStyle
+	case TYPEINPUT:
+		typeStyle = highlightStyle
+	case NOTEINPUT:
+		// has FocusedStyle set, don't manually render with highlightStyle
+	default:
+		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", view.getActiveInput()))
+	}
+
+	// +2 for padding
+	maxNameColWidth := len("Notes") + 2
 
 	// TODO: Render active input with a different colour
 	var nameRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(view.getNameInput().View()),
+		sectionStyle.Width(maxNameColWidth).Render("Name"),
+		" ",
+		nameStyle.Render(view.getNameInput().View()),
 	)
 
 	var typeRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Width(view.getTypeInput().MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(view.getTypeInput().View()),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
+		" ",
+		typeStyle.Width(view.getTypeInput().MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(view.getTypeInput().View()),
 	)
 
 	var notesRow = lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(view.getNotesInput().View()),
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		" ",
+		sectionStyle.Render(view.getNotesInput().View()),
 	)
 
 	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
