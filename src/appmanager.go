@@ -19,6 +19,26 @@ type appManager struct {
 	appIds    map[meta.AppType]int
 }
 
+func newAppManager() *appManager {
+	apps := make([]meta.App, 4)
+	apps[0] = NewLedgersApp()
+	apps[1] = NewEntriesApp()
+	apps[2] = NewAccountsApp()
+	apps[3] = NewJournalsApp()
+
+	// Map the name(=type) of an app to its index in `apps`
+	appIds := make(map[meta.AppType]int, 4)
+	appIds[meta.LEDGERSAPP] = 0
+	appIds[meta.ENTRIESAPP] = 1
+	appIds[meta.ACCOUNTSAPP] = 2
+	appIds[meta.JOURNALSAPP] = 3
+
+	return &appManager{
+		apps:   apps,
+		appIds: appIds,
+	}
+}
+
 func (am *appManager) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 

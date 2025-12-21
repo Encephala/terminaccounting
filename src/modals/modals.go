@@ -11,6 +11,10 @@ type ModalManager struct {
 	Modal view.View
 }
 
+func NewModalManager() *ModalManager {
+	return &ModalManager{}
+}
+
 func (mm *ModalManager) Init() tea.Cmd {
 	return nil
 }

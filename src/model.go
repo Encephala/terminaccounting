@@ -9,6 +9,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/modals"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -34,6 +35,26 @@ type terminaccounting struct {
 	// vimesque command input
 	commandInput           textinput.Model
 	currentCommandIsSearch bool
+}
+
+func newTerminaccounting() *terminaccounting {
+	commandInput := textinput.New()
+	commandInput.Cursor.SetMode(cursor.CursorStatic)
+	commandInput.Prompt = ":"
+
+	am := newAppManager()
+	mm := modals.NewModalManager()
+
+	return &terminaccounting{
+		appManager:   am,
+		modalManager: mm,
+		showModal:    false,
+
+		inputMode:    meta.NORMALMODE,
+		commandInput: commandInput,
+
+		currentMotion: make(meta.Motion, 0),
+	}
 }
 
 func (ta *terminaccounting) Init() tea.Cmd {
