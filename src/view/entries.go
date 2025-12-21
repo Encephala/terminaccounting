@@ -19,11 +19,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TODO: Prefix entries to prevent clashes
 const (
-	JOURNALINPUT activeInput = iota
-	NOTESINPUT
-	ENTRYROWINPUT
+	ENTRIESJOURNALINPUT activeInput = iota
+	ENTRIESNOTESINPUT
+	ENTRIESROWINPUT
 )
 
 type EntryCreateView struct {
@@ -43,7 +42,7 @@ func NewEntryCreateView() *EntryCreateView {
 	result := &EntryCreateView{
 		journalInput:     journalInput,
 		notesInput:       noteInput,
-		activeInput:      JOURNALINPUT,
+		activeInput:      ENTRIESJOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
 		colours: meta.ENTRIESCOLOURS,
@@ -230,7 +229,7 @@ func NewEntryUpdateView(modelId int) *EntryUpdateView {
 	result := &EntryUpdateView{
 		journalInput:     journalInput,
 		notesInput:       noteInput,
-		activeInput:      JOURNALINPUT,
+		activeInput:      ENTRIESJOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
 		modelId: modelId,
@@ -327,7 +326,7 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
-		case JOURNALINPUT:
+		case ENTRIESJOURNALINPUT:
 			availableJournalIndex := slices.IndexFunc(database.AvailableJournals, func(journal database.Journal) bool {
 				return journal.Id == uv.startingEntry.Journal
 			})
@@ -341,10 +340,10 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				panic("This can't happen")
 			}
 
-		case NOTESINPUT:
+		case ENTRIESNOTESINPUT:
 			uv.notesInput.SetValue(uv.startingEntry.Notes.Collapse())
 
-		case ENTRYROWINPUT:
+		case ENTRIESROWINPUT:
 			var err error
 			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows)
 
@@ -1069,11 +1068,11 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
-		if *activeInput == NOTESINPUT {
+		if *activeInput == ENTRIESNOTESINPUT {
 			notesInput.Blur()
 		}
 
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			switch message.Direction {
 			case meta.PREVIOUS:
 				activeInput.previous(3)
@@ -1083,7 +1082,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			}
 
 			// If it changed to entryrow input
-			if *activeInput == ENTRYROWINPUT {
+			if *activeInput == ENTRIESROWINPUT {
 				entryRowsManager.focus(message.Direction)
 			}
 		} else {
@@ -1097,14 +1096,14 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 			}
 		}
 
-		if *activeInput == NOTESINPUT {
+		if *activeInput == ENTRIESNOTESINPUT {
 			notesInput.Focus()
 		}
 
 		return view, nil
 
 	case meta.NavigateMsg:
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			return view, meta.MessageCmd(errors.New("hjkl navigation only works within the entryrows"))
 		}
 
@@ -1114,7 +1113,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		return view, cmd
 
 	case meta.JumpHorizontalMsg:
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			return view, meta.MessageCmd(errors.New("$/_ navigation only works within the entryrows"))
 		}
 
@@ -1124,7 +1123,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		return view, cmd
 
 	case meta.JumpVerticalMsg:
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			return view, meta.MessageCmd(errors.New("'gg'/'G' navigation only works within the entryrows"))
 		}
 
@@ -1141,11 +1140,11 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch *activeInput {
-		case JOURNALINPUT:
+		case ENTRIESJOURNALINPUT:
 			*journalInput, cmd = journalInput.Update(message)
-		case NOTESINPUT:
+		case ENTRIESNOTESINPUT:
 			*notesInput, cmd = notesInput.Update(message)
-		case ENTRYROWINPUT:
+		case ENTRIESROWINPUT:
 			var manager *EntryRowViewManager
 			manager, cmd = entryRowsManager.update(message)
 			*entryRowsManager = *manager
@@ -1157,7 +1156,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		return view, cmd
 
 	case DeleteEntryRowMsg:
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			return view, meta.MessageCmd(errors.New("no entry row highlighted while trying to delete one"))
 		}
 
@@ -1167,7 +1166,7 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		return view, cmd
 
 	case CreateEntryRowMsg:
-		if *activeInput != ENTRYROWINPUT {
+		if *activeInput != ENTRIESROWINPUT {
 			return view, meta.MessageCmd(errors.New("no entry row highlighted while trying to create one"))
 		}
 
@@ -1226,13 +1225,13 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 	)
 
 	var inputCol string
-	if *view.getActiveInput() == JOURNALINPUT {
+	if *view.getActiveInput() == ENTRIESJOURNALINPUT {
 		inputCol = lipgloss.JoinVertical(
 			lipgloss.Left,
 			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(view.getJournalInput().View()),
 			sectionStyle.Render(notesInput.View()),
 		)
-	} else if *view.getActiveInput() == NOTESINPUT {
+	} else if *view.getActiveInput() == ENTRIESNOTESINPUT {
 		notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
 
 		inputCol = lipgloss.JoinVertical(
@@ -1260,7 +1259,7 @@ func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
 
 	result.WriteString(sectionStyle.MarginLeft(2).Render(
 		entryRowsManager.view(
-			*view.getActiveInput() == ENTRYROWINPUT,
+			*view.getActiveInput() == ENTRIESROWINPUT,
 			view.getColours().Foreground,
 		),
 	))
