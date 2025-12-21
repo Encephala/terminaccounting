@@ -15,18 +15,12 @@ import (
 )
 
 func main() {
-	logLevel := slog.LevelInfo
-	if os.Getenv("LOG_LEVEL") == "DEBUG" {
-		logLevel = slog.LevelDebug
-	}
-
-	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o644)
+	logFile, err := initSlog()
 	if err != nil {
 		slog.Error("Couldn't create logger:", "error", err)
 		os.Exit(1)
 	}
-	defer file.Close()
-	slog.SetDefault(slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: logLevel})))
+	defer logFile.Close()
 
 	err = database.Connect()
 	if err != nil {
