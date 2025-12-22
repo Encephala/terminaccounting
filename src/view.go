@@ -46,8 +46,8 @@ func (ta *terminaccounting) statusLineView() string {
 		panic(fmt.Sprintf("unexpected inputMode: %#v", ta.inputMode))
 	}
 
-	if ta.viewWidth-resultLength > 0 {
-		result.WriteString(meta.StatusLineStyle.Render(strings.Repeat(" ", ta.viewWidth-resultLength)))
+	if ta.width-resultLength > 0 {
+		result.WriteString(meta.StatusLineStyle.Render(strings.Repeat(" ", ta.width-resultLength)))
 	}
 
 	return result.String()

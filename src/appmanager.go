@@ -11,7 +11,7 @@ import (
 )
 
 type appManager struct {
-	viewWidth, viewHeight int
+	width, height int
 
 	activeApp int
 	apps      []meta.App
@@ -53,8 +53,8 @@ func (am *appManager) Init() tea.Cmd {
 func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		am.viewWidth = message.Width
-		am.viewHeight = message.Height
+		am.width = message.Width
+		am.height = message.Height
 
 		cmds := am.updateAppsViewSize(message)
 
@@ -102,7 +102,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		newApp, updateCmd := am.apps[am.activeApp].Update(message)
 		am.apps[am.activeApp] = newApp.(meta.App)
 
-		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
+		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.width, Height: am.height})
 
 		cmds := append(windowSizeCmds, updateCmd)
 
@@ -111,7 +111,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 	case meta.ReloadViewMsg:
 		reloadCmd := am.apps[am.activeApp].ReloadView()
 
-		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.viewWidth, Height: am.viewHeight})
+		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.width, Height: am.height})
 
 		notificationCmd := meta.MessageCmd(meta.NotificationMessageMsg{Message: "Refreshed view"})
 
@@ -128,17 +128,17 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 	return am, tea.Batch(cmds...)
 }
 
-func (m *appManager) View() string {
+func (am *appManager) View() string {
 	result := []string{}
 
-	if m.activeApp < 0 || m.activeApp >= len(m.apps) {
-		panic(fmt.Sprintf("invalid tab index: %d", m.activeApp))
+	if am.activeApp < 0 || am.activeApp >= len(am.apps) {
+		panic(fmt.Sprintf("invalid tab index: %d", am.activeApp))
 	}
 
 	tabs := []string{}
-	activeTabColour := m.apps[m.activeApp].Colours().Foreground
-	for i, app := range m.apps {
-		if i == m.activeApp {
+	activeTabColour := am.apps[am.activeApp].Colours().Foreground
+	for i, app := range am.apps {
+		if i == am.activeApp {
 			tabs = append(tabs, meta.ActiveTabStyle(activeTabColour).Render(app.Name()))
 		} else {
 			tabs = append(tabs, meta.TabStyle(activeTabColour).Render(app.Name()))
@@ -146,7 +146,7 @@ func (m *appManager) View() string {
 	}
 
 	// 14 is 12 (width of tab) + 2 (borders)
-	numberOfTrailingEmptyCells := m.viewWidth - len(m.apps)*14
+	numberOfTrailingEmptyCells := am.width - len(am.apps)*14
 	if numberOfTrailingEmptyCells >= 0 {
 		tabFill := strings.Repeat(" ", numberOfTrailingEmptyCells)
 		style := lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(activeTabColour)
@@ -156,7 +156,7 @@ func (m *appManager) View() string {
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
 	result = append(result, tabsRendered)
 
-	result = append(result, m.apps[m.activeApp].View())
+	result = append(result, am.apps[am.activeApp].View())
 
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
@@ -186,16 +186,16 @@ func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {
 	return cmds
 }
 
-func (m *appManager) appTypeToApp(appType meta.AppType) meta.App {
-	return m.apps[m.appIds[appType]]
+func (am *appManager) appTypeToApp(appType meta.AppType) meta.App {
+	return am.apps[am.appIds[appType]]
 }
 
-func (m *appManager) setActiveApp(appId int) {
+func (am *appManager) setActiveApp(appId int) {
 	if appId < 0 {
-		m.activeApp = len(m.apps) - 1
-	} else if appId >= len(m.apps) {
-		m.activeApp = 0
+		am.activeApp = len(am.apps) - 1
+	} else if appId >= len(am.apps) {
+		am.activeApp = 0
 	} else {
-		m.activeApp = appId
+		am.activeApp = appId
 	}
 }

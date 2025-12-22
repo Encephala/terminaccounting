@@ -20,8 +20,8 @@ type terminaccounting struct {
 	appManager   *appManager
 	modalManager *modals.ModalManager
 
-	showModal             bool
-	viewWidth, viewHeight int
+	showModal     bool
+	width, height int
 
 	notifications       []notificationMsg
 	displayNotification bool
@@ -99,8 +99,8 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, message
 
 	case tea.WindowSizeMsg:
-		ta.viewWidth = message.Width
-		ta.viewHeight = message.Height
+		ta.width = message.Width
+		ta.height = message.Height
 
 		// -1 for status line
 		// -1 for command line
@@ -213,10 +213,12 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (ta *terminaccounting) View() string {
 	var result strings.Builder
 
+	// -2 for status/command line
+	style := lipgloss.NewStyle().MaxWidth(ta.width).MaxHeight(ta.height - 2)
 	if ta.showModal {
-		result.WriteString(newOverlay(ta).View())
+		result.WriteString(style.Render(newOverlay(ta).View()))
 	} else {
-		result.WriteString(ta.appManager.View())
+		result.WriteString(style.Render(ta.appManager.View()))
 	}
 
 	result.WriteString("\n")
