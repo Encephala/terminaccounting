@@ -136,7 +136,7 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *LedgersCreateView) View() string {
-	return ledgersCreateUpdateViewView(cv)
+	panic("never call this ye?")
 }
 
 func (cv *LedgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -153,6 +153,14 @@ func (cv *LedgersCreateView) CommandSet() meta.CommandSet {
 
 func (cv *LedgersCreateView) Reload() View {
 	return NewLedgersCreateView()
+}
+
+func (cv *LedgersCreateView) inputNames() []string {
+	return []string{"Name", "Type", "Notes"}
+}
+
+func (cv *LedgersCreateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
 }
 
 type LedgersUpdateView struct {
