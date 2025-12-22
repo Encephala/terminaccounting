@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"terminaccounting/database"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,8 +44,6 @@ func (am *appManager) Init() tea.Cmd {
 	for _, app := range am.apps {
 		cmds = append(cmds, app.Init())
 	}
-
-	cmds = append(cmds, database.InitSchemas())
 
 	slog.Info("Initialising")
 
