@@ -24,16 +24,16 @@ type ledgerCreateOrUpdateView interface {
 	getTypeInput() *itempicker.Model
 	getNotesInput() *textarea.Model
 
-	getActiveInput() *activeInput
+	getActiveInput() *int
 
 	getColours() meta.AppColours
 }
 
 type LedgersCreateView struct {
-	nameInput  textinput.Model
-	typeInput  itempicker.Model
-	notesInput textarea.Model
-	activeInput
+	nameInput   textinput.Model
+	typeInput   itempicker.Model
+	notesInput  textarea.Model
+	activeInput int
 
 	colours meta.AppColours
 }
@@ -92,7 +92,7 @@ func (cv *LedgersCreateView) getTypeInput() *itempicker.Model {
 func (cv *LedgersCreateView) getNotesInput() *textarea.Model {
 	return &cv.notesInput
 }
-func (cv *LedgersCreateView) getActiveInput() *activeInput {
+func (cv *LedgersCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 func (cv *LedgersCreateView) getColours() meta.AppColours {
@@ -167,7 +167,7 @@ type LedgersUpdateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	notesInput  textarea.Model
-	activeInput activeInput
+	activeInput int
 
 	modelId       int
 	startingValue database.Ledger
@@ -223,7 +223,7 @@ func (uv *LedgersUpdateView) getTypeInput() *itempicker.Model {
 func (uv *LedgersUpdateView) getNotesInput() *textarea.Model {
 	return &uv.notesInput
 }
-func (uv *LedgersUpdateView) getActiveInput() *activeInput {
+func (uv *LedgersUpdateView) getActiveInput() *int {
 	return &uv.activeInput
 }
 func (uv *LedgersUpdateView) getColours() meta.AppColours {
@@ -331,10 +331,10 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			view.getActiveInput().previous(3)
+			previousInput(view.getActiveInput(), 3)
 
 		case meta.NEXT:
-			view.getActiveInput().next(3)
+			nextInput(view.getActiveInput(), 3)
 		}
 
 		// If now on a textinput, focus it

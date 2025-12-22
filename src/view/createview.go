@@ -10,10 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type viewable interface {
-	View() string
-}
-
 type genericCreateView interface {
 	View
 
@@ -22,7 +18,7 @@ type genericCreateView interface {
 	inputs() []viewable
 	inputNames() []string
 
-	getActiveInput() *activeInput
+	getActiveInput() *int
 
 	getColours() meta.AppColours
 }

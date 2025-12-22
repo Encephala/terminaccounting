@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	ENTRIESJOURNALINPUT activeInput = iota
+	ENTRIESJOURNALINPUT int = iota
 	ENTRIESNOTESINPUT
 	ENTRIESROWINPUT
 )
@@ -30,7 +30,7 @@ type EntryCreateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *entryRowViewManager
-	activeInput      activeInput
+	activeInput      int
 
 	colours meta.AppColours
 }
@@ -204,7 +204,7 @@ func (cv *EntryCreateView) getManager() *entryRowViewManager {
 	return cv.entryRowsManager
 }
 
-func (cv *EntryCreateView) getActiveInput() *activeInput {
+func (cv *EntryCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 
@@ -220,7 +220,7 @@ type EntryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *entryRowViewManager
-	activeInput      activeInput
+	activeInput      int
 
 	modelId           int
 	startingEntry     database.Entry
@@ -414,7 +414,7 @@ func (uv *EntryUpdateView) getManager() *entryRowViewManager {
 	return uv.entryRowsManager
 }
 
-func (uv *EntryUpdateView) getActiveInput() *activeInput {
+func (uv *EntryUpdateView) getActiveInput() *int {
 	return &uv.activeInput
 }
 
@@ -1082,7 +1082,7 @@ type entryCreateOrUpdateView interface {
 	getNotesInput() *textarea.Model
 	getManager() *entryRowViewManager
 
-	getActiveInput() *activeInput
+	getActiveInput() *int
 
 	getColours() meta.AppColours
 
@@ -1104,10 +1104,10 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		if *activeInput != ENTRIESROWINPUT {
 			switch message.Direction {
 			case meta.PREVIOUS:
-				activeInput.previous(3)
+				previousInput(activeInput, 3)
 
 			case meta.NEXT:
-				activeInput.next(3)
+				nextInput(activeInput, 3)
 			}
 
 			// If it changed to entryrow input

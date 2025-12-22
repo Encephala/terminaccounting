@@ -18,24 +18,26 @@ type View interface {
 	Reload() View
 }
 
-type activeInput int
+type viewable interface {
+	View() string
+}
 
-func (input *activeInput) previous(numInputs int) {
-	*input--
+func previousInput(currentInput *int, numInputs int) {
+	*currentInput--
 
-	if *input < 0 {
-		*input += activeInput(numInputs)
+	if *currentInput < 0 {
+		*currentInput += numInputs
 	}
 }
 
-func (input *activeInput) next(numInputs int) {
-	*input++
+func nextInput(currentInput *int, numInputs int) {
+	*currentInput++
 
-	*input %= activeInput(numInputs)
+	*currentInput %= numInputs
 }
 
 const (
-	NAMEINPUT activeInput = iota
+	NAMEINPUT int = iota
 	TYPEINPUT
 	NOTEINPUT
 )

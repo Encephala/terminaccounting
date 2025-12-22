@@ -147,10 +147,10 @@ func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type JournalsCreateView struct {
-	nameInput  textinput.Model
-	typeInput  itempicker.Model
-	notesInput textarea.Model
-	activeInput
+	nameInput   textinput.Model
+	typeInput   itempicker.Model
+	notesInput  textarea.Model
+	activeInput int
 
 	colours meta.AppColours
 }
@@ -236,10 +236,10 @@ func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			cv.activeInput.previous(3)
+			previousInput(&cv.activeInput, 3)
 
 		case meta.NEXT:
-			cv.activeInput.next(3)
+			nextInput(&cv.activeInput, 3)
 		}
 
 		// If now on a textinput, focus it
@@ -375,10 +375,10 @@ func (cv *JournalsCreateView) Reload() View {
 }
 
 type JournalsUpdateView struct {
-	nameInput  textinput.Model
-	typeInput  itempicker.Model
-	notesInput textarea.Model
-	activeInput
+	nameInput   textinput.Model
+	typeInput   itempicker.Model
+	notesInput  textarea.Model
+	activeInput int
 
 	modelId       int
 	startingValue database.Journal
@@ -484,10 +484,10 @@ func (uv *JournalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			uv.activeInput.previous(3)
+			previousInput(&uv.activeInput, 3)
 
 		case meta.NEXT:
-			uv.activeInput.next(3)
+			nextInput(&uv.activeInput, 3)
 		}
 
 		// If now on a textinput, focus it
