@@ -15,7 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type ledgerCreateOrUpdateView interface {
+type ledgerMutateView interface {
 	View
 
 	title() string
@@ -131,7 +131,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, tea.Batch(cmds...)
 
 	default:
-		return ledgersCreateUpdateViewUpdate(cv, message)
+		return ledgersMutateViewUpdate(cv, message)
 	}
 }
 
@@ -144,11 +144,11 @@ func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
-	return ledgersCreateUpdateViewMotionSet()
+	return ledgersMutateViewMotionSet()
 }
 
 func (cv *ledgersCreateView) CommandSet() meta.CommandSet {
-	return ledgersCreateUpdateViewCommandSet()
+	return ledgersMutateViewCommandSet()
 }
 
 func (cv *ledgersCreateView) Reload() View {
@@ -276,12 +276,12 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		)})
 
 	default:
-		return ledgersCreateUpdateViewUpdate(uv, message)
+		return ledgersMutateViewUpdate(uv, message)
 	}
 }
 
 func (uv *ledgersUpdateView) View() string {
-	return ledgersCreateUpdateViewView(uv)
+	panic("never call this ye?")
 }
 
 func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -291,7 +291,7 @@ func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
-	result := ledgersCreateUpdateViewMotionSet()
+	result := ledgersMutateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
@@ -301,7 +301,7 @@ func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
 }
 
 func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
-	return ledgersCreateUpdateViewCommandSet()
+	return ledgersMutateViewCommandSet()
 }
 
 func (uv *ledgersUpdateView) Reload() View {
@@ -323,7 +323,7 @@ func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 // The common parts of the Update function for a create- and update view
-func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
+func ledgersMutateViewUpdate(view ledgerMutateView, message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
 		// If currently on a textinput, blur it
@@ -392,74 +392,7 @@ func ledgersCreateUpdateViewUpdate(view ledgerCreateOrUpdateView, message tea.Ms
 	}
 }
 
-// The common parts of the View function for a create- and update view
-func ledgersCreateUpdateViewView(view ledgerCreateOrUpdateView) string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1).Margin(0, 0, 0, 2)
-
-	result.WriteString(titleStyle.Render(view.title()))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
-
-	nameStyle := sectionStyle
-	typeStyle := sectionStyle
-
-	switch *view.getActiveInput() {
-	case NAMEINPUT:
-		nameStyle = highlightStyle
-	case TYPEINPUT:
-		typeStyle = highlightStyle
-	case NOTEINPUT:
-		// has FocusedStyle set, don't manually render with highlightStyle
-	default:
-		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", view.getActiveInput()))
-	}
-
-	// +2 for padding
-	maxNameColWidth := len("Notes") + 2
-
-	// TODO: Render active input with a different colour
-	var nameRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Name"),
-		" ",
-		nameStyle.Render(view.getNameInput().View()),
-	)
-
-	var typeRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Type"),
-		" ",
-		typeStyle.Width(view.getTypeInput().MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(view.getTypeInput().View()),
-	)
-
-	var notesRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Notes"),
-		" ",
-		sectionStyle.Render(view.getNotesInput().View()),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			nameRow,
-			typeRow,
-			notesRow,
-		),
-	))
-
-	return result.String()
-}
-
-func ledgersCreateUpdateViewMotionSet() meta.MotionSet {
+func ledgersMutateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -470,7 +403,7 @@ func ledgersCreateUpdateViewMotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func ledgersCreateUpdateViewCommandSet() meta.CommandSet {
+func ledgersMutateViewCommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
