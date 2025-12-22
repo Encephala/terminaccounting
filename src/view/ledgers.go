@@ -29,7 +29,7 @@ type ledgerCreateOrUpdateView interface {
 	getColours() meta.AppColours
 }
 
-type LedgersCreateView struct {
+type ledgersCreateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	notesInput  textarea.Model
@@ -38,7 +38,7 @@ type LedgersCreateView struct {
 	colours meta.AppColours
 }
 
-func NewLedgersCreateView() *LedgersCreateView {
+func NewLedgersCreateView() *ledgersCreateView {
 	colours := meta.LEDGERSCOLOURS
 
 	ledgerTypes := []itempicker.Item{
@@ -65,7 +65,7 @@ func NewLedgersCreateView() *LedgersCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	return &LedgersCreateView{
+	return &ledgersCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(ledgerTypes),
 		notesInput:  notesInput,
@@ -75,31 +75,31 @@ func NewLedgersCreateView() *LedgersCreateView {
 	}
 }
 
-func (cv *LedgersCreateView) Init() tea.Cmd {
+func (cv *ledgersCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *LedgersCreateView) title() string {
+func (cv *ledgersCreateView) title() string {
 	return "Create new Ledger"
 }
 
-func (cv *LedgersCreateView) getNameInput() *textinput.Model {
+func (cv *ledgersCreateView) getNameInput() *textinput.Model {
 	return &cv.nameInput
 }
-func (cv *LedgersCreateView) getTypeInput() *itempicker.Model {
+func (cv *ledgersCreateView) getTypeInput() *itempicker.Model {
 	return &cv.typeInput
 }
-func (cv *LedgersCreateView) getNotesInput() *textarea.Model {
+func (cv *ledgersCreateView) getNotesInput() *textarea.Model {
 	return &cv.notesInput
 }
-func (cv *LedgersCreateView) getActiveInput() *int {
+func (cv *ledgersCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
-func (cv *LedgersCreateView) getColours() meta.AppColours {
+func (cv *ledgersCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		ledgerName := cv.nameInput.Value()
@@ -135,35 +135,35 @@ func (cv *LedgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (cv *LedgersCreateView) View() string {
+func (cv *ledgersCreateView) View() string {
 	panic("never call this ye?")
 }
 
-func (cv *LedgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *LedgersCreateView) MotionSet() meta.MotionSet {
+func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
 	return ledgersCreateUpdateViewMotionSet()
 }
 
-func (cv *LedgersCreateView) CommandSet() meta.CommandSet {
+func (cv *ledgersCreateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
 }
 
-func (cv *LedgersCreateView) Reload() View {
+func (cv *ledgersCreateView) Reload() View {
 	return NewLedgersCreateView()
 }
 
-func (cv *LedgersCreateView) inputNames() []string {
+func (cv *ledgersCreateView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
 }
 
-func (cv *LedgersCreateView) inputs() []viewable {
+func (cv *ledgersCreateView) inputs() []viewable {
 	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
 }
 
-type LedgersUpdateView struct {
+type ledgersUpdateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	notesInput  textarea.Model
@@ -175,7 +175,7 @@ type LedgersUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewLedgersUpdateView(modelId int) *LedgersUpdateView {
+func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 	types := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -195,7 +195,7 @@ func NewLedgersUpdateView(modelId int) *LedgersUpdateView {
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
 
-	return &LedgersUpdateView{
+	return &ledgersUpdateView{
 		nameInput:   nameInput,
 		typeInput:   typeInput,
 		notesInput:  notesInput,
@@ -207,30 +207,30 @@ func NewLedgersUpdateView(modelId int) *LedgersUpdateView {
 	}
 }
 
-func (uv *LedgersUpdateView) Init() tea.Cmd {
+func (uv *ledgersUpdateView) Init() tea.Cmd {
 	return database.MakeLoadLedgersDetailCmd(uv.modelId)
 }
 
-func (uv *LedgersUpdateView) title() string {
+func (uv *ledgersUpdateView) title() string {
 	return fmt.Sprintf("Update Ledger: %s", uv.nameInput.Value())
 }
-func (uv *LedgersUpdateView) getNameInput() *textinput.Model {
+func (uv *ledgersUpdateView) getNameInput() *textinput.Model {
 	return &uv.nameInput
 }
-func (uv *LedgersUpdateView) getTypeInput() *itempicker.Model {
+func (uv *ledgersUpdateView) getTypeInput() *itempicker.Model {
 	return &uv.typeInput
 }
-func (uv *LedgersUpdateView) getNotesInput() *textarea.Model {
+func (uv *ledgersUpdateView) getNotesInput() *textarea.Model {
 	return &uv.notesInput
 }
-func (uv *LedgersUpdateView) getActiveInput() *int {
+func (uv *ledgersUpdateView) getActiveInput() *int {
 	return &uv.activeInput
 }
-func (uv *LedgersUpdateView) getColours() meta.AppColours {
+func (uv *ledgersUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
-func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
@@ -280,17 +280,17 @@ func (uv *LedgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (uv *LedgersUpdateView) View() string {
+func (uv *ledgersUpdateView) View() string {
 	return ledgersCreateUpdateViewView(uv)
 }
 
-func (uv *LedgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL: {},
 	}
 }
 
-func (uv *LedgersUpdateView) MotionSet() meta.MotionSet {
+func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
 	result := ledgersCreateUpdateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
@@ -300,15 +300,23 @@ func (uv *LedgersUpdateView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (uv *LedgersUpdateView) CommandSet() meta.CommandSet {
+func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
 	return ledgersCreateUpdateViewCommandSet()
 }
 
-func (uv *LedgersUpdateView) Reload() View {
+func (uv *ledgersUpdateView) Reload() View {
 	return NewLedgersUpdateView(uv.modelId)
 }
 
-func (uv *LedgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+func (cv *ledgersUpdateView) inputNames() []string {
+	return []string{"Name", "Type", "Notes"}
+}
+
+func (cv *ledgersUpdateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
+}
+
+func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
 	}
@@ -470,26 +478,26 @@ func ledgersCreateUpdateViewCommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-type LedgersDeleteView struct {
+type ledgersDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
 	colours meta.AppColours
 }
 
-func NewLedgersDeleteView(modelId int) *LedgersDeleteView {
-	return &LedgersDeleteView{
+func NewLedgersDeleteView(modelId int) *ledgersDeleteView {
+	return &ledgersDeleteView{
 		modelId: modelId,
 
 		colours: meta.LEDGERSCOLOURS,
 	}
 }
 
-func (dv *LedgersDeleteView) Init() tea.Cmd {
+func (dv *ledgersDeleteView) Init() tea.Cmd {
 	return database.MakeLoadLedgersDetailCmd(dv.modelId)
 }
 
-func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *ledgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Ledger)
@@ -524,7 +532,7 @@ func (dv *LedgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *LedgersDeleteView) View() string {
+func (dv *ledgersDeleteView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
@@ -577,13 +585,13 @@ func (dv *LedgersDeleteView) View() string {
 	return result.String()
 }
 
-func (dv *LedgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL: {},
 	}
 }
 
-func (dv *LedgersDeleteView) MotionSet() meta.MotionSet {
+func (dv *ledgersDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -593,7 +601,7 @@ func (dv *LedgersDeleteView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *LedgersDeleteView) CommandSet() meta.CommandSet {
+func (dv *ledgersDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -601,11 +609,11 @@ func (dv *LedgersDeleteView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (dv *LedgersDeleteView) Reload() View {
+func (dv *ledgersDeleteView) Reload() View {
 	return NewLedgersDeleteView(dv.modelId)
 }
 
-func (dv *LedgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *ledgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}

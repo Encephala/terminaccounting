@@ -60,12 +60,12 @@ func (app *ledgersApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewDetailView(app, ledger.Id, ledger.Name)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewCreateViewManager(view.NewLedgersCreateView())
+			app.currentView = view.NewMutateViewManager(view.NewLedgersCreateView())
 
 		case meta.UPDATEVIEWTYPE:
 			ledgerId := message.Data.(int)
 
-			app.currentView = view.NewLedgersUpdateView(ledgerId)
+			app.currentView = view.NewMutateViewManager(view.NewLedgersUpdateView(ledgerId))
 
 		case meta.DELETEVIEWTYPE:
 			ledgerId := message.Data.(int)

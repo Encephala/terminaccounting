@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type genericCreateView interface {
+type genericMutateView interface {
 	View
 
 	title() string
@@ -23,31 +23,31 @@ type genericCreateView interface {
 	getColours() meta.AppColours
 }
 
-type createViewManager struct {
-	specificView genericCreateView
+type mutateViewManager struct {
+	specificView genericMutateView
 }
 
-func NewCreateViewManager(specificView genericCreateView) *createViewManager {
-	return &createViewManager{
+func NewMutateViewManager(specificView genericMutateView) *mutateViewManager {
+	return &mutateViewManager{
 		specificView: specificView,
 	}
 }
 
-func (cvm *createViewManager) Init() tea.Cmd {
+func (cvm *mutateViewManager) Init() tea.Cmd {
 	return cvm.specificView.Init()
 }
 
-func (cvm *createViewManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cvm *mutateViewManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	newView, cmd := cvm.specificView.Update(message)
-	cvm.specificView = newView.(genericCreateView)
+	cvm.specificView = newView.(genericMutateView)
 
 	return cvm, cmd
 }
 
-func (cvm *createViewManager) View() string {
+func (cvm *mutateViewManager) View() string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(cvm.specificView.getColours().Background).Padding(0, 1).MarginLeft(2)
+	titleStyle := lipgloss.NewStyle().Background(cvm.specificView.getColours().Background).Padding(0, 1)
 	result.WriteString(titleStyle.Render(cvm.specificView.title()))
 
 	result.WriteString("\n\n")
@@ -89,18 +89,18 @@ func (cvm *createViewManager) View() string {
 	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
 }
 
-func (cvm *createViewManager) AcceptedModels() map[meta.ModelType]struct{} {
+func (cvm *mutateViewManager) AcceptedModels() map[meta.ModelType]struct{} {
 	return cvm.specificView.AcceptedModels()
 }
 
-func (cvm *createViewManager) MotionSet() meta.MotionSet {
+func (cvm *mutateViewManager) MotionSet() meta.MotionSet {
 	return cvm.specificView.MotionSet()
 }
 
-func (cvm *createViewManager) CommandSet() meta.CommandSet {
+func (cvm *mutateViewManager) CommandSet() meta.CommandSet {
 	return cvm.specificView.CommandSet()
 }
 
-func (cvm *createViewManager) Reload() View {
+func (cvm *mutateViewManager) Reload() View {
 	return cvm.specificView.Reload()
 }
