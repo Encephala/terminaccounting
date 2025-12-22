@@ -14,24 +14,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type accountsActiveInput int
-
-func (input *accountsActiveInput) previous() {
-	*input--
-
-	if *input < 0 {
-		*input += accountsActiveInput(NUMACCOUNTSINPUTS)
-	}
-}
-
-func (input *accountsActiveInput) next() {
-	*input++
-
-	*input %= accountsActiveInput(NUMACCOUNTSINPUTS)
-}
-
 const (
-	ACCOUNTSNAMEINPUT accountsActiveInput = iota
+	ACCOUNTSNAMEINPUT int = iota
 	ACCOUNTSTYPEINPUT
 	ACCOUNTSBANKNUMBERSINPUT
 	ACCOUNTSNOTESINPUT
@@ -39,17 +23,17 @@ const (
 
 const NUMACCOUNTSINPUTS int = 4
 
-type AccountsCreateView struct {
+type accountsCreateView struct {
 	nameInput        textinput.Model
 	typeInput        itempicker.Model
 	bankNumbersInput textarea.Model
 	notesInput       textarea.Model
-	activeInput      accountsActiveInput
+	activeInput      int
 
 	colours meta.AppColours
 }
 
-func NewAccountsCreateView() *AccountsCreateView {
+func NewAccountsCreateView() *accountsCreateView {
 	colours := meta.ACCOUNTSCOLOURS
 
 	accountTypes := []itempicker.Item{
@@ -57,9 +41,13 @@ func NewAccountsCreateView() *AccountsCreateView {
 		database.CREDITOR,
 	}
 
+	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
+	// -2 because of the prompt, -1 because of the cursor
+	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+
 	bankNumbersInput := textarea.New()
 	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
@@ -75,7 +63,7 @@ func NewAccountsCreateView() *AccountsCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	return &AccountsCreateView{
+	return &accountsCreateView{
 		nameInput:        nameInput,
 		typeInput:        itempicker.New(accountTypes),
 		notesInput:       notesInput,
@@ -86,11 +74,11 @@ func NewAccountsCreateView() *AccountsCreateView {
 	}
 }
 
-func (cv *AccountsCreateView) Init() tea.Cmd {
+func (cv *accountsCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
 		accountType := cv.typeInput.Value().(database.AccountType)
@@ -136,10 +124,10 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			cv.activeInput.previous()
+			previousInput(&cv.activeInput, 4)
 
 		case meta.NEXT:
-			cv.activeInput.next()
+			nextInput(&cv.activeInput, 4)
 		}
 
 		// If now on a textinput, focus it
@@ -185,90 +173,15 @@ func (cv *AccountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (cv *AccountsCreateView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1).MarginLeft(2)
-
-	result.WriteString(titleStyle.Render("Creating new Account"))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
-
-	const inputWidth = 26
-	cv.nameInput.Width = inputWidth - 2
-	cv.bankNumbersInput.SetWidth(inputWidth)
-	cv.notesInput.SetWidth(inputWidth)
-
-	nameStyle := sectionStyle
-	typeStyle := sectionStyle
-
-	switch cv.activeInput {
-	case ACCOUNTSNAMEINPUT:
-		nameStyle = highlightStyle
-	case ACCOUNTSTYPEINPUT:
-		typeStyle = highlightStyle
-	// textareas have FocusedStyle set, don't manually render with highlightStyle
-	case ACCOUNTSBANKNUMBERSINPUT:
-	case ACCOUNTSNOTESINPUT:
-	default:
-		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", cv.activeInput))
-	}
-
-	// +2 for padding
-	maxNameColWidth := len("Bank numbers") + 2
-
-	nameRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Name"),
-		" ",
-		nameStyle.Render(cv.nameInput.View()),
-	)
-
-	typeRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Type"),
-		" ",
-		typeStyle.Render(cv.typeInput.View()),
-	)
-
-	bankNumbersRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Bank numbers"),
-		" ",
-		sectionStyle.Render(cv.bankNumbersInput.View()),
-	)
-
-	notesRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Notes"),
-		" ",
-		sectionStyle.Render(cv.notesInput.View()),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Top,
-			nameRow,
-			typeRow,
-			bankNumbersRow,
-			notesRow,
-		),
-	))
-
-	return result.String()
+func (cv *accountsCreateView) View() string {
+	panic("asdfghjkl")
 }
 
-func (cv *AccountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (cv *accountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *AccountsCreateView) MotionSet() meta.MotionSet {
+func (cv *accountsCreateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -279,7 +192,7 @@ func (cv *AccountsCreateView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (cv *AccountsCreateView) CommandSet() meta.CommandSet {
+func (cv *accountsCreateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -287,16 +200,36 @@ func (cv *AccountsCreateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (cv *AccountsCreateView) Reload() View {
+func (cv *accountsCreateView) Reload() View {
 	return NewAccountsCreateView()
 }
 
-type AccountsUpdateView struct {
+func (cv *accountsCreateView) title() string {
+	return "Creating new account"
+}
+
+func (cv *accountsCreateView) inputNames() []string {
+	return []string{"Name", "Type", "Bank numbers", "Notes"}
+}
+
+func (cv *accountsCreateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.bankNumbersInput, cv.notesInput}
+}
+
+func (cv *accountsCreateView) getActiveInput() *int {
+	return (*int)(&cv.activeInput)
+}
+
+func (cv *accountsCreateView) getColours() meta.AppColours {
+	return cv.colours
+}
+
+type accountsUpdateView struct {
 	nameInput        textinput.Model
 	typeInput        itempicker.Model
 	bankNumbersInput textarea.Model
 	notesInput       textarea.Model
-	activeInput      accountsActiveInput
+	activeInput      int
 
 	modelId       int
 	startingValue database.Account
@@ -304,21 +237,25 @@ type AccountsUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewAccountsUpdateView(modelId int) *AccountsUpdateView {
+func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
 	}
 
+	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
+	// -2 because of the prompt, -1 because of the cursor
+	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+
 	bankNumbersInput := textarea.New()
 	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	return &AccountsUpdateView{
+	return &accountsUpdateView{
 		nameInput:        nameInput,
 		typeInput:        itempicker.New(accountTypes),
 		bankNumbersInput: bankNumbersInput,
@@ -331,11 +268,11 @@ func NewAccountsUpdateView(modelId int) *AccountsUpdateView {
 	}
 }
 
-func (uv *AccountsUpdateView) Init() tea.Cmd {
+func (uv *accountsUpdateView) Init() tea.Cmd {
 	return database.MakeLoadAccountsDetailCmd(uv.modelId)
 }
 
-func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
@@ -401,10 +338,10 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.PREVIOUS:
-			uv.activeInput.previous()
+			previousInput(&uv.activeInput, 4)
 
 		case meta.NEXT:
-			uv.activeInput.next()
+			nextInput(&uv.activeInput, 4)
 		}
 
 		// If now on a textinput, focus it
@@ -450,102 +387,17 @@ func (uv *AccountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (uv *AccountsUpdateView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).MarginLeft(2)
-
-	result.WriteString(titleStyle.Render("Creating new Account"))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
-
-	const inputWidth = 26
-	uv.nameInput.Width = inputWidth - 2
-	uv.bankNumbersInput.SetWidth(inputWidth)
-	uv.notesInput.SetWidth(inputWidth)
-
-	notesFocusStyle := lipgloss.NewStyle().Foreground(uv.colours.Foreground)
-	uv.bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
-	uv.bankNumbersInput.FocusedStyle.Text = notesFocusStyle
-	uv.bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
-	uv.bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
-	uv.notesInput.FocusedStyle.Prompt = notesFocusStyle
-	uv.notesInput.FocusedStyle.Text = notesFocusStyle
-	uv.notesInput.FocusedStyle.CursorLine = notesFocusStyle
-	uv.notesInput.FocusedStyle.LineNumber = notesFocusStyle
-
-	nameStyle := sectionStyle
-	typeStyle := sectionStyle
-
-	switch uv.activeInput {
-	case ACCOUNTSNAMEINPUT:
-		nameStyle = highlightStyle
-	case ACCOUNTSTYPEINPUT:
-		typeStyle = highlightStyle
-	// textareas have FocusedStyle set, don't manually render with highlightStyle
-	case ACCOUNTSBANKNUMBERSINPUT:
-	case ACCOUNTSNOTESINPUT:
-	default:
-		panic(fmt.Sprintf("unexpected view.accountsActiveInput: %#v", uv.activeInput))
-	}
-
-	// +2 for padding
-	maxNameColWidth := len("Bank numbers") + 2
-
-	nameRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Name"),
-		" ",
-		nameStyle.Render(uv.nameInput.View()),
-	)
-
-	typeRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Type"),
-		" ",
-		typeStyle.Render(uv.typeInput.View()),
-	)
-
-	bankNumbersRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Bank numbers"),
-		" ",
-		sectionStyle.Render(uv.bankNumbersInput.View()),
-	)
-
-	notesRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Notes"),
-		" ",
-		sectionStyle.Render(uv.notesInput.View()),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Top,
-			nameRow,
-			typeRow,
-			bankNumbersRow,
-			notesRow,
-		),
-	))
-
-	return result.String()
+func (uv *accountsUpdateView) View() string {
+	panic("lkjhgfdsa")
 }
 
-func (uv *AccountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (uv *accountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},
 	}
 }
 
-func (uv *AccountsUpdateView) MotionSet() meta.MotionSet {
+func (uv *accountsUpdateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -560,7 +412,7 @@ func (uv *AccountsUpdateView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (uv *AccountsUpdateView) CommandSet() meta.CommandSet {
+func (uv *accountsUpdateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -568,36 +420,56 @@ func (uv *AccountsUpdateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (uv *AccountsUpdateView) Reload() View {
+func (uv *accountsUpdateView) Reload() View {
 	return NewAccountsUpdateView(uv.modelId)
 }
 
-func (uv *AccountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+func (uv *accountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
 	}
 }
 
-type AccountsDeleteView struct {
+func (cv *accountsUpdateView) title() string {
+	return "Creating new account"
+}
+
+func (cv *accountsUpdateView) inputNames() []string {
+	return []string{"Name", "Type", "Bank numbers", "Notes"}
+}
+
+func (cv *accountsUpdateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.bankNumbersInput, cv.notesInput}
+}
+
+func (cv *accountsUpdateView) getActiveInput() *int {
+	return (*int)(&cv.activeInput)
+}
+
+func (cv *accountsUpdateView) getColours() meta.AppColours {
+	return cv.colours
+}
+
+type accountsDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Account
 
 	colours meta.AppColours
 }
 
-func NewAccountsDeleteView(modelId int) *AccountsDeleteView {
-	return &AccountsDeleteView{
+func NewAccountsDeleteView(modelId int) *accountsDeleteView {
+	return &accountsDeleteView{
 		modelId: modelId,
 
 		colours: meta.ACCOUNTSCOLOURS,
 	}
 }
 
-func (dv *AccountsDeleteView) Init() tea.Cmd {
+func (dv *accountsDeleteView) Init() tea.Cmd {
 	return database.MakeLoadAccountsDetailCmd(dv.modelId)
 }
 
-func (dv *AccountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *accountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Account)
@@ -630,7 +502,7 @@ func (dv *AccountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *AccountsDeleteView) View() string {
+func (dv *accountsDeleteView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
@@ -691,13 +563,13 @@ func (dv *AccountsDeleteView) View() string {
 	return result.String()
 }
 
-func (dv *AccountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},
 	}
 }
 
-func (dv *AccountsDeleteView) MotionSet() meta.MotionSet {
+func (dv *accountsDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -707,7 +579,7 @@ func (dv *AccountsDeleteView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *AccountsDeleteView) CommandSet() meta.CommandSet {
+func (dv *accountsDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -715,11 +587,11 @@ func (dv *AccountsDeleteView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (dv *AccountsDeleteView) Reload() View {
+func (dv *accountsDeleteView) Reload() View {
 	return NewAccountsDeleteView(dv.modelId)
 }
 
-func (dv *AccountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *accountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}

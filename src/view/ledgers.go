@@ -59,6 +59,7 @@ func NewLedgersCreateView() *ledgersCreateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
+
 	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
