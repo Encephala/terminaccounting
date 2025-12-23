@@ -26,7 +26,7 @@ const (
 	ENTRIESROWINPUT
 )
 
-type EntryCreateView struct {
+type entryCreateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *entryRowViewManager
@@ -35,7 +35,7 @@ type EntryCreateView struct {
 	colours meta.AppColours
 }
 
-func NewEntryCreateView() *EntryCreateView {
+func NewEntryCreateView() *entryCreateView {
 	colours := meta.ENTRIESCOLOURS
 
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
@@ -48,7 +48,7 @@ func NewEntryCreateView() *EntryCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	result := &EntryCreateView{
+	result := &entryCreateView{
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
@@ -67,7 +67,7 @@ type EntryPrefillData struct {
 }
 
 // Make an EntryCreateView with the provided journal, rows prefilled into forms
-func NewEntryCreateViewPrefilled(data EntryPrefillData) (*EntryCreateView, error) {
+func NewEntryCreateViewPrefilled(data EntryPrefillData) (*entryCreateView, error) {
 	result := NewEntryCreateView()
 
 	result.journalInput.SetValue(data.Journal)
@@ -126,11 +126,11 @@ func newEntryRowCreator(startDate *database.Date, colWidths []int) *entryRowCrea
 	return &result
 }
 
-func (cv *EntryCreateView) Init() tea.Cmd {
+func (cv *entryCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *entryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		entryJournal := cv.journalInput.Value()
@@ -171,11 +171,11 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return entriesMutateViewUpdate(cv, message)
 }
 
-func (cv *EntryCreateView) View() string {
+func (cv *entryCreateView) View() string {
 	panic("No callo thiso yeso?")
 }
 
-func (cv *EntryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:  {},
 		meta.ACCOUNTMODEL: {},
@@ -188,51 +188,51 @@ type CreateEntryRowMsg struct {
 	after bool
 }
 
-func (cv *EntryCreateView) MotionSet() meta.MotionSet {
+func (cv *entryCreateView) MotionSet() meta.MotionSet {
 	return entriesCreateUpdateViewMotionSet()
 }
 
-func (cv *EntryCreateView) CommandSet() meta.CommandSet {
+func (cv *entryCreateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
 }
 
-func (cv *EntryCreateView) Reload() View {
+func (cv *entryCreateView) Reload() View {
 	return NewEntryCreateView()
 }
 
-func (cv *EntryCreateView) getJournalInput() *itempicker.Model {
+func (cv *entryCreateView) getJournalInput() *itempicker.Model {
 	return &cv.journalInput
 }
 
-func (cv *EntryCreateView) getNotesInput() *textarea.Model {
+func (cv *entryCreateView) getNotesInput() *textarea.Model {
 	return &cv.notesInput
 }
 
-func (cv *EntryCreateView) getManager() *entryRowViewManager {
+func (cv *entryCreateView) getManager() *entryRowViewManager {
 	return cv.entryRowsManager
 }
 
-func (cv *EntryCreateView) getActiveInput() *int {
+func (cv *entryCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 
-func (cv *EntryCreateView) getColours() meta.AppColours {
+func (cv *entryCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (cv *EntryCreateView) title() string {
+func (cv *entryCreateView) title() string {
 	return "Creating new Entry"
 }
 
-func (cv *EntryCreateView) inputs() []viewable {
+func (cv *entryCreateView) inputs() []viewable {
 	return []viewable{cv.journalInput, cv.notesInput, cv.entryRowsManager}
 }
 
-func (cv *EntryCreateView) inputNames() []string {
+func (cv *entryCreateView) inputNames() []string {
 	return []string{"Journal", "Notes", ""}
 }
 
-type EntryUpdateView struct {
+type entryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *entryRowViewManager
@@ -245,7 +245,7 @@ type EntryUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewEntryUpdateView(modelId int) *EntryUpdateView {
+func NewEntryUpdateView(modelId int) *entryUpdateView {
 	colours := meta.ENTRIESCOLOURS
 
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
@@ -259,7 +259,7 @@ func NewEntryUpdateView(modelId int) *EntryUpdateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	result := &EntryUpdateView{
+	result := &entryUpdateView{
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
@@ -273,7 +273,7 @@ func NewEntryUpdateView(modelId int) *EntryUpdateView {
 	return result
 }
 
-func (uv *EntryUpdateView) Init() tea.Cmd {
+func (uv *entryUpdateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
@@ -282,7 +282,7 @@ func (uv *EntryUpdateView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *entryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
 		entryJournal := uv.journalInput.Value()
@@ -394,11 +394,11 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return entriesMutateViewUpdate(uv, message)
 }
 
-func (uv *EntryUpdateView) View() string {
+func (uv *entryUpdateView) View() string {
 	panic("never callerino ye?")
 }
 
-func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:   {},
 		meta.ENTRYMODEL:    {},
@@ -408,7 +408,7 @@ func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *EntryUpdateView) MotionSet() meta.MotionSet {
+func (uv *entryUpdateView) MotionSet() meta.MotionSet {
 	result := entriesCreateUpdateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
@@ -418,44 +418,44 @@ func (uv *EntryUpdateView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (uv *EntryUpdateView) CommandSet() meta.CommandSet {
+func (uv *entryUpdateView) CommandSet() meta.CommandSet {
 	return entriesCreateUpdateViewCommandSet()
 }
 
-func (uv *EntryUpdateView) Reload() View {
+func (uv *entryUpdateView) Reload() View {
 	return NewEntryUpdateView(uv.modelId)
 }
 
-func (uv *EntryUpdateView) getJournalInput() *itempicker.Model {
+func (uv *entryUpdateView) getJournalInput() *itempicker.Model {
 	return &uv.journalInput
 }
 
-func (uv *EntryUpdateView) getNotesInput() *textarea.Model {
+func (uv *entryUpdateView) getNotesInput() *textarea.Model {
 	return &uv.notesInput
 }
 
-func (uv *EntryUpdateView) getManager() *entryRowViewManager {
+func (uv *entryUpdateView) getManager() *entryRowViewManager {
 	return uv.entryRowsManager
 }
 
-func (uv *EntryUpdateView) getActiveInput() *int {
+func (uv *entryUpdateView) getActiveInput() *int {
 	return &uv.activeInput
 }
 
-func (uv *EntryUpdateView) getColours() meta.AppColours {
+func (uv *entryUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
-func (uv *EntryUpdateView) title() string {
+func (uv *entryUpdateView) title() string {
 	// TODO get some name/id/whatever for the entry here?
 	return fmt.Sprintf("Update Entry: %s", "TODO")
 }
 
-func (uv *EntryUpdateView) inputs() []viewable {
+func (uv *entryUpdateView) inputs() []viewable {
 	return []viewable{uv.journalInput, uv.notesInput, uv.entryRowsManager}
 }
 
-func (uv *EntryUpdateView) inputNames() []string {
+func (uv *entryUpdateView) inputNames() []string {
 	return []string{"Journal", "Notes", ""}
 }
 
@@ -798,7 +798,7 @@ func (ervm *entryRowViewManager) compileRows() ([]database.EntryRow, error) {
 	return result, nil
 }
 
-func (uv *EntryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+func (uv *entryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingEntry}
 	}
@@ -1298,26 +1298,26 @@ func entriesCreateUpdateViewCommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-type EntryDeleteView struct {
+type entryDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
 	colours meta.AppColours
 }
 
-func NewEntryDeleteView(modelId int) *EntryDeleteView {
-	return &EntryDeleteView{
+func NewEntryDeleteView(modelId int) *entryDeleteView {
+	return &entryDeleteView{
 		modelId: modelId,
 
 		colours: meta.ENTRIESCOLOURS,
 	}
 }
 
-func (dv *EntryDeleteView) Init() tea.Cmd {
+func (dv *entryDeleteView) Init() tea.Cmd {
 	return database.MakeLoadEntryDetailCmd(dv.modelId)
 }
 
-func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *entryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		entry := message.Data.(database.Entry)
@@ -1352,7 +1352,7 @@ func (dv *EntryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *EntryDeleteView) View() string {
+func (dv *entryDeleteView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
@@ -1392,13 +1392,13 @@ func (dv *EntryDeleteView) View() string {
 	return result.String()
 }
 
-func (dv *EntryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL: {},
 	}
 }
 
-func (dv *EntryDeleteView) MotionSet() meta.MotionSet {
+func (dv *entryDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -1408,7 +1408,7 @@ func (dv *EntryDeleteView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *EntryDeleteView) CommandSet() meta.CommandSet {
+func (dv *entryDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -1416,11 +1416,11 @@ func (dv *EntryDeleteView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (dv *EntryDeleteView) Reload() View {
+func (dv *entryDeleteView) Reload() View {
 	return NewEntryDeleteView(dv.modelId)
 }
 
-func (dv *EntryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
