@@ -36,17 +36,25 @@ type EntryCreateView struct {
 }
 
 func NewEntryCreateView() *EntryCreateView {
+	colours := meta.ENTRIESCOLOURS
+
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	result := &EntryCreateView{
 		journalInput:     journalInput,
-		notesInput:       noteInput,
+		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
-		colours: meta.ENTRIESCOLOURS,
+		colours: colours,
 	}
 
 	return result
@@ -160,11 +168,11 @@ func (cv *EntryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, tea.Batch(cmds...)
 	}
 
-	return entriesCreateUpdateViewUpdate(cv, message)
+	return entriesMutateViewUpdate(cv, message)
 }
 
 func (cv *EntryCreateView) View() string {
-	return entriesCreateUpdateViewView(cv)
+	panic("No callo thiso yeso?")
 }
 
 func (cv *EntryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -216,6 +224,14 @@ func (cv *EntryCreateView) title() string {
 	return "Creating new Entry"
 }
 
+func (cv *EntryCreateView) inputs() []viewable {
+	return []viewable{cv.journalInput, cv.notesInput, cv.entryRowsManager}
+}
+
+func (cv *EntryCreateView) inputNames() []string {
+	return []string{"Journal", "Notes", ""}
+}
+
 type EntryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
@@ -230,20 +246,28 @@ type EntryUpdateView struct {
 }
 
 func NewEntryUpdateView(modelId int) *EntryUpdateView {
+	colours := meta.ENTRIESCOLOURS
+
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
-	noteInput := textarea.New()
-	noteInput.Cursor.SetMode(cursor.CursorStatic)
+	notesInput := textarea.New()
+	notesInput.Cursor.SetMode(cursor.CursorStatic)
+
+	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	result := &EntryUpdateView{
 		journalInput:     journalInput,
-		notesInput:       noteInput,
+		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
 		entryRowsManager: NewEntryRowViewManager(),
 
 		modelId: modelId,
 
-		colours: meta.ENTRIESCOLOURS,
+		colours: colours,
 	}
 
 	return result
@@ -367,11 +391,11 @@ func (uv *EntryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return uv, nil
 	}
 
-	return entriesCreateUpdateViewUpdate(uv, message)
+	return entriesMutateViewUpdate(uv, message)
 }
 
 func (uv *EntryUpdateView) View() string {
-	return entriesCreateUpdateViewView(uv)
+	panic("never callerino ye?")
 }
 
 func (uv *EntryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -427,9 +451,18 @@ func (uv *EntryUpdateView) title() string {
 	return fmt.Sprintf("Update Entry: %s", "TODO")
 }
 
+func (uv *EntryUpdateView) inputs() []viewable {
+	return []viewable{uv.journalInput, uv.notesInput, uv.entryRowsManager}
+}
+
+func (uv *EntryUpdateView) inputNames() []string {
+	return []string{"Journal", "Notes", ""}
+}
+
 type entryRowViewManager struct {
 	rows []*entryRowCreator
 
+	isActive    bool
 	activeInput int
 
 	colWidths []int
@@ -560,8 +593,8 @@ func (ervm *entryRowViewManager) Update(msg tea.Msg) (*entryRowViewManager, tea.
 	}
 }
 
-func (ervm *entryRowViewManager) View(isActive bool) string {
-	ervm.updateContent(isActive)
+func (ervm *entryRowViewManager) View() string {
+	ervm.updateContent()
 
 	var result strings.Builder
 
@@ -593,7 +626,7 @@ func (ervm *entryRowViewManager) View(isActive bool) string {
 	return result.String()
 }
 
-func (ervm *entryRowViewManager) updateContent(isActive bool) {
+func (ervm *entryRowViewManager) updateContent() {
 	baseStyle := lipgloss.NewStyle()
 	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOURS.Foreground)
 
@@ -611,7 +644,7 @@ func (ervm *entryRowViewManager) updateContent(isActive bool) {
 		debitStyle := baseStyle
 		creditStyle := baseStyle
 
-		if isActive && i == highlightRow {
+		if ervm.isActive && i == highlightRow {
 			switch highlightCol {
 			case 0:
 				dateStyle = highlightStyle
@@ -779,6 +812,7 @@ func (ervm *entryRowViewManager) switchFocus(direction meta.Sequence) (preceeded
 	case meta.PREVIOUS:
 		if oldRow == 0 && oldCol == 0 {
 			ervm.rows[0].dateInput.Blur()
+			ervm.isActive = false
 			return true, false
 		}
 
@@ -787,6 +821,7 @@ func (ervm *entryRowViewManager) switchFocus(direction meta.Sequence) (preceeded
 	case meta.NEXT:
 		if oldRow == ervm.numRows()-1 && oldCol == ervm.numInputsPerRow()-1 {
 			ervm.rows[oldRow].creditInput.Blur()
+			ervm.isActive = false
 			return false, true
 		}
 
@@ -842,6 +877,7 @@ func (ervm *entryRowViewManager) getActiveCoords() (row, col int) {
 }
 
 func (ervm *entryRowViewManager) focus(direction meta.Sequence) {
+	ervm.isActive = true
 	numInputs := ervm.numInputs()
 
 	switch direction {
@@ -1075,7 +1111,7 @@ func (ervm *entryRowViewManager) addRow(after bool) (*entryRowViewManager, tea.C
 	return ervm, nil
 }
 
-type entryCreateOrUpdateView interface {
+type entryMutateView interface {
 	View
 
 	getJournalInput() *itempicker.Model
@@ -1089,7 +1125,7 @@ type entryCreateOrUpdateView interface {
 	title() string
 }
 
-func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg) (tea.Model, tea.Cmd) {
+func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (tea.Model, tea.Cmd) {
 	activeInput := view.getActiveInput()
 	journalInput := view.getJournalInput()
 	notesInput := view.getNotesInput()
@@ -1217,80 +1253,6 @@ func entriesCreateUpdateViewUpdate(view entryCreateOrUpdateView, message tea.Msg
 		slog.Warn("Unexpected tea.Msg", "message", message)
 		return view, nil
 	}
-}
-
-func entriesCreateUpdateViewView(view entryCreateOrUpdateView) string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1).Margin(0, 0, 0, 2)
-
-	result.WriteString(titleStyle.Render(view.title()))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
-
-	journalInput := view.getJournalInput()
-	notesInput := view.getNotesInput()
-	entryRowsManager := view.getManager()
-
-	inputWidth := journalInput.MaxViewLength()
-
-	notesInput.SetWidth(inputWidth)
-	notesFocusStyle := lipgloss.NewStyle().Foreground(view.getColours().Foreground)
-	notesInput.FocusedStyle.Prompt = notesFocusStyle
-	notesInput.FocusedStyle.Text = notesFocusStyle
-	notesInput.FocusedStyle.CursorLine = notesFocusStyle
-	notesInput.FocusedStyle.LineNumber = notesFocusStyle
-
-	nameCol := lipgloss.JoinVertical(
-		lipgloss.Right,
-		sectionStyle.Render("Journal"),
-		sectionStyle.Render("Notes"),
-	)
-
-	var inputCol string
-	if *view.getActiveInput() == ENTRIESJOURNALINPUT {
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			highlightStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(view.getJournalInput().View()),
-			sectionStyle.Render(notesInput.View()),
-		)
-	} else if *view.getActiveInput() == ENTRIESNOTESINPUT {
-		notesInput.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(view.getColours().Foreground)
-
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			sectionStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
-			sectionStyle.Render(notesInput.View()),
-		)
-	} else {
-		inputCol = lipgloss.JoinVertical(
-			lipgloss.Left,
-			sectionStyle.Width(inputWidth+2).AlignHorizontal(lipgloss.Left).Render(journalInput.View()),
-			sectionStyle.Render(notesInput.View()),
-		)
-	}
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			nameCol,
-			" ",
-			inputCol,
-		),
-	))
-	result.WriteString("\n\n")
-
-	result.WriteString(sectionStyle.MarginLeft(2).Render(
-		entryRowsManager.View(*view.getActiveInput() == ENTRIESROWINPUT),
-	))
-
-	return result.String()
 }
 
 func entriesCreateUpdateViewMotionSet() meta.MotionSet {

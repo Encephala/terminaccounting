@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type genericMutateView interface {
+type GenericMutateView interface {
 	View
 
 	title() string
@@ -24,10 +24,10 @@ type genericMutateView interface {
 }
 
 type mutateViewManager struct {
-	specificView genericMutateView
+	specificView GenericMutateView
 }
 
-func NewMutateViewManager(specificView genericMutateView) *mutateViewManager {
+func NewMutateViewManager(specificView GenericMutateView) *mutateViewManager {
 	return &mutateViewManager{
 		specificView: specificView,
 	}
@@ -39,7 +39,7 @@ func (cvm *mutateViewManager) Init() tea.Cmd {
 
 func (cvm *mutateViewManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	newView, cmd := cvm.specificView.Update(message)
-	cvm.specificView = newView.(genericMutateView)
+	cvm.specificView = newView.(GenericMutateView)
 
 	return cvm, cmd
 }
@@ -76,12 +76,16 @@ func (cvm *mutateViewManager) View() string {
 	})) + 2
 
 	for i := range names {
-		result.WriteString(lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			sectionStyle.Width(maxNameColWidth).Render(names[i]),
-			" ",
-			styles[i].Render(inputs[i].View()),
-		))
+		if names[i] == "" {
+			result.WriteString(sectionStyle.Render(inputs[i].View()))
+		} else {
+			result.WriteString(lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				sectionStyle.Width(maxNameColWidth).Render(names[i]),
+				" ",
+				styles[i].Render(inputs[i].View()),
+			))
+		}
 
 		result.WriteString("\n")
 	}
