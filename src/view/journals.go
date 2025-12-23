@@ -16,7 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type JournalsDetailsView struct {
+type journalsDetailsView struct {
 	listModel list.Model
 
 	app meta.App
@@ -26,7 +26,7 @@ type JournalsDetailsView struct {
 	journal database.Journal
 }
 
-func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDetailsView {
+func NewJournalsDetailsView(journal database.Journal, app meta.App) *journalsDetailsView {
 	viewStyles := meta.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
 
 	delegate := list.NewDefaultDelegate()
@@ -39,7 +39,7 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDet
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	return &JournalsDetailsView{
+	return &journalsDetailsView{
 		listModel: model,
 
 		app: app,
@@ -50,11 +50,11 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *JournalsDet
 	}
 }
 
-func (dv *JournalsDetailsView) Init() tea.Cmd {
+func (dv *journalsDetailsView) Init() tea.Cmd {
 	return database.MakeSelectEntriesByJournalCmd(dv.journal.Id)
 }
 
-func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *journalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		entries := message.Data.([]database.Entry)
@@ -96,17 +96,17 @@ func (dv *JournalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *JournalsDetailsView) View() string {
+func (dv *journalsDetailsView) View() string {
 	return dv.listModel.View()
 }
 
-func (dv *JournalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *journalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL: {},
 	}
 }
 
-func (dv *JournalsDetailsView) MotionSet() meta.MotionSet {
+func (dv *journalsDetailsView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
@@ -124,16 +124,16 @@ func (dv *JournalsDetailsView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *JournalsDetailsView) CommandSet() meta.CommandSet {
+func (dv *journalsDetailsView) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
 }
 
-func (dv *JournalsDetailsView) Reload() View {
+func (dv *journalsDetailsView) Reload() View {
 	return NewJournalsDetailsView(dv.journal, dv.app)
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
-func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *journalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		item := dv.listModel.SelectedItem()
 
@@ -146,7 +146,7 @@ func (dv *JournalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 	}
 }
 
-type JournalsCreateView struct {
+type journalsCreateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	notesInput  textarea.Model
@@ -155,7 +155,7 @@ type JournalsCreateView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsCreateView() *JournalsCreateView {
+func NewJournalsCreateView() *journalsCreateView {
 	colours := meta.JOURNALSCOLOURS
 
 	journalTypes := []itempicker.Item{
@@ -181,7 +181,7 @@ func NewJournalsCreateView() *JournalsCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	return &JournalsCreateView{
+	return &journalsCreateView{
 		nameInput:   nameInput,
 		typeInput:   itempicker.New(journalTypes),
 		notesInput:  notesInput,
@@ -191,11 +191,11 @@ func NewJournalsCreateView() *JournalsCreateView {
 	}
 }
 
-func (cv *JournalsCreateView) Init() tea.Cmd {
+func (cv *journalsCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
 		name := cv.nameInput.Value()
@@ -285,15 +285,15 @@ func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (cv *JournalsCreateView) View() string {
+func (cv *journalsCreateView) View() string {
 	panic("this no happenerino")
 }
 
-func (cv *JournalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *JournalsCreateView) MotionSet() meta.MotionSet {
+func (cv *journalsCreateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -304,7 +304,7 @@ func (cv *JournalsCreateView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
+func (cv *journalsCreateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -312,31 +312,31 @@ func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (cv *JournalsCreateView) Reload() View {
+func (cv *journalsCreateView) Reload() View {
 	return NewJournalsCreateView()
 }
 
-func (cv *JournalsCreateView) title() string {
+func (cv *journalsCreateView) title() string {
 	return "Creating new journal"
 }
 
-func (cv *JournalsCreateView) inputs() []viewable {
+func (cv *journalsCreateView) inputs() []viewable {
 	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
 }
 
-func (cv *JournalsCreateView) inputNames() []string {
+func (cv *journalsCreateView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
 }
 
-func (cv *JournalsCreateView) getActiveInput() *int {
+func (cv *journalsCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 
-func (cv *JournalsCreateView) getColours() meta.AppColours {
+func (cv *journalsCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-type JournalsUpdateView struct {
+type journalsUpdateView struct {
 	nameInput   textinput.Model
 	typeInput   itempicker.Model
 	notesInput  textarea.Model
@@ -348,7 +348,7 @@ type JournalsUpdateView struct {
 	colours meta.AppColours
 }
 
-func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
+func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 	colours := meta.JOURNALSCOLOURS
 
 	types := []itempicker.Item{
@@ -371,7 +371,7 @@ func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	return &JournalsUpdateView{
+	return &journalsUpdateView{
 		nameInput:   nameInput,
 		typeInput:   typeInput,
 		notesInput:  notesInput,
@@ -383,11 +383,11 @@ func NewJournalsUpdateView(modelId int) *JournalsUpdateView {
 	}
 }
 
-func (uv *JournalsUpdateView) Init() tea.Cmd {
+func (uv *journalsUpdateView) Init() tea.Cmd {
 	return database.MakeLoadJournalsDetailCmd(uv.modelId)
 }
 
-func (uv *JournalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
@@ -491,7 +491,7 @@ func (uv *JournalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (uv *JournalsUpdateView) View() string {
+func (uv *journalsUpdateView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).Margin(0, 0, 0, 2)
@@ -557,13 +557,13 @@ func (uv *JournalsUpdateView) View() string {
 	return result.String()
 }
 
-func (uv *JournalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
+func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNALMODEL: {},
 	}
 }
 
-func (uv *JournalsUpdateView) MotionSet() meta.MotionSet {
+func (uv *journalsUpdateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -578,7 +578,7 @@ func (uv *JournalsUpdateView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
+func (uv *journalsUpdateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -586,56 +586,56 @@ func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (uv *JournalsUpdateView) Reload() View {
+func (uv *journalsUpdateView) Reload() View {
 	return NewJournalsUpdateView(uv.modelId)
 }
 
-func (cv *JournalsUpdateView) title() string {
+func (cv *journalsUpdateView) title() string {
 	return "Creating new journal"
 }
 
-func (cv *JournalsUpdateView) inputs() []viewable {
+func (cv *journalsUpdateView) inputs() []viewable {
 	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
 }
 
-func (cv *JournalsUpdateView) inputNames() []string {
+func (cv *journalsUpdateView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
 }
 
-func (cv *JournalsUpdateView) getActiveInput() *int {
+func (cv *journalsUpdateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 
-func (cv *JournalsUpdateView) getColours() meta.AppColours {
+func (cv *journalsUpdateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (uv *JournalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
 	}
 }
 
-type JournalsDeleteView struct {
+type journalsDeleteView struct {
 	modelId int
 	model   database.Journal
 
 	colours meta.AppColours
 }
 
-func NewJournalsDeleteView(modelId int) *JournalsDeleteView {
-	return &JournalsDeleteView{
+func NewJournalsDeleteView(modelId int) *journalsDeleteView {
+	return &journalsDeleteView{
 		modelId: modelId,
 
 		colours: meta.JOURNALSCOLOURS,
 	}
 }
 
-func (dv *JournalsDeleteView) Init() tea.Cmd {
+func (dv *journalsDeleteView) Init() tea.Cmd {
 	return database.MakeLoadJournalsDetailCmd(dv.modelId)
 }
 
-func (dv *JournalsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *journalsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Journal)
@@ -668,7 +668,7 @@ func (dv *JournalsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (dv *JournalsDeleteView) View() string {
+func (dv *journalsDeleteView) View() string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
@@ -721,13 +721,13 @@ func (dv *JournalsDeleteView) View() string {
 	return result.String()
 }
 
-func (dv *JournalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *journalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNALMODEL: {},
 	}
 }
 
-func (dv *JournalsDeleteView) MotionSet() meta.MotionSet {
+func (dv *journalsDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -737,7 +737,7 @@ func (dv *JournalsDeleteView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *JournalsDeleteView) CommandSet() meta.CommandSet {
+func (dv *journalsDeleteView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -745,11 +745,11 @@ func (dv *JournalsDeleteView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(commands)
 }
 
-func (dv *JournalsDeleteView) Reload() View {
+func (dv *journalsDeleteView) Reload() View {
 	return NewJournalsDeleteView(dv.modelId)
 }
 
-func (dv *JournalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *journalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
