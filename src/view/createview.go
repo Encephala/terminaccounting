@@ -6,7 +6,6 @@ import (
 	"strings"
 	"terminaccounting/meta"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -23,32 +22,11 @@ type GenericMutateView interface {
 	getColours() meta.AppColours
 }
 
-type mutateViewManager struct {
-	specificView GenericMutateView
-}
-
-func NewMutateViewManager(specificView GenericMutateView) *mutateViewManager {
-	return &mutateViewManager{
-		specificView: specificView,
-	}
-}
-
-func (cvm *mutateViewManager) Init() tea.Cmd {
-	return cvm.specificView.Init()
-}
-
-func (cvm *mutateViewManager) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	newView, cmd := cvm.specificView.Update(message)
-	cvm.specificView = newView.(GenericMutateView)
-
-	return cvm, cmd
-}
-
-func (cvm *mutateViewManager) View() string {
+func genericMutateViewView(gmv GenericMutateView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(cvm.specificView.getColours().Background).Padding(0, 1)
-	result.WriteString(titleStyle.Render(cvm.specificView.title()))
+	titleStyle := lipgloss.NewStyle().Background(gmv.getColours().Background).Padding(0, 1)
+	result.WriteString(titleStyle.Render(gmv.title()))
 
 	result.WriteString("\n\n")
 
@@ -57,10 +35,10 @@ func (cvm *mutateViewManager) View() string {
 		Padding(0, 1).
 		UnsetWidth().
 		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(cvm.specificView.getColours().Foreground)
+	highlightStyle := sectionStyle.Foreground(gmv.getColours().Foreground)
 
-	names := cvm.specificView.inputNames()
-	inputs := cvm.specificView.inputs()
+	names := gmv.inputNames()
+	inputs := gmv.inputs()
 
 	if len(names) != len(inputs) {
 		panic("what in the fuck")
@@ -68,7 +46,7 @@ func (cvm *mutateViewManager) View() string {
 
 	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
 
-	styles[*cvm.specificView.getActiveInput()] = highlightStyle
+	styles[*gmv.getActiveInput()] = highlightStyle
 
 	// +2 for padding
 	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
@@ -91,20 +69,4 @@ func (cvm *mutateViewManager) View() string {
 	}
 
 	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
-}
-
-func (cvm *mutateViewManager) AcceptedModels() map[meta.ModelType]struct{} {
-	return cvm.specificView.AcceptedModels()
-}
-
-func (cvm *mutateViewManager) MotionSet() meta.MotionSet {
-	return cvm.specificView.MotionSet()
-}
-
-func (cvm *mutateViewManager) CommandSet() meta.CommandSet {
-	return cvm.specificView.CommandSet()
-}
-
-func (cvm *mutateViewManager) Reload() View {
-	return cvm.specificView.Reload()
 }

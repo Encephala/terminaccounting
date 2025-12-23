@@ -137,7 +137,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *ledgersCreateView) View() string {
-	panic("never call this ye?")
+	return genericMutateViewView(cv)
 }
 
 func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -282,7 +282,7 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (uv *ledgersUpdateView) View() string {
-	panic("never call this ye?")
+	return genericMutateViewView(uv)
 }
 
 func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {

@@ -286,7 +286,7 @@ func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *journalsCreateView) View() string {
-	panic("this no happenerino")
+	return genericMutateViewView(cv)
 }
 
 func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -492,69 +492,7 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (uv *journalsUpdateView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(uv.colours.Background).Padding(0, 1).Margin(0, 0, 0, 2)
-
-	result.WriteString(titleStyle.Render(fmt.Sprintf("Update Journal: %s", uv.startingValue.Name)))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Center)
-	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
-
-	nameStyle := sectionStyle
-	typeStyle := sectionStyle
-
-	switch uv.activeInput {
-	case NAMEINPUT:
-		nameStyle = highlightStyle
-	case TYPEINPUT:
-		typeStyle = highlightStyle
-	case NOTEINPUT:
-		// has FocusedStyle set, don't manually render with highlightStyle
-	default:
-		panic(fmt.Sprintf("unexpected view.activeInput: %#v", uv.activeInput))
-	}
-
-	const inputWidth = 26
-	uv.nameInput.Width = inputWidth - 2
-	uv.notesInput.SetWidth(inputWidth)
-
-	// +2 for padding
-	maxNameColWidth := len("Notes") + 2
-
-	var nameRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Name"),
-		nameStyle.Render(uv.nameInput.View()),
-	)
-
-	var typeRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Type"),
-		typeStyle.Width(uv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(uv.typeInput.View()),
-	)
-
-	var notesRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Notes"),
-		sectionStyle.Render(uv.notesInput.View()),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			nameRow,
-			typeRow,
-			notesRow,
-		),
-	))
-
-	return result.String()
+	return genericMutateViewView(uv)
 }
 
 func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {

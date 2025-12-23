@@ -60,12 +60,12 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewDetailView(app, account.Id, account.Name)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewMutateViewManager(view.NewAccountsCreateView())
+			app.currentView = view.NewAccountsCreateView()
 
 		case meta.UPDATEVIEWTYPE:
 			accountId := message.Data.(int)
 
-			app.currentView = view.NewMutateViewManager(view.NewAccountsUpdateView(accountId))
+			app.currentView = view.NewAccountsUpdateView(accountId)
 
 		case meta.DELETEVIEWTYPE:
 			accountId := message.Data.(int)

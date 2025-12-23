@@ -172,7 +172,7 @@ func (cv *entryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *entryCreateView) View() string {
-	panic("No callo thiso yeso?")
+	return genericMutateViewView(cv)
 }
 
 func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -395,7 +395,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (uv *entryUpdateView) View() string {
-	panic("never callerino ye?")
+	return genericMutateViewView(uv)
 }
 
 func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
