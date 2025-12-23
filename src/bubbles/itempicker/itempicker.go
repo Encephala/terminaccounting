@@ -32,10 +32,6 @@ func New(items []Item) Model {
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
 func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.KeyMsg:

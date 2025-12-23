@@ -55,7 +55,7 @@ func main() {
 }
 
 func (tm *testModel) Init() tea.Cmd {
-	return tm.model.Init()
+	return nil
 }
 
 func (tm *testModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
