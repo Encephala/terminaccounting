@@ -165,12 +165,16 @@ func NewJournalsCreateView() *JournalsCreateView {
 		database.GENERALJOURNAL,
 	}
 
+	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
+	// -2 because of the prompt, -1 because of the cursor
+	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
+
 	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
@@ -282,69 +286,7 @@ func (cv *JournalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *JournalsCreateView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(cv.colours.Background).Padding(0, 1).MarginLeft(2)
-
-	result.WriteString(titleStyle.Render("Creating new Journal"))
-	result.WriteString("\n\n")
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Center)
-	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
-
-	nameStyle := sectionStyle
-	typeStyle := sectionStyle
-
-	switch cv.activeInput {
-	case NAMEINPUT:
-		nameStyle = highlightStyle
-	case TYPEINPUT:
-		typeStyle = highlightStyle
-	case NOTEINPUT:
-		// has FocusedStyle set, don't manually render with highlightStyle
-	default:
-		panic(fmt.Sprintf("unexpected view.activeInput: %#v", cv.activeInput))
-	}
-
-	const inputWidth = 26
-	cv.nameInput.Width = inputWidth - 2
-	cv.notesInput.SetWidth(inputWidth)
-
-	// +2 for padding
-	maxNameColWidth := len("Notes") + 2
-
-	var nameRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Name"),
-		nameStyle.Render(cv.nameInput.View()),
-	)
-
-	var typeRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Type"),
-		typeStyle.Width(cv.typeInput.MaxViewLength()+2).AlignHorizontal(lipgloss.Left).Render(cv.typeInput.View()),
-	)
-
-	var notesRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Notes"),
-		sectionStyle.Render(cv.notesInput.View()),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			nameRow,
-			typeRow,
-			notesRow,
-		),
-	))
-
-	return result.String()
+	panic("this no happenerino")
 }
 
 func (cv *JournalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -372,6 +314,26 @@ func (cv *JournalsCreateView) CommandSet() meta.CommandSet {
 
 func (cv *JournalsCreateView) Reload() View {
 	return NewJournalsCreateView()
+}
+
+func (cv *JournalsCreateView) title() string {
+	return "Creating new journal"
+}
+
+func (cv *JournalsCreateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
+}
+
+func (cv *JournalsCreateView) inputNames() []string {
+	return []string{"Name", "Type", "Notes"}
+}
+
+func (cv *JournalsCreateView) getActiveInput() *int {
+	return &cv.activeInput
+}
+
+func (cv *JournalsCreateView) getColours() meta.AppColours {
+	return cv.colours
 }
 
 type JournalsUpdateView struct {
@@ -626,6 +588,26 @@ func (uv *JournalsUpdateView) CommandSet() meta.CommandSet {
 
 func (uv *JournalsUpdateView) Reload() View {
 	return NewJournalsUpdateView(uv.modelId)
+}
+
+func (cv *JournalsUpdateView) title() string {
+	return "Creating new journal"
+}
+
+func (cv *JournalsUpdateView) inputs() []viewable {
+	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
+}
+
+func (cv *JournalsUpdateView) inputNames() []string {
+	return []string{"Name", "Type", "Notes"}
+}
+
+func (cv *JournalsUpdateView) getActiveInput() *int {
+	return &cv.activeInput
+}
+
+func (cv *JournalsUpdateView) getColours() meta.AppColours {
+	return cv.colours
 }
 
 func (uv *JournalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {

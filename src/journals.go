@@ -60,12 +60,12 @@ func (app *journalsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			app.currentView = view.NewJournalsDetailsView(journal, app)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewJournalsCreateView()
+			app.currentView = view.NewMutateViewManager(view.NewJournalsCreateView())
 
 		case meta.UPDATEVIEWTYPE:
 			journalId := message.Data.(int)
 
-			app.currentView = view.NewJournalsUpdateView(journalId)
+			app.currentView = view.NewMutateViewManager(view.NewJournalsUpdateView(journalId))
 
 		case meta.DELETEVIEWTYPE:
 			journalId := message.Data.(int)
