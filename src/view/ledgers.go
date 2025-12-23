@@ -467,56 +467,7 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *ledgersDeleteView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
-
-	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Ledger: %s", dv.model.Name)))
-	result.WriteString("\n\n")
-
-	style := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth().
-		Align(lipgloss.Center)
-	rightStyle := style.Margin(0, 0, 0, 1)
-
-	// TODO: Render active input with a different colour
-	var nameRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(dv.model.Name),
-	)
-
-	var typeRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Render("Type"),
-		rightStyle.Render(dv.model.Type.String()),
-	)
-
-	var notesRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
-	)
-
-	var confirmRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			nameRow,
-			typeRow,
-			notesRow,
-			"",
-			confirmRow,
-		),
-	))
-
-	return result.String()
+	return genericDeleteViewView(dv)
 }
 
 func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -545,6 +496,22 @@ func (dv *ledgersDeleteView) CommandSet() meta.CommandSet {
 
 func (dv *ledgersDeleteView) Reload() View {
 	return NewLedgersDeleteView(dv.modelId)
+}
+
+func (dv *ledgersDeleteView) title() string {
+	return fmt.Sprintf("Delete ledger %q", dv.model.Name)
+}
+
+func (dv *ledgersDeleteView) inputValues() []string {
+	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse()}
+}
+
+func (dv *ledgersDeleteView) inputNames() []string {
+	return []string{"Name", "Type", "Notes"}
+}
+
+func (dv *ledgersDeleteView) getColours() meta.AppColours {
+	return dv.colours
 }
 
 func (dv *ledgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
