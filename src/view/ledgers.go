@@ -499,7 +499,7 @@ func (dv *ledgersDeleteView) Reload() View {
 }
 
 func (dv *ledgersDeleteView) title() string {
-	return fmt.Sprintf("Delete ledger %q", dv.model.Name)
+	return fmt.Sprintf("Delete ledger %s", dv.model.String())
 }
 
 func (dv *ledgersDeleteView) inputValues() []string {

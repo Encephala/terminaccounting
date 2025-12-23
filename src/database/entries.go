@@ -28,6 +28,10 @@ func (e Entry) FilterValue() string {
 	return result.String()
 }
 
+func (e Entry) String() string {
+	return strconv.Itoa(e.Id)
+}
+
 func (e Entry) Title() string {
 	return strconv.Itoa(e.Id)
 }

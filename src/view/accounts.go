@@ -503,64 +503,7 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *accountsDeleteView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
-
-	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Account: %s", dv.model.Name)))
-	result.WriteString("\n\n")
-
-	style := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		UnsetWidth()
-	rightStyle := style.Margin(0, 0, 0, 1)
-
-	// +2 for padding
-	maxNameColWidth := len("Bank numbers") + 2
-
-	nameRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Width(maxNameColWidth).Render("Name"),
-		rightStyle.Render(dv.model.Name),
-	)
-
-	typeRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Width(maxNameColWidth).Render("Type"),
-		rightStyle.Render(dv.model.Type.String()),
-	)
-
-	bankNumbersRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Width(maxNameColWidth).Render("Bank Numbers"),
-		rightStyle.Render(dv.model.BankNumbers.Collapse()),
-	)
-
-	notesRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Width(maxNameColWidth).Render("Notes"),
-		rightStyle.AlignHorizontal(lipgloss.Left).Render(dv.model.Notes.Collapse()),
-	)
-
-	confirmRow := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			nameRow,
-			typeRow,
-			bankNumbersRow,
-			notesRow,
-			"",
-			confirmRow,
-		),
-	))
-
-	return result.String()
+	return genericDeleteViewView(dv)
 }
 
 func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -589,6 +532,22 @@ func (dv *accountsDeleteView) CommandSet() meta.CommandSet {
 
 func (dv *accountsDeleteView) Reload() View {
 	return NewAccountsDeleteView(dv.modelId)
+}
+
+func (dv *accountsDeleteView) title() string {
+	return fmt.Sprintf("Delete account: %s", dv.model.String())
+}
+
+func (dv *accountsDeleteView) inputValues() []string {
+	return []string{dv.model.Name, dv.model.Type.String(), dv.model.BankNumbers.Collapse(), dv.model.Notes.Collapse()}
+}
+
+func (dv *accountsDeleteView) inputNames() []string {
+	return []string{"Name", "Type", "Bank numbers", "Notes"}
+}
+
+func (dv *accountsDeleteView) getColours() meta.AppColours {
+	return dv.colours
 }
 
 func (dv *accountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

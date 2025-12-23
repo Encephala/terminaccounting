@@ -1353,43 +1353,7 @@ func (dv *entryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (dv *entryDeleteView) View() string {
-	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(dv.colours.Background).Padding(0, 1).MarginLeft(2)
-	style := lipgloss.NewStyle().Padding(0, 1).Border(lipgloss.RoundedBorder())
-	rightStyle := style.Margin(0, 0, 0, 1)
-
-	result.WriteString(titleStyle.Render(fmt.Sprintf("Delete Entry: %d", dv.model.Id)))
-	result.WriteString("\n\n")
-
-	journalRendered := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Render("Name"),
-		rightStyle.Render(strconv.Itoa(dv.model.Journal)),
-	)
-
-	notesRendered := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		style.Render("Notes"),
-		rightStyle.Render(strings.Join(dv.model.Notes, "\n")),
-	)
-
-	var confirmRow = lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().Italic(true).Render("Run the `:w` command to confirm"),
-	)
-
-	result.WriteString(lipgloss.NewStyle().MarginLeft(2).Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			journalRendered,
-			notesRendered,
-			"",
-			confirmRow,
-		),
-	))
-
-	return result.String()
+	return genericDeleteViewView(dv)
 }
 
 func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -1418,6 +1382,23 @@ func (dv *entryDeleteView) CommandSet() meta.CommandSet {
 
 func (dv *entryDeleteView) Reload() View {
 	return NewEntryDeleteView(dv.modelId)
+}
+
+func (dv *entryDeleteView) title() string {
+	return fmt.Sprintf("Delete entry %s", dv.model.String())
+}
+
+func (dv *entryDeleteView) inputValues() []string {
+	// TODO: this is not the best way to render the journal xd
+	return []string{strconv.Itoa(dv.model.Journal), dv.model.Notes.Collapse()}
+}
+
+func (dv *entryDeleteView) inputNames() []string {
+	return []string{"Journal", "Notes"}
+}
+
+func (dv *entryDeleteView) getColours() meta.AppColours {
+	return dv.colours
 }
 
 func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
