@@ -29,7 +29,6 @@ func genericDeleteViewView(gdv genericDeleteView) string {
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
-		UnsetWidth().
 		Align(lipgloss.Left)
 
 	names := gdv.inputNames()

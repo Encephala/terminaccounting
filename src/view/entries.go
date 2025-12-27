@@ -180,7 +180,6 @@ func (cv *entryCreateView) View() string {
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
-		UnsetWidth().
 		Align(lipgloss.Left)
 	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
 
@@ -438,7 +437,6 @@ func (uv *entryUpdateView) View() string {
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
-		UnsetWidth().
 		Align(lipgloss.Left)
 	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
 

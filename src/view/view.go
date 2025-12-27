@@ -217,7 +217,6 @@ func (im *inputManager) View(highlightColour lipgloss.Color) string {
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
-		UnsetWidth().
 		Align(lipgloss.Left)
 	highlightStyle := sectionStyle.Foreground(highlightColour)
 
