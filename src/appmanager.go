@@ -20,15 +20,15 @@ type appManager struct {
 
 func newAppManager() *appManager {
 	apps := make([]meta.App, 4)
-	apps[0] = NewLedgersApp()
-	apps[1] = NewEntriesApp()
+	apps[0] = NewEntriesApp()
+	apps[1] = NewLedgersApp()
 	apps[2] = NewAccountsApp()
 	apps[3] = NewJournalsApp()
 
 	// Map the name(=type) of an app to its index in `apps`
 	appIds := make(map[meta.AppType]int, 4)
-	appIds[meta.LEDGERSAPP] = 0
-	appIds[meta.ENTRIESAPP] = 1
+	appIds[meta.ENTRIESAPP] = 0
+	appIds[meta.LEDGERSAPP] = 1
 	appIds[meta.ACCOUNTSAPP] = 2
 	appIds[meta.JOURNALSAPP] = 3
 
