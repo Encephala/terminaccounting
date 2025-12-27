@@ -6,7 +6,9 @@ import (
 )
 
 type App interface {
-	tea.Model
+	Init() tea.Cmd
+	Update(tea.Msg) (App, tea.Cmd)
+	View() string
 
 	Name() string
 	Type() AppType

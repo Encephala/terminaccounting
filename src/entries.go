@@ -29,7 +29,7 @@ func (app *entriesApp) Init() tea.Cmd {
 	return app.currentView.Init()
 }
 
-func (app *entriesApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (app *entriesApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		app.viewWidth = message.Width
