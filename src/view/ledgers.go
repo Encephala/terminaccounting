@@ -104,6 +104,12 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return cv, tea.Batch(cmds...)
 
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
+		var cmd tea.Cmd
+		cv.inputManager, cmd = cv.inputManager.Update(message)
+
+		return cv, cmd
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
@@ -249,6 +255,12 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
 			"Successfully updated Ledger %q", name,
 		)})
+
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
+		var cmd tea.Cmd
+		uv.inputManager, cmd = uv.inputManager.Update(message)
+
+		return uv, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
