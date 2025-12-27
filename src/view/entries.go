@@ -1196,7 +1196,7 @@ type entryMutateView interface {
 	title() string
 }
 
-func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (tea.Model, tea.Cmd) {
+func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd) {
 	activeInput := view.getActiveInput()
 	journalInput := view.getJournalInput()
 	notesInput := view.getNotesInput()

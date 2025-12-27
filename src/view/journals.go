@@ -195,7 +195,7 @@ func (cv *journalsCreateView) Init() tea.Cmd {
 }
 
 func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	switch message := message.(type) {
+	switch message.(type) {
 	case meta.CommitMsg:
 		name := cv.inputManager.inputs[0].value().(string)
 		journalType := cv.inputManager.inputs[1].value().(database.JournalType)
@@ -227,16 +227,9 @@ func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.NavigateMsg:
 		return cv, nil
-
-	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
-		var cmd tea.Cmd
-		cv.inputManager, cmd = cv.inputManager.Update(message)
-
-		return cv, cmd
-
-	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
+
+	return genericMutateViewUpdate(cv, message)
 }
 
 func (cv *journalsCreateView) View() string {
@@ -385,16 +378,9 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case meta.NavigateMsg:
 		return uv, nil
-
-	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
-		var cmd tea.Cmd
-		uv.inputManager, cmd = uv.inputManager.Update(message)
-
-		return uv, cmd
-
-	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
+
+	return genericMutateViewUpdate(uv, message)
 }
 
 func (uv *journalsUpdateView) View() string {
