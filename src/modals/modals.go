@@ -8,6 +8,8 @@ import (
 )
 
 type ModalManager struct {
+	width, height int
+
 	Modal view.View
 }
 
@@ -21,15 +23,38 @@ func (mm *ModalManager) Init() tea.Cmd {
 
 func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		mm.width = message.Width
+		mm.height = message.Height
+
+		var cmd tea.Cmd
+		if mm.Modal != nil {
+			mm.Modal, cmd = mm.Modal.Update(message)
+		}
+
+		return mm, cmd
+
 	case meta.ShowTextModalMsg:
 		mm.Modal = NewTextModal(message.Text)
 
-		return mm, mm.Modal.Init()
+		initCmd := mm.Modal.Init()
+		windowSizeCmd := meta.MessageCmd(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(initCmd, windowSizeCmd)
 
 	case meta.ShowBankImporterMsg:
 		mm.Modal = NewBankStatementImporter()
 
-		return mm, mm.Modal.Init()
+		initCmd := mm.Modal.Init()
+		windowSizeCmd := meta.MessageCmd(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(initCmd, windowSizeCmd)
 
 	case meta.ReloadViewMsg:
 		mm.Modal = mm.Modal.Reload()
