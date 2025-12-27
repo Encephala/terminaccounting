@@ -39,12 +39,6 @@ func (app *accountsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 
 		return app, cmd
 
-	case meta.DataLoadedMsg:
-		var cmd tea.Cmd
-		app.currentView, cmd = app.currentView.Update(message)
-
-		return app, cmd
-
 	case meta.SwitchViewMsg:
 		if message.App != nil && *message.App != meta.LEDGERSAPP {
 			panic("wrong app type, something went wrong")
@@ -77,18 +71,6 @@ func (app *accountsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		}
 
 		return app, app.currentView.Init()
-
-	case meta.SwitchFocusMsg:
-		var cmd tea.Cmd
-		app.currentView, cmd = app.currentView.Update(message)
-
-		return app, cmd
-
-	case meta.NavigateMsg:
-		var cmd tea.Cmd
-		app.currentView, cmd = app.currentView.Update(message)
-
-		return app, cmd
 	}
 
 	var cmd tea.Cmd

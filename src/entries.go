@@ -40,18 +40,6 @@ func (app *entriesApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 
 		return app, cmd
 
-	case meta.DataLoadedMsg:
-		var cmd tea.Cmd
-		app.currentView, cmd = app.currentView.Update(message)
-
-		return app, cmd
-
-	case meta.NavigateMsg:
-		var cmd tea.Cmd
-		app.currentView, cmd = app.currentView.Update(message)
-
-		return app, cmd
-
 	case meta.SwitchViewMsg:
 		if message.App != nil && *message.App != meta.ENTRIESAPP {
 			panic("wrong app type, something went wrong")
