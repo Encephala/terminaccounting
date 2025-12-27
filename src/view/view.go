@@ -38,6 +38,8 @@ func renderBoolean(reconciled bool) string {
 	}
 }
 
+// This `input` interface is needed, even though inputAdapter[T] is the only implementation of it.
+// This is to cover up the generic nature of inputAdapter, as input no longer has to be generic.
 type input interface {
 	update(tea.Msg) (input, tea.Cmd)
 	view() string
@@ -49,6 +51,7 @@ type input interface {
 	setValue(any) error
 }
 
+// Adapts an arbitrary input (like a `textinput`, `textarea`, `itempicker`) to be used as an `input` (interface above)
 type inputAdapter[T viewable] struct {
 	model    T
 	updateFn func(T, tea.Msg) (T, tea.Cmd)
