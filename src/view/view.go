@@ -263,7 +263,3 @@ func (im *inputManager) next() {
 
 	im.activeInput %= len(im.inputs)
 }
-
-func (im *inputManager) getActiveInput() *input {
-	return &im.inputs[im.activeInput]
-}

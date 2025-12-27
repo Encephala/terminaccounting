@@ -240,7 +240,7 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
 
-		err := (*uv.inputManager.getActiveInput()).setValue(startingValue)
+		err := uv.inputManager.inputs[uv.inputManager.activeInput].setValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
