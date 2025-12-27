@@ -15,20 +15,29 @@ import (
 
 	"terminaccounting/bubbles/itempicker"
 
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/ncruces/zenity"
 )
 
 // Hardcoded only ING bank, who cares about other banks frfr
 // Also hardcoded: semicolon-separated values, decimal commas
 type bankStatementImporter struct {
+	width, height int
+
 	fileLoaded bool
 
 	activeInput int
+	activeRow   int
 
-	previewTable        table.Model
+	headers   []string
+	data      [][]string
+	colWidths []int
+
+	preview viewport.Model
+
 	parserPicker        itempicker.Model
 	journalPicker       itempicker.Model
 	accountLedgerPicker itempicker.Model
@@ -38,20 +47,17 @@ type bankStatementImporter struct {
 type bankStatementParser interface {
 	itempicker.Item
 
-	compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error)
+	compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error)
 }
 
 func NewBankStatementImporter() *bankStatementImporter {
-	table := table.New()
-	table.Focus()
-
 	parserPicker := itempicker.New([]itempicker.Item{IngParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	accountLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
 	return &bankStatementImporter{
-		previewTable:        table,
+		preview:             viewport.New(0, 0),
 		parserPicker:        parserPicker,
 		journalPicker:       journalPicker,
 		accountLedgerPicker: accountLedgerPicker,
@@ -83,6 +89,16 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
+		bsi.width = message.Width
+		bsi.height = message.Height
+
+		// -4 for horizontal padding on both sides
+		bsi.preview.Width = message.Width - 4
+		// -9 for the various inputs and confirmation prompt and vertical padding
+		bsi.preview.Height = message.Height - 9
+
+		bsi.colWidths = bsi.calculateColWidths(message.Width)
+
 		return bsi, nil
 
 	case meta.FileSelectedMsg:
@@ -94,9 +110,10 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
-		rows, columns := buildTableColumns(data)
-		bsi.previewTable.SetColumns(columns)
-		bsi.previewTable.SetRows(rows)
+		bsi.headers = data[0]
+		bsi.data = data[1:]
+
+		bsi.colWidths = bsi.calculateColWidths(bsi.width)
 
 		return bsi, nil
 
@@ -104,21 +121,25 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 		if bsi.activeInput == numInputs-1 {
 			switch message.Direction {
 			case meta.NEXT:
-				if bsi.previewTable.Cursor() == len(bsi.previewTable.Rows())-1 {
+				if bsi.activeRow == bsi.preview.TotalLineCount()-1 {
 					// Don't change table, just move focus to input 0
 					break
 				}
 
-				bsi.previewTable.MoveDown(1)
+				bsi.activeRow++
+				bsi.scrollViewport()
+
 				return bsi, nil
 
 			case meta.PREVIOUS:
-				if bsi.previewTable.Cursor() == 0 {
+				if bsi.activeRow == 0 {
 					// Don't change table, just move focus to input 0
 					break
 				}
 
-				bsi.previewTable.MoveUp(1)
+				bsi.activeRow--
+				bsi.scrollViewport()
+
 				return bsi, nil
 
 			default:
@@ -132,7 +153,8 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			bsi.activeInput %= numInputs
 
 			if bsi.activeInput == numInputs-1 {
-				bsi.previewTable.GotoTop()
+				bsi.activeRow = 0
+				bsi.preview.GotoTop()
 			}
 
 		case meta.PREVIOUS:
@@ -143,7 +165,8 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			}
 
 			if bsi.activeInput == numInputs-1 {
-				bsi.previewTable.GotoBottom()
+				bsi.activeRow = bsi.preview.TotalLineCount() - 1
+				bsi.preview.GotoBottom()
 			}
 
 		default:
@@ -188,25 +211,37 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 	case meta.NavigateMsg:
 		if bsi.activeInput != numInputs-1 {
-			return bsi, meta.MessageCmd(errors.New("jk navigation only works within the table"))
+			return bsi, meta.MessageCmd(errors.New("jk navigation only works within preview table"))
 		}
 
-		keyMsg := meta.NavigateMessageToKeyMsg(message)
+		switch message.Direction {
+		case meta.DOWN:
+			if bsi.activeRow < bsi.preview.TotalLineCount()-1 {
+				bsi.activeRow++
+			}
+		case meta.UP:
+			if bsi.activeRow > 0 {
+				bsi.activeRow--
+			}
+		default:
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
+		}
 
-		new, cmd := bsi.previewTable.Update(keyMsg)
-		bsi.previewTable = new
+		bsi.scrollViewport()
 
-		return bsi, cmd
+		return bsi, nil
 
 	case meta.JumpVerticalMsg:
 		if bsi.activeInput != numInputs-1 {
-			return bsi, meta.MessageCmd(errors.New("gg/G navigation only supported in preview table"))
+			return bsi, meta.MessageCmd(errors.New("gg/G navigation only works within preview table"))
 		}
 
 		if message.ToEnd {
-			bsi.previewTable.GotoBottom()
+			bsi.activeRow = bsi.preview.TotalLineCount() - 1
+			bsi.preview.GotoBottom()
 		} else {
-			bsi.previewTable.GotoTop()
+			bsi.activeRow = 0
+			bsi.preview.GotoTop()
 		}
 
 		return bsi, nil
@@ -228,7 +263,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 		}
 
 		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(
-			bsi.previewTable.Rows(),
+			bsi.data,
 			accountLedger.(database.Ledger).Id,
 			bankLedger.(database.Ledger).Id,
 		)
@@ -262,15 +297,15 @@ func (bsi *bankStatementImporter) View() string {
 	}
 
 	style := lipgloss.NewStyle()
-	highlightStyle := table.DefaultStyles().Selected
+	highlightStyle := style.Foreground(lipgloss.Color("212"))
 	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).Margin(0, 1)
 
 	formatSelectorStyle := style
 	journalSelectorStyle := style
 	accountLedgerSelectorStyle := style
 	bankLedgerSelectorStyle := style
-	previewTableStyles := table.DefaultStyles()
-	previewTableStyles.Selected = lipgloss.NewStyle()
+
+	highlightRow := false
 
 	switch bsi.activeInput {
 	case 0:
@@ -282,10 +317,12 @@ func (bsi *bankStatementImporter) View() string {
 	case 3:
 		bankLedgerSelectorStyle = highlightStyle
 	case 4:
-		previewTableStyles.Selected = highlightStyle
+		highlightRow = true
 	default:
 		panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
 	}
+
+	bsi.setViewportContent(highlightRow)
 
 	var result strings.Builder
 
@@ -327,8 +364,11 @@ func (bsi *bankStatementImporter) View() string {
 
 	result.WriteString("\n\n")
 
-	bsi.previewTable.SetStyles(previewTableStyles)
-	result.WriteString(bsi.previewTable.View())
+	result.WriteString(bsi.renderRow(bsi.headers))
+
+	result.WriteString("\n")
+
+	result.WriteString(bsi.preview.View())
 
 	result.WriteString("\n\n")
 
@@ -386,37 +426,107 @@ func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {
 	return result, nil
 }
 
-func buildTableColumns(data [][]string) ([]table.Row, []table.Column) {
-	colNames := data[0]
+func (bsi *bankStatementImporter) calculateColWidths(totalWidth int) []int {
+	if bsi.data == nil {
+		return nil
+	}
 
-	colWidths := make([]int, len(colNames))
-	rows := []table.Row{}
+	numCols := len(bsi.data[0])
 
-	for i, row := range data {
-		// Set column width to widest value in column, up to a maximum width
-		for i, val := range row {
-			colWidths[i] = min(max(colWidths[i], len(val)), 30)
-		}
+	colWidths := make([]int, numCols)
+	for j, header := range bsi.headers {
+		colWidths[j] = len(header)
+	}
 
-		if i > 0 {
-			rows = append(rows, row)
+	for _, row := range bsi.data {
+		for j, val := range row {
+			colWidths[j] = max(colWidths[j], len(val))
 		}
 	}
 
-	var columns []table.Column
-	for i := range colNames {
-		columns = append(columns, table.Column{
-			Title: colNames[i],
-			Width: colWidths[i],
-		})
+	// Make it all fit nicely
+	threshold := totalWidth / numCols
+
+	// Fit all the short columns
+	remainingWidth := totalWidth
+	for _, width := range colWidths {
+		if width < threshold {
+			remainingWidth -= width
+		}
 	}
 
-	return rows, columns
+	// Distribute remaining length across other columns
+	otherColWidth := remainingWidth / numCols
+	for j, width := range colWidths {
+		if width > otherColWidth {
+			colWidths[j] = otherColWidth
+		}
+	}
+
+	// Use some extra space if wasted due to integer rounding
+	usedWidth := 0
+	for _, width := range colWidths {
+		usedWidth += width
+	}
+	// -2 is padding
+	wastedWidth := totalWidth - usedWidth - 2*(numCols-1)
+
+	for j := range colWidths {
+		colWidths[j] += wastedWidth / numCols
+	}
+
+	return colWidths
+}
+
+func (bsi *bankStatementImporter) setViewportContent(doHighlight bool) {
+	rows := []string{}
+
+	// Build rows, skipping header row
+	for i, row := range bsi.data {
+		style := lipgloss.NewStyle()
+		if doHighlight && i == bsi.activeRow {
+			style = style.Foreground(lipgloss.Color("212"))
+		}
+
+		rows = append(rows, style.Render(bsi.renderRow(row)))
+	}
+
+	bsi.preview.SetContent(strings.Join(rows, "\n"))
+}
+
+func (bsi *bankStatementImporter) renderRow(values []string) string {
+	if len(values) != len(bsi.colWidths) {
+		panic("you absolute dingus")
+	}
+
+	newStyle := lipgloss.NewStyle()
+
+	var result strings.Builder
+	for i := range values {
+		style := newStyle.Width(bsi.colWidths[i])
+		if i != len(values)-1 {
+			style = style.MarginRight(2)
+		}
+
+		result.WriteString(style.Render(ansi.Truncate(values[i], bsi.colWidths[i], "…")))
+	}
+
+	return result.String()
+}
+
+func (bsi *bankStatementImporter) scrollViewport() {
+	if bsi.activeRow >= bsi.preview.YOffset+bsi.preview.Height {
+		bsi.preview.ScrollDown(bsi.activeRow - bsi.preview.YOffset - bsi.preview.Height + 1)
+	}
+
+	if bsi.activeRow < bsi.preview.YOffset {
+		bsi.preview.ScrollUp(bsi.preview.YOffset - bsi.activeRow)
+	}
 }
 
 type IngParser struct{}
 
-func (ip IngParser) compileRows(data []table.Row, accountLedger, bankLedger int) ([]database.EntryRow, error) {
+func (ip IngParser) compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error) {
 	var result []database.EntryRow
 
 	for _, row := range data {
