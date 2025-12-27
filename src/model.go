@@ -113,9 +113,10 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Height: remainingHeight,
 		})
 
+		// -20/-10 to give some padding, make it clear it's an overlay
 		ta.modalManager, cmd = ta.modalManager.Update(tea.WindowSizeMsg{
-			Width:  message.Width,
-			Height: message.Height,
+			Width:  message.Width - 20,
+			Height: message.Height - 10,
 		})
 		cmds = append(cmds, cmd)
 
@@ -127,9 +128,10 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		ta.modalManager, cmd = ta.modalManager.Update(message)
 		cmds = append(cmds, cmd)
 
+		// -20/-10 to give some padding, make it clear it's an overlay
 		ta.modalManager, cmd = ta.modalManager.Update(tea.WindowSizeMsg{
-			Width:  ta.width,
-			Height: ta.height,
+			Width:  ta.width - 20,
+			Height: ta.height - 10,
 		})
 		cmds = append(cmds, cmd)
 
