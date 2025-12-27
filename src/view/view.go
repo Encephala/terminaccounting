@@ -25,14 +25,13 @@ type View interface {
 	Reload() View
 }
 
-// TODO is this needed still?
 type viewable interface {
 	View() string
 }
 
 func renderBoolean(reconciled bool) string {
 	if reconciled {
-		// Font Awesome checkbox because it's monospace, standard emoji is too wide
+		// Font Awesome checkbox because it's monospace, standard emoji character is too wide
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("")
 	} else {
 		return "□"
@@ -51,12 +50,11 @@ type input interface {
 }
 
 type inputAdapter[T viewable] struct {
-	model T
-	// Adapter for Update, since every model returns itself and not generic input
-	// (or generic tea.Model or something alike)
+	model    T
+	updateFn func(T, tea.Msg) (T, tea.Cmd)
+	// No adapter for View, because T is constrained viewable so we can use a blanket implementation
 	focusFn    func(*T) tea.Cmd
 	blurFn     func(*T)
-	updateFn   func(T, tea.Msg) (T, tea.Cmd)
 	valueFn    func(T) any
 	setValueFn func(*T, any) error
 }
