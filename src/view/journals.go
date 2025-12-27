@@ -54,7 +54,7 @@ func (dv *journalsDetailsView) Init() tea.Cmd {
 	return database.MakeSelectEntriesByJournalCmd(dv.journal.Id)
 }
 
-func (dv *journalsDetailsView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *journalsDetailsView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		entries := message.Data.([]database.Entry)
@@ -194,7 +194,7 @@ func (cv *journalsCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *journalsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		name := cv.inputManager.inputs[0].value().(string)
@@ -323,7 +323,7 @@ func (uv *journalsUpdateView) Init() tea.Cmd {
 	return database.MakeLoadJournalsDetailCmd(uv.modelId)
 }
 
-func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *journalsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
@@ -457,7 +457,7 @@ func (dv *journalsDeleteView) Init() tea.Cmd {
 	return database.MakeLoadJournalsDetailCmd(dv.modelId)
 }
 
-func (dv *journalsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Journal)

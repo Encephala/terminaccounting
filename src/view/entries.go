@@ -133,7 +133,7 @@ func (cv *entryCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *entryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		entryJournal := cv.journalInput.Value()
@@ -319,7 +319,7 @@ func (uv *entryUpdateView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (uv *entryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
 		entryJournal := uv.journalInput.Value()
@@ -1394,7 +1394,7 @@ func (dv *entryDeleteView) Init() tea.Cmd {
 	return database.MakeLoadEntryDetailCmd(dv.modelId)
 }
 
-func (dv *entryDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		entry := message.Data.(database.Entry)

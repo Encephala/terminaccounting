@@ -73,7 +73,7 @@ func (cv *ledgersCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
 
-func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		name := cv.inputManager.inputs[0].value().(string)
@@ -197,7 +197,7 @@ func (uv *ledgersUpdateView) getColours() meta.AppColours {
 	return uv.colours
 }
 
-func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the ledger being edited
@@ -319,7 +319,7 @@ func (dv *ledgersDeleteView) Init() tea.Cmd {
 	return database.MakeLoadLedgersDetailCmd(dv.modelId)
 }
 
-func (dv *ledgersDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Ledger)

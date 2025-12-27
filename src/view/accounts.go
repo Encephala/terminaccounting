@@ -75,7 +75,7 @@ func (cv *accountsCreateView) Init() tea.Cmd {
 	return nil
 }
 
-func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (cv *accountsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
 		name := cv.inputManager.inputs[0].value().(string)
@@ -203,7 +203,7 @@ func (uv *accountsUpdateView) Init() tea.Cmd {
 	return database.MakeLoadAccountsDetailCmd(uv.modelId)
 }
 
-func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (uv *accountsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		// Loaded the current(/"starting") properties of the account being edited
@@ -341,7 +341,7 @@ func (dv *accountsDeleteView) Init() tea.Cmd {
 	return database.MakeLoadAccountsDetailCmd(dv.modelId)
 }
 
-func (dv *accountsDeleteView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		dv.model = message.Data.(database.Account)

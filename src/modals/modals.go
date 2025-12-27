@@ -32,13 +32,13 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, mm.Modal.Init()
 
 	case meta.ReloadViewMsg:
-		mm.Modal = mm.Modal.Reload().(view.View)
+		mm.Modal = mm.Modal.Reload()
 
 		return mm, mm.Modal.Init()
 	}
 
-	newModal, cmd := mm.Modal.Update(message)
-	mm.Modal = newModal.(view.View)
+	var cmd tea.Cmd
+	mm.Modal, cmd = mm.Modal.Update(message)
 
 	return mm, cmd
 }

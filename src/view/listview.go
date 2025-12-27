@@ -39,7 +39,7 @@ func (lv *ListView) Init() tea.Cmd {
 	return lv.app.MakeLoadListCmd()
 }
 
-func (lv *ListView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		lv.listModel.SetItems(message.Data.([]list.Item))

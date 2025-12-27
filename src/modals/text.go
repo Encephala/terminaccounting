@@ -39,7 +39,7 @@ func (tm *textModal) Init() tea.Cmd {
 	return nil
 }
 
-func (tm *textModal) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.NavigateMsg:
 		slog.Debug("navigating out the wazoo", "msg", message)

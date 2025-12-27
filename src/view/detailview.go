@@ -55,7 +55,7 @@ func (dv *DetailView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (dv *DetailView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		var cmd tea.Cmd

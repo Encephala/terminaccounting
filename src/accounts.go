@@ -34,14 +34,14 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		app.viewWidth = message.Width
 		app.viewHeight = message.Height
 
-		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(view.View)
+		var cmd tea.Cmd
+		app.currentView, cmd = app.currentView.Update(message)
 
 		return app, cmd
 
 	case meta.DataLoadedMsg:
-		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(view.View)
+		var cmd tea.Cmd
+		app.currentView, cmd = app.currentView.Update(message)
 
 		return app, cmd
 
@@ -79,20 +79,20 @@ func (app *accountsApp) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return app, app.currentView.Init()
 
 	case meta.SwitchFocusMsg:
-		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(view.View)
+		var cmd tea.Cmd
+		app.currentView, cmd = app.currentView.Update(message)
 
 		return app, cmd
 
 	case meta.NavigateMsg:
-		newView, cmd := app.currentView.Update(message)
-		app.currentView = newView.(view.View)
+		var cmd tea.Cmd
+		app.currentView, cmd = app.currentView.Update(message)
 
 		return app, cmd
 	}
 
-	newView, cmd := app.currentView.Update(message)
-	app.currentView = newView.(view.View)
+	var cmd tea.Cmd
+	app.currentView, cmd = app.currentView.Update(message)
 
 	return app, cmd
 }

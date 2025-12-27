@@ -78,7 +78,7 @@ func (bsi *bankStatementImporter) Init() tea.Cmd {
 	}
 }
 
-func (bsi *bankStatementImporter) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 	numInputs := 5
 
 	switch message := message.(type) {

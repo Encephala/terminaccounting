@@ -15,7 +15,9 @@ import (
 )
 
 type View interface {
-	tea.Model
+	Init() tea.Cmd
+	Update(tea.Msg) (View, tea.Cmd)
+	View() string
 
 	AcceptedModels() map[meta.ModelType]struct{}
 
