@@ -41,6 +41,11 @@ func (tm *textModal) Init() tea.Cmd {
 
 func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		// TODO
+
+		return tm, nil
+
 	case meta.NavigateMsg:
 		slog.Debug("navigating out the wazoo", "msg", message)
 
