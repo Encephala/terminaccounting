@@ -112,22 +112,30 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			Width:  message.Width,
 			Height: remainingHeight,
 		})
-		cmds = append(cmds, cmd)
 
 		ta.modalManager, cmd = ta.modalManager.Update(tea.WindowSizeMsg{
 			Width:  message.Width,
-			Height: remainingHeight,
+			Height: message.Height,
 		})
 		cmds = append(cmds, cmd)
 
 		return ta, tea.Batch(cmds...)
 
 	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
+		var cmds []tea.Cmd
 		var cmd tea.Cmd
 		ta.modalManager, cmd = ta.modalManager.Update(message)
+		cmds = append(cmds, cmd)
+
+		ta.modalManager, cmd = ta.modalManager.Update(tea.WindowSizeMsg{
+			Width:  ta.width,
+			Height: ta.height,
+		})
+		cmds = append(cmds, cmd)
+
 		ta.showModal = true
 
-		return ta, cmd
+		return ta, tea.Batch(cmds...)
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
