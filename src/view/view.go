@@ -40,56 +40,67 @@ func renderBoolean(reconciled bool) string {
 }
 
 type input interface {
-	Update(tea.Msg) (input, tea.Cmd)
-	View() string
+	update(tea.Msg) (input, tea.Cmd)
+	view() string
 
-	Focus()
-	Blur()
+	focus() tea.Cmd
+	blur()
 
-	Value() any
-	SetValue(any) error
+	value() any
+	setValue(any) error
 }
 
 type inputAdapter[T viewable] struct {
 	model T
 	// Adapter for Update, since every model returns itself and not generic input
 	// (or generic tea.Model or something alike)
-	focusFn    func(*T)
+	focusFn    func(*T) tea.Cmd
 	blurFn     func(*T)
 	updateFn   func(T, tea.Msg) (T, tea.Cmd)
 	valueFn    func(T) any
 	setValueFn func(*T, any) error
 }
 
-func (ia inputAdapter[T]) Update(message tea.Msg) (input, tea.Cmd) {
+func (ia *inputAdapter[T]) update(message tea.Msg) (input, tea.Cmd) {
 	var cmd tea.Cmd
 	ia.model, cmd = ia.updateFn(ia.model, message)
 
 	return ia, cmd
 }
-func (ia inputAdapter[T]) View() string {
+
+func (ia *inputAdapter[T]) view() string {
 	return ia.model.View()
 }
-func (ia inputAdapter[T]) Focus() {
+
+func (ia *inputAdapter[T]) focus() tea.Cmd {
+	return ia.focusFn(&ia.model)
+}
+
+func (ia *inputAdapter[T]) blur() {
 	ia.blurFn(&ia.model)
 }
-func (ia inputAdapter[T]) Blur() {
-	ia.focusFn(&ia.model)
-}
-func (ia inputAdapter[T]) Value() any {
+
+func (ia *inputAdapter[T]) value() any {
 	return ia.valueFn(ia.model)
 }
-func (ia inputAdapter[T]) SetValue(value any) error {
+
+func (ia *inputAdapter[T]) setValue(value any) error {
 	return ia.setValueFn(&ia.model, value)
 }
 
 func newAdapterFrom(input any) input {
 	switch input := input.(type) {
 	case textinput.Model:
-		return inputAdapter[textinput.Model]{
+		return &inputAdapter[textinput.Model]{
 			model: input,
 			updateFn: func(model textinput.Model, message tea.Msg) (textinput.Model, tea.Cmd) {
 				return model.Update(message)
+			},
+			focusFn: func(model *textinput.Model) tea.Cmd {
+				return model.Focus()
+			},
+			blurFn: func(model *textinput.Model) {
+				model.Blur()
 			},
 			valueFn: func(model textinput.Model) any {
 				return model.Value()
@@ -101,10 +112,16 @@ func newAdapterFrom(input any) input {
 		}
 
 	case textarea.Model:
-		return inputAdapter[textarea.Model]{
+		return &inputAdapter[textarea.Model]{
 			model: input,
 			updateFn: func(model textarea.Model, message tea.Msg) (textarea.Model, tea.Cmd) {
 				return model.Update(message)
+			},
+			focusFn: func(model *textarea.Model) tea.Cmd {
+				return model.Focus()
+			},
+			blurFn: func(model *textarea.Model) {
+				model.Blur()
 			},
 			valueFn: func(model textarea.Model) any {
 				return model.Value()
@@ -116,11 +133,13 @@ func newAdapterFrom(input any) input {
 		}
 
 	case itempicker.Model:
-		return inputAdapter[itempicker.Model]{
+		return &inputAdapter[itempicker.Model]{
 			model: input,
 			updateFn: func(model itempicker.Model, message tea.Msg) (itempicker.Model, tea.Cmd) {
 				return model.Update(message)
 			},
+			focusFn: func(model *itempicker.Model) tea.Cmd { return nil },
+			blurFn:  func(model *itempicker.Model) {},
 			valueFn: func(model itempicker.Model) any {
 				return model.Value()
 			},
@@ -165,7 +184,8 @@ func (im *inputManager) Update(message tea.Msg) (*inputManager, tea.Cmd) {
 		return im, nil
 
 	case meta.SwitchFocusMsg:
-		// TODO: if on textinput, Blur() it
+		im.inputs[im.activeInput].blur()
+
 		switch message.Direction {
 		case meta.PREVIOUS:
 			im.previous()
@@ -174,12 +194,12 @@ func (im *inputManager) Update(message tea.Msg) (*inputManager, tea.Cmd) {
 			im.next()
 		}
 
-		// TODO: If now on a textinput, Focus() it
+		cmd := im.inputs[im.activeInput].focus()
 
-		return im, nil
+		return im, cmd
 
 	case tea.KeyMsg:
-		newInput, cmd := im.inputs[im.activeInput].Update(message)
+		newInput, cmd := im.inputs[im.activeInput].update(message)
 
 		im.inputs[im.activeInput] = newInput
 
@@ -214,13 +234,13 @@ func (im *inputManager) View(highlightColour lipgloss.Color) string {
 
 	for i := range im.names {
 		if im.names[i] == "" {
-			result.WriteString(sectionStyle.Render(im.inputs[i].View()))
+			result.WriteString(sectionStyle.Render(im.inputs[i].view()))
 		} else {
 			result.WriteString(lipgloss.JoinHorizontal(
 				lipgloss.Top,
 				sectionStyle.Width(maxNameColWidth).Render(im.names[i]),
 				" ",
-				styles[i].Render(im.inputs[i].View()),
+				styles[i].Render(im.inputs[i].view()),
 			))
 		}
 

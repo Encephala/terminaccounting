@@ -197,9 +197,9 @@ func (cv *journalsCreateView) Init() tea.Cmd {
 func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		name := cv.inputManager.inputs[0].Value().(string)
-		journalType := cv.inputManager.inputs[1].Value().(database.JournalType)
-		notes := cv.inputManager.inputs[2].Value().(string)
+		name := cv.inputManager.inputs[0].value().(string)
+		journalType := cv.inputManager.inputs[1].value().(database.JournalType)
+		notes := cv.inputManager.inputs[2].value().(string)
 
 		newJournal := database.Journal{
 			Name:  name,
@@ -338,9 +338,9 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = journal
 
-		uv.inputManager.inputs[0].SetValue(journal.Name)
-		err := uv.inputManager.inputs[1].SetValue(journal.Type)
-		uv.inputManager.inputs[2].SetValue(journal.Notes.Collapse())
+		uv.inputManager.inputs[0].setValue(journal.Name)
+		err := uv.inputManager.inputs[1].setValue(journal.Type)
+		uv.inputManager.inputs[2].setValue(journal.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
@@ -357,15 +357,15 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
 
-		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
+		err := (*uv.inputManager.getActiveInput()).setValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
 		inputs := uv.inputManager.inputs
-		name := inputs[0].Value().(string)
-		journalType := inputs[1].Value().(database.JournalType)
-		notes := meta.CompileNotes(inputs[2].Value().(string))
+		name := inputs[0].value().(string)
+		journalType := inputs[1].value().(database.JournalType)
+		notes := meta.CompileNotes(inputs[2].value().(string))
 
 		journal := database.Journal{
 			Id:    uv.modelId,

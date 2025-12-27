@@ -78,10 +78,10 @@ func (cv *accountsCreateView) Init() tea.Cmd {
 func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		name := cv.inputManager.inputs[0].Value().(string)
-		accountType := cv.inputManager.inputs[1].Value().(database.AccountType)
-		bankNumbers := meta.CompileNotes(cv.inputManager.inputs[2].Value().(string))
-		notes := meta.CompileNotes(cv.inputManager.inputs[3].Value().(string))
+		name := cv.inputManager.inputs[0].value().(string)
+		accountType := cv.inputManager.inputs[1].value().(database.AccountType)
+		bankNumbers := meta.CompileNotes(cv.inputManager.inputs[2].value().(string))
+		notes := meta.CompileNotes(cv.inputManager.inputs[3].value().(string))
 
 		newAccount := database.Account{
 			Name:        name,
@@ -218,10 +218,10 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = account
 
-		uv.inputManager.inputs[0].SetValue(account.Name)
-		err := uv.inputManager.inputs[1].SetValue(account.Type)
-		uv.inputManager.inputs[2].SetValue(account.BankNumbers.Collapse())
-		uv.inputManager.inputs[3].SetValue(account.Notes.Collapse())
+		uv.inputManager.inputs[0].setValue(account.Name)
+		err := uv.inputManager.inputs[1].setValue(account.Type)
+		uv.inputManager.inputs[2].setValue(account.BankNumbers.Collapse())
+		uv.inputManager.inputs[3].setValue(account.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
@@ -240,15 +240,15 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
 
-		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
+		err := (*uv.inputManager.getActiveInput()).setValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
-		name := uv.inputManager.inputs[0].Value().(string)
-		accountType := uv.inputManager.inputs[1].Value().(database.AccountType)
-		bankNumbers := meta.CompileNotes(uv.inputManager.inputs[2].Value().(string))
-		notes := meta.CompileNotes(uv.inputManager.inputs[3].Value().(string))
+		name := uv.inputManager.inputs[0].value().(string)
+		accountType := uv.inputManager.inputs[1].value().(database.AccountType)
+		bankNumbers := meta.CompileNotes(uv.inputManager.inputs[2].value().(string))
+		notes := meta.CompileNotes(uv.inputManager.inputs[3].value().(string))
 
 		account := database.Account{
 			Id:          uv.modelId,

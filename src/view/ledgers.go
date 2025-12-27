@@ -76,9 +76,9 @@ func (cv *ledgersCreateView) getColours() meta.AppColours {
 func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		name := cv.inputManager.inputs[0].Value().(string)
-		ledgerType := cv.inputManager.inputs[1].Value().(database.LedgerType)
-		notes := meta.CompileNotes(cv.inputManager.inputs[2].Value().(string))
+		name := cv.inputManager.inputs[0].value().(string)
+		ledgerType := cv.inputManager.inputs[1].value().(database.LedgerType)
+		notes := meta.CompileNotes(cv.inputManager.inputs[2].value().(string))
 
 		newLedger := database.Ledger{
 			Name:  name,
@@ -192,7 +192,7 @@ func (uv *ledgersUpdateView) Init() tea.Cmd {
 }
 
 func (uv *ledgersUpdateView) title() string {
-	return fmt.Sprintf("Update Ledger: %s", uv.inputManager.inputs[0].Value().(string))
+	return fmt.Sprintf("Update Ledger: %s", uv.inputManager.inputs[0].value().(string))
 }
 func (uv *ledgersUpdateView) getColours() meta.AppColours {
 	return uv.colours
@@ -206,9 +206,9 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = ledger
 
-		uv.inputManager.inputs[0].SetValue(ledger.Name)
-		err := uv.inputManager.inputs[1].SetValue(ledger.Type)
-		uv.inputManager.inputs[2].SetValue(ledger.Notes.Collapse())
+		uv.inputManager.inputs[0].setValue(ledger.Name)
+		err := uv.inputManager.inputs[1].setValue(ledger.Type)
+		uv.inputManager.inputs[2].setValue(ledger.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
@@ -225,14 +225,14 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
 
-		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
+		err := (*uv.inputManager.getActiveInput()).setValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
-		name := uv.inputManager.inputs[0].Value().(string)
-		ledgerType := uv.inputManager.inputs[1].Value().(database.LedgerType)
-		notes := meta.CompileNotes(uv.inputManager.inputs[2].Value().(string))
+		name := uv.inputManager.inputs[0].value().(string)
+		ledgerType := uv.inputManager.inputs[1].value().(database.LedgerType)
+		notes := meta.CompileNotes(uv.inputManager.inputs[2].value().(string))
 
 		ledger := database.Ledger{
 			Id:    uv.modelId,
