@@ -15,25 +15,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type ledgerMutateView interface {
-	View
-
-	title() string
-
-	getNameInput() *textinput.Model
-	getTypeInput() *itempicker.Model
-	getNotesInput() *textarea.Model
-
-	getActiveInput() *int
-
-	getColours() meta.AppColours
-}
-
 type ledgersCreateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	notesInput  textarea.Model
-	activeInput int
+	inputManager *inputManager
 
 	colours meta.AppColours
 }
@@ -56,6 +39,8 @@ func NewLedgersCreateView() *ledgersCreateView {
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
+	typeInput := itempicker.New(ledgerTypes)
+
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
@@ -66,11 +51,11 @@ func NewLedgersCreateView() *ledgersCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
+	inputs := []any{nameInput, typeInput, notesInput}
+	names := []string{"Name", "Type", "Notes"}
+
 	return &ledgersCreateView{
-		nameInput:   nameInput,
-		typeInput:   itempicker.New(ledgerTypes),
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		colours: colours,
 	}
@@ -84,18 +69,6 @@ func (cv *ledgersCreateView) title() string {
 	return "Create new Ledger"
 }
 
-func (cv *ledgersCreateView) getNameInput() *textinput.Model {
-	return &cv.nameInput
-}
-func (cv *ledgersCreateView) getTypeInput() *itempicker.Model {
-	return &cv.typeInput
-}
-func (cv *ledgersCreateView) getNotesInput() *textarea.Model {
-	return &cv.notesInput
-}
-func (cv *ledgersCreateView) getActiveInput() *int {
-	return &cv.activeInput
-}
 func (cv *ledgersCreateView) getColours() meta.AppColours {
 	return cv.colours
 }
@@ -103,14 +76,14 @@ func (cv *ledgersCreateView) getColours() meta.AppColours {
 func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		ledgerName := cv.nameInput.Value()
-		ledgerType := cv.typeInput.Value().(database.LedgerType)
-		ledgerNotes := cv.notesInput.Value()
+		name := cv.inputManager.inputs[0].Value().(string)
+		ledgerType := cv.inputManager.inputs[1].Value().(database.LedgerType)
+		notes := meta.CompileNotes(cv.inputManager.inputs[2].Value().(string))
 
 		newLedger := database.Ledger{
-			Name:  ledgerName,
+			Name:  name,
 			Type:  ledgerType,
-			Notes: meta.CompileNotes(ledgerNotes),
+			Notes: notes,
 		}
 
 		id, err := newLedger.Insert()
@@ -121,7 +94,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully deleted Account %q", cv.nameInput.Value(),
+			"Successfully deleted Account %q", name,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
@@ -132,7 +105,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return cv, tea.Batch(cmds...)
 
 	default:
-		return ledgersMutateViewUpdate(cv, message)
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
@@ -145,30 +118,34 @@ func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
-	return ledgersMutateViewMotionSet()
+	var normalMotions meta.Trie[tea.Msg]
+
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+
+	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	return meta.MotionSet{Normal: normalMotions}
 }
 
 func (cv *ledgersCreateView) CommandSet() meta.CommandSet {
-	return ledgersMutateViewCommandSet()
+	var commands meta.Trie[tea.Msg]
+
+	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
+
+	return meta.CommandSet(commands)
 }
 
 func (cv *ledgersCreateView) Reload() View {
 	return NewLedgersCreateView()
 }
 
-func (cv *ledgersCreateView) inputNames() []string {
-	return []string{"Name", "Type", "Notes"}
-}
-
-func (cv *ledgersCreateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
+func (cv *ledgersCreateView) getInputManager() *inputManager {
+	return cv.inputManager
 }
 
 type ledgersUpdateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	notesInput  textarea.Model
-	activeInput int
+	inputManager *inputManager
 
 	modelId       int
 	startingValue database.Ledger
@@ -191,16 +168,18 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 	// -2 because of the prompt, -1 because of the cursor
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
+
 	typeInput := itempicker.New(types)
+
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
 
+	inputs := []any{nameInput, typeInput, notesInput}
+	names := []string{"Name", "Type", "Notes"}
+
 	return &ledgersUpdateView{
-		nameInput:   nameInput,
-		typeInput:   typeInput,
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
 
@@ -213,19 +192,7 @@ func (uv *ledgersUpdateView) Init() tea.Cmd {
 }
 
 func (uv *ledgersUpdateView) title() string {
-	return fmt.Sprintf("Update Ledger: %s", uv.nameInput.Value())
-}
-func (uv *ledgersUpdateView) getNameInput() *textinput.Model {
-	return &uv.nameInput
-}
-func (uv *ledgersUpdateView) getTypeInput() *itempicker.Model {
-	return &uv.typeInput
-}
-func (uv *ledgersUpdateView) getNotesInput() *textarea.Model {
-	return &uv.notesInput
-}
-func (uv *ledgersUpdateView) getActiveInput() *int {
-	return &uv.activeInput
+	return fmt.Sprintf("Update Ledger: %s", uv.inputManager.inputs[0].Value().(string))
 }
 func (uv *ledgersUpdateView) getColours() meta.AppColours {
 	return uv.colours
@@ -239,32 +206,39 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = ledger
 
-		uv.nameInput.SetValue(ledger.Name)
-		err := uv.typeInput.SetValue(ledger.Type)
-		uv.notesInput.SetValue(ledger.Notes.Collapse())
+		uv.inputManager.inputs[0].SetValue(ledger.Name)
+		err := uv.inputManager.inputs[1].SetValue(ledger.Type)
+		uv.inputManager.inputs[2].SetValue(ledger.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.ResetInputFieldMsg:
-		var err error
-
-		switch uv.activeInput {
-		case NAMEINPUT:
-			uv.nameInput.SetValue(uv.startingValue.Name)
-		case TYPEINPUT:
-			err = uv.typeInput.SetValue(uv.startingValue.Type)
-		case NOTEINPUT:
-			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
+		var startingValue any
+		switch uv.inputManager.activeInput {
+		case 0:
+			startingValue = uv.startingValue.Name
+		case 1:
+			startingValue = uv.startingValue.Type
+		case 2:
+			startingValue = uv.startingValue.Notes
+		default:
+			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
+
+		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
+		name := uv.inputManager.inputs[0].Value().(string)
+		ledgerType := uv.inputManager.inputs[1].Value().(database.LedgerType)
+		notes := meta.CompileNotes(uv.inputManager.inputs[2].Value().(string))
+
 		ledger := database.Ledger{
 			Id:    uv.modelId,
-			Name:  uv.nameInput.Value(),
-			Type:  uv.typeInput.Value().(database.LedgerType),
-			Notes: meta.CompileNotes(uv.notesInput.Value()),
+			Name:  name,
+			Type:  ledgerType,
+			Notes: notes,
 		}
 
 		err := ledger.Update()
@@ -273,11 +247,11 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully updated Ledger %q", uv.nameInput.Value(),
+			"Successfully updated Ledger %q", name,
 		)})
 
 	default:
-		return ledgersMutateViewUpdate(uv, message)
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
@@ -292,108 +266,6 @@ func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
-	result := ledgersMutateViewMotionSet()
-
-	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
-
-	result.Normal.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
-
-	return result
-}
-
-func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
-	return ledgersMutateViewCommandSet()
-}
-
-func (uv *ledgersUpdateView) Reload() View {
-	return NewLedgersUpdateView(uv.modelId)
-}
-
-func (cv *ledgersUpdateView) inputNames() []string {
-	return []string{"Name", "Type", "Notes"}
-}
-
-func (cv *ledgersUpdateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
-}
-
-func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
-	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
-	}
-}
-
-// The common parts of the Update function for a create- and update view
-func ledgersMutateViewUpdate(view ledgerMutateView, message tea.Msg) (tea.Model, tea.Cmd) {
-	switch message := message.(type) {
-	case meta.SwitchFocusMsg:
-		// If currently on a textinput, blur it
-		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit check that only the right input
-		// gets the update message.
-		switch *view.getActiveInput() {
-		case NAMEINPUT:
-			view.getNameInput().Blur()
-		case NOTEINPUT:
-			view.getNotesInput().Blur()
-		}
-
-		switch message.Direction {
-		case meta.PREVIOUS:
-			previousInput(view.getActiveInput(), 3)
-
-		case meta.NEXT:
-			nextInput(view.getActiveInput(), 3)
-		}
-
-		// If now on a textinput, focus it
-		switch *view.getActiveInput() {
-		case NAMEINPUT:
-			view.getNameInput().Focus()
-		case NOTEINPUT:
-			view.getNotesInput().Focus()
-		}
-
-		return view, nil
-
-	case meta.NavigateMsg:
-		return view, nil
-
-	case tea.WindowSizeMsg:
-		// -18 covers padding on both sides, name column and borders
-		inputWidth := message.Width - 18
-		// -2 for title, -6 for the name/type input, -2 for its borders and -1 for padding at bottom
-		notesHeight := message.Height - 2 - 6 - 2 - 1
-
-		// -2 because of the prompt, -1 because of the cursor
-		view.getNameInput().Width = inputWidth - 2 - 1
-		view.getNotesInput().SetWidth(inputWidth)
-		view.getNotesInput().SetHeight(notesHeight)
-
-		return view, nil
-
-	case tea.KeyMsg:
-		var cmd tea.Cmd
-		switch *view.getActiveInput() {
-		case NAMEINPUT:
-			*view.getNameInput(), cmd = view.getNameInput().Update(message)
-		case TYPEINPUT:
-			*view.getTypeInput(), cmd = view.getTypeInput().Update(message)
-		case NOTEINPUT:
-			*view.getNotesInput(), cmd = view.getNotesInput().Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", *view.getActiveInput()))
-		}
-
-		return view, cmd
-
-	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-	}
-}
-
-func ledgersMutateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -401,15 +273,33 @@ func ledgersMutateViewMotionSet() meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
+	normalMotions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
+
+	normalMotions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func ledgersMutateViewCommandSet() meta.CommandSet {
+func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
 	return meta.CommandSet(commands)
+}
+
+func (uv *ledgersUpdateView) Reload() View {
+	return NewLedgersUpdateView(uv.modelId)
+}
+
+func (uv *ledgersUpdateView) getInputManager() *inputManager {
+	return uv.inputManager
+}
+
+func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
+	return func() tea.Msg {
+		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
+	}
 }
 
 type ledgersDeleteView struct {

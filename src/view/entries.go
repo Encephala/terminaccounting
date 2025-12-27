@@ -1,6 +1,7 @@
 package view
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,6 +20,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// NOTE: entries doesn't use the genericMutateView, because with the row creating it's too idiosyncratic
 
 const (
 	ENTRIESJOURNALINPUT int = iota
@@ -172,7 +175,42 @@ func (cv *entryCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (cv *entryCreateView) View() string {
-	return genericMutateViewView(cv)
+	var result strings.Builder
+
+	sectionStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
+
+	inputs := []viewable{cv.journalInput, cv.notesInput, cv.entryRowsManager}
+	names := []string{"Journal", "Notes", ""}
+
+	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
+	styles[cv.activeInput] = highlightStyle
+
+	// +2 for padding
+	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
+		return cmp.Compare(len(name), len(other))
+	})) + 2
+
+	for i := range names {
+		if names[i] == "" {
+			result.WriteString(sectionStyle.Render(inputs[i].View()))
+		} else {
+			result.WriteString(lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				sectionStyle.Width(maxNameColWidth).Render(names[i]),
+				" ",
+				styles[i].Render(inputs[i].View()),
+			))
+		}
+
+		result.WriteString("\n")
+	}
+
+	return result.String()
 }
 
 func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -395,7 +433,42 @@ func (uv *entryUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (uv *entryUpdateView) View() string {
-	return genericMutateViewView(uv)
+	var result strings.Builder
+
+	sectionStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		UnsetWidth().
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
+
+	inputs := []viewable{uv.journalInput, uv.notesInput, uv.entryRowsManager}
+	names := []string{"Journal", "Notes", ""}
+
+	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
+	styles[uv.activeInput] = highlightStyle
+
+	// +2 for padding
+	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
+		return cmp.Compare(len(name), len(other))
+	})) + 2
+
+	for i := range names {
+		if names[i] == "" {
+			result.WriteString(sectionStyle.Render(inputs[i].View()))
+		} else {
+			result.WriteString(lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				sectionStyle.Width(maxNameColWidth).Render(names[i]),
+				" ",
+				styles[i].Render(inputs[i].View()),
+			))
+		}
+
+		result.WriteString("\n")
+	}
+
+	return result.String()
 }
 
 func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -1140,10 +1213,16 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (tea.Model, 
 		if *activeInput != ENTRIESROWINPUT {
 			switch message.Direction {
 			case meta.PREVIOUS:
-				previousInput(activeInput, 3)
+				*activeInput--
+
+				if *activeInput < 0 {
+					*activeInput += 3
+				}
 
 			case meta.NEXT:
-				nextInput(activeInput, 3)
+				*activeInput++
+
+				*activeInput %= 3
 			}
 
 			// If it changed to entryrow input

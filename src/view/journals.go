@@ -147,10 +147,7 @@ func (dv *journalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type journalsCreateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	notesInput  textarea.Model
-	activeInput int
+	inputManager *inputManager
 
 	colours meta.AppColours
 }
@@ -172,6 +169,8 @@ func NewJournalsCreateView() *journalsCreateView {
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
+	typeInput := itempicker.New(journalTypes)
+
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
@@ -181,11 +180,11 @@ func NewJournalsCreateView() *journalsCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
+	inputs := []any{nameInput, typeInput, notesInput}
+	names := []string{"Name", "Type", "Notes"}
+
 	return &journalsCreateView{
-		nameInput:   nameInput,
-		typeInput:   itempicker.New(journalTypes),
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		colours: colours,
 	}
@@ -198,9 +197,9 @@ func (cv *journalsCreateView) Init() tea.Cmd {
 func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		name := cv.nameInput.Value()
-		journalType := cv.typeInput.Value().(database.JournalType)
-		notes := cv.notesInput.Value()
+		name := cv.inputManager.inputs[0].Value().(string)
+		journalType := cv.inputManager.inputs[1].Value().(database.JournalType)
+		notes := cv.inputManager.inputs[2].Value().(string)
 
 		newJournal := database.Journal{
 			Name:  name,
@@ -216,7 +215,7 @@ func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully created Journal %q", cv.nameInput.Value(),
+			"Successfully created Journal %q", name,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
@@ -226,57 +225,12 @@ func (cv *journalsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return cv, tea.Batch(cmds...)
 
-	case meta.SwitchFocusMsg:
-		// If currently on a textinput, blur it
-		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit check that only the right input
-		// gets the update message.
-		switch cv.activeInput {
-		case NAMEINPUT:
-			cv.nameInput.Blur()
-		case NOTEINPUT:
-			cv.notesInput.Blur()
-		}
-
-		switch message.Direction {
-		case meta.PREVIOUS:
-			previousInput(&cv.activeInput, 3)
-
-		case meta.NEXT:
-			nextInput(&cv.activeInput, 3)
-		}
-
-		// If now on a textinput, focus it
-		switch cv.activeInput {
-		case NAMEINPUT:
-			cv.nameInput.Focus()
-		case NOTEINPUT:
-			cv.notesInput.Focus()
-		}
-
-		return cv, nil
-
 	case meta.NavigateMsg:
 		return cv, nil
 
-	case tea.WindowSizeMsg:
-		// TODO
-
-		return cv, nil
-
-	case tea.KeyMsg:
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
 		var cmd tea.Cmd
-		switch cv.activeInput {
-		case NAMEINPUT:
-			cv.nameInput, cmd = cv.nameInput.Update(message)
-		case TYPEINPUT:
-			cv.typeInput, cmd = cv.typeInput.Update(message)
-		case NOTEINPUT:
-			cv.notesInput, cmd = cv.notesInput.Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
-		}
+		cv.inputManager, cmd = cv.inputManager.Update(message)
 
 		return cv, cmd
 
@@ -316,20 +270,12 @@ func (cv *journalsCreateView) Reload() View {
 	return NewJournalsCreateView()
 }
 
+func (cv *journalsCreateView) getInputManager() *inputManager {
+	return cv.inputManager
+}
+
 func (cv *journalsCreateView) title() string {
 	return "Creating new journal"
-}
-
-func (cv *journalsCreateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
-}
-
-func (cv *journalsCreateView) inputNames() []string {
-	return []string{"Name", "Type", "Notes"}
-}
-
-func (cv *journalsCreateView) getActiveInput() *int {
-	return &cv.activeInput
 }
 
 func (cv *journalsCreateView) getColours() meta.AppColours {
@@ -337,10 +283,7 @@ func (cv *journalsCreateView) getColours() meta.AppColours {
 }
 
 type journalsUpdateView struct {
-	nameInput   textinput.Model
-	typeInput   itempicker.Model
-	notesInput  textarea.Model
-	activeInput int
+	inputManager *inputManager
 
 	modelId       int
 	startingValue database.Journal
@@ -371,11 +314,11 @@ func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
+	inputs := []any{nameInput, typeInput, notesInput}
+	names := []string{"Name", "Type", "Notes"}
+
 	return &journalsUpdateView{
-		nameInput:   nameInput,
-		typeInput:   typeInput,
-		notesInput:  notesInput,
-		activeInput: NAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
 
@@ -395,32 +338,40 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		uv.startingValue = journal
 
-		uv.nameInput.SetValue(journal.Name)
-		err := uv.typeInput.SetValue(journal.Type)
-		uv.notesInput.SetValue(journal.Notes.Collapse())
+		uv.inputManager.inputs[0].SetValue(journal.Name)
+		err := uv.inputManager.inputs[1].SetValue(journal.Type)
+		uv.inputManager.inputs[2].SetValue(journal.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.ResetInputFieldMsg:
-		var err error
-
-		switch uv.activeInput {
-		case NAMEINPUT:
-			uv.nameInput.SetValue(uv.startingValue.Name)
-		case TYPEINPUT:
-			err = uv.typeInput.SetValue(uv.startingValue.Type)
-		case NOTEINPUT:
-			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
+		var startingValue any
+		switch uv.inputManager.activeInput {
+		case 0:
+			startingValue = uv.startingValue.Name
+		case 1:
+			startingValue = uv.startingValue.Type
+		case 2:
+			startingValue = uv.startingValue.Notes
+		default:
+			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
+
+		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
+		inputs := uv.inputManager.inputs
+		name := inputs[0].Value().(string)
+		journalType := inputs[1].Value().(database.JournalType)
+		notes := meta.CompileNotes(inputs[2].Value().(string))
+
 		journal := database.Journal{
 			Id:    uv.modelId,
-			Name:  uv.nameInput.Value(),
-			Type:  uv.typeInput.Value().(database.JournalType),
-			Notes: meta.CompileNotes(uv.notesInput.Value()),
+			Name:  name,
+			Type:  journalType,
+			Notes: notes,
 		}
 
 		err := journal.Update()
@@ -429,60 +380,15 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully updated Journal %q", uv.nameInput.Value(),
+			"Successfully updated Journal %q", name,
 		)})
-
-	case meta.SwitchFocusMsg:
-		// If currently on a textinput, blur it
-		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit check that only the right input
-		// gets the update message.
-		switch uv.activeInput {
-		case NAMEINPUT:
-			uv.nameInput.Blur()
-		case NOTEINPUT:
-			uv.notesInput.Blur()
-		}
-
-		switch message.Direction {
-		case meta.PREVIOUS:
-			previousInput(&uv.activeInput, 3)
-
-		case meta.NEXT:
-			nextInput(&uv.activeInput, 3)
-		}
-
-		// If now on a textinput, focus it
-		switch uv.activeInput {
-		case NAMEINPUT:
-			uv.nameInput.Focus()
-		case NOTEINPUT:
-			uv.notesInput.Focus()
-		}
-
-		return uv, nil
 
 	case meta.NavigateMsg:
 		return uv, nil
 
-	case tea.WindowSizeMsg:
-		// TODO
-
-		return uv, nil
-
-	case tea.KeyMsg:
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
 		var cmd tea.Cmd
-		switch uv.activeInput {
-		case NAMEINPUT:
-			uv.nameInput, cmd = uv.nameInput.Update(message)
-		case TYPEINPUT:
-			uv.typeInput, cmd = uv.typeInput.Update(message)
-		case NOTEINPUT:
-			uv.notesInput, cmd = uv.notesInput.Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", uv.activeInput))
-		}
+		uv.inputManager, cmd = uv.inputManager.Update(message)
 
 		return uv, cmd
 
@@ -528,20 +434,12 @@ func (uv *journalsUpdateView) Reload() View {
 	return NewJournalsUpdateView(uv.modelId)
 }
 
+func (uv *journalsUpdateView) getInputManager() *inputManager {
+	return uv.inputManager
+}
+
 func (cv *journalsUpdateView) title() string {
 	return "Creating new journal"
-}
-
-func (cv *journalsUpdateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.notesInput}
-}
-
-func (cv *journalsUpdateView) inputNames() []string {
-	return []string{"Name", "Type", "Notes"}
-}
-
-func (cv *journalsUpdateView) getActiveInput() *int {
-	return &cv.activeInput
 }
 
 func (cv *journalsUpdateView) getColours() meta.AppColours {

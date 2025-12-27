@@ -24,11 +24,7 @@ const (
 const NUMACCOUNTSINPUTS int = 4
 
 type accountsCreateView struct {
-	nameInput        textinput.Model
-	typeInput        itempicker.Model
-	bankNumbersInput textarea.Model
-	notesInput       textarea.Model
-	activeInput      int
+	inputManager *inputManager
 
 	colours meta.AppColours
 }
@@ -48,6 +44,8 @@ func NewAccountsCreateView() *accountsCreateView {
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
+	typeInput := itempicker.New(accountTypes)
+
 	bankNumbersInput := textarea.New()
 	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
@@ -63,12 +61,11 @@ func NewAccountsCreateView() *accountsCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
+	inputs := []any{nameInput, typeInput, bankNumbersInput, notesInput}
+	names := []string{"Name", "Type", "Bank numbers", "Notes"}
+
 	return &accountsCreateView{
-		nameInput:        nameInput,
-		typeInput:        itempicker.New(accountTypes),
-		notesInput:       notesInput,
-		bankNumbersInput: bankNumbersInput,
-		activeInput:      ACCOUNTSNAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		colours: colours,
 	}
@@ -81,13 +78,16 @@ func (cv *accountsCreateView) Init() tea.Cmd {
 func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		accountType := cv.typeInput.Value().(database.AccountType)
+		name := cv.inputManager.inputs[0].Value().(string)
+		accountType := cv.inputManager.inputs[1].Value().(database.AccountType)
+		bankNumbers := meta.CompileNotes(cv.inputManager.inputs[2].Value().(string))
+		notes := meta.CompileNotes(cv.inputManager.inputs[3].Value().(string))
 
 		newAccount := database.Account{
-			Name:        cv.nameInput.Value(),
+			Name:        name,
 			Type:        accountType,
-			BankNumbers: meta.CompileNotes(cv.bankNumbersInput.Value()),
-			Notes:       meta.CompileNotes(cv.notesInput.Value()),
+			BankNumbers: bankNumbers,
+			Notes:       notes,
 		}
 
 		id, err := newAccount.Insert()
@@ -98,7 +98,7 @@ func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully created Account %q", cv.nameInput.Value(),
+			"Successfully created Account %q", name,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
@@ -108,63 +108,12 @@ func (cv *accountsCreateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return cv, tea.Batch(cmds...)
 
-	case meta.SwitchFocusMsg:
-		// If currently on a textinput, blur it
-		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit check that only the right input
-		// gets the update message.
-		switch cv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			cv.nameInput.Blur()
-		case ACCOUNTSBANKNUMBERSINPUT:
-			cv.bankNumbersInput.Blur()
-		case ACCOUNTSNOTESINPUT:
-			cv.notesInput.Blur()
-		}
-
-		switch message.Direction {
-		case meta.PREVIOUS:
-			previousInput(&cv.activeInput, 4)
-
-		case meta.NEXT:
-			nextInput(&cv.activeInput, 4)
-		}
-
-		// If now on a textinput, focus it
-		switch cv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			cv.nameInput.Focus()
-		case ACCOUNTSBANKNUMBERSINPUT:
-			cv.bankNumbersInput.Focus()
-		case ACCOUNTSNOTESINPUT:
-			cv.notesInput.Focus()
-		}
-
-		return cv, nil
-
 	case meta.NavigateMsg:
 		return cv, nil
 
-	case tea.WindowSizeMsg:
-		// TODO
-
-		return cv, nil
-
-	case tea.KeyMsg:
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
 		var cmd tea.Cmd
-		switch cv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			cv.nameInput, cmd = cv.nameInput.Update(message)
-		case ACCOUNTSTYPEINPUT:
-			cv.typeInput, cmd = cv.typeInput.Update(message)
-		case ACCOUNTSBANKNUMBERSINPUT:
-			cv.bankNumbersInput, cmd = cv.bankNumbersInput.Update(message)
-		case ACCOUNTSNOTESINPUT:
-			cv.notesInput, cmd = cv.notesInput.Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", cv.activeInput))
-		}
+		cv.inputManager, cmd = cv.inputManager.Update(message)
 
 		return cv, cmd
 
@@ -204,20 +153,12 @@ func (cv *accountsCreateView) Reload() View {
 	return NewAccountsCreateView()
 }
 
+func (cv *accountsCreateView) getInputManager() *inputManager {
+	return cv.inputManager
+}
+
 func (cv *accountsCreateView) title() string {
 	return "Creating new account"
-}
-
-func (cv *accountsCreateView) inputNames() []string {
-	return []string{"Name", "Type", "Bank numbers", "Notes"}
-}
-
-func (cv *accountsCreateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.bankNumbersInput, cv.notesInput}
-}
-
-func (cv *accountsCreateView) getActiveInput() *int {
-	return (*int)(&cv.activeInput)
 }
 
 func (cv *accountsCreateView) getColours() meta.AppColours {
@@ -225,11 +166,7 @@ func (cv *accountsCreateView) getColours() meta.AppColours {
 }
 
 type accountsUpdateView struct {
-	nameInput        textinput.Model
-	typeInput        itempicker.Model
-	bankNumbersInput textarea.Model
-	notesInput       textarea.Model
-	activeInput      int
+	inputManager *inputManager
 
 	modelId       int
 	startingValue database.Account
@@ -250,17 +187,18 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
+	typeInput := itempicker.New(accountTypes)
+
 	bankNumbersInput := textarea.New()
 	bankNumbersInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
+	inputs := []any{nameInput, typeInput, bankNumbersInput, notesInput}
+	names := []string{"Name", "Type", "Bank numbers", "Notes"}
+
 	return &accountsUpdateView{
-		nameInput:        nameInput,
-		typeInput:        itempicker.New(accountTypes),
-		bankNumbersInput: bankNumbersInput,
-		notesInput:       notesInput,
-		activeInput:      ACCOUNTSNAMEINPUT,
+		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
 
@@ -275,42 +213,49 @@ func (uv *accountsUpdateView) Init() tea.Cmd {
 func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		// Loaded the current(/"starting") properties of the ledger being edited
+		// Loaded the current(/"starting") properties of the account being edited
 		account := message.Data.(database.Account)
 
 		uv.startingValue = account
 
-		uv.nameInput.SetValue(account.Name)
-		err := uv.typeInput.SetValue(account.Type)
-		uv.bankNumbersInput.SetValue(account.BankNumbers.Collapse())
-		uv.notesInput.SetValue(account.Notes.Collapse())
+		uv.inputManager.inputs[0].SetValue(account.Name)
+		err := uv.inputManager.inputs[1].SetValue(account.Type)
+		uv.inputManager.inputs[2].SetValue(account.BankNumbers.Collapse())
+		uv.inputManager.inputs[3].SetValue(account.Notes.Collapse())
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.ResetInputFieldMsg:
-		var err error
-		switch uv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			uv.nameInput.SetValue(uv.startingValue.Name)
-		case ACCOUNTSTYPEINPUT:
-			err = uv.typeInput.SetValue(uv.startingValue.Type)
-		case ACCOUNTSBANKNUMBERSINPUT:
-			uv.bankNumbersInput.SetValue(uv.startingValue.BankNumbers.Collapse())
-		case ACCOUNTSNOTESINPUT:
-			uv.notesInput.SetValue(uv.startingValue.Notes.Collapse())
+		var startingValue any
+		switch uv.inputManager.activeInput {
+		case 0:
+			startingValue = uv.startingValue.Name
+		case 1:
+			startingValue = uv.startingValue.Type
+		case 2:
+			startingValue = uv.startingValue.BankNumbers
+		case 3:
+			startingValue = uv.startingValue.Notes
+		default:
+			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
+
+		err := (*uv.inputManager.getActiveInput()).SetValue(startingValue)
 
 		return uv, meta.MessageCmd(err)
 
 	case meta.CommitMsg:
-		typeInput := uv.typeInput.Value()
+		name := uv.inputManager.inputs[0].Value().(string)
+		accountType := uv.inputManager.inputs[1].Value().(database.AccountType)
+		bankNumbers := meta.CompileNotes(uv.inputManager.inputs[2].Value().(string))
+		notes := meta.CompileNotes(uv.inputManager.inputs[3].Value().(string))
 
 		account := database.Account{
 			Id:          uv.modelId,
-			Name:        uv.nameInput.Value(),
-			Type:        typeInput.(database.AccountType),
-			BankNumbers: meta.CompileNotes(uv.bankNumbersInput.Value()),
-			Notes:       meta.CompileNotes(uv.notesInput.Value()),
+			Name:        name,
+			Type:        accountType,
+			BankNumbers: bankNumbers,
+			Notes:       notes,
 		}
 
 		err := account.Update()
@@ -319,66 +264,15 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return uv, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully updated Account %q", uv.nameInput.Value(),
+			"Successfully updated Account %q", name,
 		)})
-
-	case meta.SwitchFocusMsg:
-		// If currently on a textinput, blur it
-		// Shouldn't matter too much because we only send the update to the right input, but FWIW
-		// Note from later me: might actually delete this as an implicit check that only the right input
-		// gets the update message.
-		switch uv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			uv.nameInput.Blur()
-		case ACCOUNTSBANKNUMBERSINPUT:
-			uv.bankNumbersInput.Blur()
-		case ACCOUNTSNOTESINPUT:
-			uv.notesInput.Blur()
-		}
-
-		switch message.Direction {
-		case meta.PREVIOUS:
-			previousInput(&uv.activeInput, 4)
-
-		case meta.NEXT:
-			nextInput(&uv.activeInput, 4)
-		}
-
-		// If now on a textinput, focus it
-		switch uv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			uv.nameInput.Focus()
-		case ACCOUNTSBANKNUMBERSINPUT:
-			uv.bankNumbersInput.Focus()
-		case ACCOUNTSNOTESINPUT:
-			uv.notesInput.Focus()
-		}
-
-		return uv, nil
 
 	case meta.NavigateMsg:
 		return uv, nil
 
-	case tea.WindowSizeMsg:
-		// TODO
-
-		return uv, nil
-
-	case tea.KeyMsg:
+	case tea.WindowSizeMsg, meta.SwitchFocusMsg, tea.KeyMsg:
 		var cmd tea.Cmd
-		switch uv.activeInput {
-		case ACCOUNTSNAMEINPUT:
-			uv.nameInput, cmd = uv.nameInput.Update(message)
-		case ACCOUNTSTYPEINPUT:
-			uv.typeInput, cmd = uv.typeInput.Update(message)
-		case ACCOUNTSBANKNUMBERSINPUT:
-			uv.bankNumbersInput, cmd = uv.bankNumbersInput.Update(message)
-		case ACCOUNTSNOTESINPUT:
-			uv.notesInput, cmd = uv.notesInput.Update(message)
-
-		default:
-			panic(fmt.Sprintf("Updating create view but active input was %d", uv.activeInput))
-		}
+		uv.inputManager, cmd = uv.inputManager.Update(message)
 
 		return uv, cmd
 
@@ -430,20 +324,12 @@ func (uv *accountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	}
 }
 
+func (uv *accountsUpdateView) getInputManager() *inputManager {
+	return uv.inputManager
+}
+
 func (cv *accountsUpdateView) title() string {
 	return "Creating new account"
-}
-
-func (cv *accountsUpdateView) inputNames() []string {
-	return []string{"Name", "Type", "Bank numbers", "Notes"}
-}
-
-func (cv *accountsUpdateView) inputs() []viewable {
-	return []viewable{cv.nameInput, cv.typeInput, cv.bankNumbersInput, cv.notesInput}
-}
-
-func (cv *accountsUpdateView) getActiveInput() *int {
-	return (*int)(&cv.activeInput)
 }
 
 func (cv *accountsUpdateView) getColours() meta.AppColours {
