@@ -47,11 +47,13 @@ type bankStatementImporter struct {
 type bankStatementParser interface {
 	itempicker.Item
 
+	usedColumns() []int
+
 	compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error)
 }
 
 func NewBankStatementImporter() *bankStatementImporter {
-	parserPicker := itempicker.New([]itempicker.Item{IngParser{}})
+	parserPicker := itempicker.New([]itempicker.Item{ingParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	accountLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
@@ -364,7 +366,17 @@ func (bsi *bankStatementImporter) View() string {
 
 	result.WriteString("\n\n")
 
-	result.WriteString(bsi.renderRow(bsi.headers))
+	headersStyled := make([]string, len(bsi.headers))
+	usedColumns := bsi.parserPicker.Value().(bankStatementParser).usedColumns()
+	for i, header := range bsi.headers {
+		style := lipgloss.NewStyle()
+		if slices.Contains(usedColumns, i) {
+			style = style.Foreground(lipgloss.Color("212"))
+		}
+
+		headersStyled[i] = style.Render(header)
+	}
+	result.WriteString(bsi.renderRow(headersStyled))
 
 	result.WriteString("\n")
 
@@ -524,9 +536,13 @@ func (bsi *bankStatementImporter) scrollViewport() {
 	}
 }
 
-type IngParser struct{}
+type ingParser struct{}
 
-func (ip IngParser) compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error) {
+func (ip ingParser) usedColumns() []int {
+	return []int{0, 3, 6, 8}
+}
+
+func (ip ingParser) compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error) {
 	var result []database.EntryRow
 
 	for _, row := range data {
@@ -593,15 +609,15 @@ func (ip IngParser) compileRows(data [][]string, accountLedger, bankLedger int) 
 	return result, nil
 }
 
-func (ip IngParser) String() string {
+func (ip ingParser) String() string {
 	return "ING"
 }
 
-func (ip IngParser) CompareId() int {
+func (ip ingParser) CompareId() int {
 	return 0
 }
 
-func (p IngParser) parseDescription(description string) *string {
+func (p ingParser) parseDescription(description string) *string {
 	indexDescription := strings.Index(description, "Description:")
 	if indexDescription == -1 {
 		return nil
