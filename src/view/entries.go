@@ -175,41 +175,7 @@ func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (cv *entryCreateView) View() string {
-	var result strings.Builder
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(cv.colours.Foreground)
-
-	inputs := []viewable{cv.journalInput, cv.notesInput, cv.entryRowsManager}
-	names := []string{"Journal", "Notes", ""}
-
-	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
-	styles[cv.activeInput] = highlightStyle
-
-	// +2 for padding
-	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
-		return cmp.Compare(len(name), len(other))
-	})) + 2
-
-	for i := range names {
-		if names[i] == "" {
-			result.WriteString(sectionStyle.Render(inputs[i].View()))
-		} else {
-			result.WriteString(lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				sectionStyle.Width(maxNameColWidth).Render(names[i]),
-				" ",
-				styles[i].Render(inputs[i].View()),
-			))
-		}
-
-		result.WriteString("\n")
-	}
-
-	return result.String()
+	return entriesMutateViewView(cv)
 }
 
 func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -226,11 +192,11 @@ type CreateEntryRowMsg struct {
 }
 
 func (cv *entryCreateView) MotionSet() meta.MotionSet {
-	return entriesCreateUpdateViewMotionSet()
+	return entriesMutateViewMotionSet()
 }
 
 func (cv *entryCreateView) CommandSet() meta.CommandSet {
-	return entriesCreateUpdateViewCommandSet()
+	return entriesMutateViewCommandSet()
 }
 
 func (cv *entryCreateView) Reload() View {
@@ -424,41 +390,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (uv *entryUpdateView) View() string {
-	var result strings.Builder
-
-	sectionStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(uv.colours.Foreground)
-
-	inputs := []viewable{uv.journalInput, uv.notesInput, uv.entryRowsManager}
-	names := []string{"Journal", "Notes", ""}
-
-	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
-	styles[uv.activeInput] = highlightStyle
-
-	// +2 for padding
-	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
-		return cmp.Compare(len(name), len(other))
-	})) + 2
-
-	for i := range names {
-		if names[i] == "" {
-			result.WriteString(sectionStyle.Render(inputs[i].View()))
-		} else {
-			result.WriteString(lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				sectionStyle.Width(maxNameColWidth).Render(names[i]),
-				" ",
-				styles[i].Render(inputs[i].View()),
-			))
-		}
-
-		result.WriteString("\n")
-	}
-
-	return result.String()
+	return entriesMutateViewView(uv)
 }
 
 func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -472,7 +404,7 @@ func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (uv *entryUpdateView) MotionSet() meta.MotionSet {
-	result := entriesCreateUpdateViewMotionSet()
+	result := entriesMutateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
@@ -482,7 +414,7 @@ func (uv *entryUpdateView) MotionSet() meta.MotionSet {
 }
 
 func (uv *entryUpdateView) CommandSet() meta.CommandSet {
-	return entriesCreateUpdateViewCommandSet()
+	return entriesMutateViewCommandSet()
 }
 
 func (uv *entryUpdateView) Reload() View {
@@ -1316,7 +1248,45 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 	}
 }
 
-func entriesCreateUpdateViewMotionSet() meta.MotionSet {
+func entriesMutateViewView(view entryMutateView) string {
+	var result strings.Builder
+
+	sectionStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		Align(lipgloss.Left)
+	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
+
+	inputs := []viewable{view.getJournalInput(), view.getNotesInput(), view.getManager()}
+	names := []string{"Journal", "Notes", ""}
+
+	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
+	styles[*view.getActiveInput()] = highlightStyle
+
+	// +2 for padding
+	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
+		return cmp.Compare(len(name), len(other))
+	})) + 2
+
+	for i := range names {
+		if names[i] == "" {
+			result.WriteString(sectionStyle.Render(inputs[i].View()))
+		} else {
+			result.WriteString(lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				sectionStyle.Width(maxNameColWidth).Render(names[i]),
+				" ",
+				styles[i].Render(inputs[i].View()),
+			))
+		}
+
+		result.WriteString("\n")
+	}
+
+	return result.String()
+}
+
+func entriesMutateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -1351,7 +1321,7 @@ func entriesCreateUpdateViewMotionSet() meta.MotionSet {
 	}
 }
 
-func entriesCreateUpdateViewCommandSet() meta.CommandSet {
+func entriesMutateViewCommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
