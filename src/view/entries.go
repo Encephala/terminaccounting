@@ -1363,6 +1363,8 @@ type entryDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
+	journal *database.Journal
+
 	colours meta.AppColours
 }
 
@@ -1375,15 +1377,25 @@ func NewEntryDeleteView(modelId int) *entryDeleteView {
 }
 
 func (dv *entryDeleteView) Init() tea.Cmd {
+	// Can't load journal yet, we only know journal ID when entry is loaded
 	return database.MakeLoadEntryDetailCmd(dv.modelId)
 }
 
 func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		entry := message.Data.(database.Entry)
+		dv.model = message.Data.(database.Entry)
 
-		dv.model = entry
+		journalIndex := slices.IndexFunc(database.AvailableJournals, func(j database.Journal) bool {
+			return j.Id == dv.model.Journal
+		})
+		if journalIndex == -1 {
+			return dv, meta.MessageCmd(fmt.Errorf("couldn't find journal %d in cache", dv.model.Journal))
+		}
+
+		// Don't reference original journal directly to ensure cache is never mutated
+		journal := database.AvailableJournals[journalIndex]
+		dv.journal = &journal
 
 		return dv, nil
 
@@ -1450,8 +1462,17 @@ func (dv *entryDeleteView) title() string {
 }
 
 func (dv *entryDeleteView) inputValues() []string {
-	// TODO: this is not the best way to render the journal xd
-	return []string{strconv.Itoa(dv.model.Journal), dv.model.Notes.Collapse()}
+	var result []string
+
+	if dv.journal == nil {
+		result = append(result, strconv.Itoa(dv.model.Journal))
+	} else {
+		result = append(result, dv.journal.Name)
+	}
+
+	result = append(result, dv.model.Notes.Collapse())
+
+	return result
 }
 
 func (dv *entryDeleteView) inputNames() []string {
