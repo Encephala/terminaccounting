@@ -64,8 +64,8 @@ func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 			// -4 for padding on each side
 			Width: message.Width - 4,
 			// -4 for the title and table header (header is not considered for table width)
-			// -4 to for the total rows their vertical margin
-			Height: message.Height - 4 - 4,
+			// -5 to for the total rows their vertical margin
+			Height: message.Height - 4 - 5,
 		})
 
 		return dv, cmd
@@ -181,6 +181,10 @@ func (dv *DetailView) View() string {
 	result.WriteString("\n\n")
 
 	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows))))
+
+	result.WriteString("\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(dv.rows))))
 
 	result.WriteString("\n")
 
