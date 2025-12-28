@@ -1251,6 +1251,11 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 func entriesMutateViewView(view entryMutateView) string {
 	var result strings.Builder
 
+	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
+	result.WriteString(titleStyle.Render(view.title()))
+
+	result.WriteString("\n\n")
+
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
@@ -1283,7 +1288,7 @@ func entriesMutateViewView(view entryMutateView) string {
 		result.WriteString("\n")
 	}
 
-	return result.String()
+	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
 }
 
 func entriesMutateViewMotionSet() meta.MotionSet {
