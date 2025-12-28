@@ -105,6 +105,10 @@ func (app *ledgersApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
+func (app *ledgersApp) CurrentViewAllowsInsertMode() bool {
+	return app.currentView.AllowsInsertMode()
+}
+
 func (app *ledgersApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }

@@ -18,6 +18,7 @@ type App interface {
 	CurrentMotionSet() MotionSet
 	CurrentCommandSet() CommandSet
 
+	CurrentViewAllowsInsertMode() bool
 	AcceptedModels() map[ModelType]struct{}
 
 	MakeLoadListCmd() tea.Cmd

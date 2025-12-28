@@ -207,6 +207,10 @@ func (dv *DetailView) View() string {
 	return result.String()
 }
 
+func (dv *DetailView) AllowsInsertMode() bool {
+	return false
+}
+
 func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYROWMODEL: {},

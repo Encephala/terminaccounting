@@ -389,6 +389,10 @@ func (bsi *bankStatementImporter) View() string {
 	return result.String()
 }
 
+func (bsi *bankStatementImporter) AllowsInsertMode() bool {
+	return true
+}
+
 func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }

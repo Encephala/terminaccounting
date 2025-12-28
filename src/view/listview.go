@@ -83,6 +83,10 @@ func (lv *ListView) View() string {
 	return lv.listModel.View()
 }
 
+func (lv *ListView) AllowsInsertMode() bool {
+	return false
+}
+
 func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},

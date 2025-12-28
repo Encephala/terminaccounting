@@ -100,6 +100,10 @@ func (dv *journalsDetailsView) View() string {
 	return dv.listModel.View()
 }
 
+func (dv *journalsDetailsView) AllowsInsertMode() bool {
+	return false
+}
+
 func (dv *journalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL: {},
@@ -234,6 +238,10 @@ func (cv *journalsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (cv *journalsCreateView) View() string {
 	return genericMutateViewView(cv)
+}
+
+func (cv *journalsCreateView) AllowsInsertMode() bool {
+	return true
 }
 
 func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -387,6 +395,10 @@ func (uv *journalsUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *journalsUpdateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNALMODEL: {},
@@ -492,6 +504,10 @@ func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *journalsDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *journalsDeleteView) AllowsInsertMode() bool {
+	return false
 }
 
 func (dv *journalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

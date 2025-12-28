@@ -105,6 +105,10 @@ func (app *journalsApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
+func (app *journalsApp) CurrentViewAllowsInsertMode() bool {
+	return app.currentView.AllowsInsertMode()
+}
+
 func (app *journalsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }

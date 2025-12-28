@@ -178,6 +178,10 @@ func (cv *entryCreateView) View() string {
 	return entriesMutateViewView(cv)
 }
 
+func (cv *entryCreateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:  {},
@@ -391,6 +395,10 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (uv *entryUpdateView) View() string {
 	return entriesMutateViewView(uv)
+}
+
+func (uv *entryUpdateView) AllowsInsertMode() bool {
+	return true
 }
 
 func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -1417,6 +1425,10 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *entryDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *entryDeleteView) AllowsInsertMode() bool {
+	return false
 }
 
 func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

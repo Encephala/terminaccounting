@@ -66,6 +66,10 @@ func (mm *ModalManager) View() string {
 	return meta.ModalStyle.Render(mm.Modal.View())
 }
 
+func (mm *ModalManager) CurrentViewAllowsInsertMode() bool {
+	return mm.Modal.AllowsInsertMode()
+}
+
 func (mm *ModalManager) CurrentMotionSet() meta.MotionSet {
 	return mm.Modal.MotionSet()
 }

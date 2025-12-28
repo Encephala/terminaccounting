@@ -119,6 +119,10 @@ func (cv *accountsCreateView) View() string {
 	return genericMutateViewView(cv)
 }
 
+func (cv *accountsCreateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (cv *accountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
@@ -271,6 +275,10 @@ func (uv *accountsUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *accountsUpdateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (uv *accountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},
@@ -376,6 +384,10 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *accountsDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *accountsDeleteView) AllowsInsertMode() bool {
+	return false
 }
 
 func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

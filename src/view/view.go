@@ -19,6 +19,7 @@ type View interface {
 	Update(tea.Msg) (View, tea.Cmd)
 	View() string
 
+	AllowsInsertMode() bool
 	AcceptedModels() map[meta.ModelType]struct{}
 
 	MotionSet() meta.MotionSet

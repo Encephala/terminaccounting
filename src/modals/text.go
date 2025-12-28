@@ -69,6 +69,10 @@ func (tm *textModal) View() string {
 	return tm.viewport.View()
 }
 
+func (tm *textModal) AllowsInsertMode() bool {
+	return false
+}
+
 func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }

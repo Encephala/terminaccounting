@@ -112,6 +112,10 @@ func (cv *ledgersCreateView) View() string {
 	return genericMutateViewView(cv)
 }
 
+func (cv *ledgersCreateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
@@ -257,6 +261,10 @@ func (uv *ledgersUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *ledgersUpdateView) AllowsInsertMode() bool {
+	return true
+}
+
 func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL: {},
@@ -356,6 +364,10 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *ledgersDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *ledgersDeleteView) AllowsInsertMode() bool {
+	return false
 }
 
 func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

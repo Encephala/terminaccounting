@@ -115,6 +115,10 @@ func (app *entriesApp) CurrentCommandSet() meta.CommandSet {
 	return app.currentView.CommandSet()
 }
 
+func (app *entriesApp) CurrentViewAllowsInsertMode() bool {
+	return app.currentView.AllowsInsertMode()
+}
+
 func (app *entriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }

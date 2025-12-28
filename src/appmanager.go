@@ -161,6 +161,10 @@ func (am *appManager) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
+func (am *appManager) currentViewAllowsInsertMode() bool {
+	return am.apps[am.activeApp].CurrentViewAllowsInsertMode()
+}
+
 func (am *appManager) CurrentMotionSet() meta.MotionSet {
 	return am.apps[am.activeApp].CurrentMotionSet()
 }
