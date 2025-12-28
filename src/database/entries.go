@@ -60,9 +60,24 @@ func MakeLoadEntryDetailCmd(id int) tea.Cmd {
 }
 
 func CalculateTotal(rows []*EntryRow) CurrencyValue {
-	sum := CurrencyValue(0)
+	var sum CurrencyValue
 
 	for _, row := range rows {
+		sum = sum.Add(row.Value)
+	}
+
+	return sum
+}
+
+// Calculate the total money moved by the entry
+func CalculateSize(rows []*EntryRow) CurrencyValue {
+	var sum CurrencyValue
+
+	for _, row := range rows {
+		if row.Value < 0 {
+			continue
+		}
+
 		sum = sum.Add(row.Value)
 	}
 

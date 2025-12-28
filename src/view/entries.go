@@ -1363,6 +1363,7 @@ type entryDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
+	rows    []*database.EntryRow
 	journal *database.Journal
 
 	colours meta.AppColours
@@ -1378,24 +1379,38 @@ func NewEntryDeleteView(modelId int) *entryDeleteView {
 
 func (dv *entryDeleteView) Init() tea.Cmd {
 	// Can't load journal yet, we only know journal ID when entry is loaded
-	return database.MakeLoadEntryDetailCmd(dv.modelId)
+	entryCmd := database.MakeLoadEntryDetailCmd(dv.modelId)
+	rowsCmd := database.MakeSelectEntryRowsCmd(dv.modelId)
+
+	return tea.Batch(entryCmd, rowsCmd)
 }
 
 func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
-		dv.model = message.Data.(database.Entry)
+		switch message.Model {
+		case meta.ENTRYMODEL:
+			dv.model = message.Data.(database.Entry)
 
-		journalIndex := slices.IndexFunc(database.AvailableJournals, func(j database.Journal) bool {
-			return j.Id == dv.model.Journal
-		})
-		if journalIndex == -1 {
-			return dv, meta.MessageCmd(fmt.Errorf("couldn't find journal %d in cache", dv.model.Journal))
+			journalIndex := slices.IndexFunc(database.AvailableJournals, func(j database.Journal) bool {
+				return j.Id == dv.model.Journal
+			})
+			if journalIndex == -1 {
+				return dv, meta.MessageCmd(fmt.Errorf("couldn't find journal %d in cache", dv.model.Journal))
+			}
+
+			// Don't reference original journal directly to ensure cache is never mutated
+			journal := database.AvailableJournals[journalIndex]
+			dv.journal = &journal
+
+		case meta.ENTRYROWMODEL:
+			rows := message.Data.([]database.EntryRow)
+
+			dv.rows = make([]*database.EntryRow, len(rows))
+			for i, row := range rows {
+				dv.rows[i] = &row
+			}
 		}
-
-		// Don't reference original journal directly to ensure cache is never mutated
-		journal := database.AvailableJournals[journalIndex]
-		dv.journal = &journal
 
 		return dv, nil
 
@@ -1431,7 +1446,8 @@ func (dv *entryDeleteView) View() string {
 
 func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
-		meta.ENTRYMODEL: {},
+		meta.ENTRYMODEL:    {},
+		meta.ENTRYROWMODEL: {},
 	}
 }
 
@@ -1472,11 +1488,13 @@ func (dv *entryDeleteView) inputValues() []string {
 
 	result = append(result, dv.model.Notes.Collapse())
 
+	result = append(result, database.CalculateSize(dv.rows).String())
+
 	return result
 }
 
 func (dv *entryDeleteView) inputNames() []string {
-	return []string{"Journal", "Notes"}
+	return []string{"Journal", "Notes", "Entry size"}
 }
 
 func (dv *entryDeleteView) getColours() meta.AppColours {
