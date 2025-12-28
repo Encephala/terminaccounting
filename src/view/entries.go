@@ -1488,13 +1488,15 @@ func (dv *entryDeleteView) inputValues() []string {
 
 	result = append(result, dv.model.Notes.Collapse())
 
+	result = append(result, fmt.Sprintf("%d", len(dv.rows)))
+
 	result = append(result, database.CalculateSize(dv.rows).String())
 
 	return result
 }
 
 func (dv *entryDeleteView) inputNames() []string {
-	return []string{"Journal", "Notes", "Entry size"}
+	return []string{"Journal", "Notes", "# rows", "Entry size"}
 }
 
 func (dv *entryDeleteView) getColours() meta.AppColours {

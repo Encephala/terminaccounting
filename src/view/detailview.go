@@ -64,8 +64,8 @@ func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 			// -4 for padding on each side
 			Width: message.Width - 4,
 			// -4 for the title and table header (header is not considered for table width)
-			// -5 to for the total rows their vertical margin
-			Height: message.Height - 4 - 5,
+			// -6 to for the total rows their vertical margin
+			Height: message.Height - 4 - 6,
 		})
 
 		return dv, cmd
@@ -184,10 +184,6 @@ func (dv *DetailView) View() string {
 
 	result.WriteString("\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(dv.rows))))
-
-	result.WriteString("\n")
-
 	if dv.showTotalReconciled {
 		totalReconciled := database.CalculateTotal(dv.getReconciledRows())
 		var totalReconciledRendered string
@@ -198,7 +194,15 @@ func (dv *DetailView) View() string {
 			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
 		}
 		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
+
+		result.WriteString("\n")
 	}
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(dv.rows))))
+
+	result.WriteString("\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("# rows: %d", len(dv.rows))))
 
 	return result.String()
 }
