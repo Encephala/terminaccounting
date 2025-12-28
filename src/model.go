@@ -122,22 +122,8 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, tea.Batch(cmds...)
 
-	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
-		var cmds []tea.Cmd
-		var cmd tea.Cmd
-		ta.modalManager, cmd = ta.modalManager.Update(message)
-		cmds = append(cmds, cmd)
-
-		// -20/-10 to give some padding, make it clear it's an overlay
-		ta.modalManager, cmd = ta.modalManager.Update(tea.WindowSizeMsg{
-			Width:  ta.width - 20,
-			Height: ta.height - 10,
-		})
-		cmds = append(cmds, cmd)
-
-		ta.showModal = true
-
-		return ta, tea.Batch(cmds...)
+	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg, meta.SwitchViewMsg:
+		return ta.handleViewSwitch(message)
 
 	case meta.NotificationMessageMsg:
 		notification := notificationMsg{
@@ -190,13 +176,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return ta, nil
-
-	case meta.SwitchViewMsg:
-		// Always switch view in AppManager, can't switch view within a modal
-		var cmd tea.Cmd
-		ta.appManager, cmd = ta.appManager.Update(message)
-
-		return ta, cmd
 
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
@@ -442,6 +421,34 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 
 	default:
 		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
+	}
+}
+
+func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.SwitchViewMsg:
+		// This is always targeted at apps
+		var cmd tea.Cmd
+		ta.appManager, cmd = ta.appManager.Update(message)
+
+		return ta, cmd
+
+	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
+		newModalManager, activateCmd := ta.modalManager.Update(message)
+
+		var windowSizeCmd tea.Cmd
+		ta.modalManager, windowSizeCmd = newModalManager.Update(tea.WindowSizeMsg{
+			// -20/-10 to give some padding, make it clear it's an overlay
+			Width:  ta.width - 20,
+			Height: ta.height - 10,
+		})
+
+		ta.showModal = true
+
+		return ta, tea.Batch(activateCmd, windowSizeCmd)
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
