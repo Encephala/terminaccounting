@@ -323,7 +323,7 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 		command := strings.Split(command, "")
 
 		if completion := ta.commandSet().Autocomplete(command); completion != nil {
-			slog.Debug("Autocompleted command %q to %q",
+			slog.Debug("Autocompleted command",
 				"original", strings.Join(command, ""),
 				"completion", strings.Join(completion, ""),
 			)
