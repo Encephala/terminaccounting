@@ -22,12 +22,12 @@ type DetailView struct {
 	modelId   int
 	modelName string
 
-	originalRows   []database.EntryRow
-	rows           []*database.EntryRow
-	viewer         *entryRowViewer
-	showReconciled bool
+	originalRows []database.EntryRow
+	rows         []*database.EntryRow
+	viewer       *entryRowViewer
 
-	showTotalReconciled bool
+	showReconciledRows  bool
+	showReconciledTotal bool
 }
 
 func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
@@ -37,8 +37,8 @@ func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
 		modelId:   modelId,
 		modelName: modelName,
 
-		viewer:         newEntryRowViewer(app.Colours()),
-		showReconciled: false,
+		viewer:             newEntryRowViewer(app.Colours()),
+		showReconciledRows: false,
 	}
 }
 
@@ -101,7 +101,7 @@ func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	case meta.ToggleShowReconciledMsg:
 		activeEntryRow := dv.viewer.activeEntryRow()
 
-		dv.showReconciled = !dv.showReconciled
+		dv.showReconciledRows = !dv.showReconciledRows
 
 		dv.updateViewRows()
 
@@ -119,15 +119,15 @@ func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 		}
 
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
-		if !dv.showReconciled && dv.viewer.activeRow == len(dv.viewer.viewRows)-1 {
+		if !dv.showReconciledRows && dv.viewer.activeRow == len(dv.viewer.viewRows)-1 {
 			dv.viewer.activeRow = max(0, dv.viewer.activeRow-1)
 		}
 		dv.updateViewRows()
 
 		if dv.rowsAreChanged() {
-			dv.showTotalReconciled = true
+			dv.showReconciledTotal = true
 		} else {
-			dv.showTotalReconciled = false
+			dv.showReconciledTotal = false
 		}
 
 		return dv, nil
@@ -152,7 +152,7 @@ func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
 		// Reset dv.originalRows
 		for i, row := range dv.rows {
 			dv.originalRows[i] = *row
-			dv.showTotalReconciled = false
+			dv.showReconciledTotal = false
 		}
 
 		return dv, meta.MessageCmd(notification)
@@ -172,7 +172,7 @@ func (dv *DetailView) View() string {
 
 	result.WriteString("\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(dv.showReconciled))))
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(dv.showReconciledRows))))
 
 	result.WriteString("\n\n")
 
@@ -184,7 +184,7 @@ func (dv *DetailView) View() string {
 
 	result.WriteString("\n")
 
-	if dv.showTotalReconciled {
+	if dv.showReconciledTotal {
 		totalReconciled := database.CalculateTotal(dv.getReconciledRows())
 		var totalReconciledRendered string
 		if totalReconciled == 0 {
@@ -260,7 +260,7 @@ func (dv *DetailView) rowsAreChanged() bool {
 
 func (dv *DetailView) updateViewRows() {
 	var shownRows []*database.EntryRow
-	if dv.showReconciled {
+	if dv.showReconciledRows {
 		shownRows = dv.rows
 	} else {
 		shownRows = dv.getUnreconciledRows()
