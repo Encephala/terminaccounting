@@ -1243,7 +1243,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 	default:
 		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
 		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-		slog.Warn("Unexpected tea.Msg", "message", message)
+		slog.Warn("Unexpected tea.Msg", "message", fmt.Sprintf("%#v", message))
 		return view, nil
 	}
 }
