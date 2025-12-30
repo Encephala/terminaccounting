@@ -370,7 +370,7 @@ func (erv *entryRowViewer) scrollViewport() {
 }
 
 func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
-	if len(erv.rows) == 0 {
+	if len(erv.viewRows) == 0 {
 		return nil
 	}
 
