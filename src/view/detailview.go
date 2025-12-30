@@ -28,59 +28,6 @@ type genericDetailView interface {
 	getColours() meta.AppColours
 }
 
-func genericDetailViewView(gdv genericDetailView) string {
-	colours := gdv.getColours()
-
-	var result strings.Builder
-
-	marginLeftStyle := lipgloss.NewStyle().MarginLeft(2)
-
-	titleStyle := marginLeftStyle.Background(colours.Background).Padding(0, 1)
-	result.WriteString(titleStyle.Render(gdv.title()))
-
-	result.WriteString("\n")
-
-	if gdv.canReconcile() {
-		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(*gdv.getShowReconciledRows()))))
-	} else {
-		result.WriteString(lipgloss.NewStyle().Italic(true).MarginLeft(2).Render("Reconciling disabled"))
-	}
-
-	result.WriteString("\n\n")
-
-	result.WriteString(marginLeftStyle.Render(gdv.getViewer().View(gdv.canReconcile())))
-
-	result.WriteString("\n\n")
-
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(gdv.getViewer().rows))))
-
-	result.WriteString("\n")
-
-	if gdv.canReconcile() && *gdv.getShowReconciledTotal() {
-		totalReconciled := database.CalculateTotal(gdv.getViewer().getReconciledRows())
-		var totalReconciledRendered string
-
-		if totalReconciled == 0 {
-			style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-			totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
-		} else {
-			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
-		}
-
-		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
-
-		result.WriteString("\n")
-	}
-
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(gdv.getViewer().rows))))
-
-	result.WriteString("\n")
-
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("# rows: %d", len(gdv.getViewer().rows))))
-
-	return result.String()
-}
-
 func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.Cmd) {
 	viewer := gdv.getViewer()
 
@@ -195,6 +142,59 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
+}
+
+func genericDetailViewView(gdv genericDetailView) string {
+	colours := gdv.getColours()
+
+	var result strings.Builder
+
+	marginLeftStyle := lipgloss.NewStyle().MarginLeft(2)
+
+	titleStyle := marginLeftStyle.Background(colours.Background).Padding(0, 1)
+	result.WriteString(titleStyle.Render(gdv.title()))
+
+	result.WriteString("\n")
+
+	if gdv.canReconcile() {
+		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(*gdv.getShowReconciledRows()))))
+	} else {
+		result.WriteString(lipgloss.NewStyle().Italic(true).MarginLeft(2).Render("Reconciling disabled"))
+	}
+
+	result.WriteString("\n\n")
+
+	result.WriteString(marginLeftStyle.Render(gdv.getViewer().View(gdv.canReconcile())))
+
+	result.WriteString("\n\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(gdv.getViewer().rows))))
+
+	result.WriteString("\n")
+
+	if gdv.canReconcile() && *gdv.getShowReconciledTotal() {
+		totalReconciled := database.CalculateTotal(gdv.getViewer().getReconciledRows())
+		var totalReconciledRendered string
+
+		if totalReconciled == 0 {
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+			totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
+		} else {
+			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
+		}
+
+		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
+
+		result.WriteString("\n")
+	}
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(gdv.getViewer().rows))))
+
+	result.WriteString("\n")
+
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("# rows: %d", len(gdv.getViewer().rows))))
+
+	return result.String()
 }
 
 func genericDetailViewMotionSet() meta.MotionSet {
