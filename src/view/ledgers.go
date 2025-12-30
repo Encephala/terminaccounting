@@ -109,6 +109,24 @@ func (dv *ledgersDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
+func (dv *ledgersDetailView) canReconcile() bool {
+	// If ledger not loaded yet, default to false as the safe option
+	if dv.model.Type == "" {
+		return false
+	}
+
+	switch dv.model.Type {
+	case database.INCOMELEDGER, database.EXPENSELEDGER:
+		return true
+
+	case database.ASSETLEDGER, database.EQUITYLEDGER, database.LIABILITYLEDGER:
+		return false
+
+	default:
+		panic(fmt.Sprintf("unexpected database.LedgerType: %#v", dv.model.Type))
+	}
+}
+
 func (dv *ledgersDetailView) getShowReconciledRows() *bool {
 	return &dv.showReconciledRows
 }

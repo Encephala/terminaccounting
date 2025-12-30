@@ -21,6 +21,7 @@ type genericDetailView interface {
 
 	getViewer() *entryRowViewer
 
+	canReconcile() bool
 	getShowReconciledRows() *bool
 	getShowReconciledTotal() *bool
 
@@ -39,11 +40,15 @@ func genericDetailViewView(gdv genericDetailView) string {
 
 	result.WriteString("\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(*gdv.getShowReconciledRows()))))
+	if gdv.canReconcile() {
+		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(*gdv.getShowReconciledRows()))))
+	} else {
+		result.WriteString(lipgloss.NewStyle().Italic(true).MarginLeft(2).Render("Reconciling disabled"))
+	}
 
 	result.WriteString("\n\n")
 
-	result.WriteString(marginLeftStyle.Render(gdv.getViewer().View()))
+	result.WriteString(marginLeftStyle.Render(gdv.getViewer().View(gdv.canReconcile())))
 
 	result.WriteString("\n\n")
 
@@ -51,15 +56,17 @@ func genericDetailViewView(gdv genericDetailView) string {
 
 	result.WriteString("\n")
 
-	if *gdv.getShowReconciledTotal() {
+	if gdv.canReconcile() && *gdv.getShowReconciledTotal() {
 		totalReconciled := database.CalculateTotal(gdv.getViewer().getReconciledRows())
 		var totalReconciledRendered string
+
 		if totalReconciled == 0 {
 			style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
 			totalReconciledRendered = style.Render(fmt.Sprintf("%s", totalReconciled))
 		} else {
 			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
 		}
+
 		result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered)))
 
 		result.WriteString("\n")
@@ -86,8 +93,9 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			// -6 to for the total rows their vertical margin
 			Height: message.Height - 4 - 6,
 		})
-
 		*viewer = *newViewer
+
+		viewer.calculateColumnWidths(gdv.canReconcile())
 
 		return gdv, cmd
 
@@ -108,7 +116,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 
-		viewer.updateViewRows(*gdv.getShowReconciledRows())
+		viewer.updateViewRows(gdv.canReconcile(), *gdv.getShowReconciledRows())
 
 		return gdv, nil
 
@@ -119,10 +127,14 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		return gdv, cmd
 
 	case meta.ToggleShowReconciledMsg:
+		if !gdv.canReconcile() {
+			return gdv, meta.MessageCmd(errors.New("reconciling is disabled, no reconciled rows to show"))
+		}
+
 		showReconciledRows := gdv.getShowReconciledRows()
 		*showReconciledRows = !*showReconciledRows
 
-		viewer.updateViewRows(*showReconciledRows)
+		viewer.updateViewRows(gdv.canReconcile(), *showReconciledRows)
 
 		if activeEntryRow := viewer.activeEntryRow(); activeEntryRow != nil {
 			viewer.activateEntryRow(activeEntryRow)
@@ -131,6 +143,10 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		return gdv, nil
 
 	case meta.ReconcileMsg:
+		if !gdv.canReconcile() {
+			return gdv, meta.MessageCmd(errors.New("reconciling is disabled"))
+		}
+
 		activeEntryRow := viewer.activeEntryRow()
 
 		if activeEntryRow == nil {
@@ -141,7 +157,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		if !*gdv.getShowReconciledRows() && viewer.activeRow == len(viewer.viewRows)-1 {
 			viewer.activeRow = max(0, viewer.activeRow-1)
 		}
-		viewer.updateViewRows(*gdv.getShowReconciledRows())
+		viewer.updateViewRows(gdv.canReconcile(), *gdv.getShowReconciledRows())
 
 		if viewer.rowsAreChanged() {
 			*gdv.getShowReconciledTotal() = true
@@ -253,8 +269,6 @@ func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
 func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		erv.colWidths = erv.calculateColumnWidths(message.Width)
-
 		erv.width = message.Width
 		erv.height = message.Height
 
@@ -288,12 +302,16 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 	}
 }
 
-func (erv *entryRowViewer) View() string {
+func (erv *entryRowViewer) View(canReconcile bool) string {
 	var result strings.Builder
 
-	erv.setViewportContent()
+	erv.setViewportContent(canReconcile)
 
-	result.WriteString(erv.renderRow(erv.headers, false))
+	if canReconcile {
+		result.WriteString(erv.renderRow(erv.headers, false))
+	} else {
+		result.WriteString(erv.renderRow(erv.headers[:len(erv.headers)-1], false))
+	}
 
 	result.WriteString("\n")
 
@@ -302,7 +320,7 @@ func (erv *entryRowViewer) View() string {
 	return result.String()
 }
 
-func (erv *entryRowViewer) updateViewRows(showReconciledRows bool) {
+func (erv *entryRowViewer) updateViewRows(canReconcile, showReconciledRows bool) {
 	var shownRows []*database.EntryRow
 	if showReconciledRows {
 		shownRows = erv.rows
@@ -351,7 +369,9 @@ func (erv *entryRowViewer) updateViewRows(showReconciledRows bool) {
 			viewRow = append(viewRow, (-row.Value).String())
 		}
 
-		viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
+		if canReconcile {
+			viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
+		}
 
 		viewRows = append(viewRows, viewRow)
 	}
@@ -377,27 +397,43 @@ func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
 	return erv.rows[erv.activeRow]
 }
 
-func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
+func (erv *entryRowViewer) calculateColumnWidths(canReconcile bool) {
 	dateWidth := 10 // This is simply the width of a date field
 	reconciledWidth := len("Reconciled")
 
-	// -2 because of left/right padding
-	remainingWidth := totalWidth - dateWidth - reconciledWidth - 4
-	descriptionWidth := remainingWidth / 3
+	var colWidths []int
+	if canReconcile {
+		// -4 because of left/right margin
+		remainingWidth := erv.width - dateWidth - reconciledWidth - 4
+		descriptionWidth := remainingWidth / 3
 
-	// -12 because of the 2-wide padding between columns, 6x
-	othersWidth := (remainingWidth - descriptionWidth - 12) / 4
-	colWidths := []int{dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth, reconciledWidth}
+		// -12 because of the 2-wide padding between columns, 6x
+		// /4 because there are four other columns
+		othersWidth := (remainingWidth - descriptionWidth - 12) / 4
+		colWidths = []int{dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth, reconciledWidth}
+	} else {
+		// -4 because of left/right margin
+		remainingWidth := erv.width - dateWidth - 4
+		descriptionWidth := remainingWidth / 3
 
-	return colWidths
+		// -10 because of the 2-wide padding between columns, 5x
+		othersWidth := (remainingWidth - descriptionWidth - 10) / 4
+		colWidths = []int{dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth}
+	}
+
+	erv.colWidths = colWidths
 }
 
-func (erv *entryRowViewer) setViewportContent() {
+func (erv *entryRowViewer) setViewportContent(canReconcile bool) {
 	var content []string
 
 	for i, row := range erv.viewRows {
 		doHighlight := i == erv.activeRow
-		content = append(content, erv.renderRow(row, doHighlight))
+		if canReconcile {
+			content = append(content, erv.renderRow(row, doHighlight))
+		} else {
+			content = append(content, erv.renderRow(row, doHighlight))
+		}
 	}
 
 	erv.viewport.SetContent(strings.Join(content, "\n"))

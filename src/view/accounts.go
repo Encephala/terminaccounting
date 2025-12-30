@@ -108,6 +108,10 @@ func (dv *accountsDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
+func (dv *accountsDetailView) canReconcile() bool {
+	return false
+}
+
 func (dv *accountsDetailView) getShowReconciledRows() *bool {
 	return &dv.showReconciledRows
 }
