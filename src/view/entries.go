@@ -27,9 +27,6 @@ type entriesDetailView struct {
 	model   database.Entry
 
 	viewer *entryRowViewer
-
-	showReconciledRows  bool
-	showReconciledTotal bool
 }
 
 func NewEntriesDetailView(modelId int) *entriesDetailView {
@@ -111,18 +108,6 @@ func (dv *entriesDetailView) Reload() View {
 
 func (dv *entriesDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *entriesDetailView) canReconcile() bool {
-	return false
-}
-
-func (dv *entriesDetailView) getShowReconciledRows() *bool {
-	return &dv.showReconciledRows
-}
-
-func (dv *entriesDetailView) getShowReconciledTotal() *bool {
-	return &dv.showReconciledTotal
 }
 
 func (dv *entriesDetailView) getColours() meta.AppColours {

@@ -20,9 +20,6 @@ type accountsDetailView struct {
 	model   database.Account
 
 	viewer *entryRowViewer
-
-	showReconciledRows  bool
-	showReconciledTotal bool
 }
 
 func NewAccountsDetailView(modelId int) *accountsDetailView {
@@ -106,18 +103,6 @@ func (dv *accountsDetailView) Reload() View {
 
 func (dv *accountsDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *accountsDetailView) canReconcile() bool {
-	return false
-}
-
-func (dv *accountsDetailView) getShowReconciledRows() *bool {
-	return &dv.showReconciledRows
-}
-
-func (dv *accountsDetailView) getShowReconciledTotal() *bool {
-	return &dv.showReconciledTotal
 }
 
 func (dv *accountsDetailView) getColours() meta.AppColours {

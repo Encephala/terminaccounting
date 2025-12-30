@@ -21,9 +21,6 @@ type ledgersDetailView struct {
 	model   database.Ledger
 
 	viewer *entryRowViewer
-
-	showReconciledRows  bool
-	showReconciledTotal bool
 }
 
 func NewLedgersDetailView(modelId int) *ledgersDetailView {
@@ -49,6 +46,17 @@ func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 		switch message.Model {
 		case meta.LEDGERMODEL:
 			dv.model = message.Data.(database.Ledger)
+
+			switch dv.model.Type {
+			case database.INCOMELEDGER, database.EXPENSELEDGER:
+				dv.viewer.setCanReconcile(true)
+
+			case database.ASSETLEDGER, database.EQUITYLEDGER, database.LIABILITYLEDGER:
+				dv.viewer.setCanReconcile(false)
+
+			default:
+				panic(fmt.Sprintf("unexpected database.LedgerType: %#v", dv.model.Type))
+			}
 
 			return dv, nil
 
@@ -107,32 +115,6 @@ func (dv *ledgersDetailView) Reload() View {
 
 func (dv *ledgersDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *ledgersDetailView) canReconcile() bool {
-	// If ledger not loaded yet, default to false as the safe option
-	if dv.model.Type == "" {
-		return false
-	}
-
-	switch dv.model.Type {
-	case database.INCOMELEDGER, database.EXPENSELEDGER:
-		return true
-
-	case database.ASSETLEDGER, database.EQUITYLEDGER, database.LIABILITYLEDGER:
-		return false
-
-	default:
-		panic(fmt.Sprintf("unexpected database.LedgerType: %#v", dv.model.Type))
-	}
-}
-
-func (dv *ledgersDetailView) getShowReconciledRows() *bool {
-	return &dv.showReconciledRows
-}
-
-func (dv *ledgersDetailView) getShowReconciledTotal() *bool {
-	return &dv.showReconciledTotal
 }
 
 func (dv *ledgersDetailView) getColours() meta.AppColours {
