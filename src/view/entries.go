@@ -21,6 +21,110 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type entriesDetailView struct {
+	// The entries whose rows are being shown
+	modelId int
+	model   database.Entry
+
+	viewer *entryRowViewer
+
+	showReconciledRows  bool
+	showReconciledTotal bool
+}
+
+func NewEntriesDetailView(modelId int) *entriesDetailView {
+	return &entriesDetailView{
+		modelId: modelId,
+
+		viewer: newEntryRowViewer(meta.ENTRIESCOLOURS),
+	}
+}
+
+func (dv *entriesDetailView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, database.MakeLoadEntriesDetailCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadEntriesRowsCmd(dv.modelId))
+
+	return tea.Batch(cmds...)
+}
+
+func (dv *entriesDetailView) Update(message tea.Msg) (View, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.ENTRYMODEL:
+			dv.model = message.Data.(database.Entry)
+
+			return dv, nil
+
+		case meta.ENTRYROWMODEL:
+			newView, cmd := genericDetailViewUpdate(dv, message)
+
+			return newView.(View), cmd
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+	}
+
+	newView, cmd := genericDetailViewUpdate(dv, message)
+
+	return newView.(View), cmd
+}
+
+func (dv *entriesDetailView) View() string {
+	return genericDetailViewView(dv)
+}
+
+func (dv *entriesDetailView) title() string {
+	return fmt.Sprintf("Entry %d details", dv.model.Id)
+}
+
+func (dv *entriesDetailView) AllowsInsertMode() bool {
+	return false
+}
+
+func (dv *entriesDetailView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ENTRYMODEL:    {},
+		meta.ENTRYROWMODEL: {},
+	}
+}
+
+func (dv *entriesDetailView) MotionSet() meta.MotionSet {
+	result := genericDetailViewMotionSet()
+
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+
+	return result
+}
+
+func (dv *entriesDetailView) CommandSet() meta.CommandSet {
+	return genericDetailViewCommandSet()
+}
+
+func (dv *entriesDetailView) Reload() View {
+	return NewEntriesDetailView(dv.modelId)
+}
+
+func (dv *entriesDetailView) getViewer() *entryRowViewer {
+	return dv.viewer
+}
+
+func (dv *entriesDetailView) getShowReconciledRows() *bool {
+	return &dv.showReconciledRows
+}
+
+func (dv *entriesDetailView) getShowReconciledTotal() *bool {
+	return &dv.showReconciledTotal
+}
+
+func (dv *entriesDetailView) getColours() meta.AppColours {
+	return meta.ENTRIESCOLOURS
+}
+
 // NOTE: entries doesn't use the genericMutateView, because with the row creating it's too idiosyncratic
 
 const (
@@ -1362,7 +1466,7 @@ func NewEntryDeleteView(modelId int) *entryDeleteView {
 
 func (dv *entryDeleteView) Init() tea.Cmd {
 	// Can't load journal yet, we only know journal ID when entry is loaded
-	entryCmd := database.MakeLoadEntryDetailCmd(dv.modelId)
+	entryCmd := database.MakeLoadEntriesDetailCmd(dv.modelId)
 	rowsCmd := database.MakeSelectEntryRowsCmd(dv.modelId)
 
 	return tea.Batch(entryCmd, rowsCmd)

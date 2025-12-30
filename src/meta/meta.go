@@ -22,7 +22,6 @@ type App interface {
 	AcceptedModels() map[ModelType]struct{}
 
 	MakeLoadListCmd() tea.Cmd
-	MakeLoadRowsCmd(modelId int) tea.Cmd
 
 	ReloadView() tea.Cmd
 }

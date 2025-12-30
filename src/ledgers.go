@@ -51,7 +51,7 @@ func (app *ledgersApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			ledger := message.Data.(database.Ledger)
 
-			app.currentView = view.NewDetailView(app, ledger.Id, ledger.Name)
+			app.currentView = view.NewLedgersDetailView(ledger.Id)
 
 		case meta.CREATEVIEWTYPE:
 			app.currentView = view.NewLedgersCreateView()
@@ -129,22 +129,6 @@ func (app *ledgersApp) MakeLoadListCmd() tea.Cmd {
 			TargetApp: meta.LEDGERSAPP,
 			Model:     meta.LEDGERMODEL,
 			Data:      items,
-		}
-	}
-}
-
-func (app *ledgersApp) MakeLoadRowsCmd(ledgerId int) tea.Cmd {
-	// Aren't closures just great
-	return func() tea.Msg {
-		rows, err := database.SelectRowsByLedger(ledgerId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.LEDGERSAPP,
-			Model:     meta.ENTRYROWMODEL,
-			Data:      rows,
 		}
 	}
 }

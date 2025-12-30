@@ -107,6 +107,22 @@ func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
 	}
 }
 
+func MakeLoadAccountsRowsCmd(modelId int) tea.Cmd {
+	// Aren't closures just great (still)
+	return func() tea.Msg {
+		rows, err := SelectRowsByAccount(modelId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ACCOUNT ROWS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ACCOUNTSAPP,
+			Model:     meta.ENTRYROWMODEL,
+			Data:      rows,
+		}
+	}
+}
+
 func setupSchemaAccounts() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("accounts")
 	if err != nil {

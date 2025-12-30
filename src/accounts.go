@@ -51,7 +51,7 @@ func (app *accountsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			account := message.Data.(database.Account)
 
-			app.currentView = view.NewDetailView(app, account.Id, account.Name)
+			app.currentView = view.NewAccountsDetailView(account.Id)
 
 		case meta.CREATEVIEWTYPE:
 			app.currentView = view.NewAccountsCreateView()
@@ -129,22 +129,6 @@ func (app *accountsApp) MakeLoadListCmd() tea.Cmd {
 			TargetApp: meta.ACCOUNTSAPP,
 			Model:     meta.ACCOUNTMODEL,
 			Data:      items,
-		}
-	}
-}
-
-func (app *accountsApp) MakeLoadRowsCmd(modelId int) tea.Cmd {
-	// Aren't closures just great (still)
-	return func() tea.Msg {
-		rows, err := database.SelectRowsByAccount(modelId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD ACCOUNT ROWS: %v", err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.ACCOUNTSAPP,
-			Model:     meta.ENTRYROWMODEL,
-			Data:      rows,
 		}
 	}
 }

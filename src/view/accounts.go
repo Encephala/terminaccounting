@@ -14,6 +14,112 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type accountsDetailView struct {
+	// The account whose rows are being shown
+	modelId int
+	model   database.Account
+
+	viewer *entryRowViewer
+
+	showReconciledRows  bool
+	showReconciledTotal bool
+}
+
+func NewAccountsDetailView(modelId int) *accountsDetailView {
+	return &accountsDetailView{
+		modelId: modelId,
+
+		viewer: newEntryRowViewer(meta.ACCOUNTSCOLOURS),
+	}
+}
+
+func (dv *accountsDetailView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, database.MakeLoadAccountsDetailCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadAccountsRowsCmd(dv.modelId))
+
+	return tea.Batch(cmds...)
+}
+
+func (dv *accountsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.ACCOUNTMODEL:
+			dv.model = message.Data.(database.Account)
+
+			return dv, nil
+
+		case meta.ENTRYROWMODEL:
+			newView, cmd := genericDetailViewUpdate(dv, message)
+
+			return newView.(View), cmd
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+	}
+
+	newView, cmd := genericDetailViewUpdate(dv, message)
+
+	return newView.(View), cmd
+}
+
+func (dv *accountsDetailView) View() string {
+	return genericDetailViewView(dv)
+}
+
+func (dv *accountsDetailView) title() string {
+	return fmt.Sprintf("Account %s details", dv.model.Name)
+}
+
+func (dv *accountsDetailView) AllowsInsertMode() bool {
+	return false
+}
+
+func (dv *accountsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.ACCOUNTMODEL:  {},
+		meta.ENTRYROWMODEL: {},
+	}
+}
+
+func (dv *accountsDetailView) MotionSet() meta.MotionSet {
+	result := genericDetailViewMotionSet()
+
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+
+	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.activeEntryRow()))
+
+	return result
+}
+
+func (dv *accountsDetailView) CommandSet() meta.CommandSet {
+	return genericDetailViewCommandSet()
+}
+
+func (dv *accountsDetailView) Reload() View {
+	return NewAccountsDetailView(dv.modelId)
+}
+
+func (dv *accountsDetailView) getViewer() *entryRowViewer {
+	return dv.viewer
+}
+
+func (dv *accountsDetailView) getShowReconciledRows() *bool {
+	return &dv.showReconciledRows
+}
+
+func (dv *accountsDetailView) getShowReconciledTotal() *bool {
+	return &dv.showReconciledTotal
+}
+
+func (dv *accountsDetailView) getColours() meta.AppColours {
+	return meta.ACCOUNTSCOLOURS
+}
+
 const (
 	ACCOUNTSNAMEINPUT int = iota
 	ACCOUNTSTYPEINPUT

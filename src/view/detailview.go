@@ -14,178 +14,45 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// A generic, placeholder view that just renders all entries on a ledger/account in a list.
-type DetailView struct {
-	app meta.App
+type genericDetailView interface {
+	View
 
-	// The ledger/account etc. whose rows are being shown
-	modelId   int
-	modelName string
+	title() string
 
-	originalRows []database.EntryRow
-	rows         []*database.EntryRow
-	viewer       *entryRowViewer
+	getViewer() *entryRowViewer
 
-	showReconciledRows  bool
-	showReconciledTotal bool
+	getShowReconciledRows() *bool
+	getShowReconciledTotal() *bool
+
+	getColours() meta.AppColours
 }
 
-func NewDetailView(app meta.App, modelId int, modelName string) *DetailView {
-	return &DetailView{
-		app: app,
+func genericDetailViewView(gdv genericDetailView) string {
+	colours := gdv.getColours()
 
-		modelId:   modelId,
-		modelName: modelName,
-
-		viewer:             newEntryRowViewer(app.Colours()),
-		showReconciledRows: false,
-	}
-}
-
-func (dv *DetailView) Init() tea.Cmd {
-	// TODO: Also show the model metadata and not just the rows?
-	var cmds []tea.Cmd
-	cmds = append(cmds, dv.app.MakeLoadRowsCmd(dv.modelId))
-
-	cmds = append(cmds, database.MakeSelectLedgersCmd(dv.app.Type()))
-	cmds = append(cmds, database.MakeSelectAccountsCmd(dv.app.Type()))
-
-	cmds = append(cmds, dv.viewer.Init())
-
-	return tea.Batch(cmds...)
-}
-
-func (dv *DetailView) Update(message tea.Msg) (View, tea.Cmd) {
-	switch message := message.(type) {
-	case tea.WindowSizeMsg:
-		var cmd tea.Cmd
-
-		dv.viewer, cmd = dv.viewer.Update(tea.WindowSizeMsg{
-			// -4 for padding on each side
-			Width: message.Width - 4,
-			// -4 for the title and table header (header is not considered for table width)
-			// -6 to for the total rows their vertical margin
-			Height: message.Height - 4 - 6,
-		})
-
-		return dv, cmd
-
-	case meta.DataLoadedMsg:
-		switch message.Model {
-		case meta.ENTRYROWMODEL:
-			for _, row := range message.Data.([]database.EntryRow) {
-				dv.originalRows = append(dv.originalRows, row)
-				dv.rows = append(dv.rows, &row)
-			}
-
-		case meta.ACCOUNTMODEL:
-			database.AvailableAccounts = message.Data.([]database.Account)
-
-		case meta.LEDGERMODEL:
-			database.AvailableLedgers = message.Data.([]database.Ledger)
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
-		}
-
-		dv.updateViewRows()
-
-		return dv, nil
-
-	case meta.NavigateMsg:
-		var cmd tea.Cmd
-		dv.viewer, cmd = dv.viewer.Update(message)
-
-		return dv, cmd
-
-	case meta.ToggleShowReconciledMsg:
-		activeEntryRow := dv.viewer.activeEntryRow()
-
-		dv.showReconciledRows = !dv.showReconciledRows
-
-		dv.updateViewRows()
-
-		if activeEntryRow != nil {
-			dv.viewer.activateEntryRow(activeEntryRow)
-		}
-
-		return dv, nil
-
-	case meta.ReconcileMsg:
-		activeEntryRow := dv.viewer.activeEntryRow()
-
-		if activeEntryRow == nil {
-			return dv, meta.MessageCmd(errors.New("there are no rows to reconcile"))
-		}
-
-		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
-		if !dv.showReconciledRows && dv.viewer.activeRow == len(dv.viewer.viewRows)-1 {
-			dv.viewer.activeRow = max(0, dv.viewer.activeRow-1)
-		}
-		dv.updateViewRows()
-
-		if dv.rowsAreChanged() {
-			dv.showReconciledTotal = true
-		} else {
-			dv.showReconciledTotal = false
-		}
-
-		return dv, nil
-
-	case meta.CommitMsg:
-		if !dv.rowsAreChanged() {
-			return dv, meta.MessageCmd(meta.NotificationMessageMsg{Message: "there are no changes in reconciliation to commit"})
-		}
-
-		total := database.CalculateTotal(dv.getReconciledRows())
-		if total != 0 {
-			return dv, meta.MessageCmd(fmt.Errorf("total of reconciled rows not 0 but %s", total))
-		}
-
-		changed, err := database.SetReconciled(dv.rows)
-		if err != nil {
-			return dv, meta.MessageCmd(err)
-		}
-
-		notification := meta.NotificationMessageMsg{Message: fmt.Sprintf("set reconciled status, updated %d rows", changed)}
-
-		// Reset dv.originalRows
-		for i, row := range dv.rows {
-			dv.originalRows[i] = *row
-			dv.showReconciledTotal = false
-		}
-
-		return dv, meta.MessageCmd(notification)
-
-	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-	}
-}
-
-func (dv *DetailView) View() string {
 	var result strings.Builder
 
 	marginLeftStyle := lipgloss.NewStyle().MarginLeft(2)
 
-	titleStyle := marginLeftStyle.Background(dv.app.Colours().Background).Padding(0, 1)
-	result.WriteString(titleStyle.Render(fmt.Sprintf("%s Details: %s", dv.app.Name(), dv.modelName)))
+	titleStyle := marginLeftStyle.Background(colours.Background).Padding(0, 1)
+	result.WriteString(titleStyle.Render(gdv.title()))
 
 	result.WriteString("\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(dv.showReconciledRows))))
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(*gdv.getShowReconciledRows()))))
 
 	result.WriteString("\n\n")
 
-	result.WriteString(marginLeftStyle.Render(dv.viewer.View()))
+	result.WriteString(marginLeftStyle.Render(gdv.getViewer().View()))
 
 	result.WriteString("\n\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(dv.rows))))
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Total: %s", database.CalculateTotal(gdv.getViewer().rows))))
 
 	result.WriteString("\n")
 
-	if dv.showReconciledTotal {
-		totalReconciled := database.CalculateTotal(dv.getReconciledRows())
+	if *gdv.getShowReconciledTotal() {
+		totalReconciled := database.CalculateTotal(gdv.getViewer().getReconciledRows())
 		var totalReconciledRendered string
 		if totalReconciled == 0 {
 			style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
@@ -198,39 +65,129 @@ func (dv *DetailView) View() string {
 		result.WriteString("\n")
 	}
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(dv.rows))))
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("Size: %s", database.CalculateSize(gdv.getViewer().rows))))
 
 	result.WriteString("\n")
 
-	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("# rows: %d", len(dv.rows))))
+	result.WriteString(marginLeftStyle.Render(fmt.Sprintf("# rows: %d", len(gdv.getViewer().rows))))
 
 	return result.String()
 }
 
-func (dv *DetailView) AllowsInsertMode() bool {
-	return false
-}
+func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.Cmd) {
+	viewer := gdv.getViewer()
 
-func (dv *DetailView) AcceptedModels() map[meta.ModelType]struct{} {
-	return map[meta.ModelType]struct{}{
-		meta.ENTRYROWMODEL: {},
-		meta.ACCOUNTMODEL:  {},
-		meta.LEDGERMODEL:   {},
+	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		newViewer, cmd := viewer.Update(tea.WindowSizeMsg{
+			// -4 for padding on each side
+			Width: message.Width - 4,
+			// -4 for the title and table header (header is not considered for table width)
+			// -6 to for the total rows their vertical margin
+			Height: message.Height - 4 - 6,
+		})
+
+		*viewer = *newViewer
+
+		return gdv, cmd
+
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.ENTRYROWMODEL:
+			data := message.Data.([]database.EntryRow)
+
+			viewer.originalRows = make([]database.EntryRow, len(data))
+			viewer.rows = make([]*database.EntryRow, len(data))
+
+			for i, row := range message.Data.([]database.EntryRow) {
+				viewer.originalRows[i] = row
+				viewer.rows[i] = &row
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+
+		viewer.updateViewRows(*gdv.getShowReconciledRows())
+
+		return gdv, nil
+
+	case meta.NavigateMsg:
+		newViewer, cmd := viewer.Update(message)
+		*viewer = *newViewer
+
+		return gdv, cmd
+
+	case meta.ToggleShowReconciledMsg:
+		showReconciledRows := gdv.getShowReconciledRows()
+		*showReconciledRows = !*showReconciledRows
+
+		viewer.updateViewRows(*showReconciledRows)
+
+		if activeEntryRow := viewer.activeEntryRow(); activeEntryRow != nil {
+			viewer.activateEntryRow(activeEntryRow)
+		}
+
+		return gdv, nil
+
+	case meta.ReconcileMsg:
+		activeEntryRow := viewer.activeEntryRow()
+
+		if activeEntryRow == nil {
+			return gdv, meta.MessageCmd(errors.New("there are no rows to reconcile"))
+		}
+
+		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
+		if !*gdv.getShowReconciledRows() && viewer.activeRow == len(viewer.viewRows)-1 {
+			viewer.activeRow = max(0, viewer.activeRow-1)
+		}
+		viewer.updateViewRows(*gdv.getShowReconciledRows())
+
+		if viewer.rowsAreChanged() {
+			*gdv.getShowReconciledTotal() = true
+		} else {
+			*gdv.getShowReconciledTotal() = false
+		}
+
+		return gdv, nil
+
+	case meta.CommitMsg:
+		if !viewer.rowsAreChanged() {
+			return gdv, meta.MessageCmd(meta.NotificationMessageMsg{Message: "there are no changes in reconciliation to commit"})
+		}
+
+		total := database.CalculateTotal(viewer.getReconciledRows())
+		if total != 0 {
+			return gdv, meta.MessageCmd(fmt.Errorf("total of reconciled rows not 0 but %s", total))
+		}
+
+		changed, err := database.SetReconciled(viewer.rows)
+		if err != nil {
+			return gdv, meta.MessageCmd(err)
+		}
+
+		notification := meta.NotificationMessageMsg{Message: fmt.Sprintf("set reconciled status, updated %d rows", changed)}
+
+		// Reset dv.originalRows
+		for i, row := range viewer.rows {
+			viewer.originalRows[i] = *row
+			*gdv.getShowReconciledTotal() = false
+		}
+
+		return gdv, meta.MessageCmd(notification)
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
-func (dv *DetailView) MotionSet() meta.MotionSet {
+func genericDetailViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
-	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-
-	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
-
-	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
 	normalMotions.Insert(meta.Motion{"s", "r"}, meta.ToggleShowReconciledMsg{}) // [S]how [R]econciled
 	normalMotions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
@@ -238,7 +195,7 @@ func (dv *DetailView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *DetailView) CommandSet() meta.CommandSet {
+func genericDetailViewCommandSet() meta.CommandSet {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -246,103 +203,8 @@ func (dv *DetailView) CommandSet() meta.CommandSet {
 	return meta.CommandSet(result)
 }
 
-func (dv *DetailView) Reload() View {
-	return NewDetailView(dv.app, dv.modelId, dv.modelName)
-}
-
-func (dv *DetailView) rowsAreChanged() bool {
-	return !slices.EqualFunc(
-		dv.rows,
-		dv.originalRows,
-		func(row *database.EntryRow, originalRow database.EntryRow) bool { return *row == originalRow },
-	)
-}
-
-func (dv *DetailView) updateViewRows() {
-	var shownRows []*database.EntryRow
-	if dv.showReconciledRows {
-		shownRows = dv.rows
-	} else {
-		shownRows = dv.getUnreconciledRows()
-	}
-
-	var viewRows [][]string
-	for _, row := range shownRows {
-		var viewRow []string
-		viewRow = append(viewRow, row.Date.String())
-
-		var ledger, account string
-
-		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
-			return ledger.Id == row.Ledger
-		})
-		if availableLedgerIndex != -1 {
-			ledger = database.AvailableLedgers[availableLedgerIndex].String()
-		} else {
-			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
-		}
-
-		if row.Account == nil {
-			account = lipgloss.NewStyle().Italic(true).Render("None")
-		} else {
-			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
-				return account.Id == *row.Account
-			})
-
-			if availableAccountIndex != -1 {
-				account = database.AvailableAccounts[availableAccountIndex].String()
-			} else {
-				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
-			}
-		}
-
-		viewRow = append(viewRow, ledger)
-		viewRow = append(viewRow, account)
-		viewRow = append(viewRow, row.Description)
-		if row.Value > 0 {
-			viewRow = append(viewRow, row.Value.String())
-			viewRow = append(viewRow, "")
-		} else {
-			viewRow = append(viewRow, "")
-			viewRow = append(viewRow, (-row.Value).String())
-		}
-
-		viewRow = append(viewRow, "    "+renderBoolean(row.Reconciled))
-
-		viewRows = append(viewRows, viewRow)
-	}
-
-	dv.viewer.setRows(viewRows, shownRows)
-}
-
-func (dv *DetailView) getUnreconciledRows() []*database.EntryRow {
-	var result []*database.EntryRow
-
-	for _, row := range dv.rows {
-		if !row.Reconciled {
-			result = append(result, row)
-		}
-	}
-
-	return result
-}
-
-func (dv *DetailView) getReconciledRows() []*database.EntryRow {
-	var result []*database.EntryRow
-
-	for _, row := range dv.rows {
-		if row.Reconciled {
-			result = append(result, row)
-		}
-	}
-
-	return result
-}
-
-func (dv *DetailView) makeGoToDetailViewCmd() tea.Cmd {
+func makeGoToEntryDetailViewCmd(activeEntryRow *database.EntryRow) tea.Cmd {
 	return func() tea.Msg {
-		activeEntryRow := dv.viewer.activeEntryRow()
-
 		if activeEntryRow == nil {
 			return meta.MessageCmd(errors.New("there is no row to view details of"))
 		}
@@ -367,8 +229,9 @@ type entryRowViewer struct {
 
 	viewport viewport.Model
 	viewRows [][]string
-	// The EntryRows that are being shown
-	entryRows []*database.EntryRow
+
+	rows         []*database.EntryRow
+	originalRows []database.EntryRow
 
 	activeRow      int
 	highlightStyle lipgloss.Style
@@ -385,10 +248,6 @@ func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
 
 		headers: []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
-}
-
-func (erv *entryRowViewer) Init() tea.Cmd {
-	return nil
 }
 
 func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
@@ -443,6 +302,63 @@ func (erv *entryRowViewer) View() string {
 	return result.String()
 }
 
+func (erv *entryRowViewer) updateViewRows(showReconciledRows bool) {
+	var shownRows []*database.EntryRow
+	if showReconciledRows {
+		shownRows = erv.rows
+	} else {
+		shownRows = erv.getUnreconciledRows()
+	}
+
+	var viewRows [][]string
+	for _, row := range shownRows {
+		var viewRow []string
+		viewRow = append(viewRow, row.Date.String())
+
+		var ledger, account string
+
+		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+			return ledger.Id == row.Ledger
+		})
+		if availableLedgerIndex != -1 {
+			ledger = database.AvailableLedgers[availableLedgerIndex].String()
+		} else {
+			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
+		}
+
+		if row.Account == nil {
+			account = lipgloss.NewStyle().Italic(true).Render("None")
+		} else {
+			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+				return account.Id == *row.Account
+			})
+
+			if availableAccountIndex != -1 {
+				account = database.AvailableAccounts[availableAccountIndex].String()
+			} else {
+				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
+			}
+		}
+
+		viewRow = append(viewRow, ledger)
+		viewRow = append(viewRow, account)
+		viewRow = append(viewRow, row.Description)
+		if row.Value > 0 {
+			viewRow = append(viewRow, row.Value.String())
+			viewRow = append(viewRow, "")
+		} else {
+			viewRow = append(viewRow, "")
+			viewRow = append(viewRow, (-row.Value).String())
+		}
+
+		viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
+
+		viewRows = append(viewRows, viewRow)
+	}
+
+	erv.viewRows = viewRows
+}
+
 func (erv *entryRowViewer) scrollViewport() {
 	if erv.activeRow >= erv.viewport.YOffset+erv.height {
 		erv.viewport.ScrollDown(erv.activeRow - erv.viewport.YOffset - erv.height + 1)
@@ -454,11 +370,11 @@ func (erv *entryRowViewer) scrollViewport() {
 }
 
 func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
-	if len(erv.entryRows) == 0 {
+	if len(erv.rows) == 0 {
 		return nil
 	}
 
-	return erv.entryRows[erv.activeRow]
+	return erv.rows[erv.activeRow]
 }
 
 func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
@@ -474,11 +390,6 @@ func (erv *entryRowViewer) calculateColumnWidths(totalWidth int) []int {
 	colWidths := []int{dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth, reconciledWidth}
 
 	return colWidths
-}
-
-func (erv *entryRowViewer) setRows(viewRows [][]string, rawRows []*database.EntryRow) {
-	erv.viewRows = viewRows
-	erv.entryRows = rawRows
 }
 
 func (erv *entryRowViewer) setViewportContent() {
@@ -518,7 +429,7 @@ func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
 }
 
 func (erv *entryRowViewer) activateEntryRow(entryRow *database.EntryRow) {
-	index := slices.IndexFunc(erv.entryRows, func(row *database.EntryRow) bool { return row == entryRow })
+	index := slices.IndexFunc(erv.rows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {
 		// This means that the row that was highlighted is reconciled and is now hidden, all good
@@ -527,4 +438,36 @@ func (erv *entryRowViewer) activateEntryRow(entryRow *database.EntryRow) {
 
 	erv.activeRow = index
 	erv.scrollViewport()
+}
+
+func (erv *entryRowViewer) getReconciledRows() []*database.EntryRow {
+	var result []*database.EntryRow
+
+	for _, row := range erv.rows {
+		if row.Reconciled {
+			result = append(result, row)
+		}
+	}
+
+	return result
+}
+
+func (erv *entryRowViewer) getUnreconciledRows() []*database.EntryRow {
+	var result []*database.EntryRow
+
+	for _, row := range erv.rows {
+		if !row.Reconciled {
+			result = append(result, row)
+		}
+	}
+
+	return result
+}
+
+func (erv *entryRowViewer) rowsAreChanged() bool {
+	return !slices.EqualFunc(
+		erv.rows,
+		erv.originalRows,
+		func(row *database.EntryRow, originalRow database.EntryRow) bool { return *row == originalRow },
+	)
 }

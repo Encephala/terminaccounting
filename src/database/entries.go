@@ -44,7 +44,7 @@ func (e Entry) CompareId() int {
 	return e.Id
 }
 
-func MakeLoadEntryDetailCmd(id int) tea.Cmd {
+func MakeLoadEntriesDetailCmd(id int) tea.Cmd {
 	return func() tea.Msg {
 		entry, err := SelectEntry(id)
 		if err != nil {
@@ -55,6 +55,22 @@ func MakeLoadEntryDetailCmd(id int) tea.Cmd {
 			TargetApp: meta.ENTRIESAPP,
 			Model:     meta.ENTRYMODEL,
 			Data:      entry,
+		}
+	}
+}
+
+func MakeLoadEntriesRowsCmd(entryId int) tea.Cmd {
+	// Aren't closures just great
+	return func() tea.Msg {
+		rows, err := SelectRowsByEntry(entryId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.ENTRIESAPP,
+			Model:     meta.ENTRYROWMODEL,
+			Data:      rows,
 		}
 	}
 }

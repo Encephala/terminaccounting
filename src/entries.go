@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -53,7 +52,7 @@ func (app *entriesApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 			entry := message.Data.(database.Entry)
 
 			// No better model name to be had than the entry Id
-			app.currentView = view.NewDetailView(app, entry.Id, strconv.Itoa(entry.Id))
+			app.currentView = view.NewEntriesDetailView(entry.Id)
 
 		case meta.CREATEVIEWTYPE:
 			if message.Data != nil {
@@ -139,22 +138,6 @@ func (app *entriesApp) MakeLoadListCmd() tea.Cmd {
 			TargetApp: meta.ENTRIESAPP,
 			Model:     meta.ENTRYMODEL,
 			Data:      items,
-		}
-	}
-}
-
-func (app *entriesApp) MakeLoadRowsCmd(entryId int) tea.Cmd {
-	// Aren't closures just great
-	return func() tea.Msg {
-		rows, err := database.SelectRowsByEntry(entryId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.ENTRIESAPP,
-			Model:     meta.ENTRYROWMODEL,
-			Data:      rows,
 		}
 	}
 }

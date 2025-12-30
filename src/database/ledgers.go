@@ -103,6 +103,22 @@ func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
 	}
 }
 
+func MakeLoadLedgersRowsCmd(ledgerId int) tea.Cmd {
+	// Aren't closures just great
+	return func() tea.Msg {
+		rows, err := SelectRowsByLedger(ledgerId)
+		if err != nil {
+			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
+		}
+
+		return meta.DataLoadedMsg{
+			TargetApp: meta.LEDGERSAPP,
+			Model:     meta.ENTRYROWMODEL,
+			Data:      rows,
+		}
+	}
+}
+
 func setupSchemaLedgers() (bool, error) {
 	isSetUp, err := DatabaseTableIsSetUp("ledgers")
 	if err != nil {

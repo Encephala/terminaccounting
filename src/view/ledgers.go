@@ -15,6 +15,112 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type ledgersDetailView struct {
+	// The ledger whose rows are being shown
+	modelId int
+	model   database.Ledger
+
+	viewer *entryRowViewer
+
+	showReconciledRows  bool
+	showReconciledTotal bool
+}
+
+func NewLedgersDetailView(modelId int) *ledgersDetailView {
+	return &ledgersDetailView{
+		modelId: modelId,
+
+		viewer: newEntryRowViewer(meta.LEDGERSCOLOURS),
+	}
+}
+
+func (dv *ledgersDetailView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadLedgersRowsCmd(dv.modelId))
+
+	return tea.Batch(cmds...)
+}
+
+func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
+	switch message := message.(type) {
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.LEDGERMODEL:
+			dv.model = message.Data.(database.Ledger)
+
+			return dv, nil
+
+		case meta.ENTRYROWMODEL:
+			newView, cmd := genericDetailViewUpdate(dv, message)
+
+			return newView.(View), cmd
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+	}
+
+	newView, cmd := genericDetailViewUpdate(dv, message)
+
+	return newView.(View), cmd
+}
+
+func (dv *ledgersDetailView) View() string {
+	return genericDetailViewView(dv)
+}
+
+func (dv *ledgersDetailView) title() string {
+	return fmt.Sprintf("Ledger %s details", dv.model.Name)
+}
+
+func (dv *ledgersDetailView) AllowsInsertMode() bool {
+	return false
+}
+
+func (dv *ledgersDetailView) AcceptedModels() map[meta.ModelType]struct{} {
+	return map[meta.ModelType]struct{}{
+		meta.LEDGERMODEL:   {},
+		meta.ENTRYROWMODEL: {},
+	}
+}
+
+func (dv *ledgersDetailView) MotionSet() meta.MotionSet {
+	result := genericDetailViewMotionSet()
+
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+
+	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.activeEntryRow()))
+
+	return result
+}
+
+func (dv *ledgersDetailView) CommandSet() meta.CommandSet {
+	return genericDetailViewCommandSet()
+}
+
+func (dv *ledgersDetailView) Reload() View {
+	return NewLedgersDetailView(dv.modelId)
+}
+
+func (dv *ledgersDetailView) getViewer() *entryRowViewer {
+	return dv.viewer
+}
+
+func (dv *ledgersDetailView) getShowReconciledRows() *bool {
+	return &dv.showReconciledRows
+}
+
+func (dv *ledgersDetailView) getShowReconciledTotal() *bool {
+	return &dv.showReconciledTotal
+}
+
+func (dv *ledgersDetailView) getColours() meta.AppColours {
+	return meta.LEDGERSCOLOURS
+}
+
 type ledgersCreateView struct {
 	inputManager *inputManager
 
