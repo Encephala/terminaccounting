@@ -49,10 +49,10 @@ func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 
 			switch dv.model.Type {
 			case database.INCOMELEDGER, database.EXPENSELEDGER:
-				dv.viewer.setCanReconcile(true)
+				dv.viewer.setCanReconcile(false)
 
 			case database.ASSETLEDGER, database.EQUITYLEDGER, database.LIABILITYLEDGER:
-				dv.viewer.setCanReconcile(false)
+				dv.viewer.setCanReconcile(true)
 
 			default:
 				panic(fmt.Sprintf("unexpected database.LedgerType: %#v", dv.model.Type))
