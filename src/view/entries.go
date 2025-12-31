@@ -125,7 +125,7 @@ const (
 type entryCreateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
-	entryRowsManager *rowsViewManager
+	entryRowsManager *rowsMutateManager
 	activeInput      int
 
 	colours meta.AppColours
@@ -179,7 +179,7 @@ func NewEntryCreateViewPrefilled(data EntryPrefillData) (*entryCreateView, error
 	return result, nil
 }
 
-type rowsCreator struct {
+type rowCreator struct {
 	dateInput        textinput.Model
 	ledgerInput      itempicker.Model
 	accountInput     itempicker.Model
@@ -190,7 +190,7 @@ type rowsCreator struct {
 	creditInput textinput.Model
 }
 
-func newRowCreator(startDate *database.Date, colWidths []int) *rowsCreator {
+func newRowCreator(startDate *database.Date, colWidths []int) *rowCreator {
 	dateInput := textinput.New()
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
@@ -210,7 +210,7 @@ func newRowCreator(startDate *database.Date, colWidths []int) *rowsCreator {
 	creditInput := textinput.New()
 	creditInput.Width = colWidths[6] - 3
 
-	result := rowsCreator{
+	result := rowCreator{
 		dateInput:        dateInput,
 		ledgerInput:      ledgerInput,
 		accountInput:     accountInput,
@@ -308,7 +308,7 @@ func (cv *entryCreateView) getNotesInput() *textarea.Model {
 	return &cv.notesInput
 }
 
-func (cv *entryCreateView) getManager() *rowsViewManager {
+func (cv *entryCreateView) getManager() *rowsMutateManager {
 	return cv.entryRowsManager
 }
 
@@ -327,7 +327,7 @@ func (cv *entryCreateView) title() string {
 type entryUpdateView struct {
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
-	entryRowsManager *rowsViewManager
+	entryRowsManager *rowsMutateManager
 	activeInput      int
 
 	modelId           int
@@ -530,7 +530,7 @@ func (uv *entryUpdateView) getNotesInput() *textarea.Model {
 	return &uv.notesInput
 }
 
-func (uv *entryUpdateView) getManager() *rowsViewManager {
+func (uv *entryUpdateView) getManager() *rowsMutateManager {
 	return uv.entryRowsManager
 }
 
@@ -547,8 +547,8 @@ func (uv *entryUpdateView) title() string {
 	return fmt.Sprintf("Update Entry: %s", "TODO")
 }
 
-type rowsViewManager struct {
-	rows []*rowsCreator
+type rowsMutateManager struct {
+	rows []*rowCreator
 
 	isActive    bool
 	activeInput int
@@ -557,9 +557,9 @@ type rowsViewManager struct {
 	viewport  viewport.Model
 }
 
-func newRowsViewManager() *rowsViewManager {
+func newRowsViewManager() *rowsMutateManager {
 	// Prefill with two empty rows
-	rows := make([]*rowsCreator, 2)
+	rows := make([]*rowCreator, 2)
 
 	colWidths := []int{3, 13, 20, 20, 30, 15, 15}
 	rows[0] = newRowCreator(database.Today(), colWidths)
@@ -567,7 +567,7 @@ func newRowsViewManager() *rowsViewManager {
 
 	totalWidth := 130
 
-	return &rowsViewManager{
+	return &rowsMutateManager{
 		rows: rows,
 
 		colWidths: colWidths,
@@ -575,7 +575,7 @@ func newRowsViewManager() *rowsViewManager {
 	}
 }
 
-func (ervm *rowsViewManager) Update(msg tea.Msg) (*rowsViewManager, tea.Cmd) {
+func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		// TODO
@@ -681,7 +681,7 @@ func (ervm *rowsViewManager) Update(msg tea.Msg) (*rowsViewManager, tea.Cmd) {
 	}
 }
 
-func (ervm *rowsViewManager) View() string {
+func (ervm *rowsMutateManager) View() string {
 	ervm.updateContent()
 
 	var result strings.Builder
@@ -714,7 +714,7 @@ func (ervm *rowsViewManager) View() string {
 	return result.String()
 }
 
-func (ervm *rowsViewManager) updateContent() {
+func (ervm *rowsMutateManager) updateContent() {
 	baseStyle := lipgloss.NewStyle()
 	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOURS.Foreground)
 
@@ -766,7 +766,7 @@ func (ervm *rowsViewManager) updateContent() {
 	ervm.scrollViewport()
 }
 
-func (ervm *rowsViewManager) renderRow(values []string) string {
+func (ervm *rowsMutateManager) renderRow(values []string) string {
 	if len(values) != len(ervm.colWidths) {
 		panic("you absolute dingus")
 	}
@@ -786,7 +786,7 @@ func (ervm *rowsViewManager) renderRow(values []string) string {
 	return result.String()
 }
 
-func (ervm *rowsViewManager) scrollViewport() {
+func (ervm *rowsMutateManager) scrollViewport() {
 	activeRow, _ := ervm.getActiveCoords()
 
 	if activeRow >= ervm.viewport.YOffset+ervm.viewport.Height {
@@ -799,7 +799,7 @@ func (ervm *rowsViewManager) scrollViewport() {
 }
 
 // Converts a slice of EntryRow "forms" to a slice of EntryRow
-func (ervm *rowsViewManager) compileRows() ([]database.EntryRow, error) {
+func (ervm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
 	result := make([]database.EntryRow, ervm.numRows())
 
 	total, err := ervm.calculateCurrentTotal()
@@ -893,7 +893,7 @@ func (uv *entryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
-func (ervm *rowsViewManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+func (ervm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
 	oldRow, oldCol := ervm.getActiveCoords()
 
 	switch direction {
@@ -922,7 +922,7 @@ func (ervm *rowsViewManager) switchFocus(direction meta.Sequence) (preceeded, ex
 	return false, false
 }
 
-func (ervm *rowsViewManager) calculateCurrentTotal() (database.CurrencyValue, error) {
+func (ervm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, error) {
 	var total database.CurrencyValue
 
 	for _, row := range ervm.rows {
@@ -947,24 +947,24 @@ func (ervm *rowsViewManager) calculateCurrentTotal() (database.CurrencyValue, er
 	return total, nil
 }
 
-func (ervm *rowsViewManager) numRows() int {
+func (ervm *rowsMutateManager) numRows() int {
 	return len(ervm.rows)
 }
 
-func (ervm *rowsViewManager) numInputs() int {
+func (ervm *rowsMutateManager) numInputs() int {
 	return ervm.numRows() * ervm.numInputsPerRow()
 }
 
-func (ervm *rowsViewManager) numInputsPerRow() int {
+func (ervm *rowsMutateManager) numInputsPerRow() int {
 	return 6
 }
 
-func (ervm *rowsViewManager) getActiveCoords() (row, col int) {
+func (ervm *rowsMutateManager) getActiveCoords() (row, col int) {
 	inputsPerRow := ervm.numInputsPerRow()
 	return ervm.activeInput / inputsPerRow, ervm.activeInput % inputsPerRow
 }
 
-func (ervm *rowsViewManager) focus(direction meta.Sequence) {
+func (ervm *rowsMutateManager) focus(direction meta.Sequence) {
 	ervm.isActive = true
 	numInputs := ervm.numInputs()
 
@@ -980,7 +980,7 @@ func (ervm *rowsViewManager) focus(direction meta.Sequence) {
 }
 
 // Ignores an input that would make the active input go "out of bounds"
-func (ervm *rowsViewManager) setActiveCoords(newRow, newCol int) {
+func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 	numRow := ervm.numRows()
 	numPerRow := ervm.numInputsPerRow()
 
@@ -1036,8 +1036,8 @@ func (ervm *rowsViewManager) setActiveCoords(newRow, newCol int) {
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
-func decompileRows(rows []database.EntryRow, colWidths []int) ([]*rowsCreator, error) {
-	result := make([]*rowsCreator, len(rows))
+func decompileRows(rows []database.EntryRow, colWidths []int) ([]*rowCreator, error) {
+	result := make([]*rowCreator, len(rows))
 
 	for i, row := range rows {
 		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
@@ -1128,7 +1128,7 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 	return false
 }
 
-func (ervm *rowsViewManager) deleteRow() (*rowsViewManager, tea.Cmd) {
+func (ervm *rowsMutateManager) deleteRow() (*rowsMutateManager, tea.Cmd) {
 	activeRow, activeCol := ervm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
@@ -1156,10 +1156,10 @@ func (ervm *rowsViewManager) deleteRow() (*rowsViewManager, tea.Cmd) {
 	return ervm, nil
 }
 
-func (ervm *rowsViewManager) addRow(after bool) (*rowsViewManager, tea.Cmd) {
+func (ervm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
 	activeRow, _ := ervm.getActiveCoords()
 
-	var newRow *rowsCreator
+	var newRow *rowCreator
 
 	// If the row that the new-row-creation was triggered from had a valid date,
 	// prefill it in the new row. Otherwise, just leave new row empty
@@ -1170,7 +1170,7 @@ func (ervm *rowsViewManager) addRow(after bool) (*rowsViewManager, tea.Cmd) {
 		newRow = newRowCreator(nil, ervm.colWidths)
 	}
 
-	newRows := make([]*rowsCreator, 0, ervm.numRows()+1)
+	newRows := make([]*rowCreator, 0, ervm.numRows()+1)
 
 	if after {
 		// Insert after activeRow
@@ -1204,7 +1204,7 @@ type entryMutateView interface {
 
 	getJournalInput() *itempicker.Model
 	getNotesInput() *textarea.Model
-	getManager() *rowsViewManager
+	getManager() *rowsMutateManager
 
 	getActiveInput() *int
 
@@ -1304,7 +1304,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 		case ENTRIESNOTESINPUT:
 			*notesInput, cmd = notesInput.Update(message)
 		case ENTRIESROWINPUT:
-			var manager *rowsViewManager
+			var manager *rowsMutateManager
 			manager, cmd = entryRowsManager.Update(message)
 			*entryRowsManager = *manager
 
