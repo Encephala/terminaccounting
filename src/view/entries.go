@@ -133,6 +133,7 @@ type entryCreateView struct {
 
 func NewEntryCreateView() *entryCreateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
+
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
@@ -146,7 +147,7 @@ func NewEntryCreateView() *entryCreateView {
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
-		entryRowsManager: newRowsViewManager(),
+		entryRowsManager: newRowsMutateManager(),
 
 		colour: meta.ENTRIESCOLOUR,
 	}
@@ -167,7 +168,7 @@ func NewEntryCreateViewPrefilled(data EntryPrefillData) (*entryCreateView, error
 	result.journalInput.SetValue(data.Journal)
 	result.notesInput.SetValue(data.Notes.Collapse())
 
-	entryRowCreateView, err := decompileRows(data.Rows, result.entryRowsManager.colWidths)
+	entryRowCreateView, err := decompileRows(data.Rows)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +179,8 @@ func NewEntryCreateViewPrefilled(data EntryPrefillData) (*entryCreateView, error
 }
 
 type rowCreator struct {
+	width int
+
 	dateInput        textinput.Model
 	ledgerInput      itempicker.Model
 	accountInput     itempicker.Model
@@ -188,7 +191,7 @@ type rowCreator struct {
 	creditInput textinput.Model
 }
 
-func newRowCreator(startDate *database.Date, colWidths []int) *rowCreator {
+func newRowCreator(startDate *database.Date) *rowCreator {
 	dateInput := textinput.New()
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
@@ -200,13 +203,12 @@ func newRowCreator(startDate *database.Date, colWidths []int) *rowCreator {
 	ledgerInput := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	accountInput := itempicker.New(database.AvailableAccountsAsItempickerItems())
 
-	// -3 is for prompt and cursor
 	descriptionInput := textinput.New()
-	descriptionInput.Width = colWidths[4] - 3
+	descriptionInput.Cursor.SetMode(cursor.CursorStatic)
 	debitInput := textinput.New()
-	debitInput.Width = colWidths[5] - 3
+	debitInput.Cursor.SetMode(cursor.CursorStatic)
 	creditInput := textinput.New()
-	creditInput.Width = colWidths[6] - 3
+	creditInput.Cursor.SetMode(cursor.CursorStatic)
 
 	result := rowCreator{
 		dateInput:        dateInput,
@@ -351,7 +353,7 @@ func NewEntryUpdateView(modelId int) *entryUpdateView {
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
-		entryRowsManager: newRowsViewManager(),
+		entryRowsManager: newRowsMutateManager(),
 
 		modelId: modelId,
 
@@ -435,7 +437,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 			uv.startingEntryRows = rows
 
-			formRows, err := decompileRows(rows, uv.entryRowsManager.colWidths)
+			formRows, err := decompileRows(rows)
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
@@ -466,7 +468,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		case ENTRIESROWINPUT:
 			var err error
-			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows, uv.entryRowsManager.colWidths)
+			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows)
 
 			if err != nil {
 				return uv, meta.MessageCmd(err)
@@ -544,37 +546,57 @@ func (uv *entryUpdateView) title() string {
 }
 
 type rowsMutateManager struct {
-	rows []*rowCreator
+	width, height int
+
+	headers []string
+	rows    []*rowCreator
 
 	isActive    bool
 	activeInput int
 
 	colWidths []int
+
+	shownRows [][]string
 	viewport  viewport.Model
 }
 
-func newRowsViewManager() *rowsMutateManager {
+func newRowsMutateManager() *rowsMutateManager {
 	// Prefill with two empty rows
 	rows := make([]*rowCreator, 2)
 
-	colWidths := []int{3, 13, 20, 20, 30, 15, 15}
-	rows[0] = newRowCreator(database.Today(), colWidths)
-	rows[1] = newRowCreator(database.Today(), colWidths)
+	rows[0] = newRowCreator(database.Today())
+	rows[1] = newRowCreator(database.Today())
 
-	totalWidth := 130
+	result := &rowsMutateManager{
+		headers: []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"},
+		rows:    rows,
 
-	return &rowsMutateManager{
-		rows: rows,
-
-		colWidths: colWidths,
-		viewport:  viewport.New(totalWidth, 16),
+		colWidths: []int{0, 0, 0, 0, 0, 0, 0},
+		viewport:  viewport.New(0, 0),
 	}
+
+	result.updateShownRows()
+
+	return result
 }
 
-func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd) {
-	switch msg := msg.(type) {
+func (ervm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.Cmd) {
+	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		// TODO
+		ervm.width = message.Width
+		ervm.height = message.Height
+
+		// -8 for border and horizontal padding and margin
+		ervm.viewport.Width = message.Width - 8
+		// -6 for borders, header row, vertical margin and total row
+		ervm.viewport.Height = message.Height - 6
+
+		ervm.calculateColumnWidths()
+
+		for _, row := range ervm.rows {
+			row.width = message.Width
+		}
+
 		return ervm, nil
 
 	case tea.KeyMsg:
@@ -584,30 +606,30 @@ func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd)
 		var cmd tea.Cmd
 		switch highlightCol {
 		case 0:
-			if !validateDateInput(msg) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a date", msg))
+			if !validateDateInput(message) {
+				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a date", message))
 			}
-			row.dateInput, cmd = row.dateInput.Update(msg)
+			row.dateInput, cmd = row.dateInput.Update(message)
 
 		case 1:
-			row.ledgerInput, cmd = row.ledgerInput.Update(msg)
+			row.ledgerInput, cmd = row.ledgerInput.Update(message)
 		case 2:
-			row.accountInput, cmd = row.accountInput.Update(msg)
+			row.accountInput, cmd = row.accountInput.Update(message)
 		case 3:
-			row.descriptionInput, cmd = row.descriptionInput.Update(msg)
+			row.descriptionInput, cmd = row.descriptionInput.Update(message)
 		case 4:
-			if !validateNumberInput(msg) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", msg))
+			if !validateNumberInput(message) {
+				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
 			}
-			row.debitInput, cmd = row.debitInput.Update(msg)
+			row.debitInput, cmd = row.debitInput.Update(message)
 			if row.creditInput.Value() != "" {
 				row.creditInput.SetValue("")
 			}
 		case 5:
-			if !validateNumberInput(msg) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", msg))
+			if !validateNumberInput(message) {
+				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
 			}
-			row.creditInput, cmd = row.creditInput.Update(msg)
+			row.creditInput, cmd = row.creditInput.Update(message)
 			if row.debitInput.Value() != "" {
 				row.debitInput.SetValue("")
 			}
@@ -615,12 +637,14 @@ func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd)
 
 		ervm.rows[highlightRow] = row
 
+		ervm.updateShownRows()
+
 		return ervm, cmd
 
 	case meta.NavigateMsg:
 		oldRow, oldCol := ervm.getActiveCoords()
 
-		switch msg.Direction {
+		switch message.Direction {
 		case meta.LEFT:
 			if oldCol == 0 {
 				break
@@ -646,14 +670,17 @@ func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd)
 			ervm.setActiveCoords(oldRow, oldCol+1)
 
 		default:
-			panic(fmt.Sprintf("unexpected meta.Direction: %#v", msg.Direction))
+			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
+
+		ervm.scrollViewport()
+
 		return ervm, nil
 
 	case meta.JumpHorizontalMsg:
 		oldRow, _ := ervm.getActiveCoords()
 
-		if msg.ToEnd {
+		if message.ToEnd {
 			ervm.setActiveCoords(oldRow, ervm.numInputsPerRow()-1)
 		} else {
 			ervm.setActiveCoords(oldRow, 0)
@@ -664,7 +691,7 @@ func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd)
 	case meta.JumpVerticalMsg:
 		_, oldCol := ervm.getActiveCoords()
 
-		if msg.ToEnd {
+		if message.ToEnd {
 			ervm.setActiveCoords(ervm.numRows()-1, oldCol)
 		} else {
 			ervm.setActiveCoords(0, oldCol)
@@ -673,17 +700,16 @@ func (ervm *rowsMutateManager) Update(msg tea.Msg) (*rowsMutateManager, tea.Cmd)
 		return ervm, nil
 
 	default:
-		panic(fmt.Sprintf("unexpected tea.Msg: %#v", msg))
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
 func (ervm *rowsMutateManager) View() string {
-	ervm.updateContent()
+	ervm.updateViewportContent()
 
 	var result strings.Builder
 
-	headers := []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"}
-	result.WriteString(ervm.renderRow(headers))
+	result.WriteString(ervm.renderRow(ervm.headers, nil))
 
 	result.WriteString("\n")
 
@@ -710,68 +736,69 @@ func (ervm *rowsMutateManager) View() string {
 	return result.String()
 }
 
-func (ervm *rowsMutateManager) updateContent() {
-	baseStyle := lipgloss.NewStyle()
-	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOUR)
+func (rmm *rowsMutateManager) calculateColumnWidths() {
+	idxWidth := 3
+	// 10 for yyyy-MM-dd and 2 for prompt and 1 for cursor
+	dateWidth := 13
 
-	var result strings.Builder
+	// -12 for padding between columns 6x, -4 for borders and left/right margin
+	remainingWidth := rmm.width - idxWidth - dateWidth - 12 - 6
+	descriptionWidth := remainingWidth / 3
+	othersWidth := (remainingWidth - descriptionWidth) / 4
 
-	highlightRow, highlightCol := ervm.getActiveCoords()
+	rmm.colWidths = []int{idxWidth, dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth}
+}
+
+func (ervm *rowsMutateManager) updateShownRows() {
+	var result [][]string
 
 	for i, row := range ervm.rows {
 		var currentRow []string
-		idStyle := baseStyle
-		dateStyle := baseStyle
-		ledgerStyle := baseStyle
-		accountStyle := baseStyle
-		descriptionStyle := baseStyle
-		debitStyle := baseStyle
-		creditStyle := baseStyle
 
-		if ervm.isActive && i == highlightRow {
-			switch highlightCol {
-			case 0:
-				dateStyle = highlightStyle
-			case 1:
-				ledgerStyle = highlightStyle
-			case 2:
-				accountStyle = highlightStyle
-			case 3:
-				descriptionStyle = highlightStyle
-			case 4:
-				debitStyle = highlightStyle
-			case 5:
-				creditStyle = highlightStyle
-			default:
-				panic(fmt.Sprintf("Unexpected highlighted column %d", highlightCol))
-			}
-		}
+		currentRow = append(currentRow, strconv.Itoa(i))
+		currentRow = append(currentRow, row.dateInput.View())
+		currentRow = append(currentRow, row.ledgerInput.View())
+		currentRow = append(currentRow, row.accountInput.View())
+		currentRow = append(currentRow, row.descriptionInput.View())
+		currentRow = append(currentRow, row.debitInput.View())
+		currentRow = append(currentRow, row.creditInput.View())
 
-		currentRow = append(currentRow, idStyle.Render(strconv.Itoa(i)))
-		currentRow = append(currentRow, dateStyle.Render(row.dateInput.View()))
-		currentRow = append(currentRow, ledgerStyle.Render(row.ledgerInput.View()))
-		currentRow = append(currentRow, accountStyle.Render(row.accountInput.View()))
-		currentRow = append(currentRow, descriptionStyle.Render(row.descriptionInput.View()))
-		currentRow = append(currentRow, debitStyle.Render(row.debitInput.View()))
-		currentRow = append(currentRow, creditStyle.Render(row.creditInput.View()))
-
-		result.WriteString(ervm.renderRow(currentRow) + "\n")
+		result = append(result, currentRow)
 	}
 
-	ervm.viewport.SetContent(result.String())
-	ervm.scrollViewport()
+	ervm.shownRows = result
 }
 
-func (ervm *rowsMutateManager) renderRow(values []string) string {
+func (rmm *rowsMutateManager) updateViewportContent() {
+	var rows []string
+
+	activeRow, activeCol := rmm.getActiveCoords()
+
+	for i, row := range rmm.shownRows {
+		if rmm.isActive && i == activeRow {
+			rows = append(rows, rmm.renderRow(row, &activeCol))
+		} else {
+			rows = append(rows, rmm.renderRow(row, nil))
+		}
+	}
+
+	rmm.viewport.SetContent(strings.Join(rows, "\n"))
+}
+
+func (ervm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
 	if len(values) != len(ervm.colWidths) {
 		panic("you absolute dingus")
 	}
 
-	newStyle := lipgloss.NewStyle()
-
 	var result strings.Builder
 	for i := range values {
-		style := newStyle.Width(ervm.colWidths[i])
+		style := lipgloss.NewStyle().Width(ervm.colWidths[i])
+
+		// +1 because never highlight idx column
+		if highlightedCol != nil && i == *highlightedCol+1 {
+			style = style.Foreground(meta.ENTRIESCOLOUR)
+		}
+
 		if i != len(values)-1 {
 			style = style.MarginRight(2)
 		}
@@ -975,7 +1002,7 @@ func (ervm *rowsMutateManager) focus(direction meta.Sequence) {
 	}
 }
 
-// Ignores an input that would make the active input go "out of bounds"
+// Ignores a move that would make the active input go "out of bounds"
 func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 	numRow := ervm.numRows()
 	numPerRow := ervm.numInputsPerRow()
@@ -1029,10 +1056,13 @@ func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 	case 5:
 		ervm.rows[newRow].creditInput.Focus()
 	}
+
+	ervm.updateShownRows()
+	ervm.scrollViewport()
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
-func decompileRows(rows []database.EntryRow, colWidths []int) ([]*rowCreator, error) {
+func decompileRows(rows []database.EntryRow) ([]*rowCreator, error) {
 	result := make([]*rowCreator, len(rows))
 
 	for i, row := range rows {
@@ -1057,7 +1087,7 @@ func decompileRows(rows []database.EntryRow, colWidths []int) ([]*rowCreator, er
 			account = &database.AvailableAccounts[availableAccountIndex]
 		}
 
-		formRow := newRowCreator(&row.Date, colWidths)
+		formRow := newRowCreator(&row.Date)
 
 		err := formRow.ledgerInput.SetValue(ledger)
 		if err != nil {
@@ -1149,6 +1179,8 @@ func (ervm *rowsMutateManager) deleteRow() (*rowsMutateManager, tea.Cmd) {
 		ervm.setActiveCoords(newRow, newCol)
 	}
 
+	ervm.updateShownRows()
+
 	return ervm, nil
 }
 
@@ -1161,9 +1193,9 @@ func (ervm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) 
 	// prefill it in the new row. Otherwise, just leave new row empty
 	prefillDate, parseErr := database.ToDate(ervm.rows[activeRow].dateInput.Value())
 	if parseErr == nil {
-		newRow = newRowCreator(&prefillDate, ervm.colWidths)
+		newRow = newRowCreator(&prefillDate)
 	} else {
-		newRow = newRowCreator(nil, ervm.colWidths)
+		newRow = newRowCreator(nil)
 	}
 
 	newRows := make([]*rowCreator, 0, ervm.numRows()+1)
@@ -1191,6 +1223,8 @@ func (ervm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) 
 		ervm.activeInput += ervm.numInputsPerRow()
 		ervm.setActiveCoords(activeRow, 0)
 	}
+
+	ervm.updateShownRows()
 
 	return ervm, nil
 }
@@ -1288,9 +1322,20 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 		return view, cmd
 
 	case tea.WindowSizeMsg:
-		// TODO
+		manager := view.getManager()
 
-		return view, nil
+		journalHeight := 3
+		notesHeight := (message.Height - journalHeight) / 4
+		view.getNotesInput().SetHeight(notesHeight)
+
+		newManager, cmd := manager.Update(tea.WindowSizeMsg{
+			Width: message.Width,
+			// -2 for notes border
+			Height: message.Height - journalHeight - notesHeight - 2,
+		})
+		*manager = *newManager
+
+		return view, cmd
 
 	case tea.KeyMsg:
 		var cmd tea.Cmd
