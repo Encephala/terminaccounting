@@ -249,7 +249,7 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 	case meta.NavigateMsg:
 		switch message.Direction {
 		case meta.DOWN:
-			if erv.activeRow != erv.viewport.TotalLineCount()-1 {
+			if erv.activeRow != len(erv.rows)-1 {
 				erv.activeRow++
 			}
 
