@@ -3,7 +3,6 @@ package itempicker
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -33,9 +32,7 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 		case "ctrl+n", "j":
 			m.activeItem++
 
-			if m.activeItem >= len(m.Items) {
-				m.activeItem = 0
-			}
+			m.activeItem %= len(m.Items)
 
 		case "ctrl+p", "k":
 			m.activeItem--
@@ -54,11 +51,7 @@ func (m Model) View() string {
 		return lipgloss.NewStyle().Italic(true).Render("No items")
 	}
 
-	var result strings.Builder
-	result.WriteString("> ")
-	result.WriteString(m.Items[m.activeItem].String())
-
-	return result.String()
+	return fmt.Sprintf("> %s", m.Items[m.activeItem].String())
 }
 
 // Allows to manually retrieve the currently selected value.
@@ -78,7 +71,7 @@ func (m *Model) SetValue(value Item) error {
 	})
 
 	if index == -1 {
-		return fmt.Errorf("setting itempicker value to %q but only valid choices are %v", value, m.Items)
+		return fmt.Errorf("setting itempicker value to %#v but only valid choices are %#v", value, m.Items)
 	}
 
 	m.activeItem = index
