@@ -20,11 +20,6 @@ type Model struct {
 	activeItem int
 }
 
-// A message that's sent to the bubbletea app to inform that the user selected an item
-type ItemSelectedMsg struct {
-	Item
-}
-
 func New(items []Item) Model {
 	return Model{
 		Items: items,
@@ -47,13 +42,6 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 
 			if m.activeItem < 0 {
 				m.activeItem = len(m.Items) - 1
-			}
-
-		case "enter":
-			return m, func() tea.Msg {
-				return ItemSelectedMsg{
-					Item: m.Items[m.activeItem],
-				}
 			}
 		}
 	}
