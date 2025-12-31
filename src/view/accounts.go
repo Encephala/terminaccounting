@@ -130,11 +130,9 @@ func NewAccountsCreateView() *accountsCreateView {
 		database.CREDITOR,
 	}
 
-	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
 	// -2 because of the prompt, -1 because of the cursor
-	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(accountTypes)
@@ -270,11 +268,9 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 		database.CREDITOR,
 	}
 
-	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
 	// -2 because of the prompt, -1 because of the cursor
-	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(accountTypes)

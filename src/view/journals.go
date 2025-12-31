@@ -164,11 +164,9 @@ func NewJournalsCreateView() *journalsCreateView {
 		database.GENERALJOURNAL,
 	}
 
-	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
 	// -2 because of the prompt, -1 because of the cursor
-	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(journalTypes)

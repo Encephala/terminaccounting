@@ -138,18 +138,15 @@ func NewLedgersCreateView() *ledgersCreateView {
 		database.EQUITYLEDGER,
 	}
 
-	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
 	// -2 because of the prompt, -1 because of the cursor
-	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(ledgerTypes)
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
-	notesInput.SetWidth(baseInputWidth)
 
 	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.LEDGERSCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
@@ -271,18 +268,15 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 		database.EQUITYLEDGER,
 	}
 
-	const baseInputWidth = 26
 	nameInput := textinput.New()
 	nameInput.Focus()
 	// -2 because of the prompt, -1 because of the cursor
-	nameInput.Width = baseInputWidth - 2 - 1
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(types)
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
-	notesInput.SetWidth(baseInputWidth)
 
 	inputs := []any{nameInput, typeInput, notesInput}
 	names := []string{"Name", "Type", "Notes"}
