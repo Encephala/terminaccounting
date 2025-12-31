@@ -20,7 +20,7 @@ type genericDeleteView interface {
 func genericDeleteViewView(gdv genericDeleteView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1).MarginLeft(2)
+	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1)
 
 	result.WriteString(titleStyle.Render(gdv.title()))
 	result.WriteString("\n\n")
