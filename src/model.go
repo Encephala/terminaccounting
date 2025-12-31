@@ -150,7 +150,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			rendered = append(rendered, newLine)
 		}
 
-		return ta, meta.MessageCmd(meta.ShowTextModalMsg{Text: strings.Join(rendered, "\n")})
+		return ta, meta.MessageCmd(meta.ShowTextModalMsg{Text: rendered})
 
 	case meta.FatalErrorMsg:
 		slog.Error("Fatal error", "error", message.Error)

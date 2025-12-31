@@ -30,7 +30,7 @@ type FileSelectedMsg struct {
 }
 
 type ShowTextModalMsg struct {
-	Text string
+	Text []string
 }
 
 type FatalErrorMsg struct {

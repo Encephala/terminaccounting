@@ -8,29 +8,25 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type textModal struct {
 	viewport viewport.Model
 
-	message string
+	text []string
+
+	ready bool
 }
 
-func NewTextModal(message string) *textModal {
-	maxMessageWidth := -1
-	for _, m := range strings.Split(message, "\n") {
-		maxMessageWidth = max(maxMessageWidth, len(m))
-	}
-
-	numLines := min(len(strings.Split(message, "\n")), 20)
-
-	vp := viewport.New(maxMessageWidth, numLines)
-	vp.SetContent(message)
-	vp.GotoBottom() // To show recentmost messages. Perhaps this is a bad default, but good enough for now.
+func NewTextModal(text []string) *textModal {
+	viewport := viewport.New(0, 0)
+	viewport.SetContent(strings.Join(text, "\n"))
 
 	return &textModal{
-		viewport: vp,
-		message:  message,
+		viewport: viewport,
+
+		text: text,
 	}
 }
 
@@ -41,7 +37,22 @@ func (tm *textModal) Init() tea.Cmd {
 func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		// TODO
+		maxMessageWidth := 0
+		for _, m := range tm.text {
+			maxMessageWidth = max(maxMessageWidth, ansi.StringWidth(m))
+		}
+
+		tm.viewport.Width = min(maxMessageWidth, message.Width)
+		tm.viewport.Height = min(len(tm.text), message.Height)
+
+		// Upon receiving initial WindowSizeMsg, scroll to bottom
+		if !tm.ready {
+			tm.viewport.GotoBottom()
+			tm.ready = true
+		}
+
+		// Refresh viewport for when Height increased
+		tm.viewport.SetYOffset(tm.viewport.YOffset)
 
 		return tm, nil
 
@@ -88,5 +99,5 @@ func (tm *textModal) CommandSet() meta.CommandSet {
 }
 
 func (tm *textModal) Reload() view.View {
-	return NewTextModal(tm.message)
+	return NewTextModal(tm.text)
 }
