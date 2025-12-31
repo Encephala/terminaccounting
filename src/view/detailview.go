@@ -99,8 +99,6 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 		viewer.updateViewRows()
 
-		viewer.showReconciledTotal = viewer.rowsAreChanged()
-
 		return gdv, nil
 
 	case meta.CommitMsg:
@@ -123,7 +121,6 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		// Reset dv.originalRows
 		for i, row := range viewer.rows {
 			viewer.originalRows[i] = *row
-			viewer.showReconciledTotal = false
 		}
 
 		return gdv, meta.MessageCmd(notification)
@@ -209,8 +206,7 @@ type entryRowViewer struct {
 
 	activeRow int
 
-	showReconciled      bool
-	showReconciledTotal bool
+	showReconciled bool
 
 	headers   []string
 	colWidths []int
@@ -277,7 +273,7 @@ func (erv *entryRowViewer) View() string {
 
 	result.WriteString("\n")
 
-	if erv.showReconciledTotal {
+	if erv.rowsAreChanged() {
 		totalReconciled := database.CalculateTotal(erv.getReconciledRows())
 
 		var totalReconciledRendered string
