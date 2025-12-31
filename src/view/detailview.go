@@ -76,7 +76,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		viewer.updateViewRows()
 
 		if activeEntryRow := viewer.activeEntryRow(); activeEntryRow != nil {
-			viewer.activateEntryRow(activeEntryRow)
+			viewer.setActiveEntryRow(activeEntryRow)
 		}
 
 		return gdv, nil
@@ -435,7 +435,7 @@ func (erv *entryRowViewer) renderRow(values []string, isHeader, highlight bool) 
 	return result.String()
 }
 
-func (erv *entryRowViewer) activateEntryRow(entryRow *database.EntryRow) {
+func (erv *entryRowViewer) setActiveEntryRow(entryRow *database.EntryRow) {
 	index := slices.IndexFunc(erv.rows, func(row *database.EntryRow) bool { return row == entryRow })
 
 	if index == -1 {

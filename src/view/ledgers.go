@@ -63,18 +63,14 @@ func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 			return dv, nil
 
 		case meta.ENTRYROWMODEL:
-			newView, cmd := genericDetailViewUpdate(dv, message)
-
-			return newView.(View), cmd
+			return genericDetailViewUpdate(dv, message)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
 		}
 	}
 
-	newView, cmd := genericDetailViewUpdate(dv, message)
-
-	return newView.(View), cmd
+	return genericDetailViewUpdate(dv, message)
 }
 
 func (dv *ledgersDetailView) View() string {

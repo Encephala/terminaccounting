@@ -50,7 +50,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	count := 0
 	for rows.Next() {
 		count++
-		rows.StructScan(&result)
+		err = rows.StructScan(&result)
 		if err != nil {
 			t.Errorf("Failed to scan: %v", err)
 		}

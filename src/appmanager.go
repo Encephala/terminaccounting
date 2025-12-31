@@ -61,8 +61,8 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		return am, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
-		newApp, cmd := am.apps[am.activeApp].Update(message)
-		am.apps[am.activeApp] = newApp.(meta.App)
+		var cmd tea.Cmd
+		am.apps[am.activeApp], cmd = am.apps[am.activeApp].Update(message)
 
 		return am, cmd
 
@@ -75,8 +75,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			panic(fmt.Sprintf("Mismatch between target app %q and loaded model:\n%#v", am.appTypeToApp(message.TargetApp).Name(), message))
 		}
 
-		newApp, cmd := app.Update(message)
-		am.apps[am.appIds[message.TargetApp]] = newApp.(meta.App)
+		app, cmd := app.Update(message)
 
 		return am, cmd
 
@@ -99,8 +98,8 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			am.setActiveApp(am.appIds[*message.App])
 		}
 
-		newApp, updateCmd := am.apps[am.activeApp].Update(message)
-		am.apps[am.activeApp] = newApp.(meta.App)
+		var updateCmd tea.Cmd
+		am.apps[am.activeApp], updateCmd = am.apps[am.activeApp].Update(message)
 
 		windowSizeCmds := am.updateAppsViewSize(tea.WindowSizeMsg{Width: am.width, Height: am.height})
 
@@ -120,12 +119,10 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		return am, tea.Batch(cmds...)
 	}
 
-	var cmds []tea.Cmd
-	app, cmd := am.apps[am.activeApp].Update(message)
-	am.apps[am.activeApp] = app.(meta.App)
-	cmds = append(cmds, cmd)
+	var cmd tea.Cmd
+	am.apps[am.activeApp], cmd = am.apps[am.activeApp].Update(message)
 
-	return am, tea.Batch(cmds...)
+	return am, cmd
 }
 
 func (am *appManager) View() string {
@@ -179,11 +176,12 @@ func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {
 	// -3 for the tabs and their borders
 	remainingHeight := message.Height - 3
 	for i, app := range am.apps {
-		model, cmd := app.Update(tea.WindowSizeMsg{
+		var cmd tea.Cmd
+		am.apps[i], cmd = app.Update(tea.WindowSizeMsg{
 			Width:  message.Width,
 			Height: remainingHeight,
 		})
-		am.apps[i] = model.(meta.App)
+
 		cmds = append(cmds, cmd)
 	}
 
