@@ -12,7 +12,6 @@ import (
 type Item interface {
 	fmt.Stringer
 
-	// ID to be used in comparison,
 	CompareId() int
 }
 
