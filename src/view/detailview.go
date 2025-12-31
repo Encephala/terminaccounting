@@ -227,8 +227,8 @@ func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
 
 		canReconcile: false,
 
-		colWidths: []int{0, 0, 0, 0, 0, 0},
-		headers:   []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit"},
+		colWidths: []int{0, 0, 0, 0, 0, 0, 0},
+		headers:   []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
 
 	return result
@@ -275,11 +275,6 @@ func (erv *entryRowViewer) View() string {
 	var result strings.Builder
 
 	erv.setViewportContent()
-
-	result.WriteString(erv.renderRow(erv.headers, false))
-
-	result.WriteString("\n")
-
 	result.WriteString(erv.viewport.View())
 
 	result.WriteString("\n\n")
@@ -315,14 +310,6 @@ func (erv *entryRowViewer) View() string {
 
 func (erv *entryRowViewer) setCanReconcile(canReconcile bool) {
 	erv.canReconcile = canReconcile
-
-	if erv.canReconcile {
-		erv.headers = []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"}
-	} else {
-		erv.headers = []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit"}
-	}
-
-	erv.updateViewRows()
 	erv.calculateColumnWidths()
 }
 
@@ -403,9 +390,8 @@ func (erv *entryRowViewer) updateViewRows() {
 			viewRow = append(viewRow, (-row.Value).String())
 		}
 
-		if erv.canReconcile {
-			viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
-		}
+		// Don't consider canReconcile at update time, it gets considered at view time
+		viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
 
 		viewRows = append(viewRows, viewRow)
 	}
@@ -434,9 +420,19 @@ func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
 func (erv *entryRowViewer) setViewportContent() {
 	var content []string
 
+	if erv.canReconcile {
+		content = append(content, erv.renderRow(erv.headers, false))
+	} else {
+		content = append(content, erv.renderRow(erv.headers[:len(erv.headers)-1], false))
+	}
+
 	for i, row := range erv.viewRows {
 		doHighlight := i == erv.activeRow
-		content = append(content, erv.renderRow(row, doHighlight))
+		if erv.canReconcile {
+			content = append(content, erv.renderRow(row, doHighlight))
+		} else {
+			content = append(content, erv.renderRow(row[:len(row)-1], doHighlight))
+		}
 	}
 
 	erv.viewport.SetContent(strings.Join(content, "\n"))
