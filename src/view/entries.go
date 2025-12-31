@@ -33,7 +33,7 @@ func NewEntriesDetailView(modelId int) *entriesDetailView {
 	return &entriesDetailView{
 		modelId: modelId,
 
-		viewer: newEntryRowViewer(meta.ENTRIESCOLOURS),
+		viewer: newEntryRowViewer(meta.ENTRIESCOLOUR),
 	}
 }
 
@@ -110,8 +110,8 @@ func (dv *entriesDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
-func (dv *entriesDetailView) getColours() meta.AppColours {
-	return meta.ENTRIESCOLOURS
+func (dv *entriesDetailView) getColour() lipgloss.Color {
+	return meta.ENTRIESCOLOUR
 }
 
 // NOTE: entries doesn't use the genericMutateView, because with the row creating it's too idiosyncratic
@@ -128,17 +128,15 @@ type entryCreateView struct {
 	entryRowsManager *rowsMutateManager
 	activeInput      int
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewEntryCreateView() *entryCreateView {
-	colours := meta.ENTRIESCOLOURS
-
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.ENTRIESCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -150,7 +148,7 @@ func NewEntryCreateView() *entryCreateView {
 		activeInput:      ENTRIESJOURNALINPUT,
 		entryRowsManager: newRowsViewManager(),
 
-		colours: colours,
+		colour: meta.ENTRIESCOLOUR,
 	}
 
 	return result
@@ -316,8 +314,8 @@ func (cv *entryCreateView) getActiveInput() *int {
 	return &cv.activeInput
 }
 
-func (cv *entryCreateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *entryCreateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 func (cv *entryCreateView) title() string {
@@ -334,18 +332,16 @@ type entryUpdateView struct {
 	startingEntry     database.Entry
 	startingEntryRows []database.EntryRow
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewEntryUpdateView(modelId int) *entryUpdateView {
-	colours := meta.ENTRIESCOLOURS
-
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.ENTRIESCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -359,7 +355,7 @@ func NewEntryUpdateView(modelId int) *entryUpdateView {
 
 		modelId: modelId,
 
-		colours: colours,
+		colour: meta.ENTRIESCOLOUR,
 	}
 
 	return result
@@ -538,8 +534,8 @@ func (uv *entryUpdateView) getActiveInput() *int {
 	return &uv.activeInput
 }
 
-func (uv *entryUpdateView) getColours() meta.AppColours {
-	return uv.colours
+func (uv *entryUpdateView) getColour() lipgloss.Color {
+	return uv.colour
 }
 
 func (uv *entryUpdateView) title() string {
@@ -716,7 +712,7 @@ func (ervm *rowsMutateManager) View() string {
 
 func (ervm *rowsMutateManager) updateContent() {
 	baseStyle := lipgloss.NewStyle()
-	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOURS.Foreground)
+	highlightStyle := baseStyle.Foreground(meta.ENTRIESCOLOUR)
 
 	var result strings.Builder
 
@@ -1208,7 +1204,7 @@ type entryMutateView interface {
 
 	getActiveInput() *int
 
-	getColours() meta.AppColours
+	getColour() lipgloss.Color
 
 	title() string
 }
@@ -1352,7 +1348,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 func entriesMutateViewView(view entryMutateView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(view.getColours().Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(view.getColour()).Padding(0, 1)
 	result.WriteString(titleStyle.Render(view.title()))
 
 	result.WriteString("\n\n")
@@ -1361,7 +1357,7 @@ func entriesMutateViewView(view entryMutateView) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(view.getColours().Foreground)
+	highlightStyle := sectionStyle.Foreground(view.getColour())
 
 	inputs := []viewable{view.getJournalInput(), view.getNotesInput(), view.getManager()}
 	names := []string{"Journal", "Notes", ""}
@@ -1442,14 +1438,14 @@ type entryDeleteView struct {
 	rows    []*database.EntryRow
 	journal *database.Journal
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewEntryDeleteView(modelId int) *entryDeleteView {
 	return &entryDeleteView{
 		modelId: modelId,
 
-		colours: meta.ENTRIESCOLOURS,
+		colour: meta.ENTRIESCOLOUR,
 	}
 }
 
@@ -1579,8 +1575,8 @@ func (dv *entryDeleteView) inputNames() []string {
 	return []string{"Journal", "Notes", "# rows", "Entry size"}
 }
 
-func (dv *entryDeleteView) getColours() meta.AppColours {
-	return dv.colours
+func (dv *entryDeleteView) getColour() lipgloss.Color {
+	return dv.colour
 }
 
 func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

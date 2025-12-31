@@ -23,7 +23,7 @@ type genericDetailView interface {
 
 	getViewer() *entryRowViewer
 
-	getColours() meta.AppColours
+	getColour() lipgloss.Color
 }
 
 func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.Cmd) {
@@ -156,7 +156,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 func genericDetailViewView(gdv genericDetailView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(gdv.getColours().Background).Padding(0, 1)
+	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1)
 	result.WriteString(titleStyle.Render(gdv.title()))
 
 	result.WriteString("\n")
@@ -236,9 +236,9 @@ type entryRowViewer struct {
 	colWidths []int
 }
 
-func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
+func newEntryRowViewer(colour lipgloss.Color) *entryRowViewer {
 	result := &entryRowViewer{
-		highlightColour: colours.Foreground,
+		highlightColour: colour,
 
 		viewport: viewport.New(0, 0),
 

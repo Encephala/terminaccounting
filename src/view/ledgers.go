@@ -29,7 +29,7 @@ func NewLedgersDetailView(modelId int) *ledgersDetailView {
 	return &ledgersDetailView{
 		modelId: modelId,
 
-		viewer: newEntryRowViewer(meta.LEDGERSCOLOURS),
+		viewer: newEntryRowViewer(meta.LEDGERSCOLOUR),
 	}
 }
 
@@ -119,19 +119,17 @@ func (dv *ledgersDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
-func (dv *ledgersDetailView) getColours() meta.AppColours {
-	return meta.LEDGERSCOLOURS
+func (dv *ledgersDetailView) getColour() lipgloss.Color {
+	return meta.LEDGERSCOLOUR
 }
 
 type ledgersCreateView struct {
 	inputManager *inputManager
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewLedgersCreateView() *ledgersCreateView {
-	colours := meta.LEDGERSCOLOURS
-
 	ledgerTypes := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -153,7 +151,7 @@ func NewLedgersCreateView() *ledgersCreateView {
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 	notesInput.SetWidth(baseInputWidth)
 
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.LEDGERSCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -165,7 +163,7 @@ func NewLedgersCreateView() *ledgersCreateView {
 	return &ledgersCreateView{
 		inputManager: newInputManager(inputs, names),
 
-		colours: colours,
+		colour: meta.LEDGERSCOLOUR,
 	}
 }
 
@@ -177,8 +175,8 @@ func (cv *ledgersCreateView) title() string {
 	return "Create new Ledger"
 }
 
-func (cv *ledgersCreateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *ledgersCreateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -261,7 +259,7 @@ type ledgersUpdateView struct {
 	modelId       int
 	startingValue database.Ledger
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
@@ -294,7 +292,7 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 
 		modelId: modelId,
 
-		colours: meta.LEDGERSCOLOURS,
+		colour: meta.LEDGERSCOLOUR,
 	}
 }
 
@@ -305,8 +303,8 @@ func (uv *ledgersUpdateView) Init() tea.Cmd {
 func (uv *ledgersUpdateView) title() string {
 	return fmt.Sprintf("Update Ledger: %s", uv.inputManager.inputs[0].value().(string))
 }
-func (uv *ledgersUpdateView) getColours() meta.AppColours {
-	return uv.colours
+func (uv *ledgersUpdateView) getColour() lipgloss.Color {
+	return uv.colour
 }
 
 func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -420,14 +418,14 @@ type ledgersDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewLedgersDeleteView(modelId int) *ledgersDeleteView {
 	return &ledgersDeleteView{
 		modelId: modelId,
 
-		colours: meta.LEDGERSCOLOURS,
+		colour: meta.LEDGERSCOLOUR,
 	}
 }
 
@@ -518,8 +516,8 @@ func (dv *ledgersDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
 }
 
-func (dv *ledgersDeleteView) getColours() meta.AppColours {
-	return dv.colours
+func (dv *ledgersDeleteView) getColour() lipgloss.Color {
+	return dv.colour
 }
 
 func (dv *ledgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {

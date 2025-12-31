@@ -26,7 +26,7 @@ func NewAccountsDetailView(modelId int) *accountsDetailView {
 	return &accountsDetailView{
 		modelId: modelId,
 
-		viewer: newEntryRowViewer(meta.ACCOUNTSCOLOURS),
+		viewer: newEntryRowViewer(meta.ACCOUNTSCOLOUR),
 	}
 }
 
@@ -105,8 +105,8 @@ func (dv *accountsDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
-func (dv *accountsDetailView) getColours() meta.AppColours {
-	return meta.ACCOUNTSCOLOURS
+func (dv *accountsDetailView) getColour() lipgloss.Color {
+	return meta.ACCOUNTSCOLOUR
 }
 
 const (
@@ -121,12 +121,10 @@ const NUMACCOUNTSINPUTS int = 4
 type accountsCreateView struct {
 	inputManager *inputManager
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewAccountsCreateView() *accountsCreateView {
-	colours := meta.ACCOUNTSCOLOURS
-
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -146,7 +144,7 @@ func NewAccountsCreateView() *accountsCreateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.ACCOUNTSCOLOUR)
 	bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
 	bankNumbersInput.FocusedStyle.Text = notesFocusStyle
 	bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -162,7 +160,7 @@ func NewAccountsCreateView() *accountsCreateView {
 	return &accountsCreateView{
 		inputManager: newInputManager(inputs, names),
 
-		colours: colours,
+		colour: meta.ACCOUNTSCOLOUR,
 	}
 }
 
@@ -253,8 +251,8 @@ func (cv *accountsCreateView) title() string {
 	return "Creating new account"
 }
 
-func (cv *accountsCreateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *accountsCreateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 type accountsUpdateView struct {
@@ -263,7 +261,7 @@ type accountsUpdateView struct {
 	modelId       int
 	startingValue database.Account
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewAccountsUpdateView(modelId int) *accountsUpdateView {
@@ -294,7 +292,7 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 
 		modelId: modelId,
 
-		colours: meta.ACCOUNTSCOLOURS,
+		colour: meta.ACCOUNTSCOLOUR,
 	}
 }
 
@@ -421,22 +419,22 @@ func (cv *accountsUpdateView) title() string {
 	return "Creating new account"
 }
 
-func (cv *accountsUpdateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *accountsUpdateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 type accountsDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Account
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewAccountsDeleteView(modelId int) *accountsDeleteView {
 	return &accountsDeleteView{
 		modelId: modelId,
 
-		colours: meta.ACCOUNTSCOLOURS,
+		colour: meta.ACCOUNTSCOLOUR,
 	}
 }
 
@@ -525,8 +523,8 @@ func (dv *accountsDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Bank numbers", "Notes"}
 }
 
-func (dv *accountsDeleteView) getColours() meta.AppColours {
-	return dv.colours
+func (dv *accountsDeleteView) getColour() lipgloss.Color {
+	return dv.colour
 }
 
 func (dv *accountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

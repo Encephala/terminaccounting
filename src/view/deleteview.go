@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"slices"
 	"strings"
-	"terminaccounting/meta"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -15,13 +14,13 @@ type genericDeleteView interface {
 	inputValues() []string
 	inputNames() []string
 
-	getColours() meta.AppColours
+	getColour() lipgloss.Color
 }
 
 func genericDeleteViewView(gdv genericDeleteView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(gdv.getColours().Background).Padding(0, 1).MarginLeft(2)
+	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1).MarginLeft(2)
 
 	result.WriteString(titleStyle.Render(gdv.title()))
 	result.WriteString("\n\n")

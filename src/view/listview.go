@@ -16,7 +16,7 @@ type ListView struct {
 }
 
 func NewListView(app meta.App) *ListView {
-	viewStyles := meta.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
+	viewStyles := meta.NewListViewStyles(app.Colour())
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle

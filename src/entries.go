@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type entriesApp struct {
@@ -102,8 +103,8 @@ func (app *entriesApp) Type() meta.AppType {
 	return meta.ENTRIESAPP
 }
 
-func (app *entriesApp) Colours() meta.AppColours {
-	return meta.ENTRIESCOLOURS
+func (app *entriesApp) Colour() lipgloss.Color {
+	return meta.ENTRIESCOLOUR
 }
 
 func (app *entriesApp) CurrentMotionSet() meta.MotionSet {

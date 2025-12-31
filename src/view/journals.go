@@ -27,7 +27,7 @@ type journalsDetailsView struct {
 }
 
 func NewJournalsDetailsView(journal database.Journal, app meta.App) *journalsDetailsView {
-	viewStyles := meta.NewListViewStyles(app.Colours().Accent, app.Colours().Foreground)
+	viewStyles := meta.NewListViewStyles(app.Colour())
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
@@ -153,12 +153,10 @@ func (dv *journalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 type journalsCreateView struct {
 	inputManager *inputManager
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewJournalsCreateView() *journalsCreateView {
-	colours := meta.JOURNALSCOLOURS
-
 	journalTypes := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -178,7 +176,7 @@ func NewJournalsCreateView() *journalsCreateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.JOURNALSCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -190,7 +188,7 @@ func NewJournalsCreateView() *journalsCreateView {
 	return &journalsCreateView{
 		inputManager: newInputManager(inputs, names),
 
-		colours: colours,
+		colour: meta.JOURNALSCOLOUR,
 	}
 }
 
@@ -279,8 +277,8 @@ func (cv *journalsCreateView) title() string {
 	return "Creating new journal"
 }
 
-func (cv *journalsCreateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *journalsCreateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 type journalsUpdateView struct {
@@ -289,12 +287,10 @@ type journalsUpdateView struct {
 	modelId       int
 	startingValue database.Journal
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewJournalsUpdateView(modelId int) *journalsUpdateView {
-	colours := meta.JOURNALSCOLOURS
-
 	types := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -309,7 +305,7 @@ func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
-	notesFocusStyle := lipgloss.NewStyle().Foreground(colours.Foreground)
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.JOURNALSCOLOUR)
 	notesInput.FocusedStyle.Prompt = notesFocusStyle
 	notesInput.FocusedStyle.Text = notesFocusStyle
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
@@ -323,7 +319,7 @@ func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 
 		modelId: modelId,
 
-		colours: colours,
+		colour: meta.JOURNALSCOLOUR,
 	}
 }
 
@@ -440,8 +436,8 @@ func (cv *journalsUpdateView) title() string {
 	return "Creating new journal"
 }
 
-func (cv *journalsUpdateView) getColours() meta.AppColours {
-	return cv.colours
+func (cv *journalsUpdateView) getColour() lipgloss.Color {
+	return cv.colour
 }
 
 func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -454,14 +450,14 @@ type journalsDeleteView struct {
 	modelId int
 	model   database.Journal
 
-	colours meta.AppColours
+	colour lipgloss.Color
 }
 
 func NewJournalsDeleteView(modelId int) *journalsDeleteView {
 	return &journalsDeleteView{
 		modelId: modelId,
 
-		colours: meta.JOURNALSCOLOURS,
+		colour: meta.JOURNALSCOLOUR,
 	}
 }
 
@@ -550,8 +546,8 @@ func (dv *journalsDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
 }
 
-func (dv *journalsDeleteView) getColours() meta.AppColours {
-	return dv.colours
+func (dv *journalsDeleteView) getColour() lipgloss.Color {
+	return dv.colour
 }
 
 func (dv *journalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

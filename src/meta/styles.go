@@ -5,29 +5,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var LEDGERSCOLOURS = AppColours{
-	Foreground: "#A1EEBD",
-	Background: "#A1EEBD",
-	Accent:     "#A1EEBD",
-}
-
-var ENTRIESCOLOURS = AppColours{
-	Foreground: "#F0F1B2",
-	Accent:     "#F0F1B2",
-	Background: "#EBECAB",
-}
-
-var ACCOUNTSCOLOURS = AppColours{
-	Foreground: "#7BD4EA",
-	Accent:     "#7BD4EA",
-	Background: "#7BD4EA",
-}
-
-var JOURNALSCOLOURS = AppColours{
-	Foreground: "#F6D6D6",
-	Accent:     "#F6D6D6",
-	Background: "#F6D6D6",
-}
+var (
+	ENTRIESCOLOUR  = lipgloss.Color("#F0F1B2")
+	LEDGERSCOLOUR  = lipgloss.Color("#A1EEBD")
+	ACCOUNTSCOLOUR = lipgloss.Color("#7BD4EA")
+	JOURNALSCOLOUR = lipgloss.Color("#F6D6D6")
+)
 
 var tabBorder = lipgloss.Border{
 	Top:         "─",
@@ -79,10 +62,6 @@ var StatusLineStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("240")).
 	Foreground(lipgloss.Color("#00EAEA"))
 
-type AppColours struct {
-	Foreground, Accent, Background lipgloss.Color
-}
-
 type ListViewStyles struct {
 	Title lipgloss.Style
 
@@ -90,19 +69,19 @@ type ListViewStyles struct {
 	ListDelegateSelectedDesc  lipgloss.Style
 }
 
-func NewListViewStyles(background, foreground lipgloss.Color) ListViewStyles {
+func NewListViewStyles(colour lipgloss.Color) ListViewStyles {
 	defaultTitleStyles := list.DefaultStyles().Title
 	defaultItemStyles := list.NewDefaultItemStyles()
 
 	return ListViewStyles{
-		Title: defaultTitleStyles.Background(background),
+		Title: defaultTitleStyles.Background(colour),
 
 		ListDelegateSelectedTitle: defaultItemStyles.SelectedTitle.
-			Foreground(foreground).
-			BorderForeground(background),
+			Foreground(colour).
+			BorderForeground(colour),
 		ListDelegateSelectedDesc: defaultItemStyles.SelectedDesc.
-			Foreground(foreground).
-			BorderForeground(background),
+			Foreground(colour).
+			BorderForeground(colour),
 	}
 }
 
@@ -113,15 +92,15 @@ type DetailViewStyles struct {
 	ItemSelected lipgloss.Style
 }
 
-func NewDetailViewStyles(colours AppColours) DetailViewStyles {
+func NewDetailViewStyles(colour lipgloss.Color) DetailViewStyles {
 	title := list.DefaultStyles().Title
 	item := list.NewDefaultItemStyles().NormalDesc.Foreground(lipgloss.ANSIColor(7))
 
 	return DetailViewStyles{
-		Title: title.Background(colours.Background),
+		Title: title.Background(colour),
 
 		Item:         item,
-		ItemSelected: item.Foreground(ENTRIESCOLOURS.Foreground),
+		ItemSelected: item.Foreground(colour),
 	}
 }
 

@@ -3,6 +3,7 @@ package meta
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type App interface {
@@ -13,7 +14,7 @@ type App interface {
 	Name() string
 	Type() AppType
 
-	Colours() AppColours
+	Colour() lipgloss.Color
 
 	CurrentMotionSet() MotionSet
 	CurrentCommandSet() CommandSet

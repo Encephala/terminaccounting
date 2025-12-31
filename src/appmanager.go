@@ -133,7 +133,7 @@ func (am *appManager) View() string {
 	}
 
 	tabs := []string{}
-	activeTabColour := am.apps[am.activeApp].Colours().Foreground
+	activeTabColour := am.apps[am.activeApp].Colour()
 	for i, app := range am.apps {
 		if i == am.activeApp {
 			tabs = append(tabs, meta.ActiveTabStyle(activeTabColour).Render(app.Name()))
