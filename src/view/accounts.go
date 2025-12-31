@@ -482,7 +482,7 @@ func (dv *accountsDeleteView) View() string {
 }
 
 func (dv *accountsDeleteView) AllowsInsertMode() bool {
-	return false
+	return true
 }
 
 func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
