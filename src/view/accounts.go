@@ -71,6 +71,10 @@ func (dv *accountsDetailView) title() string {
 	return fmt.Sprintf("Account %s details", dv.model.Name)
 }
 
+func (dv *accountsDetailView) getCanReconcile() bool {
+	return true
+}
+
 func (dv *accountsDetailView) AllowsInsertMode() bool {
 	return false
 }

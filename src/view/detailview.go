@@ -19,6 +19,8 @@ type genericDetailView interface {
 
 	title() string
 
+	getCanReconcile() bool
+
 	getViewer() *entryRowViewer
 
 	getColours() meta.AppColours
@@ -30,7 +32,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		newViewer, cmd := viewer.Update(tea.WindowSizeMsg{
-			// -4 for padding on each side
+			// -4 for margin on each side
 			Width: message.Width - 4,
 			// -4 for the title, reconcilableness info
 			Height: message.Height - 4,
@@ -80,7 +82,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		return gdv, nil
 
 	case meta.ReconcileMsg:
-		if !viewer.canReconcile {
+		if !gdv.getCanReconcile() {
 			return gdv, meta.MessageCmd(errors.New("reconciling is disabled in this view"))
 		}
 
@@ -143,7 +145,7 @@ func genericDetailViewView(gdv genericDetailView) string {
 
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", renderBoolean(gdv.getViewer().canReconcile)))
+	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", renderBoolean(gdv.getCanReconcile())))
 
 	result.WriteString("\n\n")
 
@@ -196,7 +198,8 @@ func makeGoToEntryDetailViewCmd(activeEntryRow *database.EntryRow) tea.Cmd {
 }
 
 type entryRowViewer struct {
-	width, height int
+	width, height   int
+	highlightColour lipgloss.Color
 
 	viewport viewport.Model
 	viewRows [][]string
@@ -204,10 +207,8 @@ type entryRowViewer struct {
 	rows         []*database.EntryRow
 	originalRows []database.EntryRow
 
-	activeRow      int
-	highlightStyle lipgloss.Style
+	activeRow int
 
-	canReconcile        bool
 	showReconciled      bool
 	showReconciledTotal bool
 
@@ -217,14 +218,11 @@ type entryRowViewer struct {
 
 func newEntryRowViewer(colours meta.AppColours) *entryRowViewer {
 	result := &entryRowViewer{
+		highlightColour: colours.Foreground,
+
 		viewport: viewport.New(0, 0),
 
-		highlightStyle: lipgloss.NewStyle().Foreground(colours.Foreground),
-
-		canReconcile: false,
-
-		colWidths: []int{0, 0, 0, 0, 0, 0, 0},
-		headers:   []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
+		headers: []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
 
 	return result
@@ -279,7 +277,7 @@ func (erv *entryRowViewer) View() string {
 
 	result.WriteString("\n")
 
-	if erv.canReconcile && erv.showReconciledTotal {
+	if erv.showReconciledTotal {
 		totalReconciled := database.CalculateTotal(erv.getReconciledRows())
 
 		var totalReconciledRendered string
@@ -302,11 +300,6 @@ func (erv *entryRowViewer) View() string {
 	result.WriteString(fmt.Sprintf("# rows: %d", len(erv.rows)))
 
 	return result.String()
-}
-
-func (erv *entryRowViewer) setCanReconcile(canReconcile bool) {
-	erv.canReconcile = canReconcile
-	erv.calculateColumnWidths()
 }
 
 func (erv *entryRowViewer) calculateColumnWidths() {
@@ -375,8 +368,7 @@ func (erv *entryRowViewer) updateViewRows() {
 			viewRow = append(viewRow, (-row.Value).String())
 		}
 
-		// Don't consider canReconcile at update time, it gets considered at view time
-		viewRow = append(viewRow, lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Render(renderBoolean(row.Reconciled)))
+		viewRow = append(viewRow, renderBoolean(row.Reconciled))
 
 		viewRows = append(viewRows, viewRow)
 	}
@@ -405,17 +397,17 @@ func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
 func (erv *entryRowViewer) setViewportContent() {
 	var content []string
 
-	content = append(content, erv.renderRow(erv.headers, false))
+	content = append(content, erv.renderRow(erv.headers, true, false))
 
 	for i, row := range erv.viewRows {
 		doHighlight := i == erv.activeRow
-		content = append(content, erv.renderRow(row, doHighlight))
+		content = append(content, erv.renderRow(row, false, doHighlight))
 	}
 
 	erv.viewport.SetContent(strings.Join(content, "\n"))
 }
 
-func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
+func (erv *entryRowViewer) renderRow(values []string, isHeader, highlight bool) string {
 	if len(erv.colWidths) != len(values) {
 		panic("You absolute dingus")
 	}
@@ -423,12 +415,15 @@ func (erv *entryRowViewer) renderRow(values []string, highlight bool) string {
 	var result strings.Builder
 
 	for i := range values {
-		style := lipgloss.NewStyle()
+		style := lipgloss.NewStyle().Width(erv.colWidths[i])
+
 		if highlight {
-			style = erv.highlightStyle
+			style = style.Foreground(erv.highlightColour)
 		}
 
-		style = style.Width(erv.colWidths[i])
+		if !isHeader && i == len(values)-1 {
+			style = style.AlignHorizontal(lipgloss.Center)
+		}
 
 		if i != len(values)-1 {
 			style = style.MarginRight(2)

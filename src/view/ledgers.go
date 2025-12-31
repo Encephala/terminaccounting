@@ -20,6 +20,8 @@ type ledgersDetailView struct {
 	modelId int
 	model   database.Ledger
 
+	canReconcile bool
+
 	viewer *entryRowViewer
 }
 
@@ -49,10 +51,10 @@ func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 
 			switch dv.model.Type {
 			case database.INCOMELEDGER, database.EXPENSELEDGER:
-				dv.viewer.setCanReconcile(false)
+				dv.canReconcile = false
 
 			case database.ASSETLEDGER, database.EQUITYLEDGER, database.LIABILITYLEDGER:
-				dv.viewer.setCanReconcile(true)
+				dv.canReconcile = true
 
 			default:
 				panic(fmt.Sprintf("unexpected database.LedgerType: %#v", dv.model.Type))
@@ -81,6 +83,10 @@ func (dv *ledgersDetailView) View() string {
 
 func (dv *ledgersDetailView) title() string {
 	return fmt.Sprintf("Ledger %s details", dv.model.Name)
+}
+
+func (dv *ledgersDetailView) getCanReconcile() bool {
+	return dv.canReconcile
 }
 
 func (dv *ledgersDetailView) AllowsInsertMode() bool {

@@ -78,6 +78,10 @@ func (dv *entriesDetailView) title() string {
 	return fmt.Sprintf("Entry %d details", dv.model.Id)
 }
 
+func (dv *entriesDetailView) getCanReconcile() bool {
+	return false
+}
+
 func (dv *entriesDetailView) AllowsInsertMode() bool {
 	return false
 }
