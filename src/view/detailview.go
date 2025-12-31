@@ -265,6 +265,11 @@ func (erv *entryRowViewer) View() string {
 	var result strings.Builder
 
 	erv.setViewportContent()
+
+	result.WriteString(erv.renderRow(erv.headers, true, false))
+
+	result.WriteString("\n")
+
 	result.WriteString(erv.viewport.View())
 
 	result.WriteString("\n\n")
@@ -392,8 +397,6 @@ func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
 
 func (erv *entryRowViewer) setViewportContent() {
 	var content []string
-
-	content = append(content, erv.renderRow(erv.headers, true, false))
 
 	for i, row := range erv.viewRows {
 		doHighlight := i == erv.activeRow
