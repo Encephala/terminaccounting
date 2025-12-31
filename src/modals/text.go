@@ -2,7 +2,6 @@ package modals
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -47,8 +46,6 @@ func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
 		return tm, nil
 
 	case meta.NavigateMsg:
-		slog.Debug("navigating out the wazoo", "msg", message)
-
 		switch message.Direction {
 		case meta.DOWN:
 			tm.viewport.ScrollDown(1)
