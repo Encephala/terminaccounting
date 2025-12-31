@@ -71,28 +71,51 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		return gdv, cmd
 
 	case meta.ToggleShowReconciledMsg:
-		viewer.showReconciled = !viewer.showReconciled
+		oldShownRows := make([]*database.EntryRow, len(viewer.shownRows))
+		oldActiveIndex := viewer.activeRow
+		copy(oldShownRows, viewer.shownRows)
 
+		viewer.showReconciled = !viewer.showReconciled
 		viewer.updateViewRows()
 
-		if activeEntryRow := viewer.activeEntryRow(); activeEntryRow != nil {
-			viewer.setActiveEntryRow(activeEntryRow)
+		if len(viewer.shownRows) == 0 {
+			return gdv, nil
 		}
 
-		return gdv, nil
+		// If there was previously an active row, set a new row active that is reasonably close to the old one
+		// Find (or try to) the closest row equal to or before the previous active row that is still being shown
+		for i := oldActiveIndex; i >= 0; i-- {
+			found := viewer.setActiveRow(oldShownRows[i])
+
+			if found {
+				return gdv, nil
+			}
+		}
+
+		// If no closest row before found (i.e. active row was one of the first rows and is now hidden)
+		for i := oldActiveIndex + 1; i < len(viewer.shownRows); i++ {
+			found := viewer.setActiveRow(oldShownRows[i])
+
+			if found {
+				return gdv, nil
+			}
+		}
+
+		panic("this never happens due to the above check of len(viewer.shownRows) == 0")
 
 	case meta.ReconcileMsg:
 		if !gdv.getCanReconcile() {
 			return gdv, meta.MessageCmd(errors.New("reconciling is disabled in this view"))
 		}
 
-		activeEntryRow := viewer.activeEntryRow()
+		activeEntryRow := viewer.getActiveRow()
 
 		if activeEntryRow == nil {
 			return gdv, meta.MessageCmd(errors.New("there are no rows to reconcile"))
 		}
 
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
+		// If the last row was just reconciled and it is now hidden, set activeRow to the new last row
 		if !viewer.showReconciled && viewer.activeRow == len(viewer.viewRows)-1 {
 			viewer.activeRow = max(0, viewer.activeRow-1)
 		}
@@ -202,6 +225,7 @@ type entryRowViewer struct {
 	viewRows [][]string
 
 	rows         []*database.EntryRow
+	shownRows    []*database.EntryRow
 	originalRows []database.EntryRow
 
 	activeRow int
@@ -239,7 +263,7 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 	case meta.NavigateMsg:
 		switch message.Direction {
 		case meta.DOWN:
-			if erv.activeRow != len(erv.rows)-1 {
+			if erv.activeRow != len(erv.shownRows)-1 {
 				erv.activeRow++
 			}
 
@@ -321,15 +345,14 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 }
 
 func (erv *entryRowViewer) updateViewRows() {
-	var shownRows []*database.EntryRow
 	if erv.showReconciled {
-		shownRows = erv.rows
+		erv.shownRows = erv.rows
 	} else {
-		shownRows = erv.getUnreconciledRows()
+		erv.shownRows = erv.getUnreconciledRows()
 	}
 
 	var viewRows [][]string
-	for _, row := range shownRows {
+	for _, row := range erv.shownRows {
 		var viewRow []string
 		viewRow = append(viewRow, row.Date.String())
 
@@ -387,12 +410,26 @@ func (erv *entryRowViewer) scrollViewport() {
 	}
 }
 
-func (erv *entryRowViewer) activeEntryRow() *database.EntryRow {
+func (erv *entryRowViewer) getActiveRow() *database.EntryRow {
 	if len(erv.viewRows) == 0 {
 		return nil
 	}
 
-	return erv.rows[erv.activeRow]
+	return erv.shownRows[erv.activeRow]
+}
+
+func (erv *entryRowViewer) setActiveRow(entryRow *database.EntryRow) (found bool) {
+	index := slices.IndexFunc(erv.shownRows, func(row *database.EntryRow) bool { return row == entryRow })
+
+	if index == -1 {
+		// This means that the row that was highlighted is reconciled and is now hidden, all good
+		return false
+	}
+
+	erv.activeRow = index
+	erv.scrollViewport()
+
+	return true
 }
 
 func (erv *entryRowViewer) setViewportContent() {
@@ -432,18 +469,6 @@ func (erv *entryRowViewer) renderRow(values []string, isHeader, highlight bool) 
 	}
 
 	return result.String()
-}
-
-func (erv *entryRowViewer) setActiveEntryRow(entryRow *database.EntryRow) {
-	index := slices.IndexFunc(erv.rows, func(row *database.EntryRow) bool { return row == entryRow })
-
-	if index == -1 {
-		// This means that the row that was highlighted is reconciled and is now hidden, all good
-		return
-	}
-
-	erv.activeRow = index
-	erv.scrollViewport()
 }
 
 func (erv *entryRowViewer) getReconciledRows() []*database.EntryRow {
