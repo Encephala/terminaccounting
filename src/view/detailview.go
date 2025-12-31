@@ -33,8 +33,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			// -4 for padding on each side
 			Width: message.Width - 4,
 			// -4 for the title and table header (header is not considered for table width)
-			// -6 to for the total rows their vertical margin
-			Height: message.Height - 4 - 6,
+			Height: message.Height - 4,
 		})
 		*viewer = *newViewer
 
@@ -242,7 +241,8 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		erv.height = message.Height
 
 		erv.viewport.Width = message.Width
-		erv.viewport.Height = message.Height
+		// -6 for the total rows and their vertical margin
+		erv.viewport.Height = message.Height - 6
 
 		return erv, nil
 
@@ -414,8 +414,8 @@ func (erv *entryRowViewer) updateViewRows() {
 }
 
 func (erv *entryRowViewer) scrollViewport() {
-	if erv.activeRow >= erv.viewport.YOffset+erv.height {
-		erv.viewport.ScrollDown(erv.activeRow - erv.viewport.YOffset - erv.height + 1)
+	if erv.activeRow >= erv.viewport.YOffset+erv.viewport.Height {
+		erv.viewport.ScrollDown(erv.activeRow - erv.viewport.YOffset - erv.viewport.Height + 1)
 	}
 
 	if erv.activeRow < erv.viewport.YOffset {
