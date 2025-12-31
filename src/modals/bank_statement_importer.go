@@ -277,7 +277,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		return bsi, tea.Batch(
 			meta.MessageCmd(meta.QuitMsg{}),
-			meta.MessageCmd(meta.SwitchViewMsg{
+			meta.MessageCmd(meta.SwitchAppViewMsg{
 				App:      &entriesAppType,
 				ViewType: meta.CREATEVIEWTYPE,
 				Data: view.EntryPrefillData{

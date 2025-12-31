@@ -93,7 +93,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-	case meta.SwitchViewMsg:
+	case meta.SwitchAppViewMsg:
 		if message.App != nil {
 			am.setActiveApp(am.appIds[*message.App])
 		}

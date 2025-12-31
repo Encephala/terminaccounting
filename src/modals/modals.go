@@ -37,12 +37,24 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 	case meta.ShowTextModalMsg:
 		mm.Modal = NewTextModal(message.Text)
 
-		return mm, mm.Modal.Init()
+		var cmd tea.Cmd
+		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
 	case meta.ShowBankImporterMsg:
 		mm.Modal = NewBankStatementImporter()
 
-		return mm, mm.Modal.Init()
+		var cmd tea.Cmd
+		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
 	case meta.ReloadViewMsg:
 		mm.Modal = mm.Modal.Reload()

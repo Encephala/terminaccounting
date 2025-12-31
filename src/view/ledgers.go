@@ -99,8 +99,8 @@ func (dv *ledgersDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *ledgersDetailView) MotionSet() meta.MotionSet {
 	result := genericDetailViewMotionSet()
 
-	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
 	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.getActiveRow()))
 
@@ -200,7 +200,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully deleted Account %q", name,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
 		}))
@@ -226,7 +226,7 @@ func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -374,7 +374,7 @@ func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -404,7 +404,7 @@ func (uv *ledgersUpdateView) getInputManager() *inputManager {
 
 func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
 	}
 }
 
@@ -446,7 +446,7 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully deleted Ledger %q", dv.model.Name,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE}))
 
 		return dv, tea.Batch(cmds...)
 
@@ -479,7 +479,7 @@ func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *ledgersDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
@@ -516,6 +516,6 @@ func (dv *ledgersDeleteView) getColour() lipgloss.Color {
 
 func (dv *ledgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
 }

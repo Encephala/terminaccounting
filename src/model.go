@@ -122,7 +122,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, tea.Batch(cmds...)
 
-	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg, meta.SwitchViewMsg:
+	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg, meta.SwitchAppViewMsg:
 		return ta.handleViewSwitch(message)
 
 	case meta.NotificationMessageMsg:
@@ -426,26 +426,22 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 
 func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting, tea.Cmd) {
 	switch message := message.(type) {
-	case meta.SwitchViewMsg:
+	case meta.SwitchAppViewMsg:
 		// This is always targeted at apps
 		var cmd tea.Cmd
 		ta.appManager, cmd = ta.appManager.Update(message)
 
+		ta.showModal = false
+
 		return ta, cmd
 
 	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
-		newModalManager, activateCmd := ta.modalManager.Update(message)
-
-		var windowSizeCmd tea.Cmd
-		ta.modalManager, windowSizeCmd = newModalManager.Update(tea.WindowSizeMsg{
-			// -20/-10 to give some padding, make it clear it's an overlay
-			Width:  ta.width - 20,
-			Height: ta.height - 10,
-		})
+		var cmd tea.Cmd
+		ta.modalManager, cmd = ta.modalManager.Update(message)
 
 		ta.showModal = true
 
-		return ta, tea.Batch(activateCmd, windowSizeCmd)
+		return ta, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))

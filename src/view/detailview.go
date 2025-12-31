@@ -180,7 +180,7 @@ func genericDetailViewMotionSet() meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"s", "r"}, meta.ToggleShowReconciledMsg{}) // [S]how [R]econciled
 	normalMotions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
@@ -213,7 +213,7 @@ func makeGoToEntryDetailViewCmd(activeEntryRow *database.EntryRow) tea.Cmd {
 
 		// Stupid go not allowing to reference a const
 		targetApp := meta.ENTRIESAPP
-		return meta.SwitchViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
+		return meta.SwitchAppViewMsg{App: &targetApp, ViewType: meta.DETAILVIEWTYPE, Data: entry}
 	}
 }
 

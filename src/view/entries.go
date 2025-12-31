@@ -92,8 +92,8 @@ func (dv *entriesDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *entriesDetailView) MotionSet() meta.MotionSet {
 	result := genericDetailViewMotionSet()
 
-	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
 	return result
 }
@@ -256,7 +256,7 @@ func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully created Entry \"%d\"", id,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
 		}))
@@ -911,7 +911,7 @@ func (ervm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
 
 func (uv *entryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingEntry}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingEntry}
 	}
 }
 
@@ -1436,7 +1436,7 @@ func entriesMutateViewView(view entryMutateView) string {
 func entriesMutateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	// Default navigation
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
@@ -1543,7 +1543,7 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully deleted entry \"%d\"", dv.modelId,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE}))
 
 		return dv, tea.Batch(cmds...)
 
@@ -1575,7 +1575,7 @@ func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *entryDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
@@ -1626,6 +1626,6 @@ func (dv *entryDeleteView) getColour() lipgloss.Color {
 
 func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
 }

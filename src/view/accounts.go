@@ -85,8 +85,8 @@ func (dv *accountsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *accountsDetailView) MotionSet() meta.MotionSet {
 	result := genericDetailViewMotionSet()
 
-	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
 	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.getActiveRow()))
 
@@ -192,7 +192,7 @@ func (cv *accountsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully created Account %q", name,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{
 			ViewType: meta.UPDATEVIEWTYPE,
 			Data:     id,
 		}))
@@ -221,7 +221,7 @@ func (cv *accountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 func (cv *accountsCreateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -377,7 +377,7 @@ func (uv *accountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 func (uv *accountsUpdateView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
@@ -403,7 +403,7 @@ func (uv *accountsUpdateView) Reload() View {
 
 func (uv *accountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: uv.startingValue}
 	}
 }
 
@@ -457,7 +457,7 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 			"Successfully deleted Account %q", dv.model.Name,
 		)}))
 
-		cmds = append(cmds, meta.MessageCmd(meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE}))
+		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE}))
 
 		return dv, tea.Batch(cmds...)
 
@@ -488,7 +488,7 @@ func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 func (dv *accountsDeleteView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchViewMsg{ViewType: meta.LISTVIEWTYPE})
+	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
@@ -525,6 +525,6 @@ func (dv *accountsDeleteView) getColour() lipgloss.Color {
 
 func (dv *accountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: dv.model}
 	}
 }

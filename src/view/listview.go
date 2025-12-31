@@ -107,7 +107,7 @@ func (lv *ListView) MotionSet() meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
 	normalMotions.Insert(meta.Motion{"g", "d"}, lv.makeGoToDetailViewCmd()) // [g]oto [d]etails
-	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchViewMsg{
+	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchAppViewMsg{
 		ViewType: meta.CREATEVIEWTYPE,
 	}) // [g]oto [c]reate view
 
@@ -130,6 +130,6 @@ func (lv *ListView) makeGoToDetailViewCmd() tea.Cmd {
 			return errors.New("no item to goto detail view of")
 		}
 
-		return meta.SwitchViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: item}
+		return meta.SwitchAppViewMsg{ViewType: meta.DETAILVIEWTYPE, Data: item}
 	}
 }

@@ -120,7 +120,7 @@ const (
 )
 
 // To switch to specific View (in specific App if provided)
-type SwitchViewMsg struct {
+type SwitchAppViewMsg struct {
 	App      *AppType
 	ViewType ViewType
 	Data     any
