@@ -24,7 +24,7 @@ import (
 
 // Hardcoded only ING bank, who cares about other banks frfr
 // Also hardcoded: semicolon-separated values, decimal commas
-type bankStatementImporter struct {
+type bankImporter struct {
 	width, height int
 
 	fileLoaded bool
@@ -43,7 +43,7 @@ type bankStatementImporter struct {
 	bankLedgerPicker itempicker.Model
 }
 
-type bankStatementParser interface {
+type bankParser interface {
 	itempicker.Item
 
 	usedColumns() []int
@@ -51,12 +51,12 @@ type bankStatementParser interface {
 	compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error)
 }
 
-func NewBankStatementImporter() *bankStatementImporter {
+func NewBankImporter() *bankImporter {
 	parserPicker := itempicker.New([]itempicker.Item{ingParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
-	return &bankStatementImporter{
+	return &bankImporter{
 		preview:          viewport.New(0, 0),
 		parserPicker:     parserPicker,
 		journalPicker:    journalPicker,
@@ -64,7 +64,7 @@ func NewBankStatementImporter() *bankStatementImporter {
 	}
 }
 
-func (bsi *bankStatementImporter) Init() tea.Cmd {
+func (bsi *bankImporter) Init() tea.Cmd {
 	return func() tea.Msg {
 		file, err := zenity.SelectFile(
 			zenity.Title("Select bank file to import"),
@@ -83,7 +83,7 @@ func (bsi *bankStatementImporter) Init() tea.Cmd {
 	}
 }
 
-func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
+func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 	numInputs := 5
 
 	switch message := message.(type) {
@@ -259,7 +259,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			return bsi, meta.MessageCmd(errors.New("no bank ledger selected (none available)"))
 		}
 
-		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(
+		rows, err := bsi.parserPicker.Value().(bankParser).compileRows(
 			bsi.data,
 			accountLedger.Id,
 			bankLedger.(database.Ledger).Id,
@@ -287,7 +287,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 	}
 }
 
-func (bsi *bankStatementImporter) View() string {
+func (bsi *bankImporter) View() string {
 	// Don't render modal until we've loaded the bank file
 	if !bsi.fileLoaded {
 		return ""
@@ -351,7 +351,7 @@ func (bsi *bankStatementImporter) View() string {
 	result.WriteString("\n\n")
 
 	headersStyled := make([]string, len(bsi.headers))
-	usedColumns := bsi.parserPicker.Value().(bankStatementParser).usedColumns()
+	usedColumns := bsi.parserPicker.Value().(bankParser).usedColumns()
 	for i, header := range bsi.headers {
 		style := lipgloss.NewStyle()
 		if slices.Contains(usedColumns, i) {
@@ -373,15 +373,15 @@ func (bsi *bankStatementImporter) View() string {
 	return result.String()
 }
 
-func (bsi *bankStatementImporter) AllowsInsertMode() bool {
+func (bsi *bankImporter) AllowsInsertMode() bool {
 	return true
 }
 
-func (bsi *bankStatementImporter) AcceptedModels() map[meta.ModelType]struct{} {
+func (bsi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }
 
-func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
+func (bsi *bankImporter) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
@@ -396,7 +396,7 @@ func (bsi *bankStatementImporter) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
+func (bsi *bankImporter) CommandSet() meta.CommandSet {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -404,11 +404,11 @@ func (bsi *bankStatementImporter) CommandSet() meta.CommandSet {
 	return meta.CommandSet(result)
 }
 
-func (bsi *bankStatementImporter) Reload() view.View {
-	return NewBankStatementImporter()
+func (bsi *bankImporter) Reload() view.View {
+	return NewBankImporter()
 }
 
-func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {
+func (bsi *bankImporter) readFile(path string) ([][]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -426,7 +426,7 @@ func (bsi *bankStatementImporter) readFile(path string) ([][]string, error) {
 	return result, nil
 }
 
-func (bsi *bankStatementImporter) calculateColWidths(totalWidth int) []int {
+func (bsi *bankImporter) calculateColWidths(totalWidth int) []int {
 	if bsi.data == nil {
 		return nil
 	}
@@ -478,7 +478,7 @@ func (bsi *bankStatementImporter) calculateColWidths(totalWidth int) []int {
 	return colWidths
 }
 
-func (bsi *bankStatementImporter) setViewportContent(doHighlight bool) {
+func (bsi *bankImporter) setViewportContent(doHighlight bool) {
 	rows := []string{}
 
 	// Build rows, skipping header row
@@ -494,7 +494,7 @@ func (bsi *bankStatementImporter) setViewportContent(doHighlight bool) {
 	bsi.preview.SetContent(strings.Join(rows, "\n"))
 }
 
-func (bsi *bankStatementImporter) renderRow(values []string) string {
+func (bsi *bankImporter) renderRow(values []string) string {
 	if len(values) != len(bsi.colWidths) {
 		panic("you absolute dingus")
 	}
@@ -514,7 +514,7 @@ func (bsi *bankStatementImporter) renderRow(values []string) string {
 	return result.String()
 }
 
-func (bsi *bankStatementImporter) scrollViewport() {
+func (bsi *bankImporter) scrollViewport() {
 	if bsi.activeRow >= bsi.preview.YOffset+bsi.preview.Height {
 		bsi.preview.ScrollDown(bsi.activeRow - bsi.preview.YOffset - bsi.preview.Height + 1)
 	}

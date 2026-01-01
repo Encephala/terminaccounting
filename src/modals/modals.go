@@ -46,7 +46,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
 	case meta.ShowBankImporterMsg:
-		mm.Modal = NewBankStatementImporter()
+		mm.Modal = NewBankImporter()
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
