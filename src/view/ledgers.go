@@ -6,6 +6,7 @@ import (
 	"terminaccounting/database"
 	"terminaccounting/meta"
 
+	"terminaccounting/bubbles/booleaninput"
 	"terminaccounting/bubbles/itempicker"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -154,8 +155,10 @@ func NewLedgersCreateView() *ledgersCreateView {
 	notesInput.FocusedStyle.CursorLine = notesFocusStyle
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
-	inputs := []any{nameInput, typeInput, notesInput}
-	names := []string{"Name", "Type", "Notes"}
+	isAccountsInput := booleaninput.New()
+
+	inputs := []any{nameInput, typeInput, notesInput, isAccountsInput}
+	names := []string{"Name", "Type", "Notes", "Is accounts ledger?"}
 
 	return &ledgersCreateView{
 		inputManager: newInputManager(inputs, names),
@@ -182,11 +185,13 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		name := cv.inputManager.inputs[0].value().(string)
 		ledgerType := cv.inputManager.inputs[1].value().(database.LedgerType)
 		notes := meta.CompileNotes(cv.inputManager.inputs[2].value().(string))
+		isAccounts := cv.inputManager.inputs[3].value().(bool)
 
 		newLedger := database.Ledger{
-			Name:  name,
-			Type:  ledgerType,
-			Notes: notes,
+			Name:       name,
+			Type:       ledgerType,
+			Notes:      notes,
+			IsAccounts: isAccounts,
 		}
 
 		id, err := newLedger.Insert()
@@ -278,8 +283,10 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
-	inputs := []any{nameInput, typeInput, notesInput}
-	names := []string{"Name", "Type", "Notes"}
+	isAccountsInput := booleaninput.New()
+
+	inputs := []any{nameInput, typeInput, notesInput, isAccountsInput}
+	names := []string{"Name", "Type", "Notes", "Is accounts ledger?"}
 
 	return &ledgersUpdateView{
 		inputManager: newInputManager(inputs, names),
@@ -312,6 +319,7 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		uv.inputManager.inputs[0].setValue(ledger.Name)
 		err := uv.inputManager.inputs[1].setValue(ledger.Type)
 		uv.inputManager.inputs[2].setValue(ledger.Notes.Collapse())
+		uv.inputManager.inputs[3].setValue(ledger.IsAccounts)
 
 		return uv, meta.MessageCmd(err)
 
@@ -324,6 +332,8 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			startingValue = uv.startingValue.Type
 		case 2:
 			startingValue = uv.startingValue.Notes.Collapse()
+		case 3:
+			startingValue = uv.startingValue.IsAccounts
 		default:
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
@@ -336,12 +346,14 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		name := uv.inputManager.inputs[0].value().(string)
 		ledgerType := uv.inputManager.inputs[1].value().(database.LedgerType)
 		notes := meta.CompileNotes(uv.inputManager.inputs[2].value().(string))
+		isAccounts := uv.inputManager.inputs[3].value().(bool)
 
 		ledger := database.Ledger{
-			Id:    uv.modelId,
-			Name:  name,
-			Type:  ledgerType,
-			Notes: notes,
+			Id:         uv.modelId,
+			Name:       name,
+			Type:       ledgerType,
+			Notes:      notes,
+			IsAccounts: isAccounts,
 		}
 
 		err := ledger.Update()
@@ -503,11 +515,11 @@ func (dv *ledgersDeleteView) title() string {
 }
 
 func (dv *ledgersDeleteView) inputValues() []string {
-	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse()}
+	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse(), renderBoolean(dv.model.IsAccounts)}
 }
 
 func (dv *ledgersDeleteView) inputNames() []string {
-	return []string{"Name", "Type", "Notes"}
+	return []string{"Name", "Type", "Notes", "Is accounts ledger"}
 }
 
 func (dv *ledgersDeleteView) getColour() lipgloss.Color {

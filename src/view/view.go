@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"terminaccounting/bubbles/booleaninput"
 	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/meta"
 
@@ -149,6 +150,23 @@ func newAdapterFrom(input any) input {
 			},
 			setValueFn: func(model *itempicker.Model, value any) error {
 				model.SetValue(value.(itempicker.Item))
+				return nil
+			},
+		}
+
+	case booleaninput.Model:
+		return &inputAdapter[booleaninput.Model]{
+			model: input,
+			updateFn: func(model booleaninput.Model, message tea.Msg) (booleaninput.Model, tea.Cmd) {
+				return model.Update(message)
+			},
+			focusFn: func(*booleaninput.Model) tea.Cmd { return nil },
+			blurFn:  func(*booleaninput.Model) {},
+			valueFn: func(model booleaninput.Model) any {
+				return model.Value()
+			},
+			setValueFn: func(model *booleaninput.Model, value any) error {
+				model.SetValue(value.(bool))
 				return nil
 			},
 		}
