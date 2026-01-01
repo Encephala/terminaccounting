@@ -56,10 +56,11 @@ func (lt LedgerType) String() string {
 }
 
 type Ledger struct {
-	Id    int        `db:"id"`
-	Name  string     `db:"name"`
-	Type  LedgerType `db:"type"`
-	Notes meta.Notes `db:"notes"`
+	Id         int        `db:"id"`
+	Name       string     `db:"name"`
+	Type       LedgerType `db:"type"`
+	Notes      meta.Notes `db:"notes"`
+	IsAccounts bool       `db:"is_accounts"`
 }
 
 func (l Ledger) FilterValue() string {
@@ -132,7 +133,8 @@ func setupSchemaLedgers() (bool, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		type INTEGER NOT NULL,
-		notes TEXT
+		notes TEXT,
+		is_accounts INTEGER NOT NULL
 	) STRICT;`
 
 	_, err = DB.Exec(schema)
@@ -140,7 +142,10 @@ func setupSchemaLedgers() (bool, error) {
 }
 
 func (l *Ledger) Insert() (int, error) {
-	result, err := DB.NamedExec(`INSERT INTO ledgers (name, type, notes) VALUES (:name, :type, :notes);`, l)
+	result, err := DB.NamedExec(
+		`INSERT INTO ledgers (name, type, notes, is_accounts)
+		VALUES (:name, :type, :notes, :is_accounts);`,
+		l)
 	if err != nil {
 		return 0, err
 	}
@@ -162,7 +167,8 @@ func (l Ledger) Update() error {
 	query := `UPDATE ledgers SET
 	name = :name,
 	type = :type,
-	notes = :notes
+	notes = :notes,
+	is_accounts = :is_accounts
 	WHERE id = :id;`
 
 	_, err := DB.NamedExec(query, l)
