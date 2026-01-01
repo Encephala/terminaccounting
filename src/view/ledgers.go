@@ -187,6 +187,12 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		notes := meta.CompileNotes(cv.inputManager.inputs[2].value().(string))
 		isAccounts := cv.inputManager.inputs[3].value().(bool)
 
+		currentAccountsLedger := database.GetAccountsLedger()
+
+		if isAccounts && currentAccountsLedger != nil {
+			return cv, meta.MessageCmd(fmt.Errorf("ledger %q already is accounts ledger, can't have multiple", currentAccountsLedger))
+		}
+
 		newLedger := database.Ledger{
 			Name:       name,
 			Type:       ledgerType,
@@ -353,6 +359,12 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		ledgerType := uv.inputManager.inputs[1].value().(database.LedgerType)
 		notes := meta.CompileNotes(uv.inputManager.inputs[2].value().(string))
 		isAccounts := uv.inputManager.inputs[3].value().(bool)
+
+		currentAccountsLedger := database.GetAccountsLedger()
+
+		if isAccounts && currentAccountsLedger != nil {
+			return uv, meta.MessageCmd(fmt.Errorf("ledger %q already is accounts ledger, can't have multiple", currentAccountsLedger))
+		}
 
 		ledger := database.Ledger{
 			Id:         uv.modelId,

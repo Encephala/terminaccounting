@@ -66,7 +66,7 @@ func NewBankImporter() *bankImporter {
 
 func (bsi *bankImporter) Init() tea.Cmd {
 	// Verify that an accounts ledger is
-	indexAccountsLedger := getAccountsLedger()
+	indexAccountsLedger := database.GetAccountsLedger()
 	if indexAccountsLedger == nil {
 		return tea.Batch(
 			meta.MessageCmd(meta.QuitMsg{}),
@@ -257,7 +257,7 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 		}
 
 		// This assumes only a single ledger is the accounts ledger
-		accountsLedger := getAccountsLedger()
+		accountsLedger := database.GetAccountsLedger()
 		if accountsLedger == nil {
 			panic("this was checked for before, wut")
 		}
@@ -624,16 +624,4 @@ func (p ingParser) parseDescription(description string) *string {
 	result := description[indexDescription+len("Description: ") : indexIBAN]
 
 	return &result
-}
-
-func getAccountsLedger() *database.Ledger {
-	idx := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
-		return ledger.IsAccounts
-	})
-
-	if idx == -1 {
-		return nil
-	}
-
-	return &database.AvailableLedgers[idx]
 }

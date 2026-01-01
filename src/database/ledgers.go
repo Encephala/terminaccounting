@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"terminaccounting/bubbles/itempicker"
@@ -232,4 +233,16 @@ func MakeSelectLedgersCmd(targetApp meta.AppType) tea.Cmd {
 			Data:      rows,
 		}
 	}
+}
+
+func GetAccountsLedger() *Ledger {
+	idx := slices.IndexFunc(AvailableLedgers, func(ledger Ledger) bool {
+		return ledger.IsAccounts
+	})
+
+	if idx == -1 {
+		return nil
+	}
+
+	return &AvailableLedgers[idx]
 }
