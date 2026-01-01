@@ -444,6 +444,8 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 			uv.getManager().rows = formRows
 
+			uv.getManager().updateShownRows()
+
 			return uv, nil
 		}
 
