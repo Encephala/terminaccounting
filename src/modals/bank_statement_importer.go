@@ -38,10 +38,9 @@ type bankStatementImporter struct {
 
 	preview viewport.Model
 
-	parserPicker        itempicker.Model
-	journalPicker       itempicker.Model
-	accountLedgerPicker itempicker.Model
-	bankLedgerPicker    itempicker.Model
+	parserPicker     itempicker.Model
+	journalPicker    itempicker.Model
+	bankLedgerPicker itempicker.Model
 }
 
 type bankStatementParser interface {
@@ -55,15 +54,13 @@ type bankStatementParser interface {
 func NewBankStatementImporter() *bankStatementImporter {
 	parserPicker := itempicker.New([]itempicker.Item{ingParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
-	accountLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
 	return &bankStatementImporter{
-		preview:             viewport.New(0, 0),
-		parserPicker:        parserPicker,
-		journalPicker:       journalPicker,
-		accountLedgerPicker: accountLedgerPicker,
-		bankLedgerPicker:    bankLedgerPicker,
+		preview:          viewport.New(0, 0),
+		parserPicker:     parserPicker,
+		journalPicker:    journalPicker,
+		bankLedgerPicker: bankLedgerPicker,
 	}
 }
 
@@ -192,18 +189,12 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			return bsi, cmd
 
 		case 2:
-			new, cmd := bsi.accountLedgerPicker.Update(message)
-			bsi.accountLedgerPicker = new
-
-			return bsi, cmd
-
-		case 3:
 			new, cmd := bsi.bankLedgerPicker.Update(message)
 			bsi.bankLedgerPicker = new
 
 			return bsi, cmd
 
-		case 4:
+		case 3:
 			// Pass
 			return bsi, nil
 
@@ -254,10 +245,14 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			return bsi, meta.MessageCmd(errors.New("no journal selected (none available)"))
 		}
 
-		accountLedger := bsi.accountLedgerPicker.Value()
-		if accountLedger == nil {
-			return bsi, meta.MessageCmd(errors.New("no account ledger selected (none available)"))
+		// This assumes only a single ledger is the accounts ledger
+		accountLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+			return ledger.IsAccounts
+		})
+		if accountLedgerIndex == -1 {
+			panic("this was checked for before, wut")
 		}
+		accountLedger := database.AvailableLedgers[accountLedgerIndex]
 
 		bankLedger := bsi.bankLedgerPicker.Value()
 		if bankLedger == nil {
@@ -266,7 +261,7 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		rows, err := bsi.parserPicker.Value().(bankStatementParser).compileRows(
 			bsi.data,
-			accountLedger.(database.Ledger).Id,
+			accountLedger.Id,
 			bankLedger.(database.Ledger).Id,
 		)
 		if err != nil {
@@ -304,7 +299,6 @@ func (bsi *bankStatementImporter) View() string {
 
 	formatSelectorStyle := style
 	journalSelectorStyle := style
-	accountLedgerSelectorStyle := style
 	bankLedgerSelectorStyle := style
 
 	highlightRow := false
@@ -315,10 +309,8 @@ func (bsi *bankStatementImporter) View() string {
 	case 1:
 		journalSelectorStyle = highlightStyle
 	case 2:
-		accountLedgerSelectorStyle = highlightStyle
-	case 3:
 		bankLedgerSelectorStyle = highlightStyle
-	case 4:
+	case 3:
 		highlightRow = true
 	default:
 		panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
@@ -342,13 +334,6 @@ func (bsi *bankStatementImporter) View() string {
 		journalSelectorStyle.Render(bsi.journalPicker.View()),
 	))
 
-	accountLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		"Accounts ledger",
-		" ",
-		accountLedgerSelectorStyle.Render(bsi.accountLedgerPicker.View()),
-	))
-
 	bankLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"Bank ledger",
@@ -360,7 +345,6 @@ func (bsi *bankStatementImporter) View() string {
 		lipgloss.Top,
 		formatSelectorRendered,
 		journalSelectorRendered,
-		accountLedgerSelectorRendered,
 		bankLedgerSelectorRendered,
 	))
 
