@@ -65,7 +65,16 @@ func NewBankImporter() *bankImporter {
 }
 
 func (bsi *bankImporter) Init() tea.Cmd {
-	return func() tea.Msg {
+	// Verify that an accounts ledger is
+	indexAccountsLedger := getAccountsLedger()
+	if indexAccountsLedger == nil {
+		return tea.Batch(
+			meta.MessageCmd(meta.QuitMsg{}),
+			meta.MessageCmd(errors.New("no accounts ledger configured yet but is needed for import")),
+		)
+	}
+
+	pickFileCmd := func() tea.Msg {
 		file, err := zenity.SelectFile(
 			zenity.Title("Select bank file to import"),
 			zenity.FileFilter{
@@ -81,6 +90,8 @@ func (bsi *bankImporter) Init() tea.Cmd {
 			File: file,
 		}
 	}
+
+	return pickFileCmd
 }
 
 func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
@@ -246,13 +257,10 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 		}
 
 		// This assumes only a single ledger is the accounts ledger
-		accountLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
-			return ledger.IsAccounts
-		})
-		if accountLedgerIndex == -1 {
+		accountsLedger := getAccountsLedger()
+		if accountsLedger == nil {
 			panic("this was checked for before, wut")
 		}
-		accountLedger := database.AvailableLedgers[accountLedgerIndex]
 
 		bankLedger := bsi.bankLedgerPicker.Value()
 		if bankLedger == nil {
@@ -261,7 +269,7 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		rows, err := bsi.parserPicker.Value().(bankParser).compileRows(
 			bsi.data,
-			accountLedger.Id,
+			accountsLedger.Id,
 			bankLedger.(database.Ledger).Id,
 		)
 		if err != nil {
@@ -616,4 +624,16 @@ func (p ingParser) parseDescription(description string) *string {
 	result := description[indexDescription+len("Description: ") : indexIBAN]
 
 	return &result
+}
+
+func getAccountsLedger() *database.Ledger {
+	idx := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+		return ledger.IsAccounts
+	})
+
+	if idx == -1 {
+		return nil
+	}
+
+	return &database.AvailableLedgers[idx]
 }
