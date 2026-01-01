@@ -323,7 +323,7 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		case 1:
 			startingValue = uv.startingValue.Type
 		case 2:
-			startingValue = uv.startingValue.Notes
+			startingValue = uv.startingValue.Notes.Collapse()
 		default:
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}

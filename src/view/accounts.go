@@ -321,7 +321,7 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		case 2:
 			startingValue = uv.startingValue.BankNumbers
 		case 3:
-			startingValue = uv.startingValue.Notes
+			startingValue = uv.startingValue.Notes.Collapse()
 		default:
 			panic(fmt.Sprintf("unexpected activeInput: %d", uv.inputManager.activeInput))
 		}
