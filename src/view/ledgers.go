@@ -283,6 +283,12 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.LEDGERSCOLOUR)
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
 	isAccountsInput := booleaninput.New()
 
 	inputs := []any{nameInput, typeInput, notesInput, isAccountsInput}

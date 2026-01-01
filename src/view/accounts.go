@@ -280,6 +280,16 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
 
+	notesFocusStyle := lipgloss.NewStyle().Foreground(meta.ACCOUNTSCOLOUR)
+	bankNumbersInput.FocusedStyle.Prompt = notesFocusStyle
+	bankNumbersInput.FocusedStyle.Text = notesFocusStyle
+	bankNumbersInput.FocusedStyle.CursorLine = notesFocusStyle
+	bankNumbersInput.FocusedStyle.LineNumber = notesFocusStyle
+	notesInput.FocusedStyle.Prompt = notesFocusStyle
+	notesInput.FocusedStyle.Text = notesFocusStyle
+	notesInput.FocusedStyle.CursorLine = notesFocusStyle
+	notesInput.FocusedStyle.LineNumber = notesFocusStyle
+
 	inputs := []any{nameInput, typeInput, bankNumbersInput, notesInput}
 	names := []string{"Name", "Type", "Bank numbers", "Notes"}
 
