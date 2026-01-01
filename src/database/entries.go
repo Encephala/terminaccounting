@@ -404,7 +404,12 @@ func SelectRowsByLedger(id int) ([]EntryRow, error) {
 func SelectRowsByAccount(id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
-	err := DB.Select(&result, `SELECT * FROM entryrows WHERE account = $1;`, id)
+	query := `SELECT entryrows.* FROM entryrows
+	LEFT JOIN ledgers
+	ON ledgers.id = entryrows.ledger
+	WHERE account = $1 AND ledgers.is_accounts = 1;`
+
+	err := DB.Select(&result, query, id)
 
 	return result, err
 }
