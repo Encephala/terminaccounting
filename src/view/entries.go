@@ -21,7 +21,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type entriesDetailView struct {
+type entryDetailView struct {
 	// The entries whose rows are being shown
 	modelId int
 	model   database.Entry
@@ -29,15 +29,15 @@ type entriesDetailView struct {
 	viewer *entryRowViewer
 }
 
-func NewEntriesDetailView(modelId int) *entriesDetailView {
-	return &entriesDetailView{
+func NewEntriesDetailView(modelId int) *entryDetailView {
+	return &entryDetailView{
 		modelId: modelId,
 
 		viewer: newEntryRowViewer(meta.ENTRIESCOLOUR),
 	}
 }
 
-func (dv *entriesDetailView) Init() tea.Cmd {
+func (dv *entryDetailView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmds = append(cmds, database.MakeLoadEntriesDetailCmd(dv.modelId))
@@ -46,7 +46,7 @@ func (dv *entriesDetailView) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (dv *entriesDetailView) Update(message tea.Msg) (View, tea.Cmd) {
+func (dv *entryDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
@@ -66,30 +66,30 @@ func (dv *entriesDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	return genericDetailViewUpdate(dv, message)
 }
 
-func (dv *entriesDetailView) View() string {
+func (dv *entryDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
-func (dv *entriesDetailView) title() string {
+func (dv *entryDetailView) title() string {
 	return fmt.Sprintf("Entry %d details", dv.model.Id)
 }
 
-func (dv *entriesDetailView) getCanReconcile() bool {
+func (dv *entryDetailView) getCanReconcile() bool {
 	return false
 }
 
-func (dv *entriesDetailView) AllowsInsertMode() bool {
+func (dv *entryDetailView) AllowsInsertMode() bool {
 	return false
 }
 
-func (dv *entriesDetailView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *entryDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL:    {},
 		meta.ENTRYROWMODEL: {},
 	}
 }
 
-func (dv *entriesDetailView) MotionSet() meta.MotionSet {
+func (dv *entryDetailView) MotionSet() meta.MotionSet {
 	result := genericDetailViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
@@ -98,19 +98,19 @@ func (dv *entriesDetailView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (dv *entriesDetailView) CommandSet() meta.CommandSet {
+func (dv *entryDetailView) CommandSet() meta.CommandSet {
 	return genericDetailViewCommandSet()
 }
 
-func (dv *entriesDetailView) Reload() View {
+func (dv *entryDetailView) Reload() View {
 	return NewEntriesDetailView(dv.modelId)
 }
 
-func (dv *entriesDetailView) getViewer() *entryRowViewer {
+func (dv *entryDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
 }
 
-func (dv *entriesDetailView) getColour() lipgloss.Color {
+func (dv *entryDetailView) getColour() lipgloss.Color {
 	return meta.ENTRIESCOLOUR
 }
 
