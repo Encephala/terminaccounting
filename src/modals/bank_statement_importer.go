@@ -275,17 +275,17 @@ func (bsi *bankStatementImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		entriesAppType := meta.ENTRIESAPP
 
-		return bsi, tea.Batch(
-			meta.MessageCmd(meta.QuitMsg{}),
-			meta.MessageCmd(meta.SwitchAppViewMsg{
-				App:      &entriesAppType,
-				ViewType: meta.CREATEVIEWTYPE,
-				Data: view.EntryPrefillData{
-					Journal: journal.(database.Journal),
-					Rows:    rows,
-					Notes:   meta.Notes{fmt.Sprintf("Bank import %s", time.Now().Format("2006-01-02 15:04:05"))},
-				},
-			}))
+		switchViewMsg := meta.SwitchAppViewMsg{
+			App:      &entriesAppType,
+			ViewType: meta.CREATEVIEWTYPE,
+			Data: view.EntryPrefillData{
+				Journal: journal.(database.Journal),
+				Rows:    rows,
+				Notes:   meta.Notes{fmt.Sprintf("Bank import %s", time.Now().Format("2006-01-02 15:04:05"))},
+			},
+		}
+
+		return bsi, meta.MessageCmd(switchViewMsg)
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
