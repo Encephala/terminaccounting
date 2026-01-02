@@ -14,9 +14,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type journalsDetailsView struct {
+	DB *sqlx.DB
+
 	listModel list.Model
 
 	app meta.App
@@ -26,7 +29,7 @@ type journalsDetailsView struct {
 	journal database.Journal
 }
 
-func NewJournalsDetailsView(journal database.Journal, app meta.App) *journalsDetailsView {
+func NewJournalsDetailsView(DB *sqlx.DB, journal database.Journal, app meta.App) *journalsDetailsView {
 	viewStyles := meta.NewListViewStyles(app.Colour())
 
 	delegate := list.NewDefaultDelegate()
@@ -40,6 +43,8 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *journalsDet
 	model.SetShowHelp(false)
 
 	return &journalsDetailsView{
+		DB: DB,
+
 		listModel: model,
 
 		app: app,
@@ -51,7 +56,7 @@ func NewJournalsDetailsView(journal database.Journal, app meta.App) *journalsDet
 }
 
 func (dv *journalsDetailsView) Init() tea.Cmd {
-	return database.MakeSelectEntriesByJournalCmd(dv.journal.Id)
+	return database.MakeSelectEntriesByJournalCmd(dv.DB, dv.journal.Id)
 }
 
 func (dv *journalsDetailsView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -133,7 +138,7 @@ func (dv *journalsDetailsView) CommandSet() meta.CommandSet {
 }
 
 func (dv *journalsDetailsView) Reload() View {
-	return NewJournalsDetailsView(dv.journal, dv.app)
+	return NewJournalsDetailsView(dv.DB, dv.journal, dv.app)
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
@@ -151,12 +156,14 @@ func (dv *journalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type journalsCreateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	colour lipgloss.Color
 }
 
-func NewJournalsCreateView() *journalsCreateView {
+func NewJournalsCreateView(DB *sqlx.DB) *journalsCreateView {
 	journalTypes := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -184,6 +191,8 @@ func NewJournalsCreateView() *journalsCreateView {
 	names := []string{"Name", "Type", "Notes"}
 
 	return &journalsCreateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		colour: meta.JOURNALSCOLOUR,
@@ -207,7 +216,7 @@ func (cv *journalsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes: meta.CompileNotes(notes),
 		}
 
-		id, err := newJournal.Insert()
+		id, err := newJournal.Insert(cv.DB)
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
@@ -264,7 +273,7 @@ func (cv *journalsCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *journalsCreateView) Reload() View {
-	return NewJournalsCreateView()
+	return NewJournalsCreateView(cv.DB)
 }
 
 func (cv *journalsCreateView) getInputManager() *inputManager {
@@ -280,6 +289,8 @@ func (cv *journalsCreateView) getColour() lipgloss.Color {
 }
 
 type journalsUpdateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	modelId       int
@@ -288,7 +299,7 @@ type journalsUpdateView struct {
 	colour lipgloss.Color
 }
 
-func NewJournalsUpdateView(modelId int) *journalsUpdateView {
+func NewJournalsUpdateView(DB *sqlx.DB, modelId int) *journalsUpdateView {
 	types := []itempicker.Item{
 		database.INCOMEJOURNAL,
 		database.EXPENSEJOURNAL,
@@ -313,6 +324,8 @@ func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 	names := []string{"Name", "Type", "Notes"}
 
 	return &journalsUpdateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
@@ -322,7 +335,7 @@ func NewJournalsUpdateView(modelId int) *journalsUpdateView {
 }
 
 func (uv *journalsUpdateView) Init() tea.Cmd {
-	return database.MakeLoadJournalsDetailCmd(uv.modelId)
+	return database.MakeLoadJournalsDetailCmd(uv.DB, uv.modelId)
 }
 
 func (uv *journalsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -369,7 +382,7 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes: notes,
 		}
 
-		err := journal.Update()
+		err := journal.Update(uv.DB)
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -423,7 +436,7 @@ func (uv *journalsUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *journalsUpdateView) Reload() View {
-	return NewJournalsUpdateView(uv.modelId)
+	return NewJournalsUpdateView(uv.DB, uv.modelId)
 }
 
 func (uv *journalsUpdateView) getInputManager() *inputManager {
@@ -445,14 +458,18 @@ func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type journalsDeleteView struct {
+	DB *sqlx.DB
+
 	modelId int
 	model   database.Journal
 
 	colour lipgloss.Color
 }
 
-func NewJournalsDeleteView(modelId int) *journalsDeleteView {
+func NewJournalsDeleteView(DB *sqlx.DB, modelId int) *journalsDeleteView {
 	return &journalsDeleteView{
+		DB: DB,
+
 		modelId: modelId,
 
 		colour: meta.JOURNALSCOLOUR,
@@ -460,7 +477,7 @@ func NewJournalsDeleteView(modelId int) *journalsDeleteView {
 }
 
 func (dv *journalsDeleteView) Init() tea.Cmd {
-	return database.MakeLoadJournalsDetailCmd(dv.modelId)
+	return database.MakeLoadJournalsDetailCmd(dv.DB, dv.modelId)
 }
 
 func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -471,7 +488,7 @@ func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
-		err := database.DeleteJournal(dv.modelId)
+		err := database.DeleteJournal(dv.DB, dv.modelId)
 		if err != nil {
 			return dv, meta.MessageCmd(err)
 		}
@@ -529,7 +546,7 @@ func (dv *journalsDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *journalsDeleteView) Reload() View {
-	return NewJournalsDeleteView(dv.modelId)
+	return NewJournalsDeleteView(dv.DB, dv.modelId)
 }
 
 func (dv *journalsDeleteView) title() string {

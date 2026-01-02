@@ -12,9 +12,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type accountsDetailView struct {
+	DB *sqlx.DB
+
 	// The account whose rows are being shown
 	modelId int
 	model   database.Account
@@ -22,8 +25,10 @@ type accountsDetailView struct {
 	viewer *entryRowViewer
 }
 
-func NewAccountsDetailView(modelId int) *accountsDetailView {
+func NewAccountsDetailView(DB *sqlx.DB, modelId int) *accountsDetailView {
 	return &accountsDetailView{
+		DB: DB,
+
 		modelId: modelId,
 
 		viewer: newEntryRowViewer(meta.ACCOUNTSCOLOUR),
@@ -33,8 +38,8 @@ func NewAccountsDetailView(modelId int) *accountsDetailView {
 func (dv *accountsDetailView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeLoadAccountsDetailCmd(dv.modelId))
-	cmds = append(cmds, database.MakeLoadAccountsRowsCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadAccountsDetailCmd(dv.DB, dv.modelId))
+	cmds = append(cmds, database.MakeLoadAccountsRowsCmd(dv.DB, dv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -63,6 +68,10 @@ func (dv *accountsDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *accountsDetailView) getDB() *sqlx.DB {
+	return dv.DB
+}
+
 func (dv *accountsDetailView) title() string {
 	return fmt.Sprintf("Account %s details", dv.model.Name)
 }
@@ -88,7 +97,7 @@ func (dv *accountsDetailView) MotionSet() meta.MotionSet {
 	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
 	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.getActiveRow()))
+	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, dv.viewer.getActiveRow()))
 
 	return result
 }
@@ -98,7 +107,7 @@ func (dv *accountsDetailView) CommandSet() meta.CommandSet {
 }
 
 func (dv *accountsDetailView) Reload() View {
-	return NewAccountsDetailView(dv.modelId)
+	return NewAccountsDetailView(dv.DB, dv.modelId)
 }
 
 func (dv *accountsDetailView) getViewer() *entryRowViewer {
@@ -119,12 +128,14 @@ const (
 const NUMACCOUNTSINPUTS int = 4
 
 type accountsCreateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	colour lipgloss.Color
 }
 
-func NewAccountsCreateView() *accountsCreateView {
+func NewAccountsCreateView(DB *sqlx.DB) *accountsCreateView {
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -156,6 +167,8 @@ func NewAccountsCreateView() *accountsCreateView {
 	names := []string{"Name", "Type", "Bank numbers", "Notes"}
 
 	return &accountsCreateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		colour: meta.ACCOUNTSCOLOUR,
@@ -181,7 +194,7 @@ func (cv *accountsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes:       notes,
 		}
 
-		id, err := newAccount.Insert()
+		id, err := newAccount.Insert(cv.DB)
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
@@ -238,7 +251,7 @@ func (cv *accountsCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *accountsCreateView) Reload() View {
-	return NewAccountsCreateView()
+	return NewAccountsCreateView(cv.DB)
 }
 
 func (cv *accountsCreateView) getInputManager() *inputManager {
@@ -254,6 +267,8 @@ func (cv *accountsCreateView) getColour() lipgloss.Color {
 }
 
 type accountsUpdateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	modelId       int
@@ -262,7 +277,7 @@ type accountsUpdateView struct {
 	colour lipgloss.Color
 }
 
-func NewAccountsUpdateView(modelId int) *accountsUpdateView {
+func NewAccountsUpdateView(DB *sqlx.DB, modelId int) *accountsUpdateView {
 	accountTypes := []itempicker.Item{
 		database.DEBTOR,
 		database.CREDITOR,
@@ -294,6 +309,8 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 	names := []string{"Name", "Type", "Bank numbers", "Notes"}
 
 	return &accountsUpdateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
@@ -303,7 +320,7 @@ func NewAccountsUpdateView(modelId int) *accountsUpdateView {
 }
 
 func (uv *accountsUpdateView) Init() tea.Cmd {
-	return database.MakeLoadAccountsDetailCmd(uv.modelId)
+	return database.MakeLoadAccountsDetailCmd(uv.DB, uv.modelId)
 }
 
 func (uv *accountsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -354,7 +371,7 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes:       notes,
 		}
 
-		err := account.Update()
+		err := account.Update(uv.DB)
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -408,7 +425,7 @@ func (uv *accountsUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *accountsUpdateView) Reload() View {
-	return NewAccountsUpdateView(uv.modelId)
+	return NewAccountsUpdateView(uv.DB, uv.modelId)
 }
 
 func (uv *accountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -430,14 +447,18 @@ func (cv *accountsUpdateView) getColour() lipgloss.Color {
 }
 
 type accountsDeleteView struct {
+	DB *sqlx.DB
+
 	modelId int // only for retrieving the model itself initially
 	model   database.Account
 
 	colour lipgloss.Color
 }
 
-func NewAccountsDeleteView(modelId int) *accountsDeleteView {
+func NewAccountsDeleteView(DB *sqlx.DB, modelId int) *accountsDeleteView {
 	return &accountsDeleteView{
+		DB: DB,
+
 		modelId: modelId,
 
 		colour: meta.ACCOUNTSCOLOUR,
@@ -445,7 +466,7 @@ func NewAccountsDeleteView(modelId int) *accountsDeleteView {
 }
 
 func (dv *accountsDeleteView) Init() tea.Cmd {
-	return database.MakeLoadAccountsDetailCmd(dv.modelId)
+	return database.MakeLoadAccountsDetailCmd(dv.DB, dv.modelId)
 }
 
 func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -456,7 +477,7 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
-		err := database.DeleteAccount(dv.modelId)
+		err := database.DeleteAccount(dv.DB, dv.modelId)
 		if err != nil {
 			return dv, meta.MessageCmd(err)
 		}
@@ -514,7 +535,7 @@ func (dv *accountsDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *accountsDeleteView) Reload() View {
-	return NewAccountsDeleteView(dv.modelId)
+	return NewAccountsDeleteView(dv.DB, dv.modelId)
 }
 
 func (dv *accountsDeleteView) title() string {

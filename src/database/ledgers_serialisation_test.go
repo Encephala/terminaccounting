@@ -9,16 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupDBLedgers(t *testing.T) {
+func setupDBLedgers(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaLedgers()
+	DB := sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaLedgers(DB)
 	require.NoError(t, err)
+
+	return DB
 }
 
 func TestMarshalUnmarshalLedger(t *testing.T) {
-	setupDBLedgers(t)
+	DB := setupDBLedgers(t)
 
 	// Note: relying in sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	ledger := Ledger{
@@ -31,7 +33,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 		},
 	}
 
-	insertedId, err := ledger.Insert()
+	insertedId, err := ledger.Insert(DB)
 	assert.NoError(t, err)
 
 	assert.Equal(t, insertedId, ledger.Id)

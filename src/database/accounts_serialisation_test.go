@@ -8,16 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupDBAccounts(t *testing.T) {
+func setupDBAccounts(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaAccounts()
+	DB := sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaAccounts(DB)
 	require.NoError(t, err)
+
+	return DB
 }
 
 func TestMarshalUnmarshalAccount(t *testing.T) {
-	setupDBAccounts(t)
+	DB := setupDBAccounts(t)
 
 	account := Account{
 		Id:          1, // Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
@@ -27,7 +29,7 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 		Notes:       []string{"a note"},
 	}
 
-	insertedId, err := account.Insert()
+	insertedId, err := account.Insert(DB)
 	assert.NoError(t, err)
 
 	assert.Equal(t, insertedId, account.Id)

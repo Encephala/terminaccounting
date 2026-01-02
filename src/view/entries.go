@@ -19,9 +19,12 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type entryDetailView struct {
+	DB *sqlx.DB
+
 	// The entries whose rows are being shown
 	modelId int
 	model   database.Entry
@@ -29,8 +32,10 @@ type entryDetailView struct {
 	viewer *entryRowViewer
 }
 
-func NewEntriesDetailView(modelId int) *entryDetailView {
+func NewEntriesDetailView(DB *sqlx.DB, modelId int) *entryDetailView {
 	return &entryDetailView{
+		DB: DB,
+
 		modelId: modelId,
 
 		viewer: newEntryRowViewer(meta.ENTRIESCOLOUR),
@@ -40,8 +45,8 @@ func NewEntriesDetailView(modelId int) *entryDetailView {
 func (dv *entryDetailView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeLoadEntriesDetailCmd(dv.modelId))
-	cmds = append(cmds, database.MakeLoadEntriesRowsCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadEntriesDetailCmd(dv.DB, dv.modelId))
+	cmds = append(cmds, database.MakeLoadEntriesRowsCmd(dv.DB, dv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -68,6 +73,10 @@ func (dv *entryDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *entryDetailView) View() string {
 	return genericDetailViewView(dv)
+}
+
+func (dv *entryDetailView) getDB() *sqlx.DB {
+	return dv.DB
 }
 
 func (dv *entryDetailView) title() string {
@@ -103,7 +112,7 @@ func (dv *entryDetailView) CommandSet() meta.CommandSet {
 }
 
 func (dv *entryDetailView) Reload() View {
-	return NewEntriesDetailView(dv.modelId)
+	return NewEntriesDetailView(dv.DB, dv.modelId)
 }
 
 func (dv *entryDetailView) getViewer() *entryRowViewer {
@@ -123,6 +132,8 @@ const (
 )
 
 type entryCreateView struct {
+	DB *sqlx.DB
+
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *rowsMutateManager
@@ -131,7 +142,7 @@ type entryCreateView struct {
 	colour lipgloss.Color
 }
 
-func NewEntryCreateView() *entryCreateView {
+func NewEntryCreateView(DB *sqlx.DB) *entryCreateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	notesInput := textarea.New()
@@ -144,6 +155,8 @@ func NewEntryCreateView() *entryCreateView {
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	result := &entryCreateView{
+		DB: DB,
+
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
@@ -162,8 +175,8 @@ type EntryPrefillData struct {
 }
 
 // Make an EntryCreateView with the provided journal, rows prefilled into forms
-func NewEntryCreateViewPrefilled(data EntryPrefillData) (*entryCreateView, error) {
-	result := NewEntryCreateView()
+func NewEntryCreateViewPrefilled(DB *sqlx.DB, data EntryPrefillData) (*entryCreateView, error) {
+	result := NewEntryCreateView(DB)
 
 	result.journalInput.SetValue(data.Journal)
 	result.notesInput.SetValue(data.Notes.Collapse())
@@ -245,7 +258,7 @@ func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes:   meta.CompileNotes(entryNotes),
 		}
 
-		id, err := newEntry.Insert(entryRows)
+		id, err := newEntry.Insert(cv.DB, entryRows)
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
@@ -297,7 +310,7 @@ func (cv *entryCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *entryCreateView) Reload() View {
-	return NewEntryCreateView()
+	return NewEntryCreateView(cv.DB)
 }
 
 func (cv *entryCreateView) getJournalInput() *itempicker.Model {
@@ -325,6 +338,8 @@ func (cv *entryCreateView) title() string {
 }
 
 type entryUpdateView struct {
+	DB *sqlx.DB
+
 	journalInput     itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *rowsMutateManager
@@ -337,7 +352,7 @@ type entryUpdateView struct {
 	colour lipgloss.Color
 }
 
-func NewEntryUpdateView(modelId int) *entryUpdateView {
+func NewEntryUpdateView(DB *sqlx.DB, modelId int) *entryUpdateView {
 	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
 
 	notesInput := textarea.New()
@@ -350,6 +365,8 @@ func NewEntryUpdateView(modelId int) *entryUpdateView {
 	notesInput.FocusedStyle.LineNumber = notesFocusStyle
 
 	result := &entryUpdateView{
+		DB: DB,
+
 		journalInput:     journalInput,
 		notesInput:       notesInput,
 		activeInput:      ENTRIESJOURNALINPUT,
@@ -366,8 +383,8 @@ func NewEntryUpdateView(modelId int) *entryUpdateView {
 func (uv *entryUpdateView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeSelectEntryCmd(uv.modelId))
-	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.modelId))
+	cmds = append(cmds, database.MakeSelectEntryCmd(uv.DB, uv.modelId))
+	cmds = append(cmds, database.MakeSelectEntryRowsCmd(uv.DB, uv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -396,7 +413,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			Notes:   meta.CompileNotes(entryNotes),
 		}
 
-		err = newEntry.Update(entryRows)
+		err = newEntry.Update(uv.DB, entryRows)
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -413,7 +430,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			entry := message.Data.(database.Entry)
 			uv.startingEntry = entry
 
-			journal, err := database.SelectJournal(entry.Journal)
+			journal, err := database.SelectJournal(uv.DB, entry.Journal)
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
@@ -519,7 +536,7 @@ func (uv *entryUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *entryUpdateView) Reload() View {
-	return NewEntryUpdateView(uv.modelId)
+	return NewEntryUpdateView(uv.DB, uv.modelId)
 }
 
 func (uv *entryUpdateView) getJournalInput() *itempicker.Model {
@@ -1479,6 +1496,8 @@ func entriesMutateViewCommandSet() meta.CommandSet {
 }
 
 type entryDeleteView struct {
+	DB *sqlx.DB
+
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
@@ -1488,8 +1507,10 @@ type entryDeleteView struct {
 	colour lipgloss.Color
 }
 
-func NewEntryDeleteView(modelId int) *entryDeleteView {
+func NewEntryDeleteView(DB *sqlx.DB, modelId int) *entryDeleteView {
 	return &entryDeleteView{
+		DB: DB,
+
 		modelId: modelId,
 
 		colour: meta.ENTRIESCOLOUR,
@@ -1498,8 +1519,8 @@ func NewEntryDeleteView(modelId int) *entryDeleteView {
 
 func (dv *entryDeleteView) Init() tea.Cmd {
 	// Can't load journal yet, we only know journal ID when entry is loaded
-	entryCmd := database.MakeLoadEntriesDetailCmd(dv.modelId)
-	rowsCmd := database.MakeSelectEntryRowsCmd(dv.modelId)
+	entryCmd := database.MakeLoadEntriesDetailCmd(dv.DB, dv.modelId)
+	rowsCmd := database.MakeSelectEntryRowsCmd(dv.DB, dv.modelId)
 
 	return tea.Batch(entryCmd, rowsCmd)
 }
@@ -1534,7 +1555,7 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
-		err := database.DeleteEntry(dv.model.Id)
+		err := database.DeleteEntry(dv.DB, dv.model.Id)
 		if err != nil {
 			return dv, meta.MessageCmd(err)
 		}
@@ -1593,7 +1614,7 @@ func (dv *entryDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *entryDeleteView) Reload() View {
-	return NewEntryDeleteView(dv.modelId)
+	return NewEntryDeleteView(dv.DB, dv.modelId)
 }
 
 func (dv *entryDeleteView) title() string {

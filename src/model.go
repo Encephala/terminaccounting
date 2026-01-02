@@ -13,10 +13,13 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 	overlay "github.com/rmhubbert/bubbletea-overlay"
 )
 
 type terminaccounting struct {
+	DB *sqlx.DB
+
 	appManager   *appManager
 	modalManager *modals.ModalManager
 
@@ -37,15 +40,17 @@ type terminaccounting struct {
 	currentCommandIsSearch bool
 }
 
-func newTerminaccounting() *terminaccounting {
+func newTerminaccounting(DB *sqlx.DB) *terminaccounting {
 	commandInput := textinput.New()
 	commandInput.Cursor.SetMode(cursor.CursorStatic)
 	commandInput.Prompt = ":"
 
-	am := newAppManager()
+	am := newAppManager(DB)
 	mm := modals.NewModalManager()
 
 	return &terminaccounting{
+		DB: DB,
+
 		appManager:   am,
 		modalManager: mm,
 		showModal:    false,
@@ -62,7 +67,7 @@ func (ta *terminaccounting) Init() tea.Cmd {
 
 	cmds = append(cmds, ta.appManager.Init())
 
-	err := database.UpdateCache()
+	err := database.UpdateCache(ta.DB)
 	if err != nil {
 		cmds = append(cmds, meta.MessageCmd(err))
 	}
@@ -181,7 +186,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta.handleKeyMsg(message)
 
 	case meta.RefreshCacheMsg:
-		err := database.UpdateCache()
+		err := database.UpdateCache(ta.DB)
 		if err != nil {
 			return ta, meta.MessageCmd(err)
 		}

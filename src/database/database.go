@@ -7,21 +7,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var DB *sqlx.DB
-
-func Connect() error {
-	var err error
-	DB, err = sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
+func Connect() (*sqlx.DB, error) {
+	DB, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
 	if err != nil {
-		return err
+		return DB, err
 	}
 
-	err = InitSchemas()
+	err = InitSchemas(DB)
 
-	return err
+	return DB, err
 }
 
-func DatabaseTableIsSetUp(name string) (bool, error) {
+func DatabaseTableIsSetUp(DB *sqlx.DB, name string) (bool, error) {
 	// Kinda hacky, whatever
 	result, err := DB.Query("SELECT name FROM sqlite_master WHERE type='table' AND name=$1", name)
 	if err != nil {
@@ -37,8 +34,8 @@ func DatabaseTableIsSetUp(name string) (bool, error) {
 	return false, nil
 }
 
-func InitSchemas() error {
-	changed, err := setupSchemaLedgers()
+func InitSchemas(DB *sqlx.DB) error {
+	changed, err := setupSchemaLedgers(DB)
 	if err != nil {
 		return err
 	}
@@ -46,7 +43,7 @@ func InitSchemas() error {
 		slog.Info("Set up `ledgers` schema")
 	}
 
-	changed, err = setupSchemaAccounts()
+	changed, err = setupSchemaAccounts(DB)
 	if err != nil {
 		return err
 	}
@@ -54,7 +51,7 @@ func InitSchemas() error {
 		slog.Info("Set up `accounts` schema")
 	}
 
-	changed, err = setupSchemaJournals()
+	changed, err = setupSchemaJournals(DB)
 	if err != nil {
 		return err
 	}
@@ -62,7 +59,7 @@ func InitSchemas() error {
 		slog.Info("Set up `journals` schema")
 	}
 
-	changed, err = setupSchemaEntries()
+	changed, err = setupSchemaEntries(DB)
 	if err != nil {
 		return err
 	}
@@ -70,7 +67,7 @@ func InitSchemas() error {
 		slog.Info("Set up `entries` schema")
 	}
 
-	changed, err = setupSchemaEntryRows()
+	changed, err = setupSchemaEntryRows(DB)
 	if err != nil {
 		return err
 	}
@@ -81,18 +78,18 @@ func InitSchemas() error {
 	return nil
 }
 
-func UpdateCache() error {
-	err := UpdateLedgersCache()
+func UpdateCache(DB *sqlx.DB) error {
+	err := UpdateLedgersCache(DB)
 	if err != nil {
 		return err
 	}
 
-	err = UpdateAccountsCache()
+	err = UpdateAccountsCache(DB)
 	if err != nil {
 		return err
 	}
 
-	err = UpdateJournalsCache()
+	err = UpdateJournalsCache(DB)
 	if err != nil {
 		return err
 	}

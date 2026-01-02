@@ -9,16 +9,19 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type accountsApp struct {
+	DB *sqlx.DB
+
 	viewWidth, viewHeight int
 
 	currentView view.View
 }
 
-func NewAccountsApp() meta.App {
-	model := &accountsApp{}
+func NewAccountsApp(DB *sqlx.DB) meta.App {
+	model := &accountsApp{DB: DB}
 
 	model.currentView = view.NewListView(model)
 
@@ -52,20 +55,20 @@ func (app *accountsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			account := message.Data.(database.Account)
 
-			app.currentView = view.NewAccountsDetailView(account.Id)
+			app.currentView = view.NewAccountsDetailView(app.DB, account.Id)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewAccountsCreateView()
+			app.currentView = view.NewAccountsCreateView(app.DB)
 
 		case meta.UPDATEVIEWTYPE:
 			accountId := message.Data.(int)
 
-			app.currentView = view.NewAccountsUpdateView(accountId)
+			app.currentView = view.NewAccountsUpdateView(app.DB, accountId)
 
 		case meta.DELETEVIEWTYPE:
 			accountId := message.Data.(int)
 
-			app.currentView = view.NewAccountsDeleteView(accountId)
+			app.currentView = view.NewAccountsDeleteView(app.DB, accountId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
@@ -116,7 +119,7 @@ func (app *accountsApp) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (app *accountsApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := database.SelectAccounts()
+		rows, err := database.SelectAccounts(app.DB)
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD ACCOUNTS: %v", err))
 		}

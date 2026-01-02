@@ -14,9 +14,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type ledgersDetailView struct {
+	DB *sqlx.DB
+
 	// The ledger whose rows are being shown
 	modelId int
 	model   database.Ledger
@@ -26,8 +29,10 @@ type ledgersDetailView struct {
 	viewer *entryRowViewer
 }
 
-func NewLedgersDetailView(modelId int) *ledgersDetailView {
+func NewLedgersDetailView(DB *sqlx.DB, modelId int) *ledgersDetailView {
 	return &ledgersDetailView{
+		DB: DB,
+
 		modelId: modelId,
 
 		viewer: newEntryRowViewer(meta.LEDGERSCOLOUR),
@@ -37,8 +42,8 @@ func NewLedgersDetailView(modelId int) *ledgersDetailView {
 func (dv *ledgersDetailView) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.modelId))
-	cmds = append(cmds, database.MakeLoadLedgersRowsCmd(dv.modelId))
+	cmds = append(cmds, database.MakeLoadLedgersDetailCmd(dv.DB, dv.modelId))
+	cmds = append(cmds, database.MakeLoadLedgersRowsCmd(dv.DB, dv.modelId))
 
 	return tea.Batch(cmds...)
 }
@@ -78,6 +83,10 @@ func (dv *ledgersDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *ledgersDetailView) getDB() *sqlx.DB {
+	return dv.DB
+}
+
 func (dv *ledgersDetailView) title() string {
 	return fmt.Sprintf("Ledger %s details", dv.model.Name)
 }
@@ -103,7 +112,7 @@ func (dv *ledgersDetailView) MotionSet() meta.MotionSet {
 	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
 	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.viewer.getActiveRow()))
+	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, dv.viewer.getActiveRow()))
 
 	return result
 }
@@ -113,7 +122,7 @@ func (dv *ledgersDetailView) CommandSet() meta.CommandSet {
 }
 
 func (dv *ledgersDetailView) Reload() View {
-	return NewLedgersDetailView(dv.modelId)
+	return NewLedgersDetailView(dv.DB, dv.modelId)
 }
 
 func (dv *ledgersDetailView) getViewer() *entryRowViewer {
@@ -125,12 +134,14 @@ func (dv *ledgersDetailView) getColour() lipgloss.Color {
 }
 
 type ledgersCreateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	colour lipgloss.Color
 }
 
-func NewLedgersCreateView() *ledgersCreateView {
+func NewLedgersCreateView(DB *sqlx.DB) *ledgersCreateView {
 	ledgerTypes := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -161,6 +172,8 @@ func NewLedgersCreateView() *ledgersCreateView {
 	names := []string{"Name", "Type", "Notes", "Is accounts ledger?"}
 
 	return &ledgersCreateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		colour: meta.LEDGERSCOLOUR,
@@ -200,7 +213,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 			IsAccounts: isAccounts,
 		}
 
-		id, err := newLedger.Insert()
+		id, err := newLedger.Insert(cv.DB)
 		if err != nil {
 			return cv, meta.MessageCmd(err)
 		}
@@ -254,7 +267,7 @@ func (cv *ledgersCreateView) CommandSet() meta.CommandSet {
 }
 
 func (cv *ledgersCreateView) Reload() View {
-	return NewLedgersCreateView()
+	return NewLedgersCreateView(cv.DB)
 }
 
 func (cv *ledgersCreateView) getInputManager() *inputManager {
@@ -262,6 +275,8 @@ func (cv *ledgersCreateView) getInputManager() *inputManager {
 }
 
 type ledgersUpdateView struct {
+	DB *sqlx.DB
+
 	inputManager *inputManager
 
 	modelId       int
@@ -270,7 +285,7 @@ type ledgersUpdateView struct {
 	colour lipgloss.Color
 }
 
-func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
+func NewLedgersUpdateView(DB *sqlx.DB, modelId int) *ledgersUpdateView {
 	types := []itempicker.Item{
 		database.INCOMELEDGER,
 		database.EXPENSELEDGER,
@@ -301,6 +316,8 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 	names := []string{"Name", "Type", "Notes", "Is accounts ledger?"}
 
 	return &ledgersUpdateView{
+		DB: DB,
+
 		inputManager: newInputManager(inputs, names),
 
 		modelId: modelId,
@@ -310,7 +327,7 @@ func NewLedgersUpdateView(modelId int) *ledgersUpdateView {
 }
 
 func (uv *ledgersUpdateView) Init() tea.Cmd {
-	return database.MakeLoadLedgersDetailCmd(uv.modelId)
+	return database.MakeLoadLedgersDetailCmd(uv.DB, uv.modelId)
 }
 
 func (uv *ledgersUpdateView) title() string {
@@ -374,7 +391,7 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			IsAccounts: isAccounts,
 		}
 
-		err := ledger.Update()
+		err := ledger.Update(uv.DB)
 		if err != nil {
 			return uv, meta.MessageCmd(err)
 		}
@@ -425,7 +442,7 @@ func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
 }
 
 func (uv *ledgersUpdateView) Reload() View {
-	return NewLedgersUpdateView(uv.modelId)
+	return NewLedgersUpdateView(uv.DB, uv.modelId)
 }
 
 func (uv *ledgersUpdateView) getInputManager() *inputManager {
@@ -439,14 +456,18 @@ func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 type ledgersDeleteView struct {
+	DB *sqlx.DB
+
 	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
 	colour lipgloss.Color
 }
 
-func NewLedgersDeleteView(modelId int) *ledgersDeleteView {
+func NewLedgersDeleteView(DB *sqlx.DB, modelId int) *ledgersDeleteView {
 	return &ledgersDeleteView{
+		DB: DB,
+
 		modelId: modelId,
 
 		colour: meta.LEDGERSCOLOUR,
@@ -454,7 +475,7 @@ func NewLedgersDeleteView(modelId int) *ledgersDeleteView {
 }
 
 func (dv *ledgersDeleteView) Init() tea.Cmd {
-	return database.MakeLoadLedgersDetailCmd(dv.modelId)
+	return database.MakeLoadLedgersDetailCmd(dv.DB, dv.modelId)
 }
 
 func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -465,7 +486,7 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, nil
 
 	case meta.CommitMsg:
-		err := database.DeleteLedger(dv.modelId)
+		err := database.DeleteLedger(dv.DB, dv.modelId)
 		if err != nil {
 			return dv, meta.MessageCmd(err)
 		}
@@ -525,7 +546,7 @@ func (dv *ledgersDeleteView) CommandSet() meta.CommandSet {
 }
 
 func (dv *ledgersDeleteView) Reload() View {
-	return NewLedgersDeleteView(dv.modelId)
+	return NewLedgersDeleteView(dv.DB, dv.modelId)
 }
 
 func (dv *ledgersDeleteView) title() string {

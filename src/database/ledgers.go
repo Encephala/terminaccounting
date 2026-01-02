@@ -9,6 +9,7 @@ import (
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 )
 
 // Globally accessible list of available ledgers
@@ -90,9 +91,9 @@ func (l Ledger) CompareId() int {
 	return l.Id
 }
 
-func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
+func MakeLoadLedgersDetailCmd(DB *sqlx.DB, id int) tea.Cmd {
 	return func() tea.Msg {
-		ledger, err := SelectLedger(id)
+		ledger, err := SelectLedger(DB, id)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER WITH ID %d: %#v", id, err)
 		}
@@ -105,10 +106,10 @@ func MakeLoadLedgersDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func MakeLoadLedgersRowsCmd(ledgerId int) tea.Cmd {
+func MakeLoadLedgersRowsCmd(DB *sqlx.DB, ledgerId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
-		rows, err := SelectRowsByLedger(ledgerId)
+		rows, err := SelectRowsByLedger(DB, ledgerId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGER ROWS: %v", err)
 		}
@@ -121,8 +122,8 @@ func MakeLoadLedgersRowsCmd(ledgerId int) tea.Cmd {
 	}
 }
 
-func setupSchemaLedgers() (bool, error) {
-	isSetUp, err := DatabaseTableIsSetUp("ledgers")
+func setupSchemaLedgers(DB *sqlx.DB) (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp(DB, "ledgers")
 	if err != nil {
 		return false, err
 	}
@@ -142,7 +143,7 @@ func setupSchemaLedgers() (bool, error) {
 	return true, err
 }
 
-func (l *Ledger) Insert() (int, error) {
+func (l *Ledger) Insert(DB *sqlx.DB) (int, error) {
 	result, err := DB.NamedExec(
 		`INSERT INTO ledgers (name, type, notes, is_accounts)
 		VALUES (:name, :type, :notes, :is_accounts);`,
@@ -156,7 +157,7 @@ func (l *Ledger) Insert() (int, error) {
 		return 0, err
 	}
 
-	err = UpdateLedgersCache()
+	err = UpdateLedgersCache(DB)
 	if err != nil {
 		return int(id), err
 	}
@@ -164,7 +165,7 @@ func (l *Ledger) Insert() (int, error) {
 	return int(id), nil
 }
 
-func (l Ledger) Update() error {
+func (l Ledger) Update(DB *sqlx.DB) error {
 	query := `UPDATE ledgers SET
 	name = :name,
 	type = :type,
@@ -177,12 +178,12 @@ func (l Ledger) Update() error {
 		return err
 	}
 
-	err = UpdateLedgersCache()
+	err = UpdateLedgersCache(DB)
 
 	return err
 }
 
-func SelectLedgers() ([]Ledger, error) {
+func SelectLedgers(DB *sqlx.DB) ([]Ledger, error) {
 	var result []Ledger
 
 	err := DB.Select(&result, `SELECT * FROM ledgers;`)
@@ -190,8 +191,8 @@ func SelectLedgers() ([]Ledger, error) {
 	return result, err
 }
 
-func UpdateLedgersCache() error {
-	ledgers, err := SelectLedgers()
+func UpdateLedgersCache(DB *sqlx.DB) error {
+	ledgers, err := SelectLedgers(DB)
 	if err != nil {
 		return err
 	}
@@ -201,7 +202,7 @@ func UpdateLedgersCache() error {
 	return nil
 }
 
-func SelectLedger(ledgerId int) (Ledger, error) {
+func SelectLedger(DB *sqlx.DB, ledgerId int) (Ledger, error) {
 	var result Ledger
 
 	err := DB.Get(&result, `SELECT * FROM ledgers WHERE id = $1;`, ledgerId)
@@ -209,20 +210,20 @@ func SelectLedger(ledgerId int) (Ledger, error) {
 	return result, err
 }
 
-func DeleteLedger(ledgerId int) error {
+func DeleteLedger(DB *sqlx.DB, ledgerId int) error {
 	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = $1;`, ledgerId)
 	if err != nil {
 		return err
 	}
 
-	err = UpdateLedgersCache()
+	err = UpdateLedgersCache(DB)
 
 	return err
 }
 
-func MakeSelectLedgersCmd(targetApp meta.AppType) tea.Cmd {
+func MakeSelectLedgersCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectLedgers()
+		rows, err := SelectLedgers(DB)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err)
 		}

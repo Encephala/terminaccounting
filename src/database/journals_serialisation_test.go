@@ -9,17 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupDBJournals(t *testing.T) {
+func setupDBJournals(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaJournals()
+	DB := sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaJournals(DB)
 
 	require.NoError(t, err)
+
+	return DB
 }
 
 func TestMarshalUnmarshalJournal(t *testing.T) {
-	setupDBJournals(t)
+	DB := setupDBJournals(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	journal := Journal{
@@ -29,7 +31,7 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 		Notes: []string{"a note"},
 	}
 
-	insertedId, err := journal.Insert()
+	insertedId, err := journal.Insert(DB)
 	assert.NoError(t, err)
 
 	assert.Equal(t, insertedId, journal.Id)

@@ -44,9 +44,9 @@ func (e Entry) CompareId() int {
 	return e.Id
 }
 
-func MakeLoadEntriesDetailCmd(id int) tea.Cmd {
+func MakeLoadEntriesDetailCmd(DB *sqlx.DB, id int) tea.Cmd {
 	return func() tea.Msg {
-		entry, err := SelectEntry(id)
+		entry, err := SelectEntry(DB, id)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY WITH ID %d: %#v", id, err)
 		}
@@ -59,10 +59,10 @@ func MakeLoadEntriesDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func MakeLoadEntriesRowsCmd(entryId int) tea.Cmd {
+func MakeLoadEntriesRowsCmd(DB *sqlx.DB, entryId int) tea.Cmd {
 	// Aren't closures just great
 	return func() tea.Msg {
-		rows, err := SelectRowsByEntry(entryId)
+		rows, err := SelectRowsByEntry(DB, entryId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}
@@ -100,8 +100,8 @@ func CalculateSize(rows []*EntryRow) CurrencyValue {
 	return sum
 }
 
-func setupSchemaEntries() (bool, error) {
-	isSetUp, err := DatabaseTableIsSetUp("entries")
+func setupSchemaEntries(DB *sqlx.DB) (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp(DB, "entries")
 	if err != nil {
 		return false, err
 	}
@@ -120,7 +120,7 @@ func setupSchemaEntries() (bool, error) {
 	return true, err
 }
 
-func (e Entry) Insert(rows []EntryRow) (int, error) {
+func (e Entry) Insert(DB *sqlx.DB, rows []EntryRow) (int, error) {
 	transaction, err := DB.Beginx()
 	defer transaction.Rollback()
 
@@ -156,7 +156,7 @@ func (e Entry) Insert(rows []EntryRow) (int, error) {
 	return int(id), nil
 }
 
-func (e Entry) Update(rows []EntryRow) error {
+func (e Entry) Update(DB *sqlx.DB, rows []EntryRow) error {
 	query := `UPDATE entries SET
 	journal = :journal,
 	notes = :notes
@@ -309,8 +309,8 @@ type EntryRow struct {
 	Reconciled  bool          `db:"reconciled"`
 }
 
-func setupSchemaEntryRows() (bool, error) {
-	isSetUp, err := DatabaseTableIsSetUp("entryrows")
+func setupSchemaEntryRows(DB *sqlx.DB) (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp(DB, "entryrows")
 	if err != nil {
 		return false, err
 	}
@@ -355,7 +355,7 @@ func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 	return int(changed), err
 }
 
-func SelectEntries() ([]Entry, error) {
+func SelectEntries(DB *sqlx.DB) ([]Entry, error) {
 	result := []Entry{}
 
 	err := DB.Select(&result, `SELECT * FROM entries;`)
@@ -363,7 +363,7 @@ func SelectEntries() ([]Entry, error) {
 	return result, err
 }
 
-func SelectEntry(id int) (Entry, error) {
+func SelectEntry(DB *sqlx.DB, id int) (Entry, error) {
 	var result Entry
 
 	err := DB.Get(&result, `SELECT * FROM entries WHERE id = $1;`, id)
@@ -371,7 +371,7 @@ func SelectEntry(id int) (Entry, error) {
 	return result, err
 }
 
-func SelectEntriesByJournal(journalId int) ([]Entry, error) {
+func SelectEntriesByJournal(DB *sqlx.DB, journalId int) ([]Entry, error) {
 	result := []Entry{}
 
 	err := DB.Select(&result, `SELECT * FROM entries WHERE journal = $1;`, journalId)
@@ -379,13 +379,13 @@ func SelectEntriesByJournal(journalId int) ([]Entry, error) {
 	return result, err
 }
 
-func DeleteEntry(id int) error {
+func DeleteEntry(DB *sqlx.DB, id int) error {
 	_, err := DB.Exec(`DELETE FROM entries WHERE id = $1;`, id)
 
 	return err
 }
 
-func SelectRows() ([]EntryRow, error) {
+func SelectRows(DB *sqlx.DB) ([]EntryRow, error) {
 	result := []EntryRow{}
 
 	err := DB.Select(&result, `SELECT * FROM entryrows;`)
@@ -393,7 +393,7 @@ func SelectRows() ([]EntryRow, error) {
 	return result, err
 }
 
-func SelectRowsByLedger(id int) ([]EntryRow, error) {
+func SelectRowsByLedger(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
 	err := DB.Select(&result, `SELECT * FROM entryrows WHERE ledger = $1;`, id)
@@ -401,7 +401,7 @@ func SelectRowsByLedger(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func SelectRowsByAccount(id int) ([]EntryRow, error) {
+func SelectRowsByAccount(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
 	query := `SELECT entryrows.* FROM entryrows
@@ -414,7 +414,7 @@ func SelectRowsByAccount(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func SelectRowsByJournal(id int) ([]EntryRow, error) {
+func SelectRowsByJournal(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
 	query := `SELECT er.* FROM entryrows AS er LEFT JOIN entries AS e ON er.entry = e.id WHERE e.id = $1;`
@@ -424,7 +424,7 @@ func SelectRowsByJournal(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func SelectRowsByEntry(id int) ([]EntryRow, error) {
+func SelectRowsByEntry(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
 	err := DB.Select(&result, `SELECT * FROM entryrows WHERE entry = $1;`, id)
@@ -432,7 +432,7 @@ func SelectRowsByEntry(id int) ([]EntryRow, error) {
 	return result, err
 }
 
-func SetReconciled(rows []*EntryRow) (int, error) {
+func SetReconciled(DB *sqlx.DB, rows []*EntryRow) (int, error) {
 	// Transaction to ensure all reconciling goes through.
 	// Otherwise db in insane state, where reconciled rows don't add to 0
 	tx := DB.MustBegin()
@@ -459,10 +459,10 @@ func SetReconciled(rows []*EntryRow) (int, error) {
 	return totalChanged, nil
 }
 
-func MakeSelectEntryCmd(entryId int) tea.Cmd {
+func MakeSelectEntryCmd(DB *sqlx.DB, entryId int) tea.Cmd {
 	// Shoutout to closures
 	return func() tea.Msg {
-		rows, err := SelectEntry(entryId)
+		rows, err := SelectEntry(DB, entryId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY: %v", err)
 		}
@@ -475,9 +475,9 @@ func MakeSelectEntryCmd(entryId int) tea.Cmd {
 	}
 }
 
-func MakeSelectEntriesByJournalCmd(journalId int) tea.Cmd {
+func MakeSelectEntriesByJournalCmd(DB *sqlx.DB, journalId int) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectEntriesByJournal(journalId)
+		rows, err := SelectEntriesByJournal(DB, journalId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRIES FOR JOURNAL %d: %#v", journalId, err)
 		}
@@ -490,9 +490,9 @@ func MakeSelectEntriesByJournalCmd(journalId int) tea.Cmd {
 	}
 }
 
-func MakeSelectEntryRowsCmd(entryId int) tea.Cmd {
+func MakeSelectEntryRowsCmd(DB *sqlx.DB, entryId int) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectRowsByEntry(entryId)
+		rows, err := SelectRowsByEntry(DB, entryId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ENTRY ROWS: %v", err)
 		}

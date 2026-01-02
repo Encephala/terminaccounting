@@ -10,19 +10,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupDBEntries(t *testing.T) {
+func setupDBEntries(t *testing.T) *sqlx.DB {
 	t.Helper()
 
-	DB = sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaEntries()
+	DB := sqlx.MustConnect("sqlite3", ":memory:")
+	_, err := setupSchemaEntries(DB)
 	require.NoError(t, err)
 
-	_, err = setupSchemaEntryRows()
+	_, err = setupSchemaEntryRows(DB)
 	require.NoError(t, err)
+
+	return DB
 }
 
 func TestMarshalUnmarshalEntry(t *testing.T) {
-	setupDBEntries(t)
+	DB := setupDBEntries(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	entry := Entry{
@@ -61,7 +63,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 		},
 	}
 
-	insertedId, err := entry.Insert(entryRows)
+	insertedId, err := entry.Insert(DB, entryRows)
 	assert.NoError(t, err)
 
 	assert.Equal(t, insertedId, entry.Id)

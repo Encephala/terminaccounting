@@ -8,6 +8,7 @@ import (
 	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 )
 
 // Globally accessible list of available journals
@@ -84,9 +85,9 @@ func (j Journal) Description() string {
 	return j.Notes.Collapse()
 }
 
-func MakeLoadJournalsDetailCmd(id int) tea.Cmd {
+func MakeLoadJournalsDetailCmd(DB *sqlx.DB, id int) tea.Cmd {
 	return func() tea.Msg {
-		journal, err := SelectJournal(id)
+		journal, err := SelectJournal(DB, id)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD JOURNAL WITH ID %d: %#v", id, err)
 		}
@@ -99,8 +100,8 @@ func MakeLoadJournalsDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func setupSchemaJournals() (bool, error) {
-	isSetUp, err := DatabaseTableIsSetUp("journals")
+func setupSchemaJournals(DB *sqlx.DB) (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp(DB, "journals")
 	if err != nil {
 		return false, err
 	}
@@ -119,7 +120,7 @@ func setupSchemaJournals() (bool, error) {
 	return true, err
 }
 
-func (j *Journal) Insert() (int, error) {
+func (j *Journal) Insert(DB *sqlx.DB) (int, error) {
 	_, err := DB.NamedExec(`INSERT INTO journals (name, type, notes) VALUES (:name, :type, :notes)`, j)
 	if err != nil {
 		return 0, err
@@ -133,7 +134,7 @@ func (j *Journal) Insert() (int, error) {
 		return 0, err
 	}
 
-	err = UpdateJournalsCache()
+	err = UpdateJournalsCache(DB)
 	if err != nil {
 		return int(id), err
 	}
@@ -141,7 +142,7 @@ func (j *Journal) Insert() (int, error) {
 	return id, nil
 }
 
-func (j *Journal) Update() error {
+func (j *Journal) Update(DB *sqlx.DB) error {
 	query := `UPDATE journals SET
 	name = :name,
 	type = :type,
@@ -153,12 +154,12 @@ func (j *Journal) Update() error {
 		return err
 	}
 
-	err = UpdateJournalsCache()
+	err = UpdateJournalsCache(DB)
 
 	return err
 }
 
-func SelectJournals() ([]Journal, error) {
+func SelectJournals(DB *sqlx.DB) ([]Journal, error) {
 	var result []Journal
 
 	err := DB.Select(&result, `SELECT * FROM journals;`)
@@ -166,8 +167,8 @@ func SelectJournals() ([]Journal, error) {
 	return result, err
 }
 
-func UpdateJournalsCache() error {
-	journals, err := SelectJournals()
+func UpdateJournalsCache(DB *sqlx.DB) error {
+	journals, err := SelectJournals(DB)
 	if err != nil {
 		return err
 	}
@@ -177,7 +178,7 @@ func UpdateJournalsCache() error {
 	return nil
 }
 
-func SelectJournal(id int) (Journal, error) {
+func SelectJournal(DB *sqlx.DB, id int) (Journal, error) {
 	result := Journal{}
 
 	err := DB.Get(&result, `SELECT * FROM journals WHERE id = $1;`, id)
@@ -185,20 +186,20 @@ func SelectJournal(id int) (Journal, error) {
 	return result, err
 }
 
-func DeleteJournal(id int) error {
+func DeleteJournal(DB *sqlx.DB, id int) error {
 	_, err := DB.Exec(`DELETE FROM journals WHERE id = $1;`, id)
 	if err != nil {
 		return err
 	}
 
-	err = UpdateJournalsCache()
+	err = UpdateJournalsCache(DB)
 
 	return err
 }
 
-func MakeSelectJournalsCmd(targetApp meta.AppType) tea.Cmd {
+func MakeSelectJournalsCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectJournals()
+		rows, err := SelectJournals(DB)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD JOURNALS: %v", err)
 		}

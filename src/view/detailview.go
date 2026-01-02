@@ -12,10 +12,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jmoiron/sqlx"
 )
 
 type genericDetailView interface {
 	View
+
+	getDB() *sqlx.DB
 
 	title() string
 
@@ -134,7 +137,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			return gdv, meta.MessageCmd(fmt.Errorf("total of reconciled rows not 0 but %s", total))
 		}
 
-		changed, err := database.SetReconciled(viewer.rows)
+		changed, err := database.SetReconciled(gdv.getDB(), viewer.rows)
 		if err != nil {
 			return gdv, meta.MessageCmd(err)
 		}
@@ -196,7 +199,7 @@ func genericDetailViewCommandSet() meta.CommandSet {
 	return meta.CommandSet(result)
 }
 
-func makeGoToEntryDetailViewCmd(activeEntryRow *database.EntryRow) tea.Cmd {
+func makeGoToEntryDetailViewCmd(DB *sqlx.DB, activeEntryRow *database.EntryRow) tea.Cmd {
 	return func() tea.Msg {
 		if activeEntryRow == nil {
 			return meta.MessageCmd(errors.New("there is no row to view details of"))
@@ -205,7 +208,7 @@ func makeGoToEntryDetailViewCmd(activeEntryRow *database.EntryRow) tea.Cmd {
 		entryId := activeEntryRow.Entry
 
 		// Do the database query for the entry here, because it is a command and thus asynchronous
-		entry, err := database.SelectEntry(entryId)
+		entry, err := database.SelectEntry(DB, entryId)
 
 		if err != nil {
 			return meta.MessageCmd(err)

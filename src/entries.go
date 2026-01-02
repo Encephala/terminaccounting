@@ -9,16 +9,19 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type entriesApp struct {
+	DB *sqlx.DB
+
 	viewWidth, viewHeight int
 
 	currentView view.View
 }
 
-func NewEntriesApp() meta.App {
-	model := &entriesApp{}
+func NewEntriesApp(DB *sqlx.DB) meta.App {
+	model := &entriesApp{DB: DB}
 
 	model.currentView = view.NewListView(model)
 
@@ -53,28 +56,28 @@ func (app *entriesApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 			entry := message.Data.(database.Entry)
 
 			// No better model name to be had than the entry Id
-			app.currentView = view.NewEntriesDetailView(entry.Id)
+			app.currentView = view.NewEntriesDetailView(app.DB, entry.Id)
 
 		case meta.CREATEVIEWTYPE:
 			if message.Data != nil {
-				newView, err := view.NewEntryCreateViewPrefilled(message.Data.(view.EntryPrefillData))
+				newView, err := view.NewEntryCreateViewPrefilled(app.DB, message.Data.(view.EntryPrefillData))
 				if err != nil {
 					return app, meta.MessageCmd(err)
 				}
 				app.currentView = newView
 			} else {
-				app.currentView = view.NewEntryCreateView()
+				app.currentView = view.NewEntryCreateView(app.DB)
 			}
 
 		case meta.UPDATEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			app.currentView = view.NewEntryUpdateView(entryId)
+			app.currentView = view.NewEntryUpdateView(app.DB, entryId)
 
 		case meta.DELETEVIEWTYPE:
 			entryId := message.Data.(int)
 
-			app.currentView = view.NewEntryDeleteView(entryId)
+			app.currentView = view.NewEntryDeleteView(app.DB, entryId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
@@ -125,7 +128,7 @@ func (app *entriesApp) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (app *entriesApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := database.SelectEntries()
+		rows, err := database.SelectEntries(app.DB)
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD ENTRIES: %v", err))
 		}

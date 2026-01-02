@@ -18,13 +18,13 @@ func main() {
 	}
 	defer logFile.Close()
 
-	err = database.Connect()
+	DB, err := database.Connect()
 	if err != nil {
 		slog.Error("Couldn't connect to database:", "error", err)
 		os.Exit(1)
 	}
 
-	ta := newTerminaccounting()
+	ta := newTerminaccounting(DB)
 
 	finalModel, err := tea.NewProgram(ta, tea.WithAltScreen()).Run()
 	if err != nil {

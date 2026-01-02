@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 // Globally accessible list of available accounts
@@ -92,9 +93,9 @@ func (a *Account) CompareId() int {
 	return a.Id
 }
 
-func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
+func MakeLoadAccountsDetailCmd(DB *sqlx.DB, id int) tea.Cmd {
 	return func() tea.Msg {
-		account, err := SelectAccount(id)
+		account, err := SelectAccount(DB, id)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ACCOUNT WITH ID %d: %#v", id, err)
 		}
@@ -107,10 +108,10 @@ func MakeLoadAccountsDetailCmd(id int) tea.Cmd {
 	}
 }
 
-func MakeLoadAccountsRowsCmd(modelId int) tea.Cmd {
+func MakeLoadAccountsRowsCmd(DB *sqlx.DB, modelId int) tea.Cmd {
 	// Aren't closures just great (still)
 	return func() tea.Msg {
-		rows, err := SelectRowsByAccount(modelId)
+		rows, err := SelectRowsByAccount(DB, modelId)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ACCOUNT ROWS: %v", err)
 		}
@@ -123,8 +124,8 @@ func MakeLoadAccountsRowsCmd(modelId int) tea.Cmd {
 	}
 }
 
-func setupSchemaAccounts() (bool, error) {
-	isSetUp, err := DatabaseTableIsSetUp("accounts")
+func setupSchemaAccounts(DB *sqlx.DB) (bool, error) {
+	isSetUp, err := DatabaseTableIsSetUp(DB, "accounts")
 	if err != nil {
 		return false, err
 	}
@@ -144,7 +145,7 @@ func setupSchemaAccounts() (bool, error) {
 	return true, err
 }
 
-func (a Account) Insert() (int, error) {
+func (a Account) Insert(DB *sqlx.DB) (int, error) {
 	result, err := DB.NamedExec(
 		`INSERT INTO accounts (name, type, banknumbers, notes) VALUES (:name, :type, :banknumbers, :notes)`,
 		a,
@@ -158,7 +159,7 @@ func (a Account) Insert() (int, error) {
 		return 0, err
 	}
 
-	err = UpdateAccountsCache()
+	err = UpdateAccountsCache(DB)
 	if err != nil {
 		return int(id), err
 	}
@@ -166,7 +167,7 @@ func (a Account) Insert() (int, error) {
 	return int(id), nil
 }
 
-func (a Account) Update() error {
+func (a Account) Update(DB *sqlx.DB) error {
 	query := `UPDATE accounts SET
 	name = :name,
 	type = :type,
@@ -179,7 +180,7 @@ func (a Account) Update() error {
 		return err
 	}
 
-	err = UpdateAccountsCache()
+	err = UpdateAccountsCache(DB)
 
 	return err
 }
@@ -194,7 +195,7 @@ func (a Account) HasBankNumber(bankNumber string) bool {
 	return false
 }
 
-func SelectAccounts() ([]Account, error) {
+func SelectAccounts(DB *sqlx.DB) ([]Account, error) {
 	var result []Account
 
 	err := DB.Select(&result, `SELECT * FROM accounts;`)
@@ -202,8 +203,8 @@ func SelectAccounts() ([]Account, error) {
 	return result, err
 }
 
-func UpdateAccountsCache() error {
-	accounts, err := SelectAccounts()
+func UpdateAccountsCache(DB *sqlx.DB) error {
+	accounts, err := SelectAccounts(DB)
 	if err != nil {
 		return err
 	}
@@ -213,7 +214,7 @@ func UpdateAccountsCache() error {
 	return nil
 }
 
-func SelectAccount(id int) (Account, error) {
+func SelectAccount(DB *sqlx.DB, id int) (Account, error) {
 	var result Account
 
 	err := DB.Get(&result, `SELECT * FROM accounts WHERE id = $1;`, id)
@@ -221,20 +222,20 @@ func SelectAccount(id int) (Account, error) {
 	return result, err
 }
 
-func DeleteAccount(accountId int) error {
+func DeleteAccount(DB *sqlx.DB, accountId int) error {
 	_, err := DB.Exec(`DELETE FROM accounts WHERE id = $1;`, accountId)
 	if err != nil {
 		return err
 	}
 
-	err = UpdateAccountsCache()
+	err = UpdateAccountsCache(DB)
 
 	return err
 }
 
-func MakeSelectAccountsCmd(targetApp meta.AppType) tea.Cmd {
+func MakeSelectAccountsCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {
 	return func() tea.Msg {
-		rows, err := SelectAccounts()
+		rows, err := SelectAccounts(DB)
 		if err != nil {
 			return fmt.Errorf("FAILED TO LOAD ACCOUNTS: %v", err)
 		}

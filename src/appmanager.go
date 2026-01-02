@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type appManager struct {
@@ -18,12 +19,12 @@ type appManager struct {
 	appIds    map[meta.AppType]int
 }
 
-func newAppManager() *appManager {
+func newAppManager(DB *sqlx.DB) *appManager {
 	apps := make([]meta.App, 4)
-	apps[0] = NewEntriesApp()
-	apps[1] = NewLedgersApp()
-	apps[2] = NewAccountsApp()
-	apps[3] = NewJournalsApp()
+	apps[0] = NewEntriesApp(DB)
+	apps[1] = NewLedgersApp(DB)
+	apps[2] = NewAccountsApp(DB)
+	apps[3] = NewJournalsApp(DB)
 
 	// Map the name(=type) of an app to its index in `apps`
 	appIds := make(map[meta.AppType]int, 4)

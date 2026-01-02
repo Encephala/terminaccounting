@@ -9,16 +9,19 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
 )
 
 type ledgersApp struct {
+	DB *sqlx.DB
+
 	viewWidth, viewHeight int
 
 	currentView view.View
 }
 
-func NewLedgersApp() meta.App {
-	model := &ledgersApp{}
+func NewLedgersApp(DB *sqlx.DB) meta.App {
+	model := &ledgersApp{DB: DB}
 
 	model.currentView = view.NewListView(model)
 
@@ -52,20 +55,20 @@ func (app *ledgersApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			ledger := message.Data.(database.Ledger)
 
-			app.currentView = view.NewLedgersDetailView(ledger.Id)
+			app.currentView = view.NewLedgersDetailView(app.DB, ledger.Id)
 
 		case meta.CREATEVIEWTYPE:
-			app.currentView = view.NewLedgersCreateView()
+			app.currentView = view.NewLedgersCreateView(app.DB)
 
 		case meta.UPDATEVIEWTYPE:
 			ledgerId := message.Data.(int)
 
-			app.currentView = view.NewLedgersUpdateView(ledgerId)
+			app.currentView = view.NewLedgersUpdateView(app.DB, ledgerId)
 
 		case meta.DELETEVIEWTYPE:
 			ledgerId := message.Data.(int)
 
-			app.currentView = view.NewLedgersDeleteView(ledgerId)
+			app.currentView = view.NewLedgersDeleteView(app.DB, ledgerId)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.ViewType: %#v", message.ViewType))
@@ -116,7 +119,7 @@ func (app *ledgersApp) AcceptedModels() map[meta.ModelType]struct{} {
 
 func (app *ledgersApp) MakeLoadListCmd() tea.Cmd {
 	return func() tea.Msg {
-		rows, err := database.SelectLedgers()
+		rows, err := database.SelectLedgers(app.DB)
 		if err != nil {
 			return meta.MessageCmd(fmt.Errorf("FAILED TO LOAD LEDGERS: %v", err))
 		}
