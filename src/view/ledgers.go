@@ -221,7 +221,7 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		cmds = append(cmds, meta.MessageCmd(meta.NotificationMessageMsg{Message: fmt.Sprintf(
-			"Successfully deleted Account %q", name,
+			"Successfully created ledger %q", name,
 		)}))
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchAppViewMsg{
