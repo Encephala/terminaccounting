@@ -57,6 +57,12 @@ func (am *asyncModel) View() string {
 	return am.model.View()
 }
 
+func (am *asyncModel) getCurrentModel() tea.Model {
+	am.mutex.Lock()
+	defer am.mutex.Unlock()
+	return am.model
+}
+
 func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 	asyncModel := &asyncModel{model: model}
 
@@ -96,7 +102,8 @@ func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
 			return nil
 
 		case <-ticker.C:
-			if !(condition(tw.asyncModel.model)) {
+			currentModel := tw.asyncModel.getCurrentModel()
+			if !(condition(currentModel)) {
 				continue
 			}
 
