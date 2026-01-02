@@ -90,8 +90,7 @@ func (tw *TestWrapper) Send(messages ...tea.Msg) {
 	}
 }
 
-// Waits for the provided condition to be met, then quits the program, returning the final program state
-func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
+func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	ticker := time.NewTicker(time.Millisecond * 50)
 	timeout := time.After(time.Second * 2)
 
@@ -107,13 +106,19 @@ func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
 				continue
 			}
 
-			tw.program.Quit()
-
-			finalModel := <-tw.doneChannel
-
-			return finalModel.(*asyncModel).model
+			return currentModel
 		}
 	}
+}
+
+// Waits for the provided condition to be met, then quits the program, returning the final program state
+func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
+	tw.Wait(condition)
+
+	tw.program.Quit()
+
+	finalModel := <-tw.doneChannel
+	return finalModel.(*asyncModel).model
 }
 
 func KeyMsg(input string) tea.KeyMsg {
