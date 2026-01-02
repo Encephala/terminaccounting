@@ -7,16 +7,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/require"
 )
 
 func SetupTestDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
 	db := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := db.Exec(`CREATE TABLE test(id INTEGER NOT NULL, notes TEXT NOT NULL) STRICT;`)
-
-	require.NoError(t, err)
 
 	return db
 }

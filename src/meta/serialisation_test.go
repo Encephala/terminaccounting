@@ -11,6 +11,9 @@ import (
 func TestMarshalUnmarshalNotes(t *testing.T) {
 	db := tat.SetupTestDB(t)
 
+	_, err := db.Exec(`CREATE TABLE test(id INTEGER NOT NULL, notes TEXT NOT NULL) STRICT;`)
+	assert.NoError(t, err)
+
 	type Test struct {
 		SomeId int   `db:"id"`
 		Notes  Notes `db:"notes"`
@@ -24,7 +27,7 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 		},
 	}
 
-	_, err := db.NamedExec(`INSERT INTO test VALUES (:id, :notes);`, expected)
+	_, err = db.NamedExec(`INSERT INTO test VALUES (:id, :notes);`, expected)
 	assert.NoError(t, err)
 
 	rows, err := db.Queryx(`SELECT * FROM test;`)
