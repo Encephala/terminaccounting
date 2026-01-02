@@ -1,6 +1,7 @@
-package meta
+package meta_test
 
 import (
+	"terminaccounting/meta"
 	tat "terminaccounting/tatesting"
 	"testing"
 
@@ -15,13 +16,13 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 	assert.NoError(t, err)
 
 	type Test struct {
-		SomeId int   `db:"id"`
-		Notes  Notes `db:"notes"`
+		SomeId int        `db:"id"`
+		Notes  meta.Notes `db:"notes"`
 	}
 
 	expected := Test{
 		SomeId: 69,
-		Notes: Notes{
+		Notes: meta.Notes{
 			"a note",
 			"another one",
 		},
