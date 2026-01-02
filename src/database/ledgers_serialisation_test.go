@@ -5,6 +5,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupDBLedgers(t *testing.T) {
@@ -12,10 +14,7 @@ func setupDBLedgers(t *testing.T) {
 
 	DB = sqlx.MustConnect("sqlite3", ":memory:")
 	_, err := setupSchemaLedgers()
-
-	if err != nil {
-		t.Fatalf("Couldn't setup db: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestMarshalUnmarshalLedger(t *testing.T) {
@@ -33,59 +32,22 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	}
 
 	insertedId, err := ledger.Insert()
-	if err != nil {
-		t.Fatalf("Couldn't insert into database: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if insertedId != 1 {
-		t.Fatalf("Expected id of first inserted ledger to be %d, found %d", ledger.Id, insertedId)
-	}
+	assert.Equal(t, insertedId, ledger.Id)
 
 	rows, err := DB.Queryx(`SELECT * FROM ledgers;`)
-	if err != nil {
-		t.Fatalf("Couldn't query rows from database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	var result Ledger
 	count := 0
 	for rows.Next() {
 		count++
 		err = rows.StructScan(&result)
-		if err != nil {
-			t.Errorf("Failed to scan: %v", err)
-		}
+		assert.NoError(t, err)
 	}
 
-	if count != 1 {
-		t.Errorf("Invalid number of rows %d found, expected 1", count)
-	}
+	assert.Equal(t, count, 1)
 
-	testLedgersEqual(t, result, ledger)
-}
-
-func testLedgersEqual(t *testing.T, actual, expected Ledger) {
-	t.Helper()
-
-	if actual.Id != expected.Id {
-		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
-	}
-
-	if actual.Name != expected.Name {
-		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
-	}
-
-	if actual.Type != expected.Type {
-		t.Errorf("Invalid type %q, expected %q", actual.Type, expected.Type)
-	}
-
-	if len(actual.Notes) != len(expected.Notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
-		t.Logf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
-	}
-
-	for i, note := range actual.Notes {
-		if note != expected.Notes[i] {
-			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.Notes[i])
-		}
-	}
+	assert.Equal(t, result, ledger)
 }

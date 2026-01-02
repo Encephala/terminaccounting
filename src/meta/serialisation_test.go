@@ -5,6 +5,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMarshalUnmarshalNotes(t *testing.T) {
@@ -24,40 +26,22 @@ func TestMarshalUnmarshalNotes(t *testing.T) {
 	}
 
 	_, err := db.NamedExec(`INSERT INTO test VALUES (:id, :notes);`, expected)
-
-	if err != nil {
-		t.Fatalf("Failed to insert notes into database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	rows, err := db.Queryx(`SELECT * FROM test;`)
-	if err != nil {
-		t.Fatalf("Couldn't query rows from database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	var result Test
 	count := 0
 	for rows.Next() {
 		count++
 		err = rows.StructScan(&result)
-		if err != nil {
-			t.Errorf("Failed to scan: %v", err)
-		}
+		assert.NoError(t, err)
 	}
 
-	if count != 1 {
-		t.Errorf("Invalid number of rows %d found, expected 1", count)
-	}
+	assert.Equal(t, count, 1)
 
-	if len(result.Notes) != len(expected.Notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(result.Notes), len(expected.Notes))
-		t.Logf("Actual notes %v, expected %v", result, expected)
-	}
-
-	for i, note := range result.Notes {
-		if note != expected.Notes[i] {
-			t.Errorf("Unexpected note %q at index %d, expected %q", note, i, expected.Notes[i])
-		}
-	}
+	assert.Equal(t, result.Notes, expected.Notes)
 }
 
 func setupDB(t *testing.T) *sqlx.DB {
@@ -66,9 +50,7 @@ func setupDB(t *testing.T) *sqlx.DB {
 	db := sqlx.MustConnect("sqlite3", ":memory:")
 	_, err := db.Exec(`CREATE TABLE test(id INTEGER NOT NULL, notes TEXT NOT NULL) STRICT;`)
 
-	if err != nil {
-		t.Fatalf("Couldn't setup db: %v", err)
-	}
+	require.NoError(t, err)
 
 	return db
 }

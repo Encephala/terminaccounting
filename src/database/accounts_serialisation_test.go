@@ -1,10 +1,11 @@
 package database
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupDBAccounts(t *testing.T) {
@@ -12,10 +13,7 @@ func setupDBAccounts(t *testing.T) {
 
 	DB = sqlx.MustConnect("sqlite3", ":memory:")
 	_, err := setupSchemaAccounts()
-
-	if err != nil {
-		t.Fatalf("Couldn't setup db: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestMarshalUnmarshalAccount(t *testing.T) {
@@ -30,62 +28,22 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 	}
 
 	insertedId, err := account.Insert()
-	if err != nil {
-		t.Fatalf("Couldn't insert into database: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if insertedId != account.Id {
-		t.Fatalf("Expected id of first inserted account to be %d, found %d", account.Id, insertedId)
-	}
+	assert.Equal(t, insertedId, account.Id)
 
 	rows, err := DB.Queryx(`SELECT * FROM accounts;`)
-	if err != nil {
-		t.Fatalf("Couldn't get rows from database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	var result Account
 	count := 0
 	for rows.Next() {
 		count++
 		err = rows.StructScan(&result)
-		if err != nil {
-			t.Errorf("Failed to scan: %v", err)
-		}
+		assert.NoError(t, err)
 	}
 
-	if count != 1 {
-		t.Errorf("Invalid number of rows %d found, expected 1", count)
-	}
+	assert.Equal(t, count, 1)
 
-	testAccountsEqual(t, result, account)
-}
-
-func testAccountsEqual(t *testing.T, actual, expected Account) {
-	t.Helper()
-
-	if actual.Id != expected.Id {
-		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
-	}
-
-	if actual.Name != expected.Name {
-		t.Errorf("Invalid name %q, expected %q", actual.Name, expected.Name)
-	}
-
-	if actual.Type != expected.Type {
-		t.Errorf("Invalid ID %q, expected %q", actual.Type, expected.Type)
-	}
-
-	if len(actual.BankNumbers) != len(expected.BankNumbers) {
-		t.Logf("Unequal bank numbers lengths %d and %d", len(actual.BankNumbers), len(expected.BankNumbers))
-	}
-	if !slices.Equal(actual.BankNumbers, expected.BankNumbers) {
-		t.Errorf("Actual bank numbers %v, expected %v", actual.BankNumbers, expected.BankNumbers)
-	}
-
-	if len(actual.Notes) != len(expected.Notes) {
-		t.Logf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
-	}
-	if !slices.Equal(actual.Notes, expected.Notes) {
-		t.Errorf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
-	}
+	assert.Equal(t, result, account)
 }

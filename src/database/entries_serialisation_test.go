@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupDBEntries(t *testing.T) {
@@ -13,14 +15,10 @@ func setupDBEntries(t *testing.T) {
 
 	DB = sqlx.MustConnect("sqlite3", ":memory:")
 	_, err := setupSchemaEntries()
-	if err != nil {
-		t.Fatalf("Couldn't setup db: %v", err)
-	}
+	require.NoError(t, err)
 
 	_, err = setupSchemaEntryRows()
-	if err != nil {
-		t.Fatalf("Couldn't setup db: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestMarshalUnmarshalEntry(t *testing.T) {
@@ -34,13 +32,10 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	}
 
 	time1, err := time.Parse(DATE_FORMAT, "1234-05-06")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
 	time2, err := time.Parse(DATE_FORMAT, "7890-01-02")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	// SQLITE autoincrements from 1
 	entryRows := []EntryRow{
@@ -67,124 +62,45 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	}
 
 	insertedId, err := entry.Insert(entryRows)
-	if err != nil {
-		t.Fatalf("Couldn't insert into database: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if insertedId != entry.Id {
-		t.Fatalf("Expected id of first inserted journal to be %d, found %d", entry.Id, insertedId)
-	}
+	assert.Equal(t, insertedId, entry.Id)
 
 	rows, err := DB.Queryx(`SELECT * FROM entries;`)
-	if err != nil {
-		t.Fatalf("Couldn't get rows from database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	var result Entry
 	count := 0
 	for rows.Next() {
 		count++
 		err = rows.StructScan(&result)
-		if err != nil {
-			t.Errorf("Failed to scan: %v", err)
-		}
+		assert.NoError(t, err)
 	}
 
-	if count != 1 {
-		t.Errorf("Invalid number of rows %d found, expected %d", count, 1)
-	}
+	assert.Equal(t, count, 1)
 
-	testEntriesEqual(t, result, entry)
+	assert.Equal(t, result, entry)
 
 	rowsEntryRow, err := DB.Queryx(`SELECT * FROM entryrows;`)
-	if err != nil {
-		t.Fatalf("Couldn't get rows from database: %v", err)
-	}
+	assert.NoError(t, err)
 
 	var row1, row2 EntryRow
 
 	rowsEntryRow.Next()
 	err = rowsEntryRow.StructScan(&row1)
-	if err != nil {
-		t.Errorf("Failed to scan: %v", err)
-	}
+	assert.NoError(t, err)
 
 	rowsEntryRow.Next()
 	err = rowsEntryRow.StructScan(&row2)
-	if err != nil {
-		t.Errorf("Failed to scan: %v", err)
-	}
+	assert.NoError(t, err)
 
 	// Check if more rows exist
 	count = 2
 	for rowsEntryRow.Next() {
 		count++
 	}
-	if count != 2 {
-		t.Errorf("Invalid number of rows %d found, expected %d", count, 2)
-	}
+	assert.Equal(t, count, 2)
 
-	testEntryRowsEqual(t, row1, entryRows[0])
-	testEntryRowsEqual(t, row2, entryRows[1])
-}
-
-func testEntriesEqual(t *testing.T, actual, expected Entry) {
-	t.Helper()
-
-	if actual.Id != expected.Id {
-		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
-	}
-
-	if actual.Journal != expected.Journal {
-		t.Errorf("Invalid Journal %d, expected %d", actual.Journal, expected.Journal)
-	}
-
-	if len(actual.Notes) != len(expected.Notes) {
-		t.Errorf("Unequal notes lengths %d and %d", len(actual.Notes), len(expected.Notes))
-		t.Logf("Actual notes %v, expected %v", actual.Notes, expected.Notes)
-	}
-
-	for i, note := range actual.Notes {
-		if note != expected.Notes[i] {
-			t.Errorf("Invalid note %q at index %d, expected %q", actual.Notes, i, expected.Notes)
-		}
-	}
-}
-
-func testEntryRowsEqual(t *testing.T, actual, expected EntryRow) {
-	t.Helper()
-
-	if actual.Id != expected.Id {
-		t.Errorf("Invalid ID %d, expected %d", actual.Id, expected.Id)
-	}
-
-	if actual.Entry != expected.Entry {
-		t.Errorf("Invalid Entry %d, expected %d", actual.Entry, expected.Entry)
-	}
-
-	if !time.Time(actual.Date).Equal(time.Time(expected.Date)) {
-		t.Errorf("Invalid Date %v, expected %v", actual.Date, expected.Date)
-	}
-
-	if actual.Ledger != expected.Ledger {
-		t.Errorf("Invalid Ledger %d, expected %d", actual.Ledger, expected.Ledger)
-	}
-
-	if (actual.Account == nil) != (expected.Account == nil) ||
-		(actual.Account != nil && expected.Account != nil && *actual.Account != *expected.Account) {
-		t.Errorf("Invalid Account %v, expected %v", actual.Account, expected.Account)
-	}
-
-	if (actual.Document == nil) != (expected.Document == nil) ||
-		(actual.Document != nil && expected.Document != nil && *actual.Document != *expected.Document) {
-		t.Errorf("Invalid Document %v, expected %v", actual.Document, expected.Document)
-	}
-
-	if actual.Value != expected.Value {
-		t.Errorf("Invalid Value %d, expected %d", actual.Value, expected.Value)
-	}
-
-	if actual.Reconciled != expected.Reconciled {
-		t.Errorf("Invalid Reconciled %v, expected %v", actual.Reconciled, expected.Reconciled)
-	}
+	assert.Equal(t, row1, entryRows[0])
+	assert.Equal(t, row2, entryRows[1])
 }
