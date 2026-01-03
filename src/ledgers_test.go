@@ -84,7 +84,7 @@ func TestCreateLedgerMsg(t *testing.T) {
 
 func TestCreateLedgerIntegration(t *testing.T) {
 	wrapper := initWrapper(t)
-	defer wrapper.Quit()
+	// defer wrapper.Quit()
 
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))

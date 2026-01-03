@@ -99,6 +99,7 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	for {
 		select {
 		case <-timeout:
+			tw.Quit()
 			tw.t.Fatalf("test timed out")
 			return nil
 
@@ -125,10 +126,7 @@ func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
 func (tw *TestWrapper) Quit() tea.Model {
 	tw.t.Helper()
 
-	tw.Lock()
-	defer tw.Unlock()
-
-	tw.program.Quit()
+	tw.Send(tea.QuitMsg{})
 
 	return tw.asyncModel.model
 }
