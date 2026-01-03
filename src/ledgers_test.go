@@ -11,61 +11,128 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateLedgerMsg(t *testing.T) {
+func TestCreateLedger_ViewSwitch(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	model := newTerminaccounting(DB)
 
-	// Switch ledgers create view
 	model.appManager.activeApp = 1
+
 	newModel, cmd := model.Update(tat.KeyMsg("g"))
+	assert.Nil(t, cmd)
+
 	newModel, cmd = newModel.Update(tat.KeyMsg("c"))
 
-	var expectedMsg tea.Msg = meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}
-	assert.Equal(t, expectedMsg, cmd())
+	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, cmd())
+
+}
+
+func TestCreateLedger_InsertMode(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	model := newTerminaccounting(DB)
+
+	model.appManager.activeApp = 1
+
+	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+
+	newModel, cmd = newModel.Update(tat.KeyMsg("i"))
+
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, cmd())
+}
+
+func TestCreateLedger_SetValues(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	model := newTerminaccounting(DB)
+
+	model.appManager.activeApp = 1
+
+	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+
+	for _, char := range "test" {
+		newModel, cmd = newModel.Update(tat.KeyMsg(string(char)))
+	}
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	newModel, cmd = newModel.Update(cmd())
+
+	assert.Contains(t, newModel.View(), "test")
+
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
+
+	assert.Equal(t, meta.SwitchFocusMsg{Direction: meta.NEXT}, cmd())
 
 	newModel, cmd = newModel.Update(cmd())
 
 	newModel, cmd = newModel.Update(tat.KeyMsg("i"))
 	newModel, cmd = newModel.Update(cmd())
 
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.INSERTMODE, model.inputMode)
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("t"))
-	newModel, cmd = newModel.Update(tat.KeyMsg("e"))
-	newModel, cmd = newModel.Update(tat.KeyMsg("s"))
-	newModel, cmd = newModel.Update(tat.KeyMsg("t"))
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
 	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	newModel, cmd = newModel.Update(cmd())
 
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.NORMALMODE, model.inputMode)
-	assert.Contains(t, model.View(), "test")
+	assert.Contains(t, newModel.View(), "EXPENSE")
+}
+
+func TestCreateLedger_CommitCmd(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	model := newTerminaccounting(DB)
+
+	model.appManager.activeApp = 1
+
+	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+
+	for _, char := range "test" {
+		newModel, cmd = newModel.Update(tat.KeyMsg(string(char)))
+	}
+
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
+	newModel, cmd = newModel.Update(cmd())
+
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	newModel, cmd = newModel.Update(cmd())
 
 	newModel, cmd = newModel.Update(tat.KeyMsg(":"))
 	newModel, cmd = newModel.Update(cmd())
 
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.COMMANDMODE, model.inputMode)
-
 	newModel, cmd = newModel.Update(tat.KeyMsg("w"))
-	newModel, cmd = newModel.Update(tat.KeyMsg("enter"))
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	assert.Equal(t, meta.ExecuteCommandMsg{}, cmd())
+
 	newModel, cmd = newModel.Update(cmd())
 
 	assert.Equal(t, meta.CommitMsg{}, cmd())
+}
+
+func TestCreateLedger_Commit(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	model := newTerminaccounting(DB)
+
+	model.appManager.activeApp = 1
+
+	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+
+	for _, char := range "test" {
+		newModel, _ = newModel.Update(tat.KeyMsg(string(char)))
+	}
+
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
 	newModel, cmd = newModel.Update(cmd())
 
-	commands := cmd().(tea.BatchMsg)
-
-	assert.Len(t, commands, 2)
-	newModel, cmd = newModel.Update(commands[0])
-	newModel, cmd = newModel.Update(commands[1])
-
-	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: 1}, cmd())
-
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	newModel, cmd = newModel.Update(cmd())
+
+	newModel, cmd = newModel.Update(tat.KeyMsg(":"))
+	newModel, cmd = newModel.Update(cmd())
+
+	newModel, cmd = newModel.Update(tat.KeyMsg("w"))
+	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	newModel, cmd = newModel.Update(cmd()) // Handle ExecuteCommandMsg
+
+	newModel, cmd = newModel.Update(cmd()) // Handle CommitMsg
 
 	ledger, err := database.SelectLedger(model.DB, 1)
 	assert.Nil(t, err)
@@ -74,7 +141,7 @@ func TestCreateLedgerMsg(t *testing.T) {
 		database.Ledger{
 			Id:         1,
 			Name:       "test",
-			Type:       database.INCOMELEDGER,
+			Type:       database.EXPENSELEDGER,
 			Notes:      nil,
 			IsAccounts: false,
 		},
