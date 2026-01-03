@@ -159,16 +159,20 @@ func (am *appManager) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, result...)
 }
 
-func (am *appManager) currentViewAllowsInsertMode() bool {
-	return am.apps[am.activeApp].CurrentViewAllowsInsertMode()
-}
-
 func (am *appManager) CurrentMotionSet() meta.MotionSet {
 	return am.apps[am.activeApp].CurrentMotionSet()
 }
 
 func (am *appManager) CurrentCommandSet() meta.CommandSet {
 	return am.apps[am.activeApp].CurrentCommandSet()
+}
+
+func (am *appManager) currentViewAllowsInsertMode() bool {
+	return am.apps[am.activeApp].CurrentViewAllowsInsertMode()
+}
+
+func (am *appManager) currentViewType() meta.ViewType {
+	return am.apps[am.activeApp].CurrentViewType()
 }
 
 func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {

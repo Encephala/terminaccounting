@@ -106,6 +106,10 @@ func (app *entriesApp) Type() meta.AppType {
 	return meta.ENTRIESAPP
 }
 
+func (app *entriesApp) CurrentViewType() meta.ViewType {
+	return app.currentView.Type()
+}
+
 func (app *entriesApp) Colour() lipgloss.Color {
 	return meta.ENTRIESCOLOUR
 }

@@ -89,3 +89,7 @@ func (mm *ModalManager) CurrentMotionSet() meta.MotionSet {
 func (mm *ModalManager) CurrentCommandSet() meta.CommandSet {
 	return mm.Modal.CommandSet()
 }
+
+func (mm *ModalManager) CurrentViewType() meta.ViewType {
+	return mm.Modal.Type()
+}

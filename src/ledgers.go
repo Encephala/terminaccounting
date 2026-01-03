@@ -97,6 +97,10 @@ func (app *ledgersApp) Type() meta.AppType {
 	return meta.LEDGERSAPP
 }
 
+func (app *ledgersApp) CurrentViewType() meta.ViewType {
+	return app.currentView.Type()
+}
+
 func (app *ledgersApp) Colour() lipgloss.Color {
 	return meta.LEDGERSCOLOUR
 }

@@ -97,6 +97,10 @@ func (app *journalsApp) Type() meta.AppType {
 	return meta.JOURNALSAPP
 }
 
+func (app *journalsApp) CurrentViewType() meta.ViewType {
+	return app.currentView.Type()
+}
+
 func (app *journalsApp) Colour() lipgloss.Color {
 	return meta.JOURNALSCOLOUR
 }

@@ -14,6 +14,8 @@ type App interface {
 	Name() string
 	Type() AppType
 
+	CurrentViewType() ViewType
+
 	Colour() lipgloss.Color
 
 	CurrentMotionSet() MotionSet

@@ -97,6 +97,10 @@ func (app *accountsApp) Type() meta.AppType {
 	return meta.ACCOUNTSAPP
 }
 
+func (app *accountsApp) CurrentViewType() meta.ViewType {
+	return app.currentView.Type()
+}
+
 func (app *accountsApp) Colour() lipgloss.Color {
 	return meta.ACCOUNTSCOLOUR
 }
