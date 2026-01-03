@@ -1,30 +1,20 @@
-package database
+package database_test
 
 import (
+	"terminaccounting/database"
+	tat "terminaccounting/tat"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func setupDBAccounts(t *testing.T) *sqlx.DB {
-	t.Helper()
-
-	DB := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaAccounts(DB)
-	require.NoError(t, err)
-
-	return DB
-}
-
 func TestMarshalUnmarshalAccount(t *testing.T) {
-	DB := setupDBAccounts(t)
+	DB := tat.SetupTestEnv(t)
 
-	account := Account{
+	account := database.Account{
 		Id:          1, // Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 		Name:        "testerino",
-		Type:        DEBTOR,
+		Type:        database.DEBTOR,
 		BankNumbers: []string{"NL02ABNA0123456789"},
 		Notes:       []string{"a note"},
 	}
@@ -37,7 +27,7 @@ func TestMarshalUnmarshalAccount(t *testing.T) {
 	rows, err := DB.Queryx(`SELECT * FROM accounts;`)
 	assert.NoError(t, err)
 
-	var result Account
+	var result database.Account
 	count := 0
 	for rows.Next() {
 		count++

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	tat "terminaccounting/tatesting"
+	tat "terminaccounting/tat"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"

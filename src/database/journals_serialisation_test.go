@@ -1,33 +1,22 @@
-package database
+package database_test
 
 import (
+	"terminaccounting/database"
+	"terminaccounting/tat"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func setupDBJournals(t *testing.T) *sqlx.DB {
-	t.Helper()
-
-	DB := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaJournals(DB)
-
-	require.NoError(t, err)
-
-	return DB
-}
-
 func TestMarshalUnmarshalJournal(t *testing.T) {
-	DB := setupDBJournals(t)
+	DB := tat.SetupTestEnv(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	journal := Journal{
+	journal := database.Journal{
 		Id:    1,
 		Name:  "test",
-		Type:  CASHFLOWJOURNAL,
+		Type:  database.CASHFLOWJOURNAL,
 		Notes: []string{"a note"},
 	}
 
@@ -39,7 +28,7 @@ func TestMarshalUnmarshalJournal(t *testing.T) {
 	rows, err := DB.Queryx(`SELECT * FROM journals;`)
 	assert.NoError(t, err)
 
-	var result Journal
+	var result database.Journal
 	count := 0
 	for rows.Next() {
 		count++

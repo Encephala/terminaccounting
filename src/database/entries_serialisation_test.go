@@ -1,50 +1,38 @@
-package database
+package database_test
 
 import (
+	"terminaccounting/database"
 	"terminaccounting/meta"
+	tat "terminaccounting/tat"
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupDBEntries(t *testing.T) *sqlx.DB {
-	t.Helper()
-
-	DB := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaEntries(DB)
-	require.NoError(t, err)
-
-	_, err = setupSchemaEntryRows(DB)
-	require.NoError(t, err)
-
-	return DB
-}
-
 func TestMarshalUnmarshalEntry(t *testing.T) {
-	DB := setupDBEntries(t)
+	DB := tat.SetupTestEnv(t)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	entry := Entry{
+	entry := database.Entry{
 		Id:      1,
 		Journal: 0,
 		Notes:   meta.Notes{},
 	}
 
-	time1, err := time.Parse(DATE_FORMAT, "1234-05-06")
+	time1, err := time.Parse(database.DATE_FORMAT, "1234-05-06")
 	require.NoError(t, err)
 
-	time2, err := time.Parse(DATE_FORMAT, "7890-01-02")
+	time2, err := time.Parse(database.DATE_FORMAT, "7890-01-02")
 	require.NoError(t, err)
 
 	// SQLITE autoincrements from 1
-	entryRows := []EntryRow{
+	entryRows := []database.EntryRow{
 		{
 			Id:         1,
 			Entry:      0,
-			Date:       Date(time1),
+			Date:       database.Date(time1),
 			Ledger:     0,
 			Account:    nil,
 			Document:   nil,
@@ -54,7 +42,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 		{
 			Id:         2,
 			Entry:      0,
-			Date:       Date(time2),
+			Date:       database.Date(time2),
 			Ledger:     1,
 			Account:    nil,
 			Document:   nil,
@@ -71,7 +59,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	rows, err := DB.Queryx(`SELECT * FROM entries;`)
 	assert.NoError(t, err)
 
-	var result Entry
+	var result database.Entry
 	count := 0
 	for rows.Next() {
 		count++
@@ -86,7 +74,7 @@ func TestMarshalUnmarshalEntry(t *testing.T) {
 	rowsEntryRow, err := DB.Queryx(`SELECT * FROM entryrows;`)
 	assert.NoError(t, err)
 
-	var row1, row2 EntryRow
+	var row1, row2 database.EntryRow
 
 	rowsEntryRow.Next()
 	err = rowsEntryRow.StructScan(&row1)

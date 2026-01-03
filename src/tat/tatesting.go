@@ -1,4 +1,4 @@
-package tatesting
+package tat
 
 import (
 	"fmt"

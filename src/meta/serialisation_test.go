@@ -2,7 +2,7 @@ package meta_test
 
 import (
 	"terminaccounting/meta"
-	tat "terminaccounting/tatesting"
+	tat "terminaccounting/tat"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"

@@ -1,29 +1,19 @@
-package database
+package database_test
 
 import (
+	"terminaccounting/database"
+	tat "terminaccounting/tat"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func setupDBLedgers(t *testing.T) *sqlx.DB {
-	t.Helper()
-
-	DB := sqlx.MustConnect("sqlite3", ":memory:")
-	_, err := setupSchemaLedgers(DB)
-	require.NoError(t, err)
-
-	return DB
-}
-
 func TestMarshalUnmarshalLedger(t *testing.T) {
-	DB := setupDBLedgers(t)
+	DB := tat.SetupTestEnv(t)
 
 	// Note: relying in sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
-	ledger := Ledger{
+	ledger := database.Ledger{
 		Id:   1,
 		Name: "test",
 		Type: "INCOME",
@@ -41,7 +31,7 @@ func TestMarshalUnmarshalLedger(t *testing.T) {
 	rows, err := DB.Queryx(`SELECT * FROM ledgers;`)
 	assert.NoError(t, err)
 
-	var result Ledger
+	var result database.Ledger
 	count := 0
 	for rows.Next() {
 		count++
