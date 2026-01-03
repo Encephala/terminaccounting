@@ -23,6 +23,7 @@ func main() {
 		slog.Error("Couldn't connect to database:", "error", err)
 		os.Exit(1)
 	}
+	defer DB.Close()
 
 	ta := newTerminaccounting(DB)
 
