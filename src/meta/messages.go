@@ -117,6 +117,9 @@ const (
 	CREATEVIEWTYPE ViewType = "CREATE VIEW"
 	UPDATEVIEWTYPE ViewType = "UPDATE VIEW"
 	DELETEVIEWTYPE ViewType = "DELETE VIEW"
+
+	TEXTMODALVIEWTYPE    ViewType = "TEXT MODAL"
+	BANKIMPORTERVIEWTYPE ViewType = "BANK IMPORTER"
 )
 
 // To switch to specific View (in specific App if provided)

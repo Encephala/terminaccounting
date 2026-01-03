@@ -68,6 +68,10 @@ func (dv *accountsDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *accountsDetailView) Type() meta.ViewType {
+	return meta.DETAILVIEWTYPE
+}
+
 func (dv *accountsDetailView) getDB() *sqlx.DB {
 	return dv.DB
 }
@@ -221,6 +225,10 @@ func (cv *accountsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (cv *accountsCreateView) View() string {
 	return genericMutateViewView(cv)
+}
+
+func (cv *accountsCreateView) Type() meta.ViewType {
+	return meta.CREATEVIEWTYPE
 }
 
 func (cv *accountsCreateView) AllowsInsertMode() bool {
@@ -391,6 +399,10 @@ func (uv *accountsUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *accountsUpdateView) Type() meta.ViewType {
+	return meta.UPDATEVIEWTYPE
+}
+
 func (uv *accountsUpdateView) AllowsInsertMode() bool {
 	return true
 }
@@ -504,6 +516,10 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *accountsDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *accountsDeleteView) Type() meta.ViewType {
+	return meta.DELETEVIEWTYPE
 }
 
 func (dv *accountsDeleteView) AllowsInsertMode() bool {

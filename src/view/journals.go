@@ -105,6 +105,10 @@ func (dv *journalsDetailsView) View() string {
 	return dv.listModel.View()
 }
 
+func (dv *journalsDetailsView) Type() meta.ViewType {
+	return meta.DETAILVIEWTYPE
+}
+
 func (dv *journalsDetailsView) AllowsInsertMode() bool {
 	return false
 }
@@ -243,6 +247,10 @@ func (cv *journalsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (cv *journalsCreateView) View() string {
 	return genericMutateViewView(cv)
+}
+
+func (cv *journalsCreateView) Type() meta.ViewType {
+	return meta.CREATEVIEWTYPE
 }
 
 func (cv *journalsCreateView) AllowsInsertMode() bool {
@@ -402,6 +410,10 @@ func (uv *journalsUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *journalsUpdateView) Type() meta.ViewType {
+	return meta.UPDATEVIEWTYPE
+}
+
 func (uv *journalsUpdateView) AllowsInsertMode() bool {
 	return true
 }
@@ -515,6 +527,10 @@ func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *journalsDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *journalsDeleteView) Type() meta.ViewType {
+	return meta.DELETEVIEWTYPE
 }
 
 func (dv *journalsDeleteView) AllowsInsertMode() bool {

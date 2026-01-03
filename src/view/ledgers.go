@@ -83,6 +83,10 @@ func (dv *ledgersDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *ledgersDetailView) Type() meta.ViewType {
+	return meta.DETAILVIEWTYPE
+}
+
 func (dv *ledgersDetailView) getDB() *sqlx.DB {
 	return dv.DB
 }
@@ -237,6 +241,10 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (cv *ledgersCreateView) View() string {
 	return genericMutateViewView(cv)
+}
+
+func (cv *ledgersCreateView) Type() meta.ViewType {
+	return meta.CREATEVIEWTYPE
 }
 
 func (cv *ledgersCreateView) AllowsInsertMode() bool {
@@ -408,6 +416,10 @@ func (uv *ledgersUpdateView) View() string {
 	return genericMutateViewView(uv)
 }
 
+func (uv *ledgersUpdateView) Type() meta.ViewType {
+	return meta.UPDATEVIEWTYPE
+}
+
 func (uv *ledgersUpdateView) AllowsInsertMode() bool {
 	return true
 }
@@ -515,6 +527,10 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (dv *ledgersDeleteView) View() string {
 	return genericDeleteViewView(dv)
+}
+
+func (dv *ledgersDeleteView) Type() meta.ViewType {
+	return meta.DELETEVIEWTYPE
 }
 
 func (dv *ledgersDeleteView) AllowsInsertMode() bool {

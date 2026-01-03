@@ -20,6 +20,8 @@ type View interface {
 	Update(tea.Msg) (View, tea.Cmd)
 	View() string
 
+	Type() meta.ViewType
+
 	AllowsInsertMode() bool
 	AcceptedModels() map[meta.ModelType]struct{}
 

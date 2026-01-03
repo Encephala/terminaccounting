@@ -381,6 +381,10 @@ func (bsi *bankImporter) View() string {
 	return result.String()
 }
 
+func (bsi *bankImporter) Type() meta.ViewType {
+	return meta.BANKIMPORTERVIEWTYPE
+}
+
 func (bsi *bankImporter) AllowsInsertMode() bool {
 	return true
 }

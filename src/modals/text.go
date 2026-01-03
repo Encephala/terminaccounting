@@ -77,6 +77,10 @@ func (tm *textModal) View() string {
 	return tm.viewport.View()
 }
 
+func (tm *textModal) Type() meta.ViewType {
+	return meta.TEXTMODALVIEWTYPE
+}
+
 func (tm *textModal) AllowsInsertMode() bool {
 	return false
 }

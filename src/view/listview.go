@@ -83,6 +83,10 @@ func (lv *ListView) View() string {
 	return lv.listModel.View()
 }
 
+func (lv *ListView) Type() meta.ViewType {
+	return meta.LISTVIEWTYPE
+}
+
 func (lv *ListView) AllowsInsertMode() bool {
 	return false
 }
