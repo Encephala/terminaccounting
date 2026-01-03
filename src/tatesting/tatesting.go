@@ -26,39 +26,6 @@ type TestWrapper struct {
 	doneChannel chan tea.Model
 }
 
-type asyncModel struct {
-	model tea.Model
-
-	mutex sync.Mutex
-}
-
-func (am *asyncModel) Init() tea.Cmd {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model.Init()
-}
-
-func (am *asyncModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	var cmd tea.Cmd
-	am.model, cmd = am.model.Update(message)
-
-	return am, cmd
-}
-
-func (am *asyncModel) View() string {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model.View()
-}
-
-func (am *asyncModel) getCurrentModel() tea.Model {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model
-}
-
 func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 	asyncModel := &asyncModel{model: model}
 
@@ -84,6 +51,10 @@ func (tw *TestWrapper) Send(messages ...tea.Msg) {
 	for _, message := range messages {
 		tw.program.Send(message)
 	}
+}
+
+func (tw *TestWrapper) LastMessge() tea.Msg {
+	return tw.asyncModel.lastMessage
 }
 
 func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
@@ -115,6 +86,41 @@ func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
 
 	finalModel := <-tw.doneChannel
 	return finalModel.(*asyncModel).model
+}
+
+type asyncModel struct {
+	model       tea.Model
+	lastMessage tea.Msg
+
+	mutex sync.Mutex
+}
+
+func (am *asyncModel) Init() tea.Cmd {
+	am.mutex.Lock()
+	defer am.mutex.Unlock()
+	return am.model.Init()
+}
+
+func (am *asyncModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	am.mutex.Lock()
+	defer am.mutex.Unlock()
+	var cmd tea.Cmd
+	am.lastMessage = message
+	am.model, cmd = am.model.Update(message)
+
+	return am, cmd
+}
+
+func (am *asyncModel) View() string {
+	am.mutex.Lock()
+	defer am.mutex.Unlock()
+	return am.model.View()
+}
+
+func (am *asyncModel) getCurrentModel() tea.Model {
+	am.mutex.Lock()
+	defer am.mutex.Unlock()
+	return am.model
 }
 
 func KeyMsg(input string) tea.KeyMsg {
