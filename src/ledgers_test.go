@@ -11,7 +11,7 @@ import (
 )
 
 func TestCreateLedgerMsg(t *testing.T) {
-	DB := tat.SetupTestDB(t)
+	DB := tat.SetupTestEnv(t)
 	model := newTerminaccounting(DB)
 
 	// Switch ledgers create view

@@ -16,7 +16,7 @@ import (
 func initWrapper(t *testing.T) tatesting.TestWrapper {
 	t.Helper()
 
-	DB := tat.SetupTestDB(t)
+	DB := tat.SetupTestEnv(t)
 
 	setUp, err := database.DatabaseTableIsSetUp(DB, "ledgers")
 	require.Nil(t, err)
@@ -58,7 +58,7 @@ func adaptedWaitQuit(wrapper tat.TestWrapper, condition func(*terminaccounting) 
 }
 
 func TestSwitchModesMsg(t *testing.T) {
-	DB := tat.SetupTestDB(t)
+	DB := tat.SetupTestEnv(t)
 	model := newTerminaccounting(DB)
 
 	newModel, cmd := model.Update(tat.KeyMsg("i"))
@@ -105,7 +105,7 @@ func TestSwitchModesMsg(t *testing.T) {
 }
 
 func TestSwitchAppMsg(t *testing.T) {
-	DB := tat.SetupTestDB(t)
+	DB := tat.SetupTestEnv(t)
 	model := newTerminaccounting(DB)
 
 	newModel, cmd := model.Update(tat.KeyMsg("g"))

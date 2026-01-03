@@ -10,7 +10,7 @@ import (
 )
 
 func TestMarshalUnmarshalNotes(t *testing.T) {
-	db := tat.SetupTestDB(t)
+	db := tat.SetupTestEnv(t)
 
 	_, err := db.Exec(`CREATE TABLE test(id INTEGER NOT NULL, notes TEXT NOT NULL) STRICT;`)
 	assert.NoError(t, err)

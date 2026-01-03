@@ -1,6 +1,7 @@
 package tatesting
 
 import (
+	"log/slog"
 	"sync"
 	"terminaccounting/database"
 	"testing"
@@ -11,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func SetupTestDB(t *testing.T) *sqlx.DB {
+func SetupTestEnv(t *testing.T) *sqlx.DB {
 	t.Helper()
+
+	slog.SetLogLoggerLevel(slog.LevelWarn)
 
 	db := sqlx.MustConnect("sqlite3", ":memory:")
 	err := database.InitSchemas(db)
