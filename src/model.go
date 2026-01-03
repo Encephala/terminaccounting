@@ -430,7 +430,6 @@ func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {
 }
 
 func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting, tea.Cmd) {
-	slog.Debug("handling view switch", "message", message)
 	switch message := message.(type) {
 	case meta.SwitchAppViewMsg:
 		// This is always targeted at apps
