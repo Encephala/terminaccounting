@@ -103,7 +103,7 @@ func TestCreateLedgerIntegration(t *testing.T) {
 
 	wrapper.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-	model := adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.NORMALMODE
 	})
 
@@ -120,7 +120,7 @@ func TestCreateLedgerIntegration(t *testing.T) {
 	})
 
 	wrapper.Send(tat.KeyMsg("enter"))
-	model = adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	model := adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
 	})
 
