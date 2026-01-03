@@ -150,7 +150,7 @@ func TestCreateLedger_Commit(t *testing.T) {
 }
 
 func TestCreateLedger(t *testing.T) {
-	wrapper := initWrapper(t)
+	wrapper := initWrapper(t).RunAsync()
 
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
