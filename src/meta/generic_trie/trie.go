@@ -1,7 +1,5 @@
 package vim
 
-import "fmt"
-
 type trie[K comparable, V comparable] struct {
 	children []*node[K, V]
 }
@@ -83,8 +81,7 @@ func (t *trie[K, V]) ContainsPath(key []K) bool {
 	return result
 }
 func (n *node[K, V]) containsPath(key []K) bool {
-	for i, k := range key {
-		fmt.Printf("Iterated %d, now %v\n", i, n)
+	for _, k := range key {
 		if i, ok := n.getChild(k); !ok {
 			return false
 		} else {
@@ -135,12 +132,10 @@ func (n *node[K, V]) insert(key []K, value V) (changed bool) {
 
 			if isLastIteration {
 				if !n.isLeaf {
-					fmt.Println("true because not leaf")
 					n.isLeaf = true
 					n.value = value
 					changed = true
 				} else if n.value != value {
-					fmt.Println("true because value doesn't match")
 					n.value = value
 					changed = true
 				}
