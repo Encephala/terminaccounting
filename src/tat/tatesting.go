@@ -35,7 +35,7 @@ type TestWrapper struct {
 	program    *tea.Program
 	asyncModel *asyncModel
 
-	doneChannel chan tea.Model
+	runtimeErrChannel chan error
 }
 
 func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
@@ -43,10 +43,12 @@ func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 
 	program := tea.NewProgram(asyncModel, tea.WithoutRenderer())
 
-	doneChannel := make(chan tea.Model)
+	// Buffered channel to make sure no goroutines leak in weird situations,
+	// though I don't believe that can ever happen
+	runtimeErrChannel := make(chan error, 1)
 	go func() {
-		final, _ := program.Run()
-		doneChannel <- final
+		_, finalErr := program.Run()
+		runtimeErrChannel <- finalErr
 	}()
 
 	return TestWrapper{
@@ -55,7 +57,7 @@ func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 		program:    program,
 		asyncModel: asyncModel,
 
-		doneChannel: doneChannel,
+		runtimeErrChannel: runtimeErrChannel,
 	}
 }
 
@@ -104,6 +106,9 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 			if model, ok := checkConditionFn(); ok {
 				return model
 			}
+
+		case err := <-tw.runtimeErrChannel:
+			tw.t.Fatalf("program runtime error: %q", err)
 		}
 	}
 }
@@ -120,10 +125,12 @@ func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
 func (tw *TestWrapper) Quit() tea.Model {
 	tw.t.Helper()
 
+	tw.Lock()
+	defer tw.Unlock()
+
 	tw.program.Quit()
 
-	finalModel := <-tw.doneChannel
-	return finalModel.(*asyncModel).model
+	return tw.asyncModel.model
 }
 
 type asyncModel struct {
