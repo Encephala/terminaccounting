@@ -4,7 +4,6 @@ import (
 	"errors"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	"terminaccounting/tatesting"
 	tat "terminaccounting/tatesting"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func initWrapper(t *testing.T) tatesting.TestWrapper {
+func initWrapper(t *testing.T) *tat.TestWrapper {
 	t.Helper()
 
 	DB := tat.SetupTestEnv(t)
@@ -38,10 +37,13 @@ func initWrapper(t *testing.T) tatesting.TestWrapper {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.InitIntegrationTest(t, newTerminaccounting(DB))
+	result := tat.InitIntegrationTest(t, newTerminaccounting(DB))
+	return &result
 }
 
-func adaptedWait(wrapper tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+	t.Helper()
+
 	genericCondition := func(m tea.Model) bool {
 		return condition(m.(*terminaccounting))
 	}
@@ -49,7 +51,9 @@ func adaptedWait(wrapper tat.TestWrapper, condition func(*terminaccounting) bool
 	return wrapper.Wait(genericCondition).(*terminaccounting)
 }
 
-func adaptedWaitQuit(wrapper tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+func adaptedWaitQuit(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+	t.Helper()
+
 	genericCondition := func(m tea.Model) bool {
 		return condition(m.(*terminaccounting))
 	}
@@ -104,54 +108,41 @@ func TestSwitchModesMsg(t *testing.T) {
 	assert.True(t, model.currentCommandIsSearch)
 }
 
-func TestSwitchAppMsg(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
-
-	newModel, cmd := model.Update(tat.KeyMsg("g"))
-	model = newModel.(*terminaccounting)
-
-	assert.Nil(t, cmd)
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("t"))
-
-	expectedMsg := meta.SwitchTabMsg{Direction: meta.NEXT}
-	assert.Equal(t, expectedMsg, cmd())
-
-	newModel, cmd = newModel.Update(cmd())
-	model = newModel.(*terminaccounting)
-
-	assert.Equal(t, 1, model.appManager.activeApp)
-}
-
 func TestSwitchApp(t *testing.T) {
 	wrapper := initWrapper(t)
+	defer wrapper.Quit()
 
 	// Next tab
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 
-	model := adaptedWait(wrapper, func(ta *terminaccounting) bool {
+	model := adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 1
 	})
 
+	wrapper.Lock()
 	assert.Equal(t, 1, model.appManager.activeApp)
+	wrapper.Unlock()
 
 	// Wrap tabs backwards
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
 
-	model = adaptedWait(wrapper, func(ta *terminaccounting) bool {
+	model = adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 3
 	})
 
+	wrapper.Lock()
 	assert.Equal(t, 3, model.appManager.activeApp)
+	wrapper.Unlock()
 
 	// Wrap tabs forwards
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 
-	model = adaptedWait(wrapper, func(ta *terminaccounting) bool {
+	model = adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 0
 	})
 
+	wrapper.Lock()
 	assert.Equal(t, 0, model.appManager.activeApp)
+	wrapper.Unlock()
 }

@@ -1,6 +1,7 @@
 package tatesting
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 	"terminaccounting/database"
@@ -17,12 +18,14 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 
 	slog.SetLogLoggerLevel(slog.LevelWarn)
 
-	db := sqlx.MustConnect("sqlite3", ":memory:")
-	err := database.InitSchemas(db)
+	// Ensure that each connection *within each test* uses the same in-memory database.
+	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()))
+
+	err := database.InitSchemas(DB)
 
 	require.Nil(t, err)
 
-	return db
+	return DB
 }
 
 type TestWrapper struct {
@@ -65,9 +68,30 @@ func (tw *TestWrapper) LastMessge() tea.Msg {
 	return tw.asyncModel.lastMessage
 }
 
+func (tw *TestWrapper) Lock() {
+	tw.asyncModel.mutex.Lock()
+}
+
+func (tw *TestWrapper) Unlock() {
+	tw.asyncModel.mutex.Unlock()
+}
+
 func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
-	ticker := time.NewTicker(time.Millisecond * 50)
-	timeout := time.After(time.Second * 2)
+	tw.t.Helper()
+
+	ticker := time.NewTicker(time.Millisecond * 1)
+	timeout := time.After(time.Second * 1)
+
+	checkConditionFn := func() (tea.Model, bool) {
+		tw.asyncModel.mutex.Lock()
+		defer tw.asyncModel.mutex.Unlock()
+
+		if condition(tw.asyncModel.model) {
+			return tw.asyncModel.model, true
+		}
+
+		return nil, false
+	}
 
 	for {
 		select {
@@ -76,19 +100,24 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 			return nil
 
 		case <-ticker.C:
-			currentModel := tw.asyncModel.getCurrentModel()
-			if !(condition(currentModel)) {
-				continue
+			if model, ok := checkConditionFn(); ok {
+				return model
 			}
-
-			return currentModel
 		}
 	}
 }
 
 // Waits for the provided condition to be met, then quits the program, returning the final program state
 func (tw *TestWrapper) WaitQuit(condition func(tea.Model) bool) tea.Model {
+	tw.t.Helper()
+
 	tw.Wait(condition)
+
+	return tw.Quit()
+}
+
+func (tw *TestWrapper) Quit() tea.Model {
+	tw.t.Helper()
 
 	tw.program.Quit()
 
@@ -112,8 +141,10 @@ func (am *asyncModel) Init() tea.Cmd {
 func (am *asyncModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	var cmd tea.Cmd
+
 	am.lastMessage = message
+
+	var cmd tea.Cmd
 	am.model, cmd = am.model.Update(message)
 
 	return am, cmd
@@ -123,12 +154,6 @@ func (am *asyncModel) View() string {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
 	return am.model.View()
-}
-
-func (am *asyncModel) getCurrentModel() tea.Model {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model
 }
 
 func KeyMsg(input string) tea.KeyMsg {
