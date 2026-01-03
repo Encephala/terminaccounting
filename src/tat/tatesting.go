@@ -22,6 +22,7 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	// Ensure that each connection *within each test* uses the same in-memory database.
 	id := fmt.Sprintf("%s-%s", t.Name(), time.Now().String())
 	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", id))
+	t.Cleanup(func() { DB.Close() })
 
 	err := database.InitSchemas(DB)
 
