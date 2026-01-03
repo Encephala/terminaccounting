@@ -74,7 +74,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 
 		if _, ok := acceptedModels[message.Model]; !ok {
 			appName := am.appTypeToApp(message.TargetApp).Name()
-			viewType := am.currentViewType()
+			viewType := app.CurrentViewType()
 			message := fmt.Sprintf("Mismatch between target app %q (%q) and loaded model:\n%#v", appName, viewType, message)
 			panic(message)
 		}
