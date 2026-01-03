@@ -37,8 +37,7 @@ func initWrapper(t *testing.T) *tat.TestWrapper {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	result := tat.InitIntegrationTest(t, newTerminaccounting(DB))
-	return &result
+	return tat.InitIntegrationTest(t, newTerminaccounting(DB))
 }
 
 func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
@@ -115,7 +114,6 @@ func TestSwitchModesMsg(t *testing.T) {
 
 func TestSwitchApp(t *testing.T) {
 	wrapper := initWrapper(t)
-	defer wrapper.Quit()
 
 	// Next tab
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))

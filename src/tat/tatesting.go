@@ -39,7 +39,7 @@ type TestWrapper struct {
 	runtimeErrChannel chan error
 }
 
-func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
+func InitIntegrationTest(t *testing.T, model tea.Model) *TestWrapper {
 	asyncModel := &asyncModel{model: model}
 
 	program := tea.NewProgram(asyncModel, tea.WithoutRenderer())
@@ -58,7 +58,7 @@ func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 	// I see no easy way
 	time.Sleep(time.Millisecond * 1)
 
-	return TestWrapper{
+	wrapper := &TestWrapper{
 		t: t,
 
 		program:    program,
@@ -66,6 +66,10 @@ func InitIntegrationTest(t *testing.T, model tea.Model) TestWrapper {
 
 		runtimeErrChannel: runtimeErrChannel,
 	}
+
+	t.Cleanup(func() { wrapper.Quit() })
+
+	return wrapper
 }
 
 func (tw *TestWrapper) Send(messages ...tea.Msg) {
