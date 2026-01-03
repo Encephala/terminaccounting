@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -71,11 +72,11 @@ func (tw *TestWrapper) LastMessge() tea.Msg {
 	return tw.asyncModel.lastMessage
 }
 
-func (tw *TestWrapper) Lock() {
+// Small convenience methods
+func (tw *TestWrapper) lock() {
 	tw.asyncModel.mutex.Lock()
 }
-
-func (tw *TestWrapper) Unlock() {
+func (tw *TestWrapper) unlock() {
 	tw.asyncModel.mutex.Unlock()
 }
 
@@ -129,6 +130,25 @@ func (tw *TestWrapper) Quit() tea.Model {
 	tw.Send(tea.QuitMsg{})
 
 	return tw.asyncModel.model
+}
+
+func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) interface{}, expected interface{}) {
+	tw.t.Helper()
+
+	tw.lock()
+	defer tw.unlock()
+
+	value := actualGetter(tw.asyncModel.model)
+	assert.Equal(tw.t, expected, value)
+}
+
+func (tw *TestWrapper) AssertViewContains(expected string) {
+	tw.t.Helper()
+
+	tw.lock()
+	defer tw.unlock()
+
+	assert.Contains(tw.t, tw.asyncModel.model.View(), expected)
 }
 
 type asyncModel struct {

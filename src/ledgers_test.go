@@ -84,7 +84,7 @@ func TestCreateLedgerMsg(t *testing.T) {
 
 func TestCreateLedgerIntegration(t *testing.T) {
 	wrapper := initWrapper(t)
-	// defer wrapper.Quit()
+	defer wrapper.Quit()
 
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
@@ -107,9 +107,7 @@ func TestCreateLedgerIntegration(t *testing.T) {
 		return ta.inputMode == meta.NORMALMODE
 	})
 
-	wrapper.Lock()
-	assert.Contains(t, model.View(), "test")
-	wrapper.Unlock()
+	wrapper.AssertViewContains("test")
 
 	wrapper.Send(tat.KeyMsg(":"))
 	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {

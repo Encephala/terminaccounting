@@ -51,14 +51,19 @@ func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*termina
 	return wrapper.Wait(genericCondition).(*terminaccounting)
 }
 
-func adaptedWaitQuit(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+func adaptedAssertEqual(
+	t *testing.T,
+	wrapper *tat.TestWrapper,
+	actualGetter func(*terminaccounting) interface{},
+	expected interface{},
+) {
 	t.Helper()
 
-	genericCondition := func(m tea.Model) bool {
-		return condition(m.(*terminaccounting))
+	genericGetter := func(m tea.Model) interface{} {
+		return actualGetter(m.(*terminaccounting))
 	}
 
-	return wrapper.WaitQuit(genericCondition).(*terminaccounting)
+	wrapper.AssertEqual(genericGetter, expected)
 }
 
 func TestSwitchModesMsg(t *testing.T) {
@@ -115,34 +120,34 @@ func TestSwitchApp(t *testing.T) {
 	// Next tab
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 
-	model := adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 1
 	})
 
-	wrapper.Lock()
-	assert.Equal(t, 1, model.appManager.activeApp)
-	wrapper.Unlock()
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+		return model.appManager.activeApp
+	}, 1)
 
 	// Wrap tabs backwards
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
 
-	model = adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 3
 	})
 
-	wrapper.Lock()
-	assert.Equal(t, 3, model.appManager.activeApp)
-	wrapper.Unlock()
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+		return model.appManager.activeApp
+	}, 3)
 
 	// Wrap tabs forwards
 	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
 
-	model = adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 0
 	})
 
-	wrapper.Lock()
-	assert.Equal(t, 0, model.appManager.activeApp)
-	wrapper.Unlock()
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+		return model.appManager.activeApp
+	}, 0)
 }
