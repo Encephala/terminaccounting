@@ -19,7 +19,8 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	slog.SetLogLoggerLevel(slog.LevelWarn)
 
 	// Ensure that each connection *within each test* uses the same in-memory database.
-	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()))
+	id := fmt.Sprintf("%s-%s", t.Name(), time.Now().String())
+	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", id))
 
 	err := database.InitSchemas(DB)
 
