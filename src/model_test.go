@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/tatesting"
 	tat "terminaccounting/tatesting"
@@ -9,12 +10,34 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func initWrapper(t *testing.T) tatesting.TestWrapper {
 	t.Helper()
 
 	DB := tat.SetupTestDB(t)
+
+	setUp, err := database.DatabaseTableIsSetUp(DB, "ledgers")
+	require.Nil(t, err)
+	require.True(t, setUp)
+
+	setUp, err = database.DatabaseTableIsSetUp(DB, "accounts")
+	require.Nil(t, err)
+	require.True(t, setUp)
+
+	setUp, err = database.DatabaseTableIsSetUp(DB, "entries")
+	require.Nil(t, err)
+	require.True(t, setUp)
+
+	setUp, err = database.DatabaseTableIsSetUp(DB, "entryrows")
+	require.Nil(t, err)
+	require.True(t, setUp)
+
+	setUp, err = database.DatabaseTableIsSetUp(DB, "journals")
+	require.Nil(t, err)
+	require.True(t, setUp)
+
 	return tat.InitIntegrationTest(t, newTerminaccounting(DB))
 }
 

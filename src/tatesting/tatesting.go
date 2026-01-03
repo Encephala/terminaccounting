@@ -2,17 +2,22 @@ package tatesting
 
 import (
 	"sync"
+	"terminaccounting/database"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/require"
 )
 
 func SetupTestDB(t *testing.T) *sqlx.DB {
 	t.Helper()
 
 	db := sqlx.MustConnect("sqlite3", ":memory:")
+	err := database.InitSchemas(db)
+
+	require.Nil(t, err)
 
 	return db
 }
