@@ -186,9 +186,7 @@ func (tw *TestWrapper) unlock() {
 	tw.runtimeInfo.mutex.Unlock()
 }
 
-func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
-	// TODO: Should this return the model? feels like some weird coupling,
-	// maybe returning the model should be a separate function
+func (tw *TestWrapper) Wait(condition func(tea.Model) bool) {
 	tw.t.Helper()
 
 	if tw.runtimeInfo == nil {
@@ -201,14 +199,13 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	for {
 		select {
 		case <-ticker.C:
-			if model, ok := tw.checkCondition(condition); ok {
-				return model
+			if tw.checkCondition(condition) {
+				return
 			}
 
 		case <-timeout:
 			tw.Send(tea.QuitMsg{})
 			tw.t.Fatalf("test timed out")
-			return nil
 
 		case err := <-tw.runtimeInfo.runtimeErrChannel:
 			tw.t.Fatalf("program runtime error: %q", err)
@@ -216,16 +213,13 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	}
 }
 
-func (tw *TestWrapper) checkCondition(condition func(tea.Model) bool) (tea.Model, bool) {
+func (tw *TestWrapper) checkCondition(condition func(tea.Model) bool) bool {
 	tw.lock()
 	defer tw.unlock()
 
 	innerModel := tw.model.(*asyncModel).model
-	if condition(innerModel) {
-		return innerModel, true
-	}
 
-	return nil, false
+	return condition(innerModel)
 }
 
 func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected any) {

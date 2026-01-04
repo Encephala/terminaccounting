@@ -41,14 +41,14 @@ func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
 	return tat.NewTestWrapper(t, newTerminaccounting(DB)), DB
 }
 
-func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
+func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) {
 	t.Helper()
 
 	genericCondition := func(m tea.Model) bool {
 		return condition(m.(*terminaccounting))
 	}
 
-	return wrapper.Wait(genericCondition).(*terminaccounting)
+	wrapper.Wait(genericCondition)
 }
 
 func adaptedAssertEqual(
