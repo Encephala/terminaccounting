@@ -93,7 +93,7 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 		mutex: &asyncModel.mutex,
 	}
 
-	tw.t.Cleanup(func() { slog.Warn("cleaning up fam"); tw.Quit() })
+	tw.t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
 
 	return tw
 }
@@ -174,7 +174,7 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	for {
 		select {
 		case <-timeout:
-			tw.Quit()
+			tw.Send(tea.QuitMsg{})
 			tw.t.Fatalf("test timed out")
 			return nil
 
@@ -187,14 +187,6 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 			tw.t.Fatalf("program runtime error: %q", err)
 		}
 	}
-}
-
-func (tw *TestWrapper) Quit() tea.Model {
-	tw.t.Helper()
-
-	tw.Send(tea.QuitMsg{})
-
-	return tw.model
 }
 
 func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected any) {
