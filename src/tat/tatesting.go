@@ -44,6 +44,8 @@ type TestWrapper struct {
 	model tea.Model
 
 	runtimeInfo *runtimeInfo
+
+	lastCmdResults []tea.Msg
 }
 
 func NewTestWrapper(t *testing.T, model tea.Model) *TestWrapper {
@@ -96,31 +98,39 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 	return tw
 }
 
-func (tw *TestWrapper) Send(messages ...tea.Msg) *[]tea.Msg {
+func (tw *TestWrapper) Send(messages ...tea.Msg) {
 	if tw.runtimeInfo == nil {
-		var returnedMessages []tea.Msg
+		// Reset lastMessages
+		tw.lastCmdResults = make([]tea.Msg, 0)
 
 		for _, message := range messages {
-			// Simulate runtime
 			var cmd tea.Cmd
 			tw.model, cmd = tw.model.Update(message)
 
+			// Simulate runtime handling the cmds
 			// TODO: Does this handle Batch?
 			for cmd != nil {
 				msg := cmd()
-				returnedMessages = append(returnedMessages, msg)
+				tw.lastCmdResults = append(tw.lastCmdResults, msg)
 				tw.model, cmd = tw.model.Update(msg)
 			}
 		}
 
-		return &returnedMessages
+		return
 	}
 
 	for _, message := range messages {
 		tw.runtimeInfo.program.Send(message)
 	}
+}
 
-	return nil
+func (tw *TestWrapper) GetLastCmdResults() []tea.Msg {
+	// tw.lastMessages is only (can only be) maintained if running synchronously
+	if tw.runtimeInfo != nil {
+		panic("TestWrapper is running synchronously, can't get last messages")
+	}
+
+	return tw.lastCmdResults
 }
 
 // Small convenience methods

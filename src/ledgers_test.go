@@ -13,23 +13,26 @@ import (
 
 func TestCreateLedger_ViewSwitch(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	wrapper := tat.NewTestWrapper(t, newTerminaccounting(DB)).
+	tw := tat.NewTestWrapper(t, newTerminaccounting(DB)).
 		SwitchTab(meta.NEXT)
 
-	messages := *wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
+	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
+
+	messages := tw.GetLastCmdResults()
 
 	assert.Len(t, messages, 1)
 	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, messages[0])
-
 }
 
 func TestCreateLedger_InsertMode(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	wrapper := tat.NewTestWrapper(t, newTerminaccounting(DB)).
+	tw := tat.NewTestWrapper(t, newTerminaccounting(DB)).
 		SwitchTab(meta.NEXT).
 		SwitchView(meta.CREATEVIEWTYPE)
 
-	messages := *wrapper.Send(tat.KeyMsg("i"))
+	tw.Send(tat.KeyMsg("i"))
+
+	messages := tw.GetLastCmdResults()
 
 	assert.Len(t, messages, 1)
 	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, messages[0])
@@ -146,43 +149,43 @@ func TestCreateLedger_Commit(t *testing.T) {
 }
 
 func TestCreateLedger(t *testing.T) {
-	wrapper := initWrapper(t).RunAsync()
+	tw := initWrapper(t).RunAsync()
 
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
+	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
+	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
 
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 1 && ta.appManager.currentViewAllowsInsertMode()
 	})
 
-	wrapper.Send(tat.KeyMsg("i"))
+	tw.Send(tat.KeyMsg("i"))
 
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.INSERTMODE
 	})
 
-	wrapper.Send(tat.KeyMsg("t"), tat.KeyMsg("e"), tat.KeyMsg("s"), tat.KeyMsg("t"))
+	tw.Send(tat.KeyMsg("t"), tat.KeyMsg("e"), tat.KeyMsg("s"), tat.KeyMsg("t"))
 
-	wrapper.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.NORMALMODE
 	})
 
-	wrapper.AssertViewContains("test")
+	tw.AssertViewContains("test")
 
-	wrapper.Send(tat.KeyMsg(":"))
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	tw.Send(tat.KeyMsg(":"))
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.COMMANDMODE
 	})
 
-	wrapper.Send(tat.KeyMsg("w"))
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	tw.Send(tat.KeyMsg("w"))
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return strings.Contains(ta.View(), ":w")
 	})
 
-	wrapper.Send(tat.KeyMsg("enter"))
-	model := adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+	tw.Send(tat.KeyMsg("enter"))
+	model := adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
 	})
 
