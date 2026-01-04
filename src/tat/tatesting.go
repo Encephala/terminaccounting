@@ -96,20 +96,31 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 	return tw
 }
 
-func (tw *TestWrapper) Send(messages ...tea.Msg) {
-	for _, message := range messages {
-		if tw.runtimeInfo == nil {
+func (tw *TestWrapper) Send(messages ...tea.Msg) *[]tea.Msg {
+	if tw.runtimeInfo == nil {
+		var returnedMessages []tea.Msg
+
+		for _, message := range messages {
 			// Simulate runtime
 			var cmd tea.Cmd
 			tw.model, cmd = tw.model.Update(message)
 
+			// TODO: Does this handle Batch?
 			for cmd != nil {
-				tw.model, cmd = tw.model.Update(cmd())
+				msg := cmd()
+				returnedMessages = append(returnedMessages, msg)
+				tw.model, cmd = tw.model.Update(msg)
 			}
-		} else {
-			tw.runtimeInfo.program.Send(message)
 		}
+
+		return &returnedMessages
 	}
+
+	for _, message := range messages {
+		tw.runtimeInfo.program.Send(message)
+	}
+
+	return nil
 }
 
 // Small convenience methods
@@ -176,7 +187,7 @@ func (tw *TestWrapper) Quit() tea.Model {
 	return tw.model
 }
 
-func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) interface{}, expected interface{}) {
+func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected any) {
 	tw.t.Helper()
 
 	if tw.runtimeInfo == nil {

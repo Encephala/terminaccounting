@@ -13,30 +13,26 @@ import (
 
 func TestCreateLedger_ViewSwitch(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	wrapper := tat.NewTestWrapper(t, newTerminaccounting(DB)).
+		SwitchTab(meta.NEXT)
 
-	model.appManager.activeApp = 1
+	messages := *wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
 
-	newModel, cmd := model.Update(tat.KeyMsg("g"))
-	assert.Nil(t, cmd)
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("c"))
-
-	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, cmd())
+	assert.Len(t, messages, 1)
+	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, messages[0])
 
 }
 
 func TestCreateLedger_InsertMode(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	wrapper := tat.NewTestWrapper(t, newTerminaccounting(DB)).
+		SwitchTab(meta.NEXT).
+		SwitchView(meta.CREATEVIEWTYPE)
 
-	model.appManager.activeApp = 1
+	messages := *wrapper.Send(tat.KeyMsg("i"))
 
-	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("i"))
-
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, cmd())
+	assert.Len(t, messages, 1)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, messages[0])
 }
 
 func TestCreateLedger_SetValues(t *testing.T) {

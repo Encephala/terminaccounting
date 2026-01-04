@@ -53,12 +53,12 @@ func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*termina
 func adaptedAssertEqual(
 	t *testing.T,
 	wrapper *tat.TestWrapper,
-	actualGetter func(*terminaccounting) interface{},
-	expected interface{},
+	actualGetter func(*terminaccounting) any,
+	expected any,
 ) {
 	t.Helper()
 
-	genericGetter := func(m tea.Model) interface{} {
+	genericGetter := func(m tea.Model) any {
 		return actualGetter(m.(*terminaccounting))
 	}
 
@@ -122,7 +122,7 @@ func TestSwitchApp(t *testing.T) {
 		return ta.appManager.activeApp == 1
 	})
 
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
 		return model.appManager.activeApp
 	}, 1)
 
@@ -134,7 +134,7 @@ func TestSwitchApp(t *testing.T) {
 		return ta.appManager.activeApp == 3
 	})
 
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
 		return model.appManager.activeApp
 	}, 3)
 
@@ -145,7 +145,7 @@ func TestSwitchApp(t *testing.T) {
 		return ta.appManager.activeApp == 0
 	})
 
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) interface{} {
+	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
 		return model.appManager.activeApp
 	}, 0)
 }
