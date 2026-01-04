@@ -100,20 +100,13 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 
 func (tw *TestWrapper) Send(messages ...tea.Msg) {
 	if tw.runtimeInfo == nil {
-		// Reset lastMessages
 		tw.lastCmdResults = make([]tea.Msg, 0)
 
 		for _, message := range messages {
 			var cmd tea.Cmd
 			tw.model, cmd = tw.model.Update(message)
 
-			// Simulate runtime handling the cmds
-			// TODO: Does this handle Batch?
-			for cmd != nil {
-				msg := cmd()
-				tw.lastCmdResults = append(tw.lastCmdResults, msg)
-				tw.model, cmd = tw.model.Update(msg)
-			}
+			tw.handleCmd(cmd)
 		}
 
 		return
@@ -121,6 +114,25 @@ func (tw *TestWrapper) Send(messages ...tea.Msg) {
 
 	for _, message := range messages {
 		tw.runtimeInfo.program.Send(message)
+	}
+}
+
+// Simulate runtime handling cmds returned by an Update
+func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
+	for cmd != nil {
+		switch message := cmd().(type) {
+		case tea.BatchMsg:
+			for _, cmd := range message {
+				msg := cmd()
+
+				tw.lastCmdResults = append(tw.lastCmdResults, msg)
+				tw.model, cmd = tw.model.Update(msg)
+			}
+
+		default:
+			tw.lastCmdResults = append(tw.lastCmdResults, message)
+			tw.model, cmd = tw.model.Update(message)
+		}
 	}
 }
 
