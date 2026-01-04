@@ -31,7 +31,7 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	return DB
 }
 
-func KeyMsg(input string) tea.KeyMsg {
+func makeKeyMsg(input string) tea.KeyMsg {
 	return tea.KeyMsg{
 		Type:  tea.KeyRunes,
 		Runes: []rune(input),
@@ -98,7 +98,7 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 	return tw
 }
 
-func (tw *TestWrapper) Send(messages ...tea.Msg) {
+func (tw *TestWrapper) Send(messages ...tea.Msg) *TestWrapper {
 	if tw.runtimeInfo == nil {
 		tw.lastCmdResults = make([]tea.Msg, 0)
 
@@ -109,29 +109,54 @@ func (tw *TestWrapper) Send(messages ...tea.Msg) {
 			tw.handleCmd(cmd)
 		}
 
-		return
+		return tw
 	}
 
 	for _, message := range messages {
 		tw.runtimeInfo.program.Send(message)
 	}
+
+	return tw
+}
+
+func (tw *TestWrapper) SendText(input string) *TestWrapper {
+	var messages []tea.Msg
+
+	for _, char := range input {
+		messages = append(messages, makeKeyMsg(string(char)))
+	}
+
+	tw.Send(messages...)
+
+	return tw
 }
 
 // Simulate runtime handling cmds returned by an Update
 func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
-	for cmd != nil {
+	var queue []tea.Cmd
+	queue = append(queue, cmd)
+
+	for len(queue) > 0 {
+		cmd := queue[0]
+		queue = queue[1:]
+
+		if cmd == nil {
+			continue
+		}
+
 		switch message := cmd().(type) {
 		case tea.BatchMsg:
-			for _, cmd := range message {
-				msg := cmd()
+			queue = append(queue, message...)
 
-				tw.lastCmdResults = append(tw.lastCmdResults, msg)
-				tw.model, cmd = tw.model.Update(msg)
-			}
+		// Nil message, e.g. meta.MessageCmd(err) but err was nil
+		case nil:
+			continue
 
 		default:
 			tw.lastCmdResults = append(tw.lastCmdResults, message)
 			tw.model, cmd = tw.model.Update(message)
+
+			queue = append(queue, cmd)
 		}
 	}
 }
@@ -162,6 +187,8 @@ func (tw *TestWrapper) unlock() {
 }
 
 func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
+	// TODO: Should this return the model? feels like some weird coupling,
+	// maybe returning the model should be a separate function
 	tw.t.Helper()
 
 	if tw.runtimeInfo == nil {
@@ -171,34 +198,34 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) tea.Model {
 	ticker := time.NewTicker(time.Millisecond * 1)
 	timeout := time.After(time.Second * 1)
 
-	checkConditionFn := func() (tea.Model, bool) {
-		tw.runtimeInfo.mutex.Lock()
-		defer tw.runtimeInfo.mutex.Unlock()
-
-		innerModel := tw.model.(*asyncModel).model
-		if condition(innerModel) {
-			return innerModel, true
-		}
-
-		return nil, false
-	}
-
 	for {
 		select {
+		case <-ticker.C:
+			if model, ok := tw.checkCondition(condition); ok {
+				return model
+			}
+
 		case <-timeout:
 			tw.Send(tea.QuitMsg{})
 			tw.t.Fatalf("test timed out")
 			return nil
 
-		case <-ticker.C:
-			if model, ok := checkConditionFn(); ok {
-				return model
-			}
-
 		case err := <-tw.runtimeInfo.runtimeErrChannel:
 			tw.t.Fatalf("program runtime error: %q", err)
 		}
 	}
+}
+
+func (tw *TestWrapper) checkCondition(condition func(tea.Model) bool) (tea.Model, bool) {
+	tw.lock()
+	defer tw.unlock()
+
+	innerModel := tw.model.(*asyncModel).model
+	if condition(innerModel) {
+		return innerModel, true
+	}
+
+	return nil, false
 }
 
 func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected any) {

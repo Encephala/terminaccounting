@@ -5,8 +5,31 @@ import (
 	"terminaccounting/meta"
 )
 
+func (tw *TestWrapper) SwitchMode(mode meta.InputMode, data ...any) *TestWrapper {
+	switch mode {
+	case meta.INSERTMODE, meta.NORMALMODE:
+		if len(data) != 0 {
+			panic("mode doesn't take an argument")
+		}
+
+		tw.Send(meta.SwitchModeMsg{InputMode: mode})
+
+	case meta.COMMANDMODE:
+		if len(data) != 1 {
+			panic("wrong data format passed")
+		}
+
+		tw.Send(meta.SwitchModeMsg{InputMode: mode, Data: data[0]})
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", mode))
+	}
+
+	return tw
+}
+
 func (tw *TestWrapper) SwitchTab(direction meta.Sequence) *TestWrapper {
-	tw.model, _ = tw.model.Update(meta.SwitchTabMsg{Direction: direction})
+	tw.Send(meta.SwitchTabMsg{Direction: direction})
 
 	return tw
 }
@@ -25,7 +48,7 @@ func (tw *TestWrapper) SwitchView(viewType meta.ViewType, data ...any) *TestWrap
 			panic("wrong data format passed")
 		}
 
-		tw.Send(meta.SwitchAppViewMsg{ViewType: viewType, Data: data})
+		tw.Send(meta.SwitchAppViewMsg{ViewType: viewType, Data: data[0]})
 
 	// TODO
 	// case meta.TEXTMODALVIEWTYPE, meta.BANKIMPORTERVIEWTYPE:

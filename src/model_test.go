@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func initWrapper(t *testing.T) *tat.TestWrapper {
+func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
 	t.Helper()
 
 	DB := tat.SetupTestEnv(t)
@@ -37,7 +38,7 @@ func initWrapper(t *testing.T) *tat.TestWrapper {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.NewTestWrapper(t, newTerminaccounting(DB))
+	return tat.NewTestWrapper(t, newTerminaccounting(DB)), DB
 }
 
 func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) *terminaccounting {
@@ -66,86 +67,61 @@ func adaptedAssertEqual(
 }
 
 func TestSwitchModesMsg(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	tw, _ := initWrapper(t)
 
-	newModel, cmd := model.Update(tat.KeyMsg("i"))
+	tw.SendText("i")
 
-	expectedMsg := meta.SwitchModeMsg{InputMode: meta.INSERTMODE}
-	assert.Equal(t, expectedMsg, cmd())
-
-	newModel, cmd = newModel.Update(cmd())
-	assert.Equal(t, errors.New("current view doesn't allow insert mode"), cmd())
+	lastCmdResults := tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 2)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+	assert.Equal(t, errors.New("current view doesn't allow insert mode"), lastCmdResults[1])
 
 	// Switch to ledgers create view
-	model = newModel.(*terminaccounting)
-	model.appManager.activeApp = 1
-	newModel, cmd = model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
-	assert.True(t, model.appManager.apps[model.appManager.activeApp].CurrentViewAllowsInsertMode())
+	tw.SwitchTab(meta.NEXT).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SendText("i")
 
-	newModel, cmd = newModel.Update(tat.KeyMsg("i"))
-	assert.Equal(t, expectedMsg, cmd())
+	lastCmdResults = tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
 
-	newModel, cmd = newModel.Update(cmd())
-	assert.Nil(t, cmd)
+	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+	lastCmdResults = tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE}, lastCmdResults[0])
 
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.INSERTMODE, model.inputMode)
+	tw.SwitchView(meta.LISTVIEWTYPE).
+		SendText("/")
 
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE}, cmd())
-
-	newModel, cmd = newModel.Update(cmd())
-
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.NORMALMODE, model.inputMode)
-
-	newModel, cmd = newModel.Update(meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("/"))
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}, cmd())
-
-	newModel, cmd = newModel.Update(cmd())
-
-	model = newModel.(*terminaccounting)
-	assert.Equal(t, meta.COMMANDMODE, model.inputMode)
-	assert.True(t, model.currentCommandIsSearch)
+	lastCmdResults = tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 2)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}, lastCmdResults[0])
+	assert.Equal(t, meta.UpdateSearchMsg{Query: ""}, lastCmdResults[1])
 }
 
 func TestSwitchApp(t *testing.T) {
-	wrapper := initWrapper(t).RunAsync()
+	wrapper, _ := initWrapper(t)
+	wrapper.RunAsync()
 
-	// Next tab
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
+	testCases := []struct {
+		name              string
+		inputs            []string
+		expectedActiveApp int
+	}{
+		{"switch tab simple", []string{"gt"}, 1},
+		{"wrap backwards", []string{"gT", "gT"}, 3},
+		{"wrap forwards", []string{"gt"}, 0},
+	}
 
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
-		return ta.appManager.activeApp == 1
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, input := range tc.inputs {
+				wrapper.SendText(input)
+			}
 
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
-		return model.appManager.activeApp
-	}, 1)
-
-	// Wrap tabs backwards
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("T"))
-
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
-		return ta.appManager.activeApp == 3
-	})
-
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
-		return model.appManager.activeApp
-	}, 3)
-
-	// Wrap tabs forwards
-	wrapper.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
-
-	adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
-		return ta.appManager.activeApp == 0
-	})
-
-	adaptedAssertEqual(t, wrapper, func(model *terminaccounting) any {
-		return model.appManager.activeApp
-	}, 0)
+			adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+				return ta.appManager.activeApp == tc.expectedActiveApp
+			})
+		})
+	}
 }

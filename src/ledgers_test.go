@@ -4,137 +4,94 @@ import (
 	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
-	tat "terminaccounting/tat"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateLedger_ViewSwitch(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	tw := tat.NewTestWrapper(t, newTerminaccounting(DB)).
-		SwitchTab(meta.NEXT)
+	tw, _ := initWrapper(t)
 
-	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
+	tw.SwitchTab(meta.NEXT)
 
-	messages := tw.GetLastCmdResults()
+	tw.SendText("gc")
 
-	assert.Len(t, messages, 1)
-	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, messages[0])
+	lastCmdResults := tw.GetLastCmdResults()
+
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, lastCmdResults[0])
 }
 
 func TestCreateLedger_InsertMode(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	tw := tat.NewTestWrapper(t, newTerminaccounting(DB)).
-		SwitchTab(meta.NEXT).
+	tw, _ := initWrapper(t)
+
+	tw.SwitchTab(meta.NEXT).
 		SwitchView(meta.CREATEVIEWTYPE)
 
-	tw.Send(tat.KeyMsg("i"))
+	tw.SendText("i")
 
-	messages := tw.GetLastCmdResults()
+	lastCmdResults := tw.GetLastCmdResults()
 
-	assert.Len(t, messages, 1)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, messages[0])
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
 }
 
 func TestCreateLedger_SetValues(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	tw, _ := initWrapper(t)
 
-	model.appManager.activeApp = 1
+	tw.SwitchTab(meta.NEXT).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE)
 
-	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
-	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+	tw.SendText("test")
 
-	for _, char := range "test" {
-		newModel, cmd = newModel.Update(tat.KeyMsg(string(char)))
-	}
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	newModel, cmd = newModel.Update(cmd())
+	tw.AssertViewContains("test")
 
-	assert.Contains(t, newModel.View(), "test")
+	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
 
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
+	lastCmdResults := tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchFocusMsg{Direction: meta.NEXT}, lastCmdResults[0])
 
-	assert.Equal(t, meta.SwitchFocusMsg{Direction: meta.NEXT}, cmd())
+	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlN}, tea.KeyMsg{Type: tea.KeyCtrlC})
 
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("i"))
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	newModel, cmd = newModel.Update(cmd())
-
-	assert.Contains(t, newModel.View(), "EXPENSE")
+	tw.AssertViewContains("EXPENSE")
 }
 
 func TestCreateLedger_CommitCmd(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	tw, _ := initWrapper(t)
 
-	model.appManager.activeApp = 1
+	tw.SwitchTab(meta.NEXT).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE).
+		SendText("test").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyCtrlN}).
+		SwitchMode(meta.COMMANDMODE, false)
 
-	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
-	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+	tw.SendText("w")
+	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	for _, char := range "test" {
-		newModel, cmd = newModel.Update(tat.KeyMsg(string(char)))
-	}
-
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tat.KeyMsg(":"))
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("w"))
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
-
-	assert.Equal(t, meta.ExecuteCommandMsg{}, cmd())
-
-	newModel, cmd = newModel.Update(cmd())
-
-	assert.Equal(t, meta.CommitMsg{}, cmd())
+	lastCmdResults := tw.GetLastCmdResults()
+	// The two messages I want to test for, but also the notification/view switch etc. from handling CommitMsg
+	require.Greater(t, len(lastCmdResults), 2)
+	assert.Equal(t, meta.ExecuteCommandMsg{}, lastCmdResults[0])
+	assert.Equal(t, meta.CommitMsg{}, lastCmdResults[1])
 }
 
 func TestCreateLedger_Commit(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	model := newTerminaccounting(DB)
+	tw, DB := initWrapper(t)
 
-	model.appManager.activeApp = 1
+	tw.SwitchTab(meta.NEXT).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE).
+		SendText("test").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyCtrlN}).
+		Send(meta.CommitMsg{})
 
-	newModel, cmd := model.Update(meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
-	newModel, cmd = newModel.Update(meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
-
-	for _, char := range "test" {
-		newModel, _ = newModel.Update(tat.KeyMsg(string(char)))
-	}
-
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyTab})
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tat.KeyMsg(":"))
-	newModel, cmd = newModel.Update(cmd())
-
-	newModel, cmd = newModel.Update(tat.KeyMsg("w"))
-	newModel, cmd = newModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	newModel, cmd = newModel.Update(cmd()) // Handle ExecuteCommandMsg
-
-	newModel, cmd = newModel.Update(cmd()) // Handle CommitMsg
-
-	ledger, err := database.SelectLedger(model.DB, 1)
-	assert.Nil(t, err)
+	ledger, err := database.SelectLedger(DB, 1)
+	require.Nil(t, err)
 	assert.Equal(
 		t,
 		database.Ledger{
@@ -149,24 +106,24 @@ func TestCreateLedger_Commit(t *testing.T) {
 }
 
 func TestCreateLedger(t *testing.T) {
-	tw := initWrapper(t).RunAsync()
+	tw, DB := initWrapper(t)
 
-	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("t"))
-	tw.Send(tat.KeyMsg("g"), tat.KeyMsg("c"))
+	tw.RunAsync().
+		SendText("gt").
+		SendText("gc")
 
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.activeApp == 1 && ta.appManager.currentViewAllowsInsertMode()
 	})
 
-	tw.Send(tat.KeyMsg("i"))
+	tw.SendText("i")
 
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.INSERTMODE
 	})
 
-	tw.Send(tat.KeyMsg("t"), tat.KeyMsg("e"), tat.KeyMsg("s"), tat.KeyMsg("t"))
-
-	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+	tw.SendText("test").
+		Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.NORMALMODE
@@ -174,28 +131,26 @@ func TestCreateLedger(t *testing.T) {
 
 	tw.AssertViewContains("test")
 
-	tw.Send(tat.KeyMsg(":"))
+	tw.SendText(":")
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.inputMode == meta.COMMANDMODE
 	})
 
-	tw.Send(tat.KeyMsg("w"))
+	tw.SendText("w")
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return strings.Contains(ta.View(), ":w")
 	})
 
-	tw.Send(tat.KeyMsg("enter"))
-	model := adaptedWait(t, tw, func(ta *terminaccounting) bool {
+	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
 	})
 
-	ledgers, err := database.SelectLedgers(model.DB)
-	assert.Nil(t, err)
+	ledgers, err := database.SelectLedgers(DB)
+	require.Nil(t, err)
 	assert.Len(t, ledgers, 1)
 
-	newLedger, err := database.SelectLedger(model.DB, 1)
-	assert.Nil(t, err)
-
+	require.Nil(t, err)
 	assert.Equal(
 		t,
 		database.Ledger{
@@ -205,6 +160,6 @@ func TestCreateLedger(t *testing.T) {
 			Notes:      nil,
 			IsAccounts: false,
 		},
-		newLedger,
+		ledgers[0],
 	)
 }
