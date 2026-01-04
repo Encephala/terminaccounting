@@ -194,7 +194,7 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) {
 	}
 
 	ticker := time.NewTicker(time.Millisecond * 1)
-	timeout := time.After(time.Second * 1)
+	timeout := time.After(time.Millisecond * 100)
 
 	for {
 		select {
