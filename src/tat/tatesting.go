@@ -80,7 +80,7 @@ func (tw *TestWrapper) RunAsync(t *testing.T) *TestWrapper {
 	// Give model some time to init
 	// Utterly arbitrary amount of time. This should really be a TestWrapper.Wait call, but like
 	// how do I verify that the model has processed the init messages? I see no easy way
-	time.Sleep(time.Millisecond * 1)
+	time.Sleep(time.Millisecond * 10)
 
 	tw.runtimeInfo = &runtimeInfo{
 		program:           program,
