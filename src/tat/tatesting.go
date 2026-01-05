@@ -158,9 +158,9 @@ func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
 }
 
 func (tw *TestWrapper) GetLastCmdResults() []tea.Msg {
-	// tw.lastMessages is only (can only be) maintained if running synchronously
+	// tw.lastMessages is only (can only be) maintained if running asynchronously
 	if tw.runtimeInfo != nil {
-		panic("TestWrapper is running synchronously, can't get last messages")
+		panic("TestWrapper is running asynchronously, can't get last messages")
 	}
 
 	return tw.lastCmdResults
