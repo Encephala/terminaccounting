@@ -69,34 +69,43 @@ func adaptedAssertEqual(
 func TestSwitchModesMsg(t *testing.T) {
 	tw, _ := initWrapper(t)
 
-	tw.SendText("i")
+	t.Run("cannot go insert mode on list view", func(t *testing.T) {
+		tw.SendText("i")
 
-	lastCmdResults := tw.GetLastCmdResults()
-	require.Len(t, lastCmdResults, 2)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
-	assert.Equal(t, errors.New("current view doesn't allow insert mode"), lastCmdResults[1])
+		lastCmdResults := tw.GetLastCmdResults()
+		require.Len(t, lastCmdResults, 2)
+		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+		assert.Equal(t, errors.New("current view doesn't allow insert mode"), lastCmdResults[1])
+	})
 
-	// Switch to ledgers create view
-	tw.SwitchTab(meta.NEXT).
-		SwitchView(meta.CREATEVIEWTYPE).
-		SendText("i")
+	t.Run("switch insert mode", func(t *testing.T) {
+		// Switch to ledgers create view
+		tw.SwitchTab(meta.NEXT).
+			SwitchView(meta.CREATEVIEWTYPE).
+			SendText("i")
 
-	lastCmdResults = tw.GetLastCmdResults()
-	require.Len(t, lastCmdResults, 1)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+		lastCmdResults := tw.GetLastCmdResults()
+		require.Len(t, lastCmdResults, 1)
+		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+	})
 
-	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
-	lastCmdResults = tw.GetLastCmdResults()
-	require.Len(t, lastCmdResults, 1)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE}, lastCmdResults[0])
+	t.Run("switch back normal mode", func(t *testing.T) {
+		tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-	tw.SwitchView(meta.LISTVIEWTYPE).
-		SendText("/")
+		lastCmdResults := tw.GetLastCmdResults()
+		require.Len(t, lastCmdResults, 1)
+		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE}, lastCmdResults[0])
+	})
 
-	lastCmdResults = tw.GetLastCmdResults()
-	require.Len(t, lastCmdResults, 2)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}, lastCmdResults[0])
-	assert.Equal(t, meta.UpdateSearchMsg{Query: ""}, lastCmdResults[1])
+	t.Run("switch search mode", func(t *testing.T) {
+		tw.SwitchView(meta.LISTVIEWTYPE).
+			SendText("/")
+
+		lastCmdResults := tw.GetLastCmdResults()
+		require.Len(t, lastCmdResults, 2)
+		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}, lastCmdResults[0])
+		assert.Equal(t, meta.UpdateSearchMsg{Query: ""}, lastCmdResults[1])
+	})
 }
 
 func TestSwitchApp(t *testing.T) {
