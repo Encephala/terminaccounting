@@ -44,7 +44,7 @@ func (app *journalsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		return app, cmd
 
 	case meta.SwitchAppViewMsg:
-		if message.App != nil && *message.App != meta.LEDGERSAPP {
+		if message.App != nil && *message.App != meta.JOURNALSAPP {
 			panic("wrong app type, something went wrong")
 		}
 

@@ -44,7 +44,7 @@ func (app *accountsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		return app, cmd
 
 	case meta.SwitchAppViewMsg:
-		if message.App != nil && *message.App != meta.LEDGERSAPP {
+		if message.App != nil && *message.App != meta.ACCOUNTSAPP {
 			panic("wrong app type, something went wrong")
 		}
 
