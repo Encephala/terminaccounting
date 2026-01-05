@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"testing"
@@ -103,75 +102,4 @@ func TestCreateLedger_Commit(t *testing.T) {
 		},
 		ledger,
 	)
-}
-
-func TestCreateLedger(t *testing.T) {
-	tw, DB := initWrapper(t)
-	tw.RunAsync(t)
-
-	t.Run("switch to create ledgers view", func(t *testing.T) {
-		tw.SendText("gt").
-			SendText("gc")
-
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return ta.appManager.activeApp == 1 && ta.appManager.currentViewAllowsInsertMode()
-		})
-	})
-
-	t.Run("enter insert mode", func(t *testing.T) {
-		tw.SendText("i")
-
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.INSERTMODE
-		})
-	})
-
-	t.Run("set ledger name", func(t *testing.T) {
-		tw.SendText("test").
-			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
-
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.NORMALMODE
-		})
-
-		tw.AssertViewContains(t, "test")
-	})
-
-	t.Run("send commit msg", func(t *testing.T) {
-		tw.SendText(":")
-
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.COMMANDMODE
-		})
-
-		tw.SendText("w")
-
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return strings.Contains(ta.View(), ":w")
-		})
-	})
-
-	t.Run("commit ledger", func(t *testing.T) {
-		tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
-			return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
-		})
-
-		ledgers, err := database.SelectLedgers(DB)
-		require.Nil(t, err)
-		assert.Len(t, ledgers, 1)
-
-		require.Nil(t, err)
-		assert.Equal(
-			t,
-			database.Ledger{
-				Id:         1,
-				Name:       "test",
-				Type:       database.INCOMELEDGER,
-				Notes:      nil,
-				IsAccounts: false,
-			},
-			ledgers[0],
-		)
-	})
 }

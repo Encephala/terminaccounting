@@ -3,6 +3,7 @@ package tat
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"terminaccounting/database"
 	"testing"
@@ -20,7 +21,7 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	slog.SetLogLoggerLevel(slog.LevelWarn)
 
 	// Ensure that each connection *within each test* uses the same in-memory database.
-	id := fmt.Sprintf("%s-%s", t.Name(), time.Now().String())
+	id := fmt.Sprintf("%s-%s", strings.ReplaceAll(t.Name(), "/", "_"), time.Now().String())
 	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", id))
 	t.Cleanup(func() { DB.Close() })
 

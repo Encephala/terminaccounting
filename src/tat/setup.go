@@ -28,6 +28,26 @@ func (tw *TestWrapper) SwitchMode(mode meta.InputMode, data ...any) *TestWrapper
 	return tw
 }
 
+func (tw *TestWrapper) GoToTab(tab meta.AppType) *TestWrapper {
+	switch tab {
+	case meta.ENTRIESAPP:
+
+	case meta.LEDGERSAPP:
+		tw.Send(meta.SwitchTabMsg{Direction: meta.NEXT})
+
+	case meta.ACCOUNTSAPP:
+		tw.Send(meta.SwitchTabMsg{Direction: meta.NEXT}).Send(meta.SwitchTabMsg{Direction: meta.NEXT})
+
+	case meta.JOURNALSAPP:
+		tw.Send(meta.SwitchTabMsg{Direction: meta.PREVIOUS})
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.AppType: %#v", tab))
+	}
+
+	return tw
+}
+
 func (tw *TestWrapper) SwitchTab(direction meta.Sequence) *TestWrapper {
 	tw.Send(meta.SwitchTabMsg{Direction: direction})
 
