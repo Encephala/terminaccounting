@@ -47,7 +47,7 @@ func TestCreateLedger_SetValues(t *testing.T) {
 
 	tw.SendText("test")
 
-	tw.AssertViewContains("test")
+	tw.AssertViewContains(t, "test")
 
 	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
 
@@ -57,7 +57,7 @@ func TestCreateLedger_SetValues(t *testing.T) {
 
 	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlN}, tea.KeyMsg{Type: tea.KeyCtrlC})
 
-	tw.AssertViewContains("EXPENSE")
+	tw.AssertViewContains(t, "EXPENSE")
 }
 
 func TestCreateLedger_CommitCmd(t *testing.T) {
@@ -107,10 +107,10 @@ func TestCreateLedger_Commit(t *testing.T) {
 
 func TestCreateLedger(t *testing.T) {
 	tw, DB := initWrapper(t)
+	tw.RunAsync(t)
 
 	t.Run("switch to create ledgers view", func(t *testing.T) {
-		tw.RunAsync().
-			SendText("gt").
+		tw.SendText("gt").
 			SendText("gc")
 
 		adaptedWait(t, tw, func(ta *terminaccounting) bool {
@@ -134,7 +134,7 @@ func TestCreateLedger(t *testing.T) {
 			return ta.inputMode == meta.NORMALMODE
 		})
 
-		tw.AssertViewContains("test")
+		tw.AssertViewContains(t, "test")
 	})
 
 	t.Run("send commit msg", func(t *testing.T) {

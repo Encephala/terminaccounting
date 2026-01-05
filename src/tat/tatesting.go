@@ -39,8 +39,6 @@ func makeKeyMsg(input string) tea.KeyMsg {
 }
 
 type TestWrapper struct {
-	t *testing.T
-
 	model tea.Model
 
 	runtimeInfo *runtimeInfo
@@ -48,10 +46,8 @@ type TestWrapper struct {
 	lastCmdResults []tea.Msg
 }
 
-func NewTestWrapper(t *testing.T, model tea.Model) *TestWrapper {
+func NewTestWrapper(model tea.Model) *TestWrapper {
 	return &TestWrapper{
-		t: t,
-
 		model: model,
 	}
 }
@@ -63,7 +59,7 @@ type runtimeInfo struct {
 	mutex *sync.Mutex
 }
 
-func (tw *TestWrapper) RunAsync() *TestWrapper {
+func (tw *TestWrapper) RunAsync(t *testing.T) *TestWrapper {
 	if tw.runtimeInfo != nil {
 		panic("tried to make already async TestWrapper async again, that seems wrong and dumb")
 	}
@@ -93,7 +89,7 @@ func (tw *TestWrapper) RunAsync() *TestWrapper {
 		mutex: &asyncModel.mutex,
 	}
 
-	tw.t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
+	t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
 
 	return tw
 }
@@ -186,8 +182,8 @@ func (tw *TestWrapper) unlock() {
 	tw.runtimeInfo.mutex.Unlock()
 }
 
-func (tw *TestWrapper) Wait(condition func(tea.Model) bool) {
-	tw.t.Helper()
+func (tw *TestWrapper) Wait(t *testing.T, condition func(tea.Model) bool) {
+	t.Helper()
 
 	if tw.runtimeInfo == nil {
 		panic("TestWrapper is running synchronously, nothing to wait for")
@@ -205,10 +201,10 @@ func (tw *TestWrapper) Wait(condition func(tea.Model) bool) {
 
 		case <-timeout:
 			tw.Send(tea.QuitMsg{})
-			tw.t.Fatalf("test timed out")
+			t.Fatalf("test timed out")
 
 		case err := <-tw.runtimeInfo.runtimeErrChannel:
-			tw.t.Fatalf("program runtime error: %q", err)
+			t.Fatalf("program runtime error: %q", err)
 		}
 	}
 }
@@ -222,12 +218,12 @@ func (tw *TestWrapper) checkCondition(condition func(tea.Model) bool) bool {
 	return condition(innerModel)
 }
 
-func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected any) {
-	tw.t.Helper()
+func (tw *TestWrapper) AssertEqual(t *testing.T, actualGetter func(tea.Model) any, expected any) {
+	t.Helper()
 
 	if tw.runtimeInfo == nil {
 		value := actualGetter(tw.model)
-		assert.Equal(tw.t, expected, value)
+		assert.Equal(t, expected, value)
 
 		return
 	}
@@ -237,14 +233,14 @@ func (tw *TestWrapper) AssertEqual(actualGetter func(tea.Model) any, expected an
 
 	innerModel := tw.model.(*asyncModel).model
 	value := actualGetter(innerModel)
-	assert.Equal(tw.t, expected, value)
+	assert.Equal(t, expected, value)
 }
 
-func (tw *TestWrapper) AssertViewContains(expected string) {
-	tw.t.Helper()
+func (tw *TestWrapper) AssertViewContains(t *testing.T, expected string) {
+	t.Helper()
 
 	if tw.runtimeInfo == nil {
-		assert.Contains(tw.t, tw.model.View(), expected)
+		assert.Contains(t, tw.model.View(), expected)
 		return
 	}
 
@@ -252,7 +248,7 @@ func (tw *TestWrapper) AssertViewContains(expected string) {
 	defer tw.unlock()
 
 	innerModel := tw.model.(*asyncModel).model
-	assert.Contains(tw.t, innerModel.View(), expected)
+	assert.Contains(t, innerModel.View(), expected)
 }
 
 type asyncModel struct {

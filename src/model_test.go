@@ -38,7 +38,7 @@ func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.NewTestWrapper(t, newTerminaccounting(DB)), DB
+	return tat.NewTestWrapper(newTerminaccounting(DB)), DB
 }
 
 func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) {
@@ -48,7 +48,7 @@ func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*termina
 		return condition(m.(*terminaccounting))
 	}
 
-	wrapper.Wait(genericCondition)
+	wrapper.Wait(t, genericCondition)
 }
 
 func adaptedAssertEqual(
@@ -63,7 +63,7 @@ func adaptedAssertEqual(
 		return actualGetter(m.(*terminaccounting))
 	}
 
-	wrapper.AssertEqual(genericGetter, expected)
+	wrapper.AssertEqual(t, genericGetter, expected)
 }
 
 func TestSwitchModesMsg(t *testing.T) {
@@ -110,7 +110,7 @@ func TestSwitchModesMsg(t *testing.T) {
 
 func TestSwitchApp(t *testing.T) {
 	wrapper, _ := initWrapper(t)
-	wrapper.RunAsync()
+	wrapper.RunAsync(t)
 
 	testCases := []struct {
 		name              string
