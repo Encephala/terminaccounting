@@ -3,6 +3,7 @@ package tat
 import (
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"sync"
 	"terminaccounting/database"
@@ -21,7 +22,9 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	slog.SetLogLoggerLevel(slog.LevelWarn)
 
 	// Ensure that each connection *within each test* uses the same in-memory database.
-	id := fmt.Sprintf("%s-%s", strings.ReplaceAll(t.Name(), "/", "_"), time.Now().String())
+	id := fmt.Sprintf("%s_%d", strings.ReplaceAll(t.Name(), "/", "_"), time.Now().UnixNano())
+	id = sanitizeDsn(id)
+
 	DB := sqlx.MustConnect("sqlite3", fmt.Sprintf("file:%s?mode=memory&cache=shared", id))
 	t.Cleanup(func() { DB.Close() })
 
@@ -30,6 +33,10 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	require.Nil(t, err)
 
 	return DB
+}
+
+func sanitizeDsn(dsn string) string {
+	return regexp.MustCompile(`[^a-zA-Z0-9_-]+`).ReplaceAllString(dsn, "_")
 }
 
 func makeKeyMsg(input string) tea.KeyMsg {
