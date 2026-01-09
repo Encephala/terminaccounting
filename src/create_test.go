@@ -83,10 +83,6 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 			adaptedWait(t, tw, func(ta *terminaccounting) bool {
 				return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
 			})
-			// tw.Wait(t, func(tea.Model) bool {
-			// 	ledgers, _ := database.SelectLedgers(DB)
-			// 	return len(ledgers) > 0
-			// })
 
 			ledgers, err := database.SelectLedgers(DB)
 
@@ -148,4 +144,160 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 			panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
 		}
 	})
+}
+
+func TestCreate_Msg(t *testing.T) {
+	all_apps := []meta.AppType{
+		meta.LEDGERSAPP,
+		meta.JOURNALSAPP,
+		meta.ACCOUNTSAPP,
+	}
+
+	for _, app := range all_apps {
+		t.Run(string(app), func(t *testing.T) { t.Parallel(); testCreateLedger_ViewSwitch(t, app) })
+		t.Run(string(app), func(t *testing.T) { t.Parallel(); testCreateLedger_InsertMode(t, app) })
+		t.Run(string(app), func(t *testing.T) { t.Parallel(); testCreateLedger_SetValues(t, app) })
+		t.Run(string(app), func(t *testing.T) { t.Parallel(); testCreateLedger_CommitCmd(t, app) })
+		t.Run(string(app), func(t *testing.T) { t.Parallel(); testCreateLedger_Commit(t, app) })
+	}
+}
+
+func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
+	tw, _ := initWrapper(t)
+
+	tw.GoToTab(app).
+		SendText("gc")
+
+	lastCmdResults := tw.GetLastCmdResults()
+
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, lastCmdResults[0])
+}
+
+func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
+	tw, _ := initWrapper(t)
+
+	tw.GoToTab(app).
+		SwitchView(meta.CREATEVIEWTYPE)
+
+	tw.SendText("i")
+
+	lastCmdResults := tw.GetLastCmdResults()
+
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+}
+
+func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
+	tw, _ := initWrapper(t)
+
+	tw.GoToTab(app).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE)
+
+	tw.SendText("test")
+
+	tw.AssertViewContains(t, "test")
+
+	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
+
+	lastCmdResults := tw.GetLastCmdResults()
+	require.Len(t, lastCmdResults, 1)
+	assert.Equal(t, meta.SwitchFocusMsg{Direction: meta.NEXT}, lastCmdResults[0])
+
+	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlN}, tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	switch app {
+	case meta.LEDGERSAPP:
+		tw.AssertViewContains(t, string(database.EXPENSELEDGER))
+	case meta.ACCOUNTSAPP:
+		tw.AssertViewContains(t, string(database.CREDITOR))
+	case meta.JOURNALSAPP:
+		tw.AssertViewContains(t, string(database.EXPENSEJOURNAL))
+	default:
+		panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
+	}
+}
+
+func testCreateLedger_CommitCmd(t *testing.T, app meta.AppType) {
+	tw, _ := initWrapper(t)
+
+	tw.GoToTab(app).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE).
+		SendText("test").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyCtrlN}).
+		SwitchMode(meta.COMMANDMODE, false)
+
+	tw.SendText("w")
+	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	lastCmdResults := tw.GetLastCmdResults()
+	// The two messages I want to test for, but also the notification/view switch etc. from handling CommitMsg
+	require.Greater(t, len(lastCmdResults), 2)
+	assert.Equal(t, meta.ExecuteCommandMsg{}, lastCmdResults[0])
+	assert.Equal(t, meta.CommitMsg{}, lastCmdResults[1])
+}
+
+func testCreateLedger_Commit(t *testing.T, app meta.AppType) {
+	tw, DB := initWrapper(t)
+
+	tw.GoToTab(app).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE).
+		SendText("test").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyCtrlN}).
+		Send(meta.CommitMsg{})
+
+	switch app {
+	case meta.LEDGERSAPP:
+		ledgers, err := database.SelectLedgers(DB)
+
+		require.Nil(t, err)
+		assert.Len(t, ledgers, 1)
+
+		expected := database.Ledger{
+			Id:         1,
+			Name:       "test",
+			Type:       database.EXPENSELEDGER,
+			Notes:      nil,
+			IsAccounts: false,
+		}
+
+		assert.Equal(t, expected, ledgers[0])
+
+	case meta.ACCOUNTSAPP:
+		accounts, err := database.SelectAccounts(DB)
+
+		require.Nil(t, err)
+		assert.Len(t, accounts, 1)
+
+		expected := database.Account{
+			Id:          1,
+			Name:        "test",
+			Type:        database.CREDITOR,
+			BankNumbers: nil,
+			Notes:       nil,
+		}
+
+		assert.Equal(t, expected, accounts[0])
+
+	case meta.JOURNALSAPP:
+		journals, err := database.SelectJournals(DB)
+
+		require.Nil(t, err)
+		assert.Len(t, journals, 1)
+
+		expected := database.Journal{
+			Id:    1,
+			Name:  "test",
+			Type:  database.EXPENSEJOURNAL,
+			Notes: nil,
+		}
+
+		assert.Equal(t, expected, journals[0])
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
+	}
 }
