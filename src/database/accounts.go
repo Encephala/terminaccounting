@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/meta"
 
@@ -13,14 +14,19 @@ import (
 )
 
 // Globally accessible list of available accounts
-var AvailableAccounts []Account
+// Atomic for parallel tests
+var accountsCache atomic.Pointer[[]Account]
+
+func AvailableAccounts() []Account {
+	return *accountsCache.Load()
+}
 
 func AvailableAccountsAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
 	result = append(result, (*Account)(nil))
 
-	for _, account := range AvailableAccounts {
+	for _, account := range *accountsCache.Load() {
 		result = append(result, &account)
 	}
 
@@ -209,7 +215,7 @@ func UpdateAccountsCache(DB *sqlx.DB) error {
 		return err
 	}
 
-	AvailableAccounts = accounts
+	accountsCache.Store(&accounts)
 
 	return nil
 }

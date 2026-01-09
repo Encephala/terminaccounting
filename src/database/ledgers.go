@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"terminaccounting/bubbles/itempicker"
 	"terminaccounting/meta"
 
@@ -13,12 +14,17 @@ import (
 )
 
 // Globally accessible list of available ledgers
-var AvailableLedgers []Ledger
+// Atomic for parallel tests
+var ledgersCache atomic.Pointer[[]Ledger]
+
+func AvailableLedgers() []Ledger {
+	return *ledgersCache.Load()
+}
 
 func AvailableLedgersAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
-	for _, ledger := range AvailableLedgers {
+	for _, ledger := range *ledgersCache.Load() {
 		result = append(result, ledger)
 	}
 
@@ -197,7 +203,7 @@ func UpdateLedgersCache(DB *sqlx.DB) error {
 		return err
 	}
 
-	AvailableLedgers = ledgers
+	ledgersCache.Swap(&ledgers)
 
 	return nil
 }
@@ -237,7 +243,8 @@ func MakeSelectLedgersCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {
 }
 
 func GetAccountsLedger() *Ledger {
-	idx := slices.IndexFunc(AvailableLedgers, func(ledger Ledger) bool {
+	availableLedgers := AvailableLedgers()
+	idx := slices.IndexFunc(availableLedgers, func(ledger Ledger) bool {
 		return ledger.IsAccounts
 	})
 
@@ -245,5 +252,5 @@ func GetAccountsLedger() *Ledger {
 		return nil
 	}
 
-	return &AvailableLedgers[idx]
+	return &availableLedgers[idx]
 }

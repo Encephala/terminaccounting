@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"terminaccounting/meta"
 
 	"terminaccounting/bubbles/itempicker"
@@ -12,12 +13,17 @@ import (
 )
 
 // Globally accessible list of available journals
-var AvailableJournals []Journal
+// Atomic for parallel tests
+var journalsCache atomic.Pointer[[]Journal]
+
+func AvailableJournals() []Journal {
+	return *journalsCache.Load()
+}
 
 func AvailableJournalsAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
-	for _, journal := range AvailableJournals {
+	for _, journal := range *journalsCache.Load() {
 		result = append(result, journal)
 	}
 
@@ -173,7 +179,7 @@ func UpdateJournalsCache(DB *sqlx.DB) error {
 		return err
 	}
 
-	AvailableJournals = journals
+	journalsCache.Store(&journals)
 
 	return nil
 }

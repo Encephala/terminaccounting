@@ -477,7 +477,8 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
 		case ENTRIESJOURNALINPUT:
-			availableJournalIndex := slices.IndexFunc(database.AvailableJournals, func(journal database.Journal) bool {
+			availableJournals := database.AvailableJournals()
+			availableJournalIndex := slices.IndexFunc(availableJournals, func(journal database.Journal) bool {
 				return journal.Id == uv.startingEntry.Journal
 			})
 
@@ -485,7 +486,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 				panic("This won't happen, surely")
 			}
 
-			err := uv.journalInput.SetValue(database.AvailableJournals[availableJournalIndex])
+			err := uv.journalInput.SetValue(availableJournals[availableJournalIndex])
 			if err != nil {
 				panic("This can't happen")
 			}
@@ -1096,26 +1097,29 @@ func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 func decompileRows(rows []database.EntryRow) ([]*rowCreator, error) {
 	result := make([]*rowCreator, len(rows))
 
+	availableLedgers := database.AvailableLedgers()
+	availableAccounts := database.AvailableAccounts()
+
 	for i, row := range rows {
-		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+		availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger database.Ledger) bool {
 			return ledger.Id == row.Ledger
 		})
 		if availableLedgerIndex == -1 {
 			panic(fmt.Sprintf("Ledger not found for %#v", row))
 		}
 
-		ledger := database.AvailableLedgers[availableLedgerIndex]
+		ledger := availableLedgers[availableLedgerIndex]
 
 		var account *database.Account
 		if row.Account != nil {
-			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+			availableAccountIndex := slices.IndexFunc(availableAccounts, func(account database.Account) bool {
 				return account.Id == *row.Account
 			})
 			if availableAccountIndex == -1 {
 				panic(fmt.Sprintf("Account not found for %#v", row))
 			}
 
-			account = &database.AvailableAccounts[availableAccountIndex]
+			account = &availableAccounts[availableAccountIndex]
 		}
 
 		formRow := newRowCreator(&row.Date)
@@ -1544,7 +1548,8 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		case meta.ENTRYMODEL:
 			dv.model = message.Data.(database.Entry)
 
-			journalIndex := slices.IndexFunc(database.AvailableJournals, func(j database.Journal) bool {
+			availableJournals := database.AvailableJournals()
+			journalIndex := slices.IndexFunc(availableJournals, func(j database.Journal) bool {
 				return j.Id == dv.model.Journal
 			})
 			if journalIndex == -1 {
@@ -1552,7 +1557,7 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 			}
 
 			// Don't reference original journal directly to ensure cache is never mutated
-			journal := database.AvailableJournals[journalIndex]
+			journal := availableJournals[journalIndex]
 			dv.journal = &journal
 
 		case meta.ENTRYROWMODEL:

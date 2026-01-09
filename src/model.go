@@ -194,7 +194,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case meta.DebugPrintCacheMsg:
-		slog.Debug("Database cache", "ledgers", database.AvailableLedgers, "accounts", database.AvailableAccounts, "journals", database.AvailableJournals)
+		slog.Debug("Database cache", "ledgers", database.AvailableLedgers(), "accounts", database.AvailableAccounts(), "journals", database.AvailableJournals())
 
 		return ta, nil
 	}

@@ -557,13 +557,15 @@ func (ip ingParser) compileRows(data [][]string, accountLedger, bankLedger int) 
 			rowDescription = *parsedDescription
 		}
 
+		availableAccounts := database.AvailableAccounts()
+
 		counterpartyAccount := row[3]
 		var matchedAccountId *int
-		indexMatchedAccount := slices.IndexFunc(database.AvailableAccounts, func(a database.Account) bool {
+		indexMatchedAccount := slices.IndexFunc(availableAccounts, func(a database.Account) bool {
 			return a.HasBankNumber(counterpartyAccount)
 		})
 		if indexMatchedAccount != -1 {
-			matchedAccountId = &database.AvailableAccounts[indexMatchedAccount].Id
+			matchedAccountId = &availableAccounts[indexMatchedAccount].Id
 		}
 
 		valueParts := strings.Split(row[6], ",")

@@ -354,6 +354,9 @@ func (erv *entryRowViewer) updateViewRows() {
 		erv.shownRows = erv.getUnreconciledRows()
 	}
 
+	availableLedgers := database.AvailableLedgers()
+	availableAccounts := database.AvailableAccounts()
+
 	var viewRows [][]string
 	for _, row := range erv.shownRows {
 		var viewRow []string
@@ -361,11 +364,11 @@ func (erv *entryRowViewer) updateViewRows() {
 
 		var ledger, account string
 
-		availableLedgerIndex := slices.IndexFunc(database.AvailableLedgers, func(ledger database.Ledger) bool {
+		availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger database.Ledger) bool {
 			return ledger.Id == row.Ledger
 		})
 		if availableLedgerIndex != -1 {
-			ledger = database.AvailableLedgers[availableLedgerIndex].String()
+			ledger = availableLedgers[availableLedgerIndex].String()
 		} else {
 			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 		}
@@ -373,12 +376,12 @@ func (erv *entryRowViewer) updateViewRows() {
 		if row.Account == nil {
 			account = lipgloss.NewStyle().Italic(true).Render("None")
 		} else {
-			availableAccountIndex := slices.IndexFunc(database.AvailableAccounts, func(account database.Account) bool {
+			availableAccountIndex := slices.IndexFunc(availableAccounts, func(account database.Account) bool {
 				return account.Id == *row.Account
 			})
 
 			if availableAccountIndex != -1 {
-				account = database.AvailableAccounts[availableAccountIndex].String()
+				account = availableAccounts[availableAccountIndex].String()
 			} else {
 				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
 			}
