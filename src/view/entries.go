@@ -306,7 +306,7 @@ func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 
 type DeleteEntryRowMsg struct{}
 type CreateEntryRowMsg struct {
-	after bool
+	After bool
 }
 
 func (cv *entryCreateView) MotionSet() meta.MotionSet {
@@ -1407,7 +1407,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 
 		var cmds []tea.Cmd
 
-		manager, cmd := entryRowsManager.addRow(message.after)
+		manager, cmd := entryRowsManager.addRow(message.After)
 		*entryRowsManager = *manager
 		cmds = append(cmds, cmd)
 
@@ -1481,8 +1481,8 @@ func entriesMutateViewMotionSet() meta.MotionSet {
 	normalMotions.Insert(meta.Motion{"d", "d"}, DeleteEntryRowMsg{})
 	normalMotions.Insert(meta.Motion{"V", "d"}, DeleteEntryRowMsg{})
 	normalMotions.Insert(meta.Motion{"V", "D"}, DeleteEntryRowMsg{})
-	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{after: true})
-	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{after: false})
+	normalMotions.Insert(meta.Motion{"o"}, CreateEntryRowMsg{After: true})
+	normalMotions.Insert(meta.Motion{"O"}, CreateEntryRowMsg{After: false})
 
 	// hjkl navigation in entryrows
 	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
+func initWrapper(t *testing.T, async bool) (*tat.TestWrapper, *sqlx.DB) {
 	t.Helper()
 
 	DB := tat.SetupTestEnv(t)
@@ -38,7 +38,11 @@ func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.NewTestWrapper(newTerminaccounting(DB)), DB
+	if async {
+		return tat.NewTestWrapperBuilder(newTerminaccounting(DB)).RunAsync(t), DB
+	} else {
+		return tat.NewTestWrapperBuilder(newTerminaccounting(DB)).RunSync(t), DB
+	}
 }
 
 func adaptedWait(t *testing.T, wrapper *tat.TestWrapper, condition func(*terminaccounting) bool) {
@@ -67,7 +71,7 @@ func adaptedAssertEqual(
 }
 
 func TestSwitchModesMsg(t *testing.T) {
-	tw, _ := initWrapper(t)
+	tw, _ := initWrapper(t, false)
 
 	t.Run("cannot go insert mode on list view", func(t *testing.T) {
 		tw.SendText("i")
@@ -109,8 +113,7 @@ func TestSwitchModesMsg(t *testing.T) {
 }
 
 func TestSwitchApp(t *testing.T) {
-	wrapper, _ := initWrapper(t)
-	wrapper.RunAsync(t)
+	tw, _ := initWrapper(t, true)
 
 	testCases := []struct {
 		name              string
@@ -125,10 +128,10 @@ func TestSwitchApp(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, input := range tc.inputs {
-				wrapper.SendText(input)
+				tw.SendText(input)
 			}
 
-			adaptedWait(t, wrapper, func(ta *terminaccounting) bool {
+			adaptedWait(t, tw, func(ta *terminaccounting) bool {
 				return ta.appManager.activeApp == tc.expectedActiveApp
 			})
 		})

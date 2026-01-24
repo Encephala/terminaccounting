@@ -24,7 +24,7 @@ func AvailableLedgers() []Ledger {
 func AvailableLedgersAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
-	for _, ledger := range *ledgersCache.Load() {
+	for _, ledger := range AvailableLedgers() {
 		result = append(result, ledger)
 	}
 

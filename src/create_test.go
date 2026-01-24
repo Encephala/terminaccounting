@@ -25,10 +25,9 @@ func TestCreate(t *testing.T) {
 }
 
 func testCreateGeneric(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t)
+	tw, DB := initWrapper(t, true)
 
-	tw.RunAsync(t).
-		GoToTab(app)
+	tw.GoToTab(app)
 
 	adaptedWait(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.apps[ta.appManager.activeApp].Type() == app
@@ -163,7 +162,7 @@ func TestCreate_Msg(t *testing.T) {
 }
 
 func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	tw, _ := initWrapper(t, false)
 
 	tw.GoToTab(app).
 		SendText("gc")
@@ -175,7 +174,7 @@ func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	tw, _ := initWrapper(t, false)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE)
@@ -189,7 +188,7 @@ func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	tw, _ := initWrapper(t, false)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -220,7 +219,7 @@ func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_CommitCmd(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	tw, _ := initWrapper(t, false)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -240,7 +239,7 @@ func testCreateLedger_CommitCmd(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_Commit(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t)
+	tw, DB := initWrapper(t, false)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).

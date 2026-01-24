@@ -46,28 +46,25 @@ func makeKeyMsg(input string) tea.KeyMsg {
 	}
 }
 
-type TestWrapper struct {
+type testWrapperBuilder struct {
 	model tea.Model
-
-	runtimeInfo *runtimeInfo
-
-	lastCmdResults []tea.Msg
 }
 
-func NewTestWrapper(model tea.Model) *TestWrapper {
-	return &TestWrapper{
-		model: model,
-	}
+func NewTestWrapperBuilder(model tea.Model) *testWrapperBuilder {
+	return &testWrapperBuilder{model: model}
 }
 
-type runtimeInfo struct {
-	program           *tea.Program
-	runtimeErrChannel chan error
+func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
+	t.Helper()
 
-	mutex *sync.Mutex
+	return &TestWrapper{model: twb.model}
 }
 
-func (tw *TestWrapper) RunAsync(t *testing.T) *TestWrapper {
+func (twb *testWrapperBuilder) RunAsync(t *testing.T) *TestWrapper {
+	t.Helper()
+
+	tw := &TestWrapper{model: twb.model}
+
 	if tw.runtimeInfo != nil {
 		panic("tried to make already async TestWrapper async again, that seems wrong and dumb")
 	}
@@ -100,6 +97,21 @@ func (tw *TestWrapper) RunAsync(t *testing.T) *TestWrapper {
 	t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
 
 	return tw
+}
+
+type TestWrapper struct {
+	model tea.Model
+
+	runtimeInfo *runtimeInfo
+
+	lastCmdResults []tea.Msg
+}
+
+type runtimeInfo struct {
+	program           *tea.Program
+	runtimeErrChannel chan error
+
+	mutex *sync.Mutex
 }
 
 func (tw *TestWrapper) Send(messages ...tea.Msg) *TestWrapper {

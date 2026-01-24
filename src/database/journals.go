@@ -23,7 +23,7 @@ func AvailableJournals() []Journal {
 func AvailableJournalsAsItempickerItems() []itempicker.Item {
 	var result []itempicker.Item
 
-	for _, journal := range *journalsCache.Load() {
+	for _, journal := range AvailableJournals() {
 		result = append(result, journal)
 	}
 

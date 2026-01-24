@@ -26,7 +26,7 @@ func AvailableAccountsAsItempickerItems() []itempicker.Item {
 
 	result = append(result, (*Account)(nil))
 
-	for _, account := range *accountsCache.Load() {
+	for _, account := range AvailableAccounts() {
 		result = append(result, &account)
 	}
 
