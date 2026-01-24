@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
 	"testing"
@@ -12,7 +13,13 @@ import (
 )
 
 func TestEntries_Create_Motions(t *testing.T) {
-	tw, _ := initWrapper(t, false)
+	tw, DB := initWrapper(t, false)
+
+	_, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
+	require.NoError(t, err)
+	_, err = (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
+	require.NoError(t, err)
+	require.NoError(t, database.UpdateCache(DB))
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -85,7 +92,7 @@ func TestEntries_Create_Motions(t *testing.T) {
 		assert.Equal(t, meta.JumpVerticalMsg{ToEnd: false}, results[0])
 	})
 
-	t.Run("write", func(t *testing.T) {
+	t.Run("write error", func(t *testing.T) {
 		tw.SwitchMode(meta.COMMANDMODE, false).
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
@@ -96,5 +103,38 @@ func TestEntries_Create_Motions(t *testing.T) {
 		assert.Equal(t, meta.CommitMsg{}, results[1])
 		// Error because debit/credit is not filled in in both rows
 		assert.IsType(t, errors.New(""), results[2])
+	})
+
+	t.Run("write success", func(t *testing.T) {
+		tw.SwitchMode(meta.NORMALMODE).
+			SendText("gg").
+			SendText("llll")
+
+		// Row 0: Debit 10
+		tw.SwitchMode(meta.INSERTMODE).
+			SendText("420").
+			SwitchMode(meta.NORMALMODE)
+
+		// Row 1: Credit 5
+		tw.SendText("jl").
+			SwitchMode(meta.INSERTMODE).
+			SendText("69").
+			SwitchMode(meta.NORMALMODE)
+
+		// Row 2: Credit 5
+		tw.SendText("j").
+			SwitchMode(meta.INSERTMODE).
+			SendText("351").
+			SwitchMode(meta.NORMALMODE)
+
+		tw.SwitchMode(meta.COMMANDMODE, false).
+			SendText("w").
+			Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+		results := tw.GetLastCmdResults()
+		require.GreaterOrEqual(t, len(results), 3)
+		assert.Equal(t, meta.ExecuteCommandMsg{}, results[0])
+		assert.Equal(t, meta.CommitMsg{}, results[1])
+		assert.IsType(t, meta.NotificationMessageMsg{}, results[2])
 	})
 }
