@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -210,6 +209,7 @@ type rowCreator struct {
 
 func newRowCreator(startDate *database.Date) *rowCreator {
 	dateInput := textinput.New()
+	dateInput.Cursor.SetMode(cursor.CursorStatic)
 	dateInput.Placeholder = "yyyy-MM-dd"
 	dateInput.CharLimit = 10
 	dateInput.Width = 10
@@ -1409,10 +1409,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 		return view, tea.Batch(cmds...)
 
 	default:
-		// TODO (waiting for https://github.com/charmbracelet/bubbles/issues/834)
-		// panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
-		slog.Warn("Unexpected tea.Msg", "message", fmt.Sprintf("%#v", message))
-		return view, nil
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
