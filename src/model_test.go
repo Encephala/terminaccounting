@@ -37,7 +37,7 @@ func initWrapper(t *testing.T) (*tat.TestWrapper[*terminaccounting], *sqlx.DB) {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.NewTestWrapper(t, newTerminaccounting(DB)), DB
+	return tat.NewTestWrapperGeneric(newTerminaccounting(DB)), DB
 }
 
 func adaptedAssert(

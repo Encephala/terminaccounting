@@ -41,7 +41,7 @@ func sanitizeDsn(dsn string) string {
 }
 
 // A type similar to tea.Model, but instead of returning tea.Model in Update() it returns T (aka Self type)
-type teaModelEsque[T any] interface {
+type TeaModelEsque[T any] interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (T, tea.Cmd)
 	View() string
@@ -53,13 +53,15 @@ type TestWrapper[T any] struct {
 	LastCmdResults []tea.Msg
 }
 
-func (tw *TestWrapper[T]) init() tea.Cmd {
+func (tw *TestWrapper[T]) init() {
+	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
+
 	switch model := any(tw.model).(type) {
-	case teaModelEsque[T]:
-		return model.Init()
+	case TeaModelEsque[T]:
+		tw.handleCmd(model.Init())
 
 	case tea.Model:
-		return model.Init()
+		tw.handleCmd(model.Init())
 
 	default:
 		panic(fmt.Sprintf("unexpected type %#v", model))
@@ -68,7 +70,7 @@ func (tw *TestWrapper[T]) init() tea.Cmd {
 
 func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
 	switch model := any(tw.model).(type) {
-	case teaModelEsque[T]:
+	case TeaModelEsque[T]:
 		return model.Update(msg)
 
 	case tea.Model:
@@ -82,7 +84,7 @@ func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
 
 func (tw *TestWrapper[T]) view() string {
 	switch model := any(tw.model).(type) {
-	case teaModelEsque[T]:
+	case TeaModelEsque[T]:
 		return model.View()
 
 	case tea.Model:
@@ -93,22 +95,18 @@ func (tw *TestWrapper[T]) view() string {
 	}
 }
 
-func NewTestWrapper[T any](t *testing.T, model T) *TestWrapper[T] {
-	t.Helper()
-
-	// assert T is either specificTeaModel[T] or tea.Model
-	switch any(model).(type) {
-	case teaModelEsque[T], tea.Model:
-		// pass
-
-	default:
-		t.Fatalf("type of %#v is neither tea.Model nor teaModelEsque", model)
-	}
-
+func NewTestWrapperGeneric[T tea.Model](model T) *TestWrapper[T] {
 	tw := &TestWrapper[T]{model: model}
 
-	tw.handleCmd(tw.init())
-	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
+	tw.init()
+
+	return tw
+}
+
+func NewTestWrapperSpecific[T TeaModelEsque[T]](model T) *TestWrapper[T] {
+	tw := &TestWrapper[T]{model: model}
+
+	tw.init()
 
 	return tw
 }
