@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEntries_Create_Motions(t *testing.T) {
+func TestCreate_Entries_Motions(t *testing.T) {
 	tw, DB := initWrapper(t, false)
 
 	_, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
@@ -29,27 +29,25 @@ func TestEntries_Create_Motions(t *testing.T) {
 
 	t.Run("insert row after", func(t *testing.T) {
 		tw.SendText("o")
-		results := tw.GetLastCmdResults()
-		require.Len(t, results, 2)
-		assert.Equal(t, view.CreateEntryRowMsg{After: true}, results[0])
-		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, results[1])
+		tw.AssertLastCmdsEqual(t,
+			view.CreateEntryRowMsg{After: true},
+			meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
+		)
 	})
 
 	t.Run("insert row before", func(t *testing.T) {
 		tw.SwitchMode(meta.NORMALMODE).
 			SendText("O")
-		results := tw.GetLastCmdResults()
-		require.Len(t, results, 2)
-		assert.Equal(t, view.CreateEntryRowMsg{After: false}, results[0])
-		assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, results[1])
+		tw.AssertLastCmdsEqual(t,
+			view.CreateEntryRowMsg{After: false},
+			meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
+		)
 	})
 
 	t.Run("delete row", func(t *testing.T) {
 		tw.SwitchMode(meta.NORMALMODE).
 			SendText("dd")
-		results := tw.GetLastCmdResults()
-		require.Len(t, results, 1)
-		assert.Equal(t, view.DeleteEntryRowMsg{}, results[0])
+		tw.AssertLastCmdsEqual(t, view.DeleteEntryRowMsg{})
 	})
 
 	t.Run("navigation", func(t *testing.T) {
@@ -62,34 +60,24 @@ func TestEntries_Create_Motions(t *testing.T) {
 
 		for key, direction := range motions {
 			tw.SendText(key)
-			results := tw.GetLastCmdResults()
-			require.Len(t, results, 1)
-			assert.Equal(t, meta.NavigateMsg{Direction: direction}, results[0])
+			tw.AssertLastCmdsEqual(t, meta.NavigateMsg{Direction: direction})
 		}
 	})
 
 	t.Run("jump horizontal", func(t *testing.T) {
 		tw.SendText("$")
-		results := tw.GetLastCmdResults()
-		require.Len(t, results, 1)
-		assert.Equal(t, meta.JumpHorizontalMsg{ToEnd: true}, results[0])
+		tw.AssertLastCmdsEqual(t, meta.JumpHorizontalMsg{ToEnd: true})
 
 		tw.SendText("_")
-		results = tw.GetLastCmdResults()
-		require.Len(t, results, 1)
-		assert.Equal(t, meta.JumpHorizontalMsg{ToEnd: false}, results[0])
+		tw.AssertLastCmdsEqual(t, meta.JumpHorizontalMsg{ToEnd: false})
 	})
 
 	t.Run("jump vertical", func(t *testing.T) {
 		tw.SendText("G")
-		results := tw.GetLastCmdResults()
-		require.Len(t, results, 1)
-		assert.Equal(t, meta.JumpVerticalMsg{ToEnd: true}, results[0])
+		tw.AssertLastCmdsEqual(t, meta.JumpVerticalMsg{ToEnd: true})
 
 		tw.SendText("gg")
-		results = tw.GetLastCmdResults()
-		require.Len(t, results, 1)
-		assert.Equal(t, meta.JumpVerticalMsg{ToEnd: false}, results[0])
+		tw.AssertLastCmdsEqual(t, meta.JumpVerticalMsg{ToEnd: false})
 	})
 
 	t.Run("write error", func(t *testing.T) {
@@ -98,10 +86,10 @@ func TestEntries_Create_Motions(t *testing.T) {
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 		results := tw.GetLastCmdResults()
-		require.Equal(t, len(results), 3)
-		assert.Equal(t, meta.ExecuteCommandMsg{}, results[0])
-		assert.Equal(t, meta.CommitMsg{}, results[1])
+		assert.Equal(t, results[:2], []tea.Msg{meta.ExecuteCommandMsg{}, meta.CommitMsg{}})
+
 		// Error because debit/credit is not filled in in both rows
+		// CBA to test the actual error itself
 		assert.IsType(t, errors.New(""), results[2])
 	})
 
@@ -131,10 +119,10 @@ func TestEntries_Create_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		results := tw.GetLastCmdResults()
-		require.GreaterOrEqual(t, len(results), 3)
-		assert.Equal(t, meta.ExecuteCommandMsg{}, results[0])
-		assert.Equal(t, meta.CommitMsg{}, results[1])
-		assert.IsType(t, meta.NotificationMessageMsg{}, results[2])
+		tw.AssertLastCmdsEqual(t,
+			meta.ExecuteCommandMsg{},
+			meta.CommitMsg{},
+			meta.NotificationMessageMsg{},
+		)
 	})
 }
