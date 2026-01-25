@@ -272,7 +272,7 @@ func (tw *TestWrapper) AssertViewContains(t *testing.T, expected string) {
 	assert.Contains(t, innerModel.View(), expected)
 }
 
-func (tw *TestWrapper) AssertLastCmdsEqual(t *testing.T, expected ...tea.Msg) {
+func (tw *TestWrapper) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
 	t.Helper()
 
 	assert.Equal(t, expected, tw.GetLastCmdResults())

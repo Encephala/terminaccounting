@@ -30,7 +30,7 @@ func TestCreate_Entries_Motions(t *testing.T) {
 
 	t.Run("insert row after", func(t *testing.T) {
 		tw.SendText("o")
-		tw.AssertLastCmdsEqual(t,
+		tw.AssertLastMsgsEqual(t,
 			view.CreateEntryRowMsg{After: true},
 			meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
 		)
@@ -39,7 +39,7 @@ func TestCreate_Entries_Motions(t *testing.T) {
 	t.Run("insert row before", func(t *testing.T) {
 		tw.SwitchMode(meta.NORMALMODE).
 			SendText("O")
-		tw.AssertLastCmdsEqual(t,
+		tw.AssertLastMsgsEqual(t,
 			view.CreateEntryRowMsg{After: false},
 			meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
 		)
@@ -48,7 +48,7 @@ func TestCreate_Entries_Motions(t *testing.T) {
 	t.Run("delete row", func(t *testing.T) {
 		tw.SwitchMode(meta.NORMALMODE).
 			SendText("dd")
-		tw.AssertLastCmdsEqual(t, view.DeleteEntryRowMsg{})
+		tw.AssertLastMsgsEqual(t, view.DeleteEntryRowMsg{})
 	})
 
 	t.Run("navigation", func(t *testing.T) {
@@ -61,24 +61,24 @@ func TestCreate_Entries_Motions(t *testing.T) {
 
 		for key, direction := range motions {
 			tw.SendText(key)
-			tw.AssertLastCmdsEqual(t, meta.NavigateMsg{Direction: direction})
+			tw.AssertLastMsgsEqual(t, meta.NavigateMsg{Direction: direction})
 		}
 	})
 
 	t.Run("jump horizontal", func(t *testing.T) {
 		tw.SendText("$")
-		tw.AssertLastCmdsEqual(t, meta.JumpHorizontalMsg{ToEnd: true})
+		tw.AssertLastMsgsEqual(t, meta.JumpHorizontalMsg{ToEnd: true})
 
 		tw.SendText("_")
-		tw.AssertLastCmdsEqual(t, meta.JumpHorizontalMsg{ToEnd: false})
+		tw.AssertLastMsgsEqual(t, meta.JumpHorizontalMsg{ToEnd: false})
 	})
 
 	t.Run("jump vertical", func(t *testing.T) {
 		tw.SendText("G")
-		tw.AssertLastCmdsEqual(t, meta.JumpVerticalMsg{ToEnd: true})
+		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{ToEnd: true})
 
 		tw.SendText("gg")
-		tw.AssertLastCmdsEqual(t, meta.JumpVerticalMsg{ToEnd: false})
+		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{ToEnd: false})
 	})
 
 	t.Run("write error", func(t *testing.T) {
@@ -141,7 +141,7 @@ func testCreateEntries_ViewSwitch(t *testing.T) {
 	tw.GoToTab(meta.ENTRIESAPP).
 		SendText("gc")
 
-	tw.AssertLastCmdsEqual(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+	tw.AssertLastMsgsEqual(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
 }
 
 func testCreateEntries_InsertMode(t *testing.T) {
@@ -152,7 +152,7 @@ func testCreateEntries_InsertMode(t *testing.T) {
 
 	tw.SendText("i")
 
-	tw.AssertLastCmdsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+	tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
 }
 
 func testCreateEntries_SetValues(t *testing.T) {
@@ -190,7 +190,7 @@ func testCreateEntries_CommitCmd(t *testing.T) {
 	tw.SendText("w")
 	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	tw.AssertLastCmdsEqual(t,
+	tw.AssertLastMsgsEqual(t,
 		meta.ExecuteCommandMsg{},
 		meta.CommitMsg{},
 		errors.New("no journal selected (none available)"),
