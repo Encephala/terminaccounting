@@ -167,10 +167,7 @@ func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
 	tw.GoToTab(app).
 		SendText("gc")
 
-	lastCmdResults := tw.GetLastCmdResults()
-
-	require.Len(t, lastCmdResults, 1)
-	assert.Equal(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE}, lastCmdResults[0])
+	tw.AssertLastCmdsEqual(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
 }
 
 func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
@@ -181,10 +178,7 @@ func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
 
 	tw.SendText("i")
 
-	lastCmdResults := tw.GetLastCmdResults()
-
-	require.Len(t, lastCmdResults, 1)
-	assert.Equal(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, lastCmdResults[0])
+	tw.AssertLastCmdsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
 }
 
 func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
@@ -200,9 +194,7 @@ func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
 
 	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
 
-	lastCmdResults := tw.GetLastCmdResults()
-	require.Len(t, lastCmdResults, 1)
-	assert.Equal(t, meta.SwitchFocusMsg{Direction: meta.NEXT}, lastCmdResults[0])
+	tw.AssertLastCmdsEqual(t, meta.SwitchFocusMsg{Direction: meta.NEXT})
 
 	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlN}, tea.KeyMsg{Type: tea.KeyCtrlC})
 
