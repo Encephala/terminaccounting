@@ -469,8 +469,6 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 			uv.getManager().rows = formRows
 
-			uv.getManager().updateShownRows()
-
 			return uv, nil
 		}
 
@@ -588,8 +586,7 @@ type rowsMutateManager struct {
 
 	colWidths []int
 
-	shownRows [][]string
-	viewport  viewport.Model
+	viewport viewport.Model
 }
 
 func newRowsMutateManager() *rowsMutateManager {
@@ -607,39 +604,37 @@ func newRowsMutateManager() *rowsMutateManager {
 		viewport:  viewport.New(0, 0),
 	}
 
-	result.updateShownRows()
-
 	return result
 }
 
-func (ervm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.Cmd) {
+func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		ervm.width = message.Width
-		ervm.height = message.Height
+		rmm.width = message.Width
+		rmm.height = message.Height
 
 		// -8 for border and horizontal padding and margin
-		ervm.viewport.Width = message.Width - 8
+		rmm.viewport.Width = message.Width - 8
 		// -6 for borders, header row, vertical margin and total row
-		ervm.viewport.Height = message.Height - 6
+		rmm.viewport.Height = message.Height - 6
 
-		ervm.calculateColumnWidths()
+		rmm.calculateColumnWidths()
 
-		for _, row := range ervm.rows {
+		for _, row := range rmm.rows {
 			row.width = message.Width
 		}
 
-		return ervm, nil
+		return rmm, nil
 
 	case tea.KeyMsg:
-		highlightRow, highlightCol := ervm.getActiveCoords()
+		highlightRow, highlightCol := rmm.getActiveCoords()
 
-		row := ervm.rows[highlightRow]
+		row := rmm.rows[highlightRow]
 		var cmd tea.Cmd
 		switch highlightCol {
 		case 0:
 			if !validateDateInput(message) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a date", message))
+				return rmm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a date", message))
 			}
 			row.dateInput, cmd = row.dateInput.Update(message)
 
@@ -651,7 +646,7 @@ func (ervm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.
 			row.descriptionInput, cmd = row.descriptionInput.Update(message)
 		case 4:
 			if !validateNumberInput(message) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
+				return rmm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
 			}
 			row.debitInput, cmd = row.debitInput.Update(message)
 			if row.creditInput.Value() != "" {
@@ -659,7 +654,7 @@ func (ervm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.
 			}
 		case 5:
 			if !validateNumberInput(message) {
-				return ervm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
+				return rmm, meta.MessageCmd(fmt.Errorf("%q is not a valid character for a number", message))
 			}
 			row.creditInput, cmd = row.creditInput.Update(message)
 			if row.debitInput.Value() != "" {
@@ -667,87 +662,82 @@ func (ervm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.
 			}
 		}
 
-		ervm.rows[highlightRow] = row
+		rmm.rows[highlightRow] = row
 
-		ervm.updateShownRows()
-
-		return ervm, cmd
+		return rmm, cmd
 
 	case meta.NavigateMsg:
-		oldRow, oldCol := ervm.getActiveCoords()
+		oldRow, oldCol := rmm.getActiveCoords()
 
 		switch message.Direction {
 		case meta.LEFT:
 			if oldCol == 0 {
 				break
 			}
-			ervm.setActiveCoords(oldRow, oldCol-1)
+			rmm.setActiveCoords(oldRow, oldCol-1)
 
 		case meta.DOWN:
-			if oldRow == ervm.numRows()-1 {
+			if oldRow == rmm.numRows()-1 {
 				break
 			}
-			ervm.setActiveCoords(oldRow+1, oldCol)
+			rmm.setActiveCoords(oldRow+1, oldCol)
 
 		case meta.UP:
 			if oldRow == 0 {
 				break
 			}
-			ervm.setActiveCoords(oldRow-1, oldCol)
+			rmm.setActiveCoords(oldRow-1, oldCol)
 
 		case meta.RIGHT:
-			if oldCol == ervm.numInputsPerRow()-1 {
+			if oldCol == rmm.numInputsPerRow()-1 {
 				break
 			}
-			ervm.setActiveCoords(oldRow, oldCol+1)
+			rmm.setActiveCoords(oldRow, oldCol+1)
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-		ervm.scrollViewport()
-
-		return ervm, nil
+		return rmm, nil
 
 	case meta.JumpHorizontalMsg:
-		oldRow, _ := ervm.getActiveCoords()
+		oldRow, _ := rmm.getActiveCoords()
 
 		if message.ToEnd {
-			ervm.setActiveCoords(oldRow, ervm.numInputsPerRow()-1)
+			rmm.setActiveCoords(oldRow, rmm.numInputsPerRow()-1)
 		} else {
-			ervm.setActiveCoords(oldRow, 0)
+			rmm.setActiveCoords(oldRow, 0)
 		}
 
-		return ervm, nil
+		return rmm, nil
 
 	case meta.JumpVerticalMsg:
-		_, oldCol := ervm.getActiveCoords()
+		_, oldCol := rmm.getActiveCoords()
 
 		if message.ToEnd {
-			ervm.setActiveCoords(ervm.numRows()-1, oldCol)
+			rmm.setActiveCoords(rmm.numRows()-1, oldCol)
 		} else {
-			ervm.setActiveCoords(0, oldCol)
+			rmm.setActiveCoords(0, oldCol)
 		}
 
-		return ervm, nil
+		return rmm, nil
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
-func (ervm *rowsMutateManager) View() string {
-	ervm.updateViewportContent()
-
+func (rmm *rowsMutateManager) View() string {
 	var result strings.Builder
 
-	result.WriteString(ervm.renderRow(ervm.headers, nil))
+	result.WriteString(rmm.renderRow(rmm.headers, nil))
 
 	result.WriteString("\n")
 
-	result.WriteString(ervm.viewport.View())
+	rmm.updateViewportContent()
+	result.WriteString(rmm.viewport.View())
 
-	total, err := ervm.calculateCurrentTotal()
+	total, err := rmm.calculateCurrentTotal()
 	var totalRendered string
 	red := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)).Italic(true)
 	green := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2))
@@ -781,50 +771,14 @@ func (rmm *rowsMutateManager) calculateColumnWidths() {
 	rmm.colWidths = []int{idxWidth, dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth}
 }
 
-func (ervm *rowsMutateManager) updateShownRows() {
-	var result [][]string
-
-	for i, row := range ervm.rows {
-		var currentRow []string
-
-		currentRow = append(currentRow, strconv.Itoa(i))
-		currentRow = append(currentRow, row.dateInput.View())
-		currentRow = append(currentRow, row.ledgerInput.View())
-		currentRow = append(currentRow, row.accountInput.View())
-		currentRow = append(currentRow, row.descriptionInput.View())
-		currentRow = append(currentRow, row.debitInput.View())
-		currentRow = append(currentRow, row.creditInput.View())
-
-		result = append(result, currentRow)
-	}
-
-	ervm.shownRows = result
-}
-
-func (rmm *rowsMutateManager) updateViewportContent() {
-	var rows []string
-
-	activeRow, activeCol := rmm.getActiveCoords()
-
-	for i, row := range rmm.shownRows {
-		if rmm.isActive && i == activeRow {
-			rows = append(rows, rmm.renderRow(row, &activeCol))
-		} else {
-			rows = append(rows, rmm.renderRow(row, nil))
-		}
-	}
-
-	rmm.viewport.SetContent(strings.Join(rows, "\n"))
-}
-
-func (ervm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
-	if len(values) != len(ervm.colWidths) {
+func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
+	if len(values) != len(rmm.colWidths) {
 		panic("you absolute dingus")
 	}
 
 	var result strings.Builder
 	for i := range values {
-		style := lipgloss.NewStyle().Width(ervm.colWidths[i])
+		style := lipgloss.NewStyle().Width(rmm.colWidths[i])
 
 		// +1 because never highlight idx column
 		if highlightedCol != nil && i == *highlightedCol+1 {
@@ -841,31 +795,70 @@ func (ervm *rowsMutateManager) renderRow(values []string, highlightedCol *int) s
 	return result.String()
 }
 
-func (ervm *rowsMutateManager) scrollViewport() {
+func (rmm *rowsMutateManager) updateViewportContent() {
+	var rows []string
+
+	activeRow, activeCol := rmm.getActiveCoords()
+
+	for i, row := range rmm.makeShownRows() {
+		if rmm.isActive && i == activeRow {
+			rows = append(rows, rmm.renderRow(row, &activeCol))
+		} else {
+			rows = append(rows, rmm.renderRow(row, nil))
+		}
+	}
+
+	rmm.viewport.SetContent(strings.Join(rows, "\n"))
+	rmm.scrollViewport()
+}
+
+func (rmm *rowsMutateManager) makeShownRows() [][]string {
+	var result [][]string
+
+	for i, row := range rmm.rows {
+		var currentRow []string
+
+		currentRow = append(currentRow, strconv.Itoa(i))
+		currentRow = append(currentRow, row.dateInput.View())
+		currentRow = append(currentRow, row.ledgerInput.View())
+		currentRow = append(currentRow, row.accountInput.View())
+		currentRow = append(currentRow, row.descriptionInput.View())
+		currentRow = append(currentRow, row.debitInput.View())
+		currentRow = append(currentRow, row.creditInput.View())
+
+		result = append(result, currentRow)
+	}
+
+	return result
+}
+
+func (rmm *rowsMutateManager) scrollViewport() {
+	shownRows := rmm.makeShownRows()
+
 	// If there are fewer rows shown than fit on the viewport, show the last set of rows
-	if ervm.viewport.YOffset+ervm.viewport.Height > len(ervm.shownRows) {
-		ervm.viewport.ScrollUp(ervm.viewport.YOffset + ervm.viewport.Height - len(ervm.shownRows))
+	if rmm.viewport.YOffset+rmm.viewport.Height > len(shownRows) {
+		rmm.viewport.ScrollUp(rmm.viewport.YOffset + rmm.viewport.Height - len(shownRows))
 		return
 	}
 
-	activeRow, _ := ervm.getActiveCoords()
+	activeRow, _ := rmm.getActiveCoords()
 
-	if activeRow >= ervm.viewport.YOffset+ervm.viewport.Height {
-		ervm.viewport.ScrollDown(activeRow - ervm.viewport.YOffset - ervm.viewport.Height + 1)
+	if activeRow >= rmm.viewport.YOffset+rmm.viewport.Height {
+		rmm.viewport.ScrollDown(activeRow - rmm.viewport.YOffset - rmm.viewport.Height + 1)
 		return
 	}
 
-	if activeRow < ervm.viewport.YOffset {
-		ervm.viewport.ScrollUp(ervm.viewport.YOffset - activeRow)
+	if activeRow < rmm.viewport.YOffset {
+		rmm.viewport.ScrollUp(rmm.viewport.YOffset - activeRow)
 		return
 	}
 }
 
 // Converts a slice of EntryRow "forms" to a slice of EntryRow
-func (ervm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
-	result := make([]database.EntryRow, ervm.numRows())
+func (rmm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
+	result := make([]database.EntryRow, rmm.numRows())
 
-	total, err := ervm.calculateCurrentTotal()
+	total, err := rmm.calculateCurrentTotal()
 	if err != nil {
 		return nil, err
 	}
@@ -874,7 +867,7 @@ func (ervm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
 		return nil, fmt.Errorf("entry has nonzero total value %s", total)
 	}
 
-	for i, formRow := range ervm.rows {
+	for i, formRow := range rmm.rows {
 		formLedger := formRow.ledgerInput.Value()
 		if formLedger == nil {
 			return nil, fmt.Errorf("invalid ledger selected in row %d (none available)", i)
@@ -956,27 +949,27 @@ func (uv *entryUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 }
 
 // Returns preceeded/exceeded if the move would make the active input go "out of bounds"
-func (ervm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
-	oldRow, oldCol := ervm.getActiveCoords()
+func (rmm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, exceeded bool) {
+	oldRow, oldCol := rmm.getActiveCoords()
 
 	switch direction {
 	case meta.PREVIOUS:
 		if oldRow == 0 && oldCol == 0 {
-			ervm.rows[0].dateInput.Blur()
-			ervm.isActive = false
+			rmm.rows[0].dateInput.Blur()
+			rmm.isActive = false
 			return true, false
 		}
 
-		ervm.setActiveCoords(oldRow, oldCol-1)
+		rmm.setActiveCoords(oldRow, oldCol-1)
 
 	case meta.NEXT:
-		if oldRow == ervm.numRows()-1 && oldCol == ervm.numInputsPerRow()-1 {
-			ervm.rows[oldRow].creditInput.Blur()
-			ervm.isActive = false
+		if oldRow == rmm.numRows()-1 && oldCol == rmm.numInputsPerRow()-1 {
+			rmm.rows[oldRow].creditInput.Blur()
+			rmm.isActive = false
 			return false, true
 		}
 
-		ervm.setActiveCoords(oldRow, oldCol+1)
+		rmm.setActiveCoords(oldRow, oldCol+1)
 
 	default:
 		panic(fmt.Sprintf("unexpected meta.Sequence: %#v", direction))
@@ -985,10 +978,10 @@ func (ervm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, 
 	return false, false
 }
 
-func (ervm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, error) {
+func (rmm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, error) {
 	var total database.CurrencyValue
 
-	for _, row := range ervm.rows {
+	for _, row := range rmm.rows {
 		if row.debitInput.Value() != "" {
 			change, err := database.ParseCurrencyValue(row.debitInput.Value())
 			if err != nil {
@@ -1010,42 +1003,42 @@ func (ervm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, 
 	return total, nil
 }
 
-func (ervm *rowsMutateManager) numRows() int {
-	return len(ervm.rows)
+func (rmm *rowsMutateManager) numRows() int {
+	return len(rmm.rows)
 }
 
-func (ervm *rowsMutateManager) numInputs() int {
-	return ervm.numRows() * ervm.numInputsPerRow()
+func (rmm *rowsMutateManager) numInputs() int {
+	return rmm.numRows() * rmm.numInputsPerRow()
 }
 
-func (ervm *rowsMutateManager) numInputsPerRow() int {
+func (rmm *rowsMutateManager) numInputsPerRow() int {
 	return 6
 }
 
-func (ervm *rowsMutateManager) getActiveCoords() (row, col int) {
-	inputsPerRow := ervm.numInputsPerRow()
-	return ervm.activeInput / inputsPerRow, ervm.activeInput % inputsPerRow
+func (rmm *rowsMutateManager) getActiveCoords() (row, col int) {
+	inputsPerRow := rmm.numInputsPerRow()
+	return rmm.activeInput / inputsPerRow, rmm.activeInput % inputsPerRow
 }
 
-func (ervm *rowsMutateManager) focus(direction meta.Sequence) {
-	ervm.isActive = true
-	numInputs := ervm.numInputs()
+func (rmm *rowsMutateManager) focus(direction meta.Sequence) {
+	rmm.isActive = true
+	numInputs := rmm.numInputs()
 
 	switch direction {
 	case meta.PREVIOUS:
-		ervm.activeInput = numInputs - 1
-		ervm.rows[ervm.numRows()-1].creditInput.Focus()
+		rmm.activeInput = numInputs - 1
+		rmm.rows[rmm.numRows()-1].creditInput.Focus()
 
 	case meta.NEXT:
-		ervm.activeInput = 0
-		ervm.rows[0].dateInput.Focus()
+		rmm.activeInput = 0
+		rmm.rows[0].dateInput.Focus()
 	}
 }
 
 // Ignores a move that would make the active input go "out of bounds"
-func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
-	numRow := ervm.numRows()
-	numPerRow := ervm.numInputsPerRow()
+func (rmm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
+	numRow := rmm.numRows()
+	numPerRow := rmm.numInputsPerRow()
 
 	if newCol == -1 {
 		newRow -= 1
@@ -1072,33 +1065,30 @@ func (ervm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 
 	// Blur when leaving a textinput
 	// Have to do all this instead of leaving them all focussed, because then the cursor renders permanently
-	oldRow, oldCol := ervm.getActiveCoords()
+	oldRow, oldCol := rmm.getActiveCoords()
 	switch oldCol {
 	case 0:
-		ervm.rows[oldRow].dateInput.Blur()
+		rmm.rows[oldRow].dateInput.Blur()
 	case 3:
-		ervm.rows[oldRow].descriptionInput.Blur()
+		rmm.rows[oldRow].descriptionInput.Blur()
 	case 4:
-		ervm.rows[oldRow].debitInput.Blur()
+		rmm.rows[oldRow].debitInput.Blur()
 	case 5:
-		ervm.rows[oldRow].creditInput.Blur()
+		rmm.rows[oldRow].creditInput.Blur()
 	}
 
-	ervm.activeInput = newRow*numPerRow + newCol
+	rmm.activeInput = newRow*numPerRow + newCol
 
 	switch newCol {
 	case 0:
-		ervm.rows[newRow].dateInput.Focus()
+		rmm.rows[newRow].dateInput.Focus()
 	case 3:
-		ervm.rows[newRow].descriptionInput.Focus()
+		rmm.rows[newRow].descriptionInput.Focus()
 	case 4:
-		ervm.rows[newRow].debitInput.Focus()
+		rmm.rows[newRow].debitInput.Focus()
 	case 5:
-		ervm.rows[newRow].creditInput.Focus()
+		rmm.rows[newRow].creditInput.Focus()
 	}
-
-	ervm.updateShownRows()
-	ervm.scrollViewport()
 }
 
 // Converts a slice of EntryRow to a slice of EntryRowCreateView
@@ -1197,79 +1187,72 @@ func validateNumberInput(msg tea.KeyMsg) bool {
 	return false
 }
 
-func (ervm *rowsMutateManager) deleteRow() (*rowsMutateManager, tea.Cmd) {
-	activeRow, activeCol := ervm.getActiveCoords()
+func (rmm *rowsMutateManager) deleteRow() (*rowsMutateManager, tea.Cmd) {
+	activeRow, activeCol := rmm.getActiveCoords()
 
 	// If trying to delete the last row in the entry
 	// CBA handling weird edge cases here
-	if ervm.numRows() == 1 {
-		return ervm, meta.MessageCmd(errors.New("cannot delete the final entryrow"))
+	if rmm.numRows() == 1 {
+		return rmm, meta.MessageCmd(errors.New("cannot delete the final entryrow"))
 	}
 
 	// If about to delete the bottom-most row
 	newRow, newCol := activeRow, activeCol
-	if activeRow == ervm.numRows()-1 {
+	if activeRow == rmm.numRows()-1 {
 		newRow -= 1
 
 		// Switch focus first to avoid index out of bounds panic when unblurring oldRow
-		ervm.setActiveCoords(newRow, newCol)
+		rmm.setActiveCoords(newRow, newCol)
 
-		ervm.rows = append(ervm.rows[:activeRow], ervm.rows[activeRow+1:]...)
+		rmm.rows = append(rmm.rows[:activeRow], rmm.rows[activeRow+1:]...)
 	} else {
 		// Switch focus after because otherwise the to-be-deleted row gets highlighted
-		ervm.rows = append(ervm.rows[:activeRow], ervm.rows[activeRow+1:]...)
+		rmm.rows = append(rmm.rows[:activeRow], rmm.rows[activeRow+1:]...)
 
-		ervm.setActiveCoords(newRow, newCol)
+		rmm.setActiveCoords(newRow, newCol)
 	}
 
-	ervm.updateShownRows()
-
-	return ervm, nil
+	return rmm, nil
 }
 
-func (ervm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
-	activeRow, _ := ervm.getActiveCoords()
+func (rmm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
+	activeRow, _ := rmm.getActiveCoords()
 
 	var newRow *rowCreator
 
 	// If the row that the new-row-creation was triggered from had a valid date,
 	// prefill it in the new row. Otherwise, just leave new row empty
-	prefillDate, parseErr := database.ToDate(ervm.rows[activeRow].dateInput.Value())
+	prefillDate, parseErr := database.ToDate(rmm.rows[activeRow].dateInput.Value())
 	if parseErr == nil {
 		newRow = newRowCreator(&prefillDate)
 	} else {
 		newRow = newRowCreator(nil)
 	}
 
-	newRows := make([]*rowCreator, 0, ervm.numRows()+1)
+	newRows := make([]*rowCreator, 0, rmm.numRows()+1)
 
 	if after {
 		// Insert after activeRow
-		newRows = append(newRows, ervm.rows[:activeRow+1]...)
+		newRows = append(newRows, rmm.rows[:activeRow+1]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, ervm.rows[activeRow+1:]...)
+		newRows = append(newRows, rmm.rows[activeRow+1:]...)
 
-		ervm.rows = newRows
+		rmm.rows = newRows
 
-		ervm.setActiveCoords(activeRow+1, 0)
+		rmm.setActiveCoords(activeRow+1, 0)
 	} else {
 		// Insert before activeRow
-		newRows = append(newRows, ervm.rows[:activeRow]...)
+		newRows = append(newRows, rmm.rows[:activeRow]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, ervm.rows[activeRow:]...)
+		newRows = append(newRows, rmm.rows[activeRow:]...)
 
-		ervm.rows = newRows
+		rmm.rows = newRows
 
-		// Ensure new active input is focused if need be
-		// Have to add 1 row to activeInput after inserting row above active
-		// Fixing activeInput makes it correctly get blurred
-		ervm.activeInput += ervm.numInputsPerRow()
-		ervm.setActiveCoords(activeRow, 0)
+		rmm.activeInput += rmm.numInputsPerRow()
+		rmm.setActiveCoords(activeRow, 0)
 	}
 
-	ervm.updateShownRows()
-
-	return ervm, nil
+	return rmm, nil
 }
 
 type entryMutateView interface {
