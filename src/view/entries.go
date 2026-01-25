@@ -842,14 +842,22 @@ func (ervm *rowsMutateManager) renderRow(values []string, highlightedCol *int) s
 }
 
 func (ervm *rowsMutateManager) scrollViewport() {
+	// If there are fewer rows shown than fit on the viewport, show the last set of rows
+	if ervm.viewport.YOffset+ervm.viewport.Height > len(ervm.shownRows) {
+		ervm.viewport.ScrollUp(ervm.viewport.YOffset + ervm.viewport.Height - len(ervm.shownRows))
+		return
+	}
+
 	activeRow, _ := ervm.getActiveCoords()
 
 	if activeRow >= ervm.viewport.YOffset+ervm.viewport.Height {
 		ervm.viewport.ScrollDown(activeRow - ervm.viewport.YOffset - ervm.viewport.Height + 1)
+		return
 	}
 
 	if activeRow < ervm.viewport.YOffset {
 		ervm.viewport.ScrollUp(ervm.viewport.YOffset - activeRow)
+		return
 	}
 }
 
