@@ -40,25 +40,28 @@ func sanitizeDsn(dsn string) string {
 	return regexp.MustCompile(`[^a-zA-Z0-9_-]+`).ReplaceAllString(dsn, "_")
 }
 
-func makeKeyMsg(input string) tea.KeyMsg {
-	return tea.KeyMsg{
-		Type:  tea.KeyRunes,
-		Runes: []rune(input),
-	}
+type TestableModel[T any] interface {
+	Init() tea.Cmd
+	Update(tea.Msg) (T, tea.Cmd)
+	View() string
 }
 
-type testWrapperBuilder struct {
-	model tea.Model
+type testWrapperBuilder[T TestableModel[T]] struct {
+	model T
 }
 
-func NewTestWrapperBuilder(model tea.Model) *testWrapperBuilder {
-	return &testWrapperBuilder{model: model}
+func NewTestWrapperBuilderGeneric(model tea.Model) *testWrapperBuilder[tea.Model] {
+	return &testWrapperBuilder[tea.Model]{model: model}
 }
 
-func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
+func NewTestWrapperBuilderSpecific[T TestableModel[T]](model T) *testWrapperBuilder[T] {
+	return &testWrapperBuilder[T]{model: model}
+}
+
+func (twb *testWrapperBuilder[T]) RunSync(t *testing.T) *TestWrapper[T] {
 	t.Helper()
 
-	tw := &TestWrapper{model: twb.model}
+	tw := &TestWrapper[T]{model: twb.model}
 
 	tw.handleCmd(tw.model.Init())
 
@@ -67,13 +70,13 @@ func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
 	return tw
 }
 
-type TestWrapper struct {
-	model tea.Model
+type TestWrapper[T TestableModel[T]] struct {
+	model T
 
 	LastCmdResults []tea.Msg
 }
 
-func (tw *TestWrapper) Send(messages ...tea.Msg) *TestWrapper {
+func (tw *TestWrapper[T]) Send(messages ...tea.Msg) *TestWrapper[T] {
 	tw.LastCmdResults = make([]tea.Msg, 0)
 
 	for _, message := range messages {
@@ -86,7 +89,14 @@ func (tw *TestWrapper) Send(messages ...tea.Msg) *TestWrapper {
 	return tw
 }
 
-func (tw *TestWrapper) SendText(input string) *TestWrapper {
+func makeKeyMsg(input string) tea.KeyMsg {
+	return tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: []rune(input),
+	}
+}
+
+func (tw *TestWrapper[T]) SendText(input string) *TestWrapper[T] {
 	var messages []tea.Msg
 
 	for _, char := range input {
@@ -99,7 +109,7 @@ func (tw *TestWrapper) SendText(input string) *TestWrapper {
 }
 
 // Simulate runtime handling cmds returned by an Update
-func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
+func (tw *TestWrapper[T]) handleCmd(cmd tea.Cmd) {
 	var queue []tea.Cmd
 	queue = append(queue, cmd)
 
@@ -128,19 +138,19 @@ func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
 	}
 }
 
-func (tw *TestWrapper) Assert(t *testing.T, getter func(tea.Model) bool) {
+func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(TestableModel[T]) bool) {
 	t.Helper()
 
 	assert.True(t, getter(tw.model))
 }
 
-func (tw *TestWrapper) AssertViewContains(t *testing.T, expected string) {
+func (tw *TestWrapper[T]) AssertViewContains(t *testing.T, expected string) {
 	t.Helper()
 
 	assert.Contains(t, tw.model.View(), expected)
 }
 
-func (tw *TestWrapper) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
+func (tw *TestWrapper[T]) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
 	t.Helper()
 
 	assert.Equal(t, expected, tw.LastCmdResults)

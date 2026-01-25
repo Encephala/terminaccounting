@@ -5,7 +5,7 @@ import (
 	"terminaccounting/meta"
 )
 
-func (tw *TestWrapper) SwitchMode(mode meta.InputMode, data ...any) *TestWrapper {
+func (tw *TestWrapper[T]) SwitchMode(mode meta.InputMode, data ...any) *TestWrapper[T] {
 	switch mode {
 	case meta.INSERTMODE, meta.NORMALMODE:
 		if len(data) != 0 {
@@ -28,7 +28,7 @@ func (tw *TestWrapper) SwitchMode(mode meta.InputMode, data ...any) *TestWrapper
 	return tw
 }
 
-func (tw *TestWrapper) GoToTab(tab meta.AppType) *TestWrapper {
+func (tw *TestWrapper[T]) GoToTab(tab meta.AppType) *TestWrapper[T] {
 	switch tab {
 	case meta.ENTRIESAPP:
 
@@ -48,13 +48,13 @@ func (tw *TestWrapper) GoToTab(tab meta.AppType) *TestWrapper {
 	return tw
 }
 
-func (tw *TestWrapper) SwitchTab(direction meta.Sequence) *TestWrapper {
+func (tw *TestWrapper[T]) SwitchTab(direction meta.Sequence) *TestWrapper[T] {
 	tw.Send(meta.SwitchTabMsg{Direction: direction})
 
 	return tw
 }
 
-func (tw *TestWrapper) SwitchView(viewType meta.ViewType, data ...any) *TestWrapper {
+func (tw *TestWrapper[T]) SwitchView(viewType meta.ViewType, data ...any) *TestWrapper[T] {
 	switch viewType {
 	case meta.LISTVIEWTYPE, meta.CREATEVIEWTYPE:
 		if data != nil {

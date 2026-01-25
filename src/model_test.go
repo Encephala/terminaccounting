@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
+func initWrapper(t *testing.T) (*tat.TestWrapper[tea.Model], *sqlx.DB) {
 	t.Helper()
 
 	DB := tat.SetupTestEnv(t)
@@ -37,18 +37,18 @@ func initWrapper(t *testing.T) (*tat.TestWrapper, *sqlx.DB) {
 	require.Nil(t, err)
 	require.True(t, setUp)
 
-	return tat.NewTestWrapperBuilder(newTerminaccounting(DB)).RunSync(t), DB
+	return tat.NewTestWrapperBuilderGeneric(newTerminaccounting(DB)).RunSync(t), DB
 }
 
 func adaptedAssert(
 	t *testing.T,
-	tw *tat.TestWrapper,
+	tw *tat.TestWrapper[tea.Model],
 	condition func(*terminaccounting) bool,
 ) {
 	t.Helper()
 
-	tw.Assert(t, func(model tea.Model) bool {
-		return condition(model.(*terminaccounting))
+	tw.Assert(t, func(tm tat.TestableModel[tea.Model]) bool {
+		return condition(tm.(*terminaccounting))
 	})
 }
 
