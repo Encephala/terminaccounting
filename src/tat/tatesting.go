@@ -40,8 +40,8 @@ func sanitizeDsn(dsn string) string {
 	return regexp.MustCompile(`[^a-zA-Z0-9_-]+`).ReplaceAllString(dsn, "_")
 }
 
-// A tea.Model-esque, but instead of returning tea.Model in Update() it returns T (aka Self type)
-type specificTeaModel[T any] interface {
+// A type similar to tea.Model, but instead of returning tea.Model in Update() it returns T (aka Self type)
+type teaModelEsque[T any] interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (T, tea.Cmd)
 	View() string
@@ -51,48 +51,63 @@ type TestWrapper[T any] struct {
 	model T
 
 	LastCmdResults []tea.Msg
-
-	init   func(T) tea.Cmd
-	update func(T, tea.Msg) (T, tea.Cmd)
-	view   func(T) string
 }
 
-func NewTestWrapper[T any](model T) *TestWrapper[T] {
-	tw := &TestWrapper[T]{model: model}
-
-	switch any(model).(type) {
-	case specificTeaModel[T]:
-		tw.init = func(model T) tea.Cmd {
-			return any(model).(specificTeaModel[T]).Init()
-		}
-
-		tw.update = func(model T, msg tea.Msg) (T, tea.Cmd) {
-			return any(model).(specificTeaModel[T]).Update(msg)
-		}
-
-		tw.view = func(model T) string {
-			return any(model).(specificTeaModel[T]).View()
-		}
+func (tw *TestWrapper[T]) init() tea.Cmd {
+	switch model := any(tw.model).(type) {
+	case teaModelEsque[T]:
+		return model.Init()
 
 	case tea.Model:
-		tw.init = func(model T) tea.Cmd {
-			return any(model).(tea.Model).Init()
-		}
-
-		tw.update = func(model T, msg tea.Msg) (T, tea.Cmd) {
-			newModel, cmd := any(tw.model).(tea.Model).Update(msg)
-			return newModel.(T), cmd
-		}
-
-		tw.view = func(model T) string {
-			return any(model).(tea.Model).View()
-		}
+		return model.Init()
 
 	default:
+		panic(fmt.Sprintf("unexpected type %#v", model))
+	}
+}
+
+func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
+	switch model := any(tw.model).(type) {
+	case teaModelEsque[T]:
+		return model.Update(msg)
+
+	case tea.Model:
+		newModel, cmd := model.Update(msg)
+		return newModel.(T), cmd
+
+	default:
+		panic(fmt.Sprintf("unexpected type %#v", model))
+	}
+}
+
+func (tw *TestWrapper[T]) view() string {
+	switch model := any(tw.model).(type) {
+	case teaModelEsque[T]:
+		return model.View()
+
+	case tea.Model:
+		return model.View()
+
+	default:
+		panic(fmt.Sprintf("unexpected type %#v", model))
+	}
+}
+
+func NewTestWrapper[T any](t *testing.T, model T) *TestWrapper[T] {
+	t.Helper()
+
+	// assert T is either specificTeaModel[T] or tea.Model
+	switch any(model).(type) {
+	case teaModelEsque[T], tea.Model:
+		// pass
+
+	default:
+		t.Fatalf("type of %#v is neither tea.Model nor teaModelEsque", model)
 	}
 
-	tw.handleCmd(tw.init(tw.model))
+	tw := &TestWrapper[T]{model: model}
 
+	tw.handleCmd(tw.init())
 	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
 
 	return tw
@@ -103,7 +118,7 @@ func (tw *TestWrapper[T]) Send(messages ...tea.Msg) *TestWrapper[T] {
 
 	for _, message := range messages {
 		var cmd tea.Cmd
-		tw.model, cmd = tw.update(tw.model, message)
+		tw.model, cmd = tw.update(message)
 
 		tw.handleCmd(cmd)
 	}
@@ -153,7 +168,7 @@ func (tw *TestWrapper[T]) handleCmd(cmd tea.Cmd) {
 
 		default:
 			tw.LastCmdResults = append(tw.LastCmdResults, message)
-			tw.model, cmd = tw.update(tw.model, message)
+			tw.model, cmd = tw.update(message)
 
 			queue = append(queue, cmd)
 		}
@@ -169,7 +184,7 @@ func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(T) bool) {
 func (tw *TestWrapper[T]) AssertViewContains(t *testing.T, expected string) {
 	t.Helper()
 
-	assert.Contains(t, tw.view(tw.model), expected)
+	assert.Contains(t, tw.view(), expected)
 }
 
 func (tw *TestWrapper[T]) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
