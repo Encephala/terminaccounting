@@ -40,18 +40,6 @@ func initWrapper(t *testing.T) (*tat.TestWrapper[*terminaccounting], *sqlx.DB) {
 	return tat.NewTestWrapperGeneric(newTerminaccounting(DB)), DB
 }
 
-func adaptedAssert(
-	t *testing.T,
-	tw *tat.TestWrapper[*terminaccounting],
-	condition func(*terminaccounting) bool,
-) {
-	t.Helper()
-
-	tw.Assert(t, func(ta *terminaccounting) bool {
-		return condition(ta)
-	})
-}
-
 func TestSwitchModesMsg(t *testing.T) {
 	tw, _ := initWrapper(t)
 
