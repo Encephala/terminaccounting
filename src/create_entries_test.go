@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -12,6 +13,107 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCreate_Entries(t *testing.T) {
+	tw, DB := initWrapper(t)
+
+	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
+	require.NoError(t, err)
+	j1, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
+	require.NoError(t, err)
+	require.NoError(t, database.UpdateCache(DB))
+
+	tw.GoToTab(meta.ENTRIESAPP)
+
+	t.Run("switch to create view", func(t *testing.T) {
+		tw.SendText("gc")
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
+		})
+	})
+
+	t.Run("enter insert mode", func(t *testing.T) {
+		tw.SendText("i")
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return ta.inputMode == meta.INSERTMODE
+		})
+	})
+
+	t.Run("set values", func(t *testing.T) {
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}).
+			SendText("Entry Notes")
+
+		tw.AssertViewContains(t, "Entry Notes")
+
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}).
+			// Clear prefilled date
+			Send(tea.KeyMsg{Type: tea.KeyCtrlW}).
+			SendText("2023-01-01").
+			AssertViewContains(t, "2023-01-01")
+
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+			SendText("Row 1").
+			AssertViewContains(t, "Row 1")
+
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}).
+			SendText("100")
+
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+			SendText("Row 2").
+			AssertViewContains(t, "Row 2")
+
+		tw.Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+			SendText("100").
+			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return ta.inputMode == meta.NORMALMODE
+		})
+	})
+
+	t.Run("end commit msg", func(t *testing.T) {
+		tw.SendText(":")
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return ta.inputMode == meta.COMMANDMODE
+		})
+
+		tw.SendText("w")
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return strings.Contains(ta.View(), ":w")
+		})
+	})
+
+	t.Run("commit to database", func(t *testing.T) {
+		tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+			return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
+		})
+
+		entries, err := database.SelectEntries(DB)
+		require.Nil(t, err)
+		assert.Len(t, entries, 1)
+
+		assert.Equal(t, "Entry Notes", entries[0].Notes.Collapse())
+		assert.Equal(t, j1, entries[0].Journal)
+
+		rows, err := database.SelectRowsByEntry(DB, entries[0].Id)
+		require.Nil(t, err)
+		assert.Len(t, rows, 2)
+
+		assert.Equal(t, database.CurrencyValue(10000), rows[0].Value)
+		assert.Equal(t, l1, rows[0].Ledger)
+		assert.Equal(t, "Row 1", rows[0].Description)
+
+		assert.Equal(t, database.CurrencyValue(-10000), rows[1].Value)
+		assert.Equal(t, l1, rows[1].Ledger)
+		assert.Equal(t, "Row 2", rows[1].Description)
+	})
+}
 
 func TestCreate_Entries_Motions(t *testing.T) {
 	tw, DB := initWrapper(t)
