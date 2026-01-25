@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,8 +29,9 @@ func SetupTestEnv(t *testing.T) *sqlx.DB {
 	t.Cleanup(func() { DB.Close() })
 
 	err := database.InitSchemas(DB)
-
 	require.Nil(t, err)
+
+	database.UpdateCache(DB)
 
 	return DB
 }
