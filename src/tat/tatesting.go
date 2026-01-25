@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
-	"sync"
 	"terminaccounting/database"
 	"testing"
 	"time"
@@ -66,73 +65,20 @@ func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
 	return tw
 }
 
-func (twb *testWrapperBuilder) RunAsync(t *testing.T) *TestWrapper {
-	t.Helper()
-
-	tw := &TestWrapper{}
-	asyncModel := &asyncModel{model: twb.model}
-	tw.model = asyncModel
-
-	program := tea.NewProgram(asyncModel, tea.WithoutRenderer())
-
-	// Buffered channel to make sure no goroutines leak in weird situations,
-	// though I don't believe that can ever happen
-	runtimeErrChannel := make(chan error, 1)
-	go func() {
-		_, finalErr := program.Run()
-		runtimeErrChannel <- finalErr
-	}()
-
-	// Give model some time to init
-	// Utterly arbitrary amount of time. This should really be a TestWrapper.Wait call, but like
-	// how do I verify that the model has processed the init messages? I see no easy way
-	time.Sleep(time.Millisecond * 10)
-
-	tw.runtimeInfo = &runtimeInfo{
-		program:           program,
-		runtimeErrChannel: runtimeErrChannel,
-
-		mutex: &asyncModel.mutex,
-	}
-
-	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
-
-	t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
-
-	return tw
-}
-
 type TestWrapper struct {
 	model tea.Model
 
-	runtimeInfo *runtimeInfo
-
-	lastCmdResults []tea.Msg
-}
-
-type runtimeInfo struct {
-	program           *tea.Program
-	runtimeErrChannel chan error
-
-	mutex *sync.Mutex
+	LastCmdResults []tea.Msg
 }
 
 func (tw *TestWrapper) Send(messages ...tea.Msg) *TestWrapper {
-	if tw.runtimeInfo == nil {
-		tw.lastCmdResults = make([]tea.Msg, 0)
-
-		for _, message := range messages {
-			var cmd tea.Cmd
-			tw.model, cmd = tw.model.Update(message)
-
-			tw.handleCmd(cmd)
-		}
-
-		return tw
-	}
+	tw.LastCmdResults = make([]tea.Msg, 0)
 
 	for _, message := range messages {
-		tw.runtimeInfo.program.Send(message)
+		var cmd tea.Cmd
+		tw.model, cmd = tw.model.Update(message)
+
+		tw.handleCmd(cmd)
 	}
 
 	return tw
@@ -172,7 +118,7 @@ func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
 			continue
 
 		default:
-			tw.lastCmdResults = append(tw.lastCmdResults, message)
+			tw.LastCmdResults = append(tw.LastCmdResults, message)
 			tw.model, cmd = tw.model.Update(message)
 
 			queue = append(queue, cmd)
@@ -180,130 +126,20 @@ func (tw *TestWrapper) handleCmd(cmd tea.Cmd) {
 	}
 }
 
-func (tw *TestWrapper) GetLastCmdResults() []tea.Msg {
-	// tw.lastMessages is only (can only be) maintained if running asynchronously
-	if tw.runtimeInfo != nil {
-		panic("TestWrapper is running asynchronously, can't get last messages")
-	}
-
-	return tw.lastCmdResults
-}
-
-// Small convenience methods
-func (tw *TestWrapper) lock() {
-	if tw.runtimeInfo == nil {
-		panic("locking but not running async")
-	}
-
-	tw.runtimeInfo.mutex.Lock()
-}
-func (tw *TestWrapper) unlock() {
-	if tw.runtimeInfo == nil {
-		panic("unlocking but not running async")
-	}
-
-	tw.runtimeInfo.mutex.Unlock()
-}
-
-func (tw *TestWrapper) Wait(t *testing.T, condition func(tea.Model) bool) {
+func (tw *TestWrapper) Assert(t *testing.T, getter func(tea.Model) bool) {
 	t.Helper()
 
-	if tw.runtimeInfo == nil {
-		panic("TestWrapper is running synchronously, nothing to wait for")
-	}
-
-	ticker := time.NewTicker(time.Millisecond * 1)
-	timeout := time.After(time.Millisecond * 100)
-
-	for {
-		select {
-		case <-ticker.C:
-			if tw.checkCondition(condition) {
-				return
-			}
-
-		case <-timeout:
-			tw.Send(tea.QuitMsg{})
-			t.Fatalf("test timed out")
-
-		case err := <-tw.runtimeInfo.runtimeErrChannel:
-			t.Fatalf("program runtime error: %q", err)
-		}
-	}
-}
-
-func (tw *TestWrapper) checkCondition(condition func(tea.Model) bool) bool {
-	tw.lock()
-	defer tw.unlock()
-
-	innerModel := tw.model.(*asyncModel).model
-
-	return condition(innerModel)
-}
-
-func (tw *TestWrapper) AssertEqual(t *testing.T, actualGetter func(tea.Model) any, expected any) {
-	t.Helper()
-
-	if tw.runtimeInfo == nil {
-		value := actualGetter(tw.model)
-		assert.Equal(t, expected, value)
-
-		return
-	}
-
-	tw.lock()
-	defer tw.unlock()
-
-	innerModel := tw.model.(*asyncModel).model
-	value := actualGetter(innerModel)
-	assert.Equal(t, expected, value)
+	assert.True(t, getter(tw.model))
 }
 
 func (tw *TestWrapper) AssertViewContains(t *testing.T, expected string) {
 	t.Helper()
 
-	if tw.runtimeInfo == nil {
-		assert.Contains(t, tw.model.View(), expected)
-		return
-	}
-
-	tw.lock()
-	defer tw.unlock()
-
-	innerModel := tw.model.(*asyncModel).model
-	assert.Contains(t, innerModel.View(), expected)
+	assert.Contains(t, tw.model.View(), expected)
 }
 
 func (tw *TestWrapper) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
 	t.Helper()
 
-	assert.Equal(t, expected, tw.GetLastCmdResults())
-}
-
-type asyncModel struct {
-	model tea.Model
-
-	mutex sync.Mutex
-}
-
-func (am *asyncModel) Init() tea.Cmd {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model.Init()
-}
-
-func (am *asyncModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-
-	var cmd tea.Cmd
-	am.model, cmd = am.model.Update(message)
-
-	return am, cmd
-}
-
-func (am *asyncModel) View() string {
-	am.mutex.Lock()
-	defer am.mutex.Unlock()
-	return am.model.View()
+	assert.Equal(t, expected, tw.LastCmdResults)
 }

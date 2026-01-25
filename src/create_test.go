@@ -25,18 +25,18 @@ func TestCreate(t *testing.T) {
 }
 
 func testCreateGeneric(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t, true)
+	tw, DB := initWrapper(t)
 
 	tw.GoToTab(app)
 
-	adaptedWait(t, tw, func(ta *terminaccounting) bool {
+	adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 		return ta.appManager.apps[ta.appManager.activeApp].Type() == app
 	})
 
 	t.Run("switch to create view", func(t *testing.T) {
 		tw.SendText("gc")
 
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
 		})
 	})
@@ -44,7 +44,7 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 	t.Run("enter insert mode", func(t *testing.T) {
 		tw.SendText("i")
 
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.INSERTMODE
 		})
 	})
@@ -53,7 +53,7 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 		tw.SendText("test").
 			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.NORMALMODE
 		})
 
@@ -63,13 +63,13 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 	t.Run("end commit msg", func(t *testing.T) {
 		tw.SendText(":")
 
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.COMMANDMODE
 		})
 
 		tw.SendText("w")
 
-		adaptedWait(t, tw, func(ta *terminaccounting) bool {
+		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
 			return strings.Contains(ta.View(), ":w")
 		})
 	})
@@ -79,10 +79,6 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 
 		switch app {
 		case meta.LEDGERSAPP:
-			adaptedWait(t, tw, func(ta *terminaccounting) bool {
-				return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
-			})
-
 			ledgers, err := database.SelectLedgers(DB)
 
 			require.Nil(t, err)
@@ -99,11 +95,6 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 			assert.Equal(t, expected, ledgers[0])
 
 		case meta.ACCOUNTSAPP:
-			tw.Wait(t, func(tea.Model) bool {
-				accounts, _ := database.SelectAccounts(DB)
-				return len(accounts) > 0
-			})
-
 			accounts, err := database.SelectAccounts(DB)
 
 			require.Nil(t, err)
@@ -120,11 +111,6 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 			assert.Equal(t, expected, accounts[0])
 
 		case meta.JOURNALSAPP:
-			tw.Wait(t, func(tea.Model) bool {
-				journals, _ := database.SelectJournals(DB)
-				return len(journals) > 0
-			})
-
 			journals, err := database.SelectJournals(DB)
 
 			require.Nil(t, err)
@@ -162,7 +148,7 @@ func TestCreate_Msg(t *testing.T) {
 }
 
 func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(app).
 		SendText("gc")
@@ -171,7 +157,7 @@ func testCreateLedger_ViewSwitch(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE)
@@ -182,7 +168,7 @@ func testCreateLedger_InsertMode(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -211,7 +197,7 @@ func testCreateLedger_SetValues(t *testing.T, app meta.AppType) {
 }
 
 func testCreateLedger_CommitCmd(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -223,15 +209,12 @@ func testCreateLedger_CommitCmd(t *testing.T, app meta.AppType) {
 	tw.SendText("w")
 	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	lastCmdResults := tw.GetLastCmdResults()
-	// The two messages I want to test for, but also the notification/view switch etc. from handling CommitMsg
-	require.Greater(t, len(lastCmdResults), 2)
-	assert.Equal(t, meta.ExecuteCommandMsg{}, lastCmdResults[0])
-	assert.Equal(t, meta.CommitMsg{}, lastCmdResults[1])
+	assert.Equal(t, meta.ExecuteCommandMsg{}, tw.LastCmdResults[0])
+	assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[1])
 }
 
 func testCreateLedger_Commit(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t, false)
+	tw, DB := initWrapper(t)
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).

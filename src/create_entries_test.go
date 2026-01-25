@@ -14,7 +14,7 @@ import (
 )
 
 func TestCreate_Entries_Motions(t *testing.T) {
-	tw, DB := initWrapper(t, false)
+	tw, DB := initWrapper(t)
 
 	_, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
 	require.NoError(t, err)
@@ -86,12 +86,11 @@ func TestCreate_Entries_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		results := tw.GetLastCmdResults()
-		assert.Equal(t, results[:2], []tea.Msg{meta.ExecuteCommandMsg{}, meta.CommitMsg{}})
+		assert.Equal(t, tw.LastCmdResults[:2], []tea.Msg{meta.ExecuteCommandMsg{}, meta.CommitMsg{}})
 
 		// Error because debit/credit is not filled in in both rows
 		// CBA to test the actual error itself
-		assert.IsType(t, errors.New(""), results[2])
+		assert.IsType(t, errors.New(""), tw.LastCmdResults[2])
 	})
 
 	t.Run("write success", func(t *testing.T) {
@@ -120,10 +119,12 @@ func TestCreate_Entries_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		lastCmdResults := tw.GetLastCmdResults()
-		assert.Equal(t, meta.ExecuteCommandMsg{}, lastCmdResults[0])
-		assert.Equal(t, meta.CommitMsg{}, lastCmdResults[1])
-		assert.Equal(t, meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully created Entry %q", "1")}, lastCmdResults[2])
+		assert.Equal(t, meta.ExecuteCommandMsg{}, tw.LastCmdResults[0])
+		assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[1])
+		assert.Equal(t,
+			meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully created Entry %q", "1")},
+			tw.LastCmdResults[2],
+		)
 	})
 }
 
@@ -136,7 +137,7 @@ func TestCreate_Entries_Msg(t *testing.T) {
 }
 
 func testCreateEntries_ViewSwitch(t *testing.T) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SendText("gc")
@@ -145,7 +146,7 @@ func testCreateEntries_ViewSwitch(t *testing.T) {
 }
 
 func testCreateEntries_InsertMode(t *testing.T) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SwitchView(meta.CREATEVIEWTYPE)
@@ -156,7 +157,7 @@ func testCreateEntries_InsertMode(t *testing.T) {
 }
 
 func testCreateEntries_SetValues(t *testing.T) {
-	tw, DB := initWrapper(t, false)
+	tw, DB := initWrapper(t)
 
 	_, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
 	require.NoError(t, err)
@@ -181,7 +182,7 @@ func testCreateEntries_SetValues(t *testing.T) {
 }
 
 func testCreateEntries_CommitCmd(t *testing.T) {
-	tw, _ := initWrapper(t, false)
+	tw, _ := initWrapper(t)
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -198,7 +199,7 @@ func testCreateEntries_CommitCmd(t *testing.T) {
 }
 
 func testCreateEntries_Commit(t *testing.T) {
-	tw, DB := initWrapper(t, false)
+	tw, DB := initWrapper(t)
 
 	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
 	require.NoError(t, err)
