@@ -29,14 +29,14 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 
 	tw.GoToTab(app)
 
-	adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+	tw.Assert(t, func(ta *terminaccounting) bool {
 		return ta.appManager.apps[ta.appManager.activeApp].Type() == app
 	})
 
 	t.Run("switch to create view", func(t *testing.T) {
 		tw.SendText("gc")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
 		})
 	})
@@ -44,7 +44,7 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 	t.Run("enter insert mode", func(t *testing.T) {
 		tw.SendText("i")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.INSERTMODE
 		})
 	})
@@ -53,7 +53,7 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 		tw.SendText("test").
 			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.NORMALMODE
 		})
 
@@ -63,13 +63,13 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 	t.Run("end commit msg", func(t *testing.T) {
 		tw.SendText(":")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.COMMANDMODE
 		})
 
 		tw.SendText("w")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return strings.Contains(ta.View(), ":w")
 		})
 	})

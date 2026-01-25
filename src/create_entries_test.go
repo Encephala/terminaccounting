@@ -28,7 +28,7 @@ func TestCreate_Entries(t *testing.T) {
 	t.Run("switch to create view", func(t *testing.T) {
 		tw.SendText("gc")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
 		})
 	})
@@ -36,7 +36,7 @@ func TestCreate_Entries(t *testing.T) {
 	t.Run("enter insert mode", func(t *testing.T) {
 		tw.SendText("i")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.INSERTMODE
 		})
 	})
@@ -68,7 +68,7 @@ func TestCreate_Entries(t *testing.T) {
 			SendText("100").
 			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.NORMALMODE
 		})
 	})
@@ -76,13 +76,13 @@ func TestCreate_Entries(t *testing.T) {
 	t.Run("end commit msg", func(t *testing.T) {
 		tw.SendText(":")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.inputMode == meta.COMMANDMODE
 		})
 
 		tw.SendText("w")
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return strings.Contains(ta.View(), ":w")
 		})
 	})
@@ -90,7 +90,7 @@ func TestCreate_Entries(t *testing.T) {
 	t.Run("commit to database", func(t *testing.T) {
 		tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		adaptedAssert(t, tw, func(ta *terminaccounting) bool {
+		tw.Assert(t, func(ta *terminaccounting) bool {
 			return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
 		})
 

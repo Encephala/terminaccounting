@@ -40,40 +40,62 @@ func sanitizeDsn(dsn string) string {
 	return regexp.MustCompile(`[^a-zA-Z0-9_-]+`).ReplaceAllString(dsn, "_")
 }
 
-type TestableModel[T any] interface {
+// A tea.Model-esque, but instead of returning tea.Model in Update() it returns T (aka Self type)
+type specificTeaModel[T any] interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (T, tea.Cmd)
 	View() string
 }
 
-type testWrapperBuilder[T TestableModel[T]] struct {
+type TestWrapper[T any] struct {
 	model T
+
+	LastCmdResults []tea.Msg
+
+	init   func(T) tea.Cmd
+	update func(T, tea.Msg) (T, tea.Cmd)
+	view   func(T) string
 }
 
-func NewTestWrapperBuilderGeneric(model tea.Model) *testWrapperBuilder[tea.Model] {
-	return &testWrapperBuilder[tea.Model]{model: model}
-}
+func NewTestWrapper[T any](model T) *TestWrapper[T] {
+	tw := &TestWrapper[T]{model: model}
 
-func NewTestWrapperBuilderSpecific[T TestableModel[T]](model T) *testWrapperBuilder[T] {
-	return &testWrapperBuilder[T]{model: model}
-}
+	switch any(model).(type) {
+	case specificTeaModel[T]:
+		tw.init = func(model T) tea.Cmd {
+			return any(model).(specificTeaModel[T]).Init()
+		}
 
-func (twb *testWrapperBuilder[T]) RunSync(t *testing.T) *TestWrapper[T] {
-	t.Helper()
+		tw.update = func(model T, msg tea.Msg) (T, tea.Cmd) {
+			return any(model).(specificTeaModel[T]).Update(msg)
+		}
 
-	tw := &TestWrapper[T]{model: twb.model}
+		tw.view = func(model T) string {
+			return any(model).(specificTeaModel[T]).View()
+		}
 
-	tw.handleCmd(tw.model.Init())
+	case tea.Model:
+		tw.init = func(model T) tea.Cmd {
+			return any(model).(tea.Model).Init()
+		}
+
+		tw.update = func(model T, msg tea.Msg) (T, tea.Cmd) {
+			newModel, cmd := any(tw.model).(tea.Model).Update(msg)
+			return newModel.(T), cmd
+		}
+
+		tw.view = func(model T) string {
+			return any(model).(tea.Model).View()
+		}
+
+	default:
+	}
+
+	tw.handleCmd(tw.init(tw.model))
 
 	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
 
 	return tw
-}
-
-type TestWrapper[T TestableModel[T]] struct {
-	model T
-
-	LastCmdResults []tea.Msg
 }
 
 func (tw *TestWrapper[T]) Send(messages ...tea.Msg) *TestWrapper[T] {
@@ -81,7 +103,7 @@ func (tw *TestWrapper[T]) Send(messages ...tea.Msg) *TestWrapper[T] {
 
 	for _, message := range messages {
 		var cmd tea.Cmd
-		tw.model, cmd = tw.model.Update(message)
+		tw.model, cmd = tw.update(tw.model, message)
 
 		tw.handleCmd(cmd)
 	}
@@ -131,14 +153,14 @@ func (tw *TestWrapper[T]) handleCmd(cmd tea.Cmd) {
 
 		default:
 			tw.LastCmdResults = append(tw.LastCmdResults, message)
-			tw.model, cmd = tw.model.Update(message)
+			tw.model, cmd = tw.update(tw.model, message)
 
 			queue = append(queue, cmd)
 		}
 	}
 }
 
-func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(TestableModel[T]) bool) {
+func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(T) bool) {
 	t.Helper()
 
 	assert.True(t, getter(tw.model))
@@ -147,7 +169,7 @@ func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(TestableModel[T]) boo
 func (tw *TestWrapper[T]) AssertViewContains(t *testing.T, expected string) {
 	t.Helper()
 
-	assert.Contains(t, tw.model.View(), expected)
+	assert.Contains(t, tw.view(tw.model), expected)
 }
 
 func (tw *TestWrapper[T]) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
