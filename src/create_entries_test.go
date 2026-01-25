@@ -126,3 +126,118 @@ func TestCreate_Entries_Motions(t *testing.T) {
 		assert.Equal(t, meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully created Entry %q", "1")}, lastCmdResults[2])
 	})
 }
+
+func TestCreate_Entries_Msg(t *testing.T) {
+	t.Run("ViewSwitch", testCreateEntries_ViewSwitch)
+	t.Run("InsertMode", testCreateEntries_InsertMode)
+	t.Run("SetValues", testCreateEntries_SetValues)
+	t.Run("CommitCmd", testCreateEntries_CommitCmd)
+	t.Run("Commit", testCreateEntries_Commit)
+}
+
+func testCreateEntries_ViewSwitch(t *testing.T) {
+	tw, _ := initWrapper(t, false)
+
+	tw.GoToTab(meta.ENTRIESAPP).
+		SendText("gc")
+
+	tw.AssertLastCmdsEqual(t, meta.SwitchAppViewMsg{ViewType: meta.CREATEVIEWTYPE})
+}
+
+func testCreateEntries_InsertMode(t *testing.T) {
+	tw, _ := initWrapper(t, false)
+
+	tw.GoToTab(meta.ENTRIESAPP).
+		SwitchView(meta.CREATEVIEWTYPE)
+
+	tw.SendText("i")
+
+	tw.AssertLastCmdsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+}
+
+func testCreateEntries_SetValues(t *testing.T) {
+	tw, DB := initWrapper(t, false)
+
+	_, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
+	require.NoError(t, err)
+	require.NoError(t, database.UpdateCache(DB))
+
+	tw.GoToTab(meta.ENTRIESAPP).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE)
+
+	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
+	tw.SendText("test notes")
+	tw.AssertViewContains(t, "test notes")
+
+	tw.AssertViewContains(t, "0")
+
+	// Switch to entry rows and then to row 0 description
+	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
+	tw.Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab})
+
+	tw.SendText("row description")
+	tw.AssertViewContains(t, "row description")
+}
+
+func testCreateEntries_CommitCmd(t *testing.T) {
+	tw, _ := initWrapper(t, false)
+
+	tw.GoToTab(meta.ENTRIESAPP).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.COMMANDMODE, false)
+
+	tw.SendText("w")
+	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	tw.AssertLastCmdsEqual(t,
+		meta.ExecuteCommandMsg{},
+		meta.CommitMsg{},
+		errors.New("no journal selected (none available)"),
+	)
+}
+
+func testCreateEntries_Commit(t *testing.T) {
+	tw, DB := initWrapper(t, false)
+
+	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
+	require.NoError(t, err)
+	j1, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
+	require.NoError(t, err)
+	require.NoError(t, database.UpdateCache(DB))
+
+	tw.GoToTab(meta.ENTRIESAPP).
+		SwitchView(meta.CREATEVIEWTYPE).
+		SwitchMode(meta.INSERTMODE).
+		Send(tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("My Entry").
+		Send(tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("2023-01-01").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("Row 1").
+		Send(tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("100").
+		SwitchMode(meta.NORMALMODE).
+		SendText("j_").
+		SwitchMode(meta.INSERTMODE).
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("Row 2").
+		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
+		SendText("100").
+		SwitchMode(meta.NORMALMODE).
+		Send(meta.CommitMsg{})
+
+	entries, err := database.SelectEntries(DB)
+	require.Nil(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, j1, entries[0].Journal)
+	assert.Equal(t, "My Entry", entries[0].Notes.Collapse())
+
+	rows, err := database.SelectRowsByEntry(DB, entries[0].Id)
+	require.Nil(t, err)
+	assert.Len(t, rows, 2)
+	assert.Equal(t, database.CurrencyValue(10000), rows[0].Value)
+	assert.Equal(t, l1, rows[0].Ledger)
+	assert.Equal(t, database.CurrencyValue(-10000), rows[1].Value)
+	assert.Equal(t, l1, rows[1].Ledger)
+}

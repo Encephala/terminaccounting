@@ -69,13 +69,8 @@ func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
 func (twb *testWrapperBuilder) RunAsync(t *testing.T) *TestWrapper {
 	t.Helper()
 
-	tw := &TestWrapper{model: twb.model}
-
-	if tw.runtimeInfo != nil {
-		panic("tried to make already async TestWrapper async again, that seems wrong and dumb")
-	}
-
-	asyncModel := &asyncModel{model: tw.model}
+	tw := &TestWrapper{}
+	asyncModel := &asyncModel{model: twb.model}
 	tw.model = asyncModel
 
 	program := tea.NewProgram(asyncModel, tea.WithoutRenderer())
