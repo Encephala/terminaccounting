@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -119,10 +120,9 @@ func TestCreate_Entries_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		tw.AssertLastCmdsEqual(t,
-			meta.ExecuteCommandMsg{},
-			meta.CommitMsg{},
-			meta.NotificationMessageMsg{},
-		)
+		lastCmdResults := tw.GetLastCmdResults()
+		assert.Equal(t, meta.ExecuteCommandMsg{}, lastCmdResults[0])
+		assert.Equal(t, meta.CommitMsg{}, lastCmdResults[1])
+		assert.Equal(t, meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully created Entry %q", "1")}, lastCmdResults[2])
 	})
 }
