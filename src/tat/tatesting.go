@@ -95,6 +95,8 @@ func (twb *testWrapperBuilder) RunAsync(t *testing.T) *TestWrapper {
 		mutex: &asyncModel.mutex,
 	}
 
+	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
+
 	t.Cleanup(func() { tw.Send(tea.QuitMsg{}) })
 
 	return tw
