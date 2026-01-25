@@ -57,7 +57,13 @@ func NewTestWrapperBuilder(model tea.Model) *testWrapperBuilder {
 func (twb *testWrapperBuilder) RunSync(t *testing.T) *TestWrapper {
 	t.Helper()
 
-	return &TestWrapper{model: twb.model}
+	tw := &TestWrapper{model: twb.model}
+
+	tw.handleCmd(tw.model.Init())
+
+	tw.Send(tea.WindowSizeMsg{Width: 100, Height: 40})
+
+	return tw
 }
 
 func (twb *testWrapperBuilder) RunAsync(t *testing.T) *TestWrapper {
