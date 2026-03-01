@@ -22,15 +22,13 @@ type journalsDetailView struct {
 
 	listModel list.Model
 
-	app meta.App
-
 	modelId int
 
 	journal database.Journal
 }
 
-func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal, app meta.App) *journalsDetailView {
-	viewStyles := meta.NewListViewStyles(app.Colour())
+func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal) *journalsDetailView {
+	viewStyles := meta.NewListViewStyles(meta.JOURNALSCOLOUR)
 
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = viewStyles.ListDelegateSelectedTitle
@@ -46,8 +44,6 @@ func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal, app meta.App) 
 		DB: DB,
 
 		listModel: model,
-
-		app: app,
 
 		modelId: journal.Id,
 
@@ -142,7 +138,7 @@ func (dv *journalsDetailView) CommandSet() meta.CommandSet {
 }
 
 func (dv *journalsDetailView) Reload() View {
-	return NewJournalsDetailView(dv.DB, dv.journal, dv.app)
+	return NewJournalsDetailView(dv.DB, dv.journal)
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
