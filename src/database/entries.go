@@ -338,6 +338,10 @@ func setupSchemaEntryRows(DB *sqlx.DB) (bool, error) {
 }
 
 func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
+	if len(rows) == 0 {
+		return 0, nil
+	}
+
 	query := `INSERT INTO entryrows
 	(entry, date, ledger, account, description, document, value, reconciled)
 	VALUES
