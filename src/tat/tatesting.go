@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 	"terminaccounting/database"
 	"testing"
@@ -50,6 +51,11 @@ type TeaModelEsque[T any] interface {
 type TestWrapper[T any] struct {
 	model T
 
+	// Messages that should not be passed to the model
+	// e.g. meta.NotificationMsg{} is only handled by the outer terminaccounting model
+	ignoredMsgs []tea.Msg
+
+	// The messages returned by the last tea.Cmd (recursively)
 	LastCmdResults []tea.Msg
 }
 
@@ -69,6 +75,10 @@ func (tw *TestWrapper[T]) init() {
 }
 
 func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
+	if slices.Contains(tw.ignoredMsgs, msg) {
+		return tw.model, nil
+	}
+
 	switch model := any(tw.model).(type) {
 	case TeaModelEsque[T]:
 		return model.Update(msg)
@@ -95,16 +105,16 @@ func (tw *TestWrapper[T]) view() string {
 	}
 }
 
-func NewTestWrapperGeneric[T tea.Model](model T) *TestWrapper[T] {
-	tw := &TestWrapper[T]{model: model}
+func NewTestWrapperGeneric[T tea.Model](model T, ignoredMsgs ...tea.Msg) *TestWrapper[T] {
+	tw := &TestWrapper[T]{model: model, ignoredMsgs: ignoredMsgs}
 
 	tw.init()
 
 	return tw
 }
 
-func NewTestWrapperSpecific[T TeaModelEsque[T]](model T) *TestWrapper[T] {
-	tw := &TestWrapper[T]{model: model}
+func NewTestWrapperSpecific[T TeaModelEsque[T]](model T, ignoredMsgs ...tea.Msg) *TestWrapper[T] {
+	tw := &TestWrapper[T]{model: model, ignoredMsgs: ignoredMsgs}
 
 	tw.init()
 
