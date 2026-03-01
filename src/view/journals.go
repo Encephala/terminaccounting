@@ -17,7 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type journalsDetailsView struct {
+type journalsDetailView struct {
 	DB *sqlx.DB
 
 	listModel list.Model
@@ -29,7 +29,7 @@ type journalsDetailsView struct {
 	journal database.Journal
 }
 
-func NewJournalsDetailsView(DB *sqlx.DB, journal database.Journal, app meta.App) *journalsDetailsView {
+func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal, app meta.App) *journalsDetailView {
 	viewStyles := meta.NewListViewStyles(app.Colour())
 
 	delegate := list.NewDefaultDelegate()
@@ -42,7 +42,7 @@ func NewJournalsDetailsView(DB *sqlx.DB, journal database.Journal, app meta.App)
 	model.Styles.Title = viewStyles.Title
 	model.SetShowHelp(false)
 
-	return &journalsDetailsView{
+	return &journalsDetailView{
 		DB: DB,
 
 		listModel: model,
@@ -55,11 +55,11 @@ func NewJournalsDetailsView(DB *sqlx.DB, journal database.Journal, app meta.App)
 	}
 }
 
-func (dv *journalsDetailsView) Init() tea.Cmd {
+func (dv *journalsDetailView) Init() tea.Cmd {
 	return database.MakeSelectEntriesByJournalCmd(dv.DB, dv.journal.Id)
 }
 
-func (dv *journalsDetailsView) Update(message tea.Msg) (View, tea.Cmd) {
+func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
 		entries := message.Data.([]database.Entry)
@@ -101,25 +101,25 @@ func (dv *journalsDetailsView) Update(message tea.Msg) (View, tea.Cmd) {
 	}
 }
 
-func (dv *journalsDetailsView) View() string {
+func (dv *journalsDetailView) View() string {
 	return dv.listModel.View()
 }
 
-func (dv *journalsDetailsView) Type() meta.ViewType {
+func (dv *journalsDetailView) Type() meta.ViewType {
 	return meta.DETAILVIEWTYPE
 }
 
-func (dv *journalsDetailsView) AllowsInsertMode() bool {
+func (dv *journalsDetailView) AllowsInsertMode() bool {
 	return false
 }
 
-func (dv *journalsDetailsView) AcceptedModels() map[meta.ModelType]struct{} {
+func (dv *journalsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL: {},
 	}
 }
 
-func (dv *journalsDetailsView) MotionSet() meta.MotionSet {
+func (dv *journalsDetailView) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
@@ -137,16 +137,16 @@ func (dv *journalsDetailsView) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (dv *journalsDetailsView) CommandSet() meta.CommandSet {
+func (dv *journalsDetailView) CommandSet() meta.CommandSet {
 	return meta.CommandSet{}
 }
 
-func (dv *journalsDetailsView) Reload() View {
-	return NewJournalsDetailsView(dv.DB, dv.journal, dv.app)
+func (dv *journalsDetailView) Reload() View {
+	return NewJournalsDetailView(dv.DB, dv.journal, dv.app)
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
-func (dv *journalsDetailsView) makeGoToDetailViewCmd() tea.Cmd {
+func (dv *journalsDetailView) makeGoToDetailViewCmd() tea.Cmd {
 	return func() tea.Msg {
 		item := dv.listModel.SelectedItem()
 

@@ -55,7 +55,7 @@ func (app *journalsApp) Update(message tea.Msg) (meta.App, tea.Cmd) {
 		case meta.DETAILVIEWTYPE:
 			journal := message.Data.(database.Journal)
 
-			app.currentView = view.NewJournalsDetailsView(app.DB, journal, app)
+			app.currentView = view.NewJournalsDetailView(app.DB, journal, app)
 
 		case meta.CREATEVIEWTYPE:
 			app.currentView = view.NewJournalsCreateView(app.DB)
