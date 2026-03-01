@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -91,8 +92,8 @@ func TestSwitchApp(t *testing.T) {
 				tw.SendText(input)
 			}
 
-			tw.Assert(t, func(ta *terminaccounting) bool {
-				return ta.appManager.activeApp == tc.expectedActiveApp
+			tw.Execute(t, func(ta *terminaccounting) {
+				assert.Equal(t, ta.appManager.activeApp, tc.expectedActiveApp)
 			})
 		})
 	}

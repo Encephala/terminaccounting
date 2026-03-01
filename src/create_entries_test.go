@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/view"
@@ -28,16 +27,16 @@ func TestCreate_Entries(t *testing.T) {
 	t.Run("switch to create view", func(t *testing.T) {
 		tw.SendText("gc")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.appManager.currentViewType(), meta.CREATEVIEWTYPE)
 		})
 	})
 
 	t.Run("enter insert mode", func(t *testing.T) {
 		tw.SendText("i")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.INSERTMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.INSERTMODE)
 		})
 	})
 
@@ -68,30 +67,28 @@ func TestCreate_Entries(t *testing.T) {
 			SendText("100").
 			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.NORMALMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.NORMALMODE)
 		})
 	})
 
 	t.Run("end commit msg", func(t *testing.T) {
 		tw.SendText(":")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.COMMANDMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.COMMANDMODE)
 		})
 
 		tw.SendText("w")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return strings.Contains(ta.View(), ":w")
-		})
+		tw.AssertViewContains(t, ":w")
 	})
 
 	t.Run("commit to database", func(t *testing.T) {
 		tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.appManager.currentViewType() == meta.UPDATEVIEWTYPE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.appManager.currentViewType(), meta.UPDATEVIEWTYPE)
 		})
 
 		entries, err := database.SelectEntries(DB)

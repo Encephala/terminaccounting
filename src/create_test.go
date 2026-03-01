@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"testing"
@@ -29,23 +28,23 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 
 	tw.GoToTab(app)
 
-	tw.Assert(t, func(ta *terminaccounting) bool {
-		return ta.appManager.apps[ta.appManager.activeApp].Type() == app
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Equal(t, ta.appManager.apps[ta.appManager.activeApp].Type(), app)
 	})
 
 	t.Run("switch to create view", func(t *testing.T) {
 		tw.SendText("gc")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.appManager.currentViewType() == meta.CREATEVIEWTYPE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.appManager.currentViewType(), meta.CREATEVIEWTYPE)
 		})
 	})
 
 	t.Run("enter insert mode", func(t *testing.T) {
 		tw.SendText("i")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.INSERTMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.INSERTMODE)
 		})
 	})
 
@@ -53,8 +52,8 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 		tw.SendText("test").
 			Send(tea.KeyMsg{Type: tea.KeyCtrlC})
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.NORMALMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.NORMALMODE)
 		})
 
 		tw.AssertViewContains(t, "test")
@@ -63,15 +62,13 @@ func testCreateGeneric(t *testing.T, app meta.AppType) {
 	t.Run("end commit msg", func(t *testing.T) {
 		tw.SendText(":")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return ta.inputMode == meta.COMMANDMODE
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, ta.inputMode, meta.COMMANDMODE)
 		})
 
 		tw.SendText("w")
 
-		tw.Assert(t, func(ta *terminaccounting) bool {
-			return strings.Contains(ta.View(), ":w")
-		})
+		tw.AssertViewContains(t, ":w")
 	})
 
 	t.Run("commit to database", func(t *testing.T) {

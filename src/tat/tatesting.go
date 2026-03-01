@@ -183,16 +183,18 @@ func (tw *TestWrapper[T]) handleCmd(cmd tea.Cmd) {
 	}
 }
 
-func (tw *TestWrapper[T]) Assert(t *testing.T, getter func(T) bool) {
+func (tw *TestWrapper[T]) Execute(t *testing.T, function func(T)) {
 	t.Helper()
 
-	assert.True(t, getter(tw.model))
+	function(tw.model)
 }
 
 func (tw *TestWrapper[T]) AssertViewContains(t *testing.T, expected string) {
 	t.Helper()
 
-	assert.Contains(t, tw.view(), expected)
+	tw.Execute(t, func(T) {
+		assert.Contains(t, tw.view(), expected)
+	})
 }
 
 func (tw *TestWrapper[T]) AssertLastMsgsEqual(t *testing.T, expected ...tea.Msg) {
