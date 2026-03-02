@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 	"terminaccounting/database"
 	"testing"
@@ -75,7 +74,7 @@ func (tw *TestWrapper[T]) init() {
 }
 
 func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
-	if slices.Contains(tw.ignoredMsgs, msg) {
+	if tw.shouldIgnore(msg) {
 		return tw.model, nil
 	}
 
@@ -90,6 +89,22 @@ func (tw *TestWrapper[T]) update(msg tea.Msg) (T, tea.Cmd) {
 	default:
 		panic(fmt.Sprintf("unexpected type %#v", model))
 	}
+}
+
+func (tw *TestWrapper[T]) shouldIgnore(msg tea.Msg) bool {
+	for _, ignoredMsg := range tw.ignoredMsgs {
+		if ignoredMsg == msg {
+			return true
+		}
+
+		if err, ok := msg.(error); ok {
+			if ignoredErr, ok := ignoredMsg.(error); ok && ignoredErr.Error() == err.Error() {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (tw *TestWrapper[T]) view() string {
