@@ -272,6 +272,8 @@ func TestJournalsDetailView_DataLoaded(t *testing.T) {
 		v := view.(*journalsDetailView)
 		assert.Equal(t, v.modelId, jID)
 		assert.Len(t, v.listModel.Items(), 2)
+		tw.AssertViewContains(t, "First Entry")
+		tw.AssertViewContains(t, "Second Entry")
 	})
 }
 
