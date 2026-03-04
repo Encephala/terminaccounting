@@ -65,12 +65,29 @@ func TestSwitchModesMsg(t *testing.T) {
 		tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE})
 	})
 
+	t.Run("switch command mode", func(t *testing.T) {
+		tw.SwitchMode(meta.NORMALMODE).
+			SendText(":")
+
+		tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: false})
+	})
+
 	t.Run("switch search mode", func(t *testing.T) {
-		tw.SwitchView(meta.LISTVIEWTYPE).
+		tw.SwitchMode(meta.NORMALMODE).
+			SwitchView(meta.LISTVIEWTYPE).
 			SendText("/")
 
 		tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}, meta.UpdateSearchMsg{Query: ""})
 	})
+}
+
+func TestSwitchModesMsg_ModalBlocksInsertMode(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.Send(meta.ShowTextModalMsg{Text: []string{"message"}})
+	tw.SendText("i")
+
+	tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, errors.New("current view doesn't allow insert mode"))
 }
 
 func TestSwitchApp(t *testing.T) {
