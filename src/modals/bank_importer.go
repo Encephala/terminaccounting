@@ -64,7 +64,7 @@ func NewBankImporter() *bankImporter {
 	}
 }
 
-func (bsi *bankImporter) Init() tea.Cmd {
+func (bi *bankImporter) Init() tea.Cmd {
 	// Verify that an accounts ledger is
 	indexAccountsLedger := database.GetAccountsLedger()
 	if indexAccountsLedger == nil {
@@ -94,63 +94,63 @@ func (bsi *bankImporter) Init() tea.Cmd {
 	return pickFileCmd
 }
 
-func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
+func (bi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 	numInputs := 5
 
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		bsi.width = message.Width
-		bsi.height = message.Height
+		bi.width = message.Width
+		bi.height = message.Height
 
 		// -4 for horizontal padding on both sides
-		bsi.preview.Width = message.Width - 4
+		bi.preview.Width = message.Width - 4
 		// -9 for the various inputs and confirmation prompt and vertical padding
-		bsi.preview.Height = message.Height - 9
+		bi.preview.Height = message.Height - 9
 
-		bsi.colWidths = bsi.calculateColWidths(message.Width)
+		bi.colWidths = bi.calculateColWidths(message.Width)
 
-		return bsi, nil
+		return bi, nil
 
 	case meta.FileSelectedMsg:
-		bsi.fileLoaded = true
+		bi.fileLoaded = true
 
-		data, err := bsi.readFile(message.File)
+		data, err := bi.readFile(message.File)
 
 		if err != nil {
-			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			return bi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
-		bsi.headers = data[0]
-		bsi.data = data[1:]
+		bi.headers = data[0]
+		bi.data = data[1:]
 
-		bsi.colWidths = bsi.calculateColWidths(bsi.width)
+		bi.colWidths = bi.calculateColWidths(bi.width)
 
-		return bsi, nil
+		return bi, nil
 
 	case meta.SwitchFocusMsg:
-		if bsi.activeInput == numInputs-1 {
+		if bi.activeInput == numInputs-1 {
 			switch message.Direction {
 			case meta.NEXT:
-				if bsi.activeRow == bsi.preview.TotalLineCount()-1 {
+				if bi.activeRow == bi.preview.TotalLineCount()-1 {
 					// Don't change table, just move focus to input 0
 					break
 				}
 
-				bsi.activeRow++
-				bsi.scrollViewport()
+				bi.activeRow++
+				bi.scrollViewport()
 
-				return bsi, nil
+				return bi, nil
 
 			case meta.PREVIOUS:
-				if bsi.activeRow == 0 {
+				if bi.activeRow == 0 {
 					// Don't change table, just move focus to input 0
 					break
 				}
 
-				bsi.activeRow--
-				bsi.scrollViewport()
+				bi.activeRow--
+				bi.scrollViewport()
 
-				return bsi, nil
+				return bi, nil
 
 			default:
 				panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
@@ -159,101 +159,101 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		switch message.Direction {
 		case meta.NEXT:
-			bsi.activeInput++
-			bsi.activeInput %= numInputs
+			bi.activeInput++
+			bi.activeInput %= numInputs
 
-			if bsi.activeInput == numInputs-1 {
-				bsi.activeRow = 0
-				bsi.preview.GotoTop()
+			if bi.activeInput == numInputs-1 {
+				bi.activeRow = 0
+				bi.preview.GotoTop()
 			}
 
 		case meta.PREVIOUS:
-			bsi.activeInput--
+			bi.activeInput--
 
-			if bsi.activeInput < 0 {
-				bsi.activeInput += numInputs
+			if bi.activeInput < 0 {
+				bi.activeInput += numInputs
 			}
 
-			if bsi.activeInput == numInputs-1 {
-				bsi.activeRow = bsi.preview.TotalLineCount() - 1
-				bsi.preview.GotoBottom()
+			if bi.activeInput == numInputs-1 {
+				bi.activeRow = bi.preview.TotalLineCount() - 1
+				bi.preview.GotoBottom()
 			}
 
 		default:
 			panic(fmt.Sprintf("unexpected meta.Sequence: %#v", message.Direction))
 		}
 
-		return bsi, nil
+		return bi, nil
 
 	case tea.KeyMsg:
-		switch bsi.activeInput {
+		switch bi.activeInput {
 		case 0:
-			new, cmd := bsi.parserPicker.Update(message)
-			bsi.parserPicker = new
+			new, cmd := bi.parserPicker.Update(message)
+			bi.parserPicker = new
 
-			return bsi, cmd
+			return bi, cmd
 
 		case 1:
-			new, cmd := bsi.journalPicker.Update(message)
-			bsi.journalPicker = new
+			new, cmd := bi.journalPicker.Update(message)
+			bi.journalPicker = new
 
-			return bsi, cmd
+			return bi, cmd
 
 		case 2:
-			new, cmd := bsi.bankLedgerPicker.Update(message)
-			bsi.bankLedgerPicker = new
+			new, cmd := bi.bankLedgerPicker.Update(message)
+			bi.bankLedgerPicker = new
 
-			return bsi, cmd
+			return bi, cmd
 
 		case 3:
 			// Pass
-			return bsi, nil
+			return bi, nil
 
 		default:
-			panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
+			panic(fmt.Sprintf("unexpected bi.activeInput: %#v", bi.activeInput))
 		}
 
 	case meta.NavigateMsg:
-		if bsi.activeInput != numInputs-1 {
-			return bsi, meta.MessageCmd(errors.New("jk navigation only works within preview table"))
+		if bi.activeInput != numInputs-1 {
+			return bi, meta.MessageCmd(errors.New("jk navigation only works within preview table"))
 		}
 
 		switch message.Direction {
 		case meta.DOWN:
-			if bsi.activeRow < bsi.preview.TotalLineCount()-1 {
-				bsi.activeRow++
+			if bi.activeRow < bi.preview.TotalLineCount()-1 {
+				bi.activeRow++
 			}
 		case meta.UP:
-			if bsi.activeRow > 0 {
-				bsi.activeRow--
+			if bi.activeRow > 0 {
+				bi.activeRow--
 			}
 		default:
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-		bsi.scrollViewport()
+		bi.scrollViewport()
 
-		return bsi, nil
+		return bi, nil
 
 	case meta.JumpVerticalMsg:
-		if bsi.activeInput != numInputs-1 {
-			return bsi, meta.MessageCmd(errors.New("gg/G navigation only works within preview table"))
+		if bi.activeInput != numInputs-1 {
+			return bi, meta.MessageCmd(errors.New("gg/G navigation only works within preview table"))
 		}
 
 		if message.ToEnd {
-			bsi.activeRow = bsi.preview.TotalLineCount() - 1
-			bsi.preview.GotoBottom()
+			bi.activeRow = bi.preview.TotalLineCount() - 1
+			bi.preview.GotoBottom()
 		} else {
-			bsi.activeRow = 0
-			bsi.preview.GotoTop()
+			bi.activeRow = 0
+			bi.preview.GotoTop()
 		}
 
-		return bsi, nil
+		return bi, nil
 
 	case meta.CommitMsg:
-		journal := bsi.journalPicker.Value()
+		journal := bi.journalPicker.Value()
 		if journal == nil {
-			return bsi, meta.MessageCmd(errors.New("no journal selected (none available)"))
+			return bi, meta.MessageCmd(errors.New("no journal selected (none available)"))
 		}
 
 		// This assumes only a single ledger is the accounts ledger
@@ -262,18 +262,18 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			panic("this was checked for before, wut")
 		}
 
-		bankLedger := bsi.bankLedgerPicker.Value()
+		bankLedger := bi.bankLedgerPicker.Value()
 		if bankLedger == nil {
-			return bsi, meta.MessageCmd(errors.New("no bank ledger selected (none available)"))
+			return bi, meta.MessageCmd(errors.New("no bank ledger selected (none available)"))
 		}
 
-		rows, err := bsi.parserPicker.Value().(bankParser).compileRows(
-			bsi.data,
+		rows, err := bi.parserPicker.Value().(bankParser).compileRows(
+			bi.data,
 			accountsLedger.Id,
 			bankLedger.(database.Ledger).Id,
 		)
 		if err != nil {
-			return bsi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			return bi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
 		}
 
 		entriesAppType := meta.ENTRIESAPP
@@ -288,16 +288,16 @@ func (bsi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			},
 		}
 
-		return bsi, meta.MessageCmd(switchViewMsg)
+		return bi, meta.MessageCmd(switchViewMsg)
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
-func (bsi *bankImporter) View() string {
+func (bi *bankImporter) View() string {
 	// Don't render modal until we've loaded the bank file
-	if !bsi.fileLoaded {
+	if !bi.fileLoaded {
 		return ""
 	}
 
@@ -311,7 +311,7 @@ func (bsi *bankImporter) View() string {
 
 	highlightRow := false
 
-	switch bsi.activeInput {
+	switch bi.activeInput {
 	case 0:
 		formatSelectorStyle = highlightStyle
 	case 1:
@@ -321,10 +321,10 @@ func (bsi *bankImporter) View() string {
 	case 3:
 		highlightRow = true
 	default:
-		panic(fmt.Sprintf("unexpected bsi.activeInput: %#v", bsi.activeInput))
+		panic(fmt.Sprintf("unexpected bi.activeInput: %#v", bi.activeInput))
 	}
 
-	bsi.setViewportContent(highlightRow)
+	bi.setViewportContent(highlightRow)
 
 	var result strings.Builder
 
@@ -332,21 +332,21 @@ func (bsi *bankImporter) View() string {
 		lipgloss.Top,
 		"File format",
 		" ",
-		formatSelectorStyle.Render(bsi.parserPicker.View()),
+		formatSelectorStyle.Render(bi.parserPicker.View()),
 	))
 
 	journalSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"Journal",
 		" ",
-		journalSelectorStyle.Render(bsi.journalPicker.View()),
+		journalSelectorStyle.Render(bi.journalPicker.View()),
 	))
 
 	bankLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"Bank ledger",
 		" ",
-		bankLedgerSelectorStyle.Render(bsi.bankLedgerPicker.View()),
+		bankLedgerSelectorStyle.Render(bi.bankLedgerPicker.View()),
 	))
 
 	result.WriteString(lipgloss.JoinHorizontal(
@@ -358,9 +358,9 @@ func (bsi *bankImporter) View() string {
 
 	result.WriteString("\n\n")
 
-	headersStyled := make([]string, len(bsi.headers))
-	usedColumns := bsi.parserPicker.Value().(bankParser).usedColumns()
-	for i, header := range bsi.headers {
+	headersStyled := make([]string, len(bi.headers))
+	usedColumns := bi.parserPicker.Value().(bankParser).usedColumns()
+	for i, header := range bi.headers {
 		style := lipgloss.NewStyle()
 		if slices.Contains(usedColumns, i) {
 			style = style.Foreground(lipgloss.Color("212"))
@@ -368,11 +368,11 @@ func (bsi *bankImporter) View() string {
 
 		headersStyled[i] = style.Render(header)
 	}
-	result.WriteString(bsi.renderRow(headersStyled))
+	result.WriteString(bi.renderRow(headersStyled))
 
 	result.WriteString("\n")
 
-	result.WriteString(bsi.preview.View())
+	result.WriteString(bi.preview.View())
 
 	result.WriteString("\n\n")
 
@@ -381,19 +381,19 @@ func (bsi *bankImporter) View() string {
 	return result.String()
 }
 
-func (bsi *bankImporter) Type() meta.ViewType {
+func (bi *bankImporter) Type() meta.ViewType {
 	return meta.BANKIMPORTERVIEWTYPE
 }
 
-func (bsi *bankImporter) AllowsInsertMode() bool {
+func (bi *bankImporter) AllowsInsertMode() bool {
 	return true
 }
 
-func (bsi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
+func (bi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }
 
-func (bsi *bankImporter) MotionSet() meta.MotionSet {
+func (bi *bankImporter) MotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
@@ -408,7 +408,7 @@ func (bsi *bankImporter) MotionSet() meta.MotionSet {
 	return meta.MotionSet{Normal: normalMotions}
 }
 
-func (bsi *bankImporter) CommandSet() meta.CommandSet {
+func (bi *bankImporter) CommandSet() meta.CommandSet {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
@@ -416,11 +416,11 @@ func (bsi *bankImporter) CommandSet() meta.CommandSet {
 	return meta.CommandSet(result)
 }
 
-func (bsi *bankImporter) Reload() view.View {
+func (bi *bankImporter) Reload() view.View {
 	return NewBankImporter()
 }
 
-func (bsi *bankImporter) readFile(path string) ([][]string, error) {
+func (bi *bankImporter) readFile(path string) ([][]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -438,19 +438,19 @@ func (bsi *bankImporter) readFile(path string) ([][]string, error) {
 	return result, nil
 }
 
-func (bsi *bankImporter) calculateColWidths(totalWidth int) []int {
-	if bsi.data == nil {
+func (bi *bankImporter) calculateColWidths(totalWidth int) []int {
+	if bi.data == nil {
 		return nil
 	}
 
-	numCols := len(bsi.data[0])
+	numCols := len(bi.data[0])
 
 	colWidths := make([]int, numCols)
-	for j, header := range bsi.headers {
+	for j, header := range bi.headers {
 		colWidths[j] = len(header)
 	}
 
-	for _, row := range bsi.data {
+	for _, row := range bi.data {
 		for j, val := range row {
 			colWidths[j] = max(colWidths[j], len(val))
 		}
@@ -490,24 +490,24 @@ func (bsi *bankImporter) calculateColWidths(totalWidth int) []int {
 	return colWidths
 }
 
-func (bsi *bankImporter) setViewportContent(doHighlight bool) {
+func (bi *bankImporter) setViewportContent(doHighlight bool) {
 	rows := []string{}
 
 	// Build rows, skipping header row
-	for i, row := range bsi.data {
+	for i, row := range bi.data {
 		style := lipgloss.NewStyle()
-		if doHighlight && i == bsi.activeRow {
+		if doHighlight && i == bi.activeRow {
 			style = style.Foreground(lipgloss.Color("212"))
 		}
 
-		rows = append(rows, style.Render(bsi.renderRow(row)))
+		rows = append(rows, style.Render(bi.renderRow(row)))
 	}
 
-	bsi.preview.SetContent(strings.Join(rows, "\n"))
+	bi.preview.SetContent(strings.Join(rows, "\n"))
 }
 
-func (bsi *bankImporter) renderRow(values []string) string {
-	if len(values) != len(bsi.colWidths) {
+func (bi *bankImporter) renderRow(values []string) string {
+	if len(values) != len(bi.colWidths) {
 		panic("you absolute dingus")
 	}
 
@@ -515,24 +515,24 @@ func (bsi *bankImporter) renderRow(values []string) string {
 
 	var result strings.Builder
 	for i := range values {
-		style := newStyle.Width(bsi.colWidths[i])
+		style := newStyle.Width(bi.colWidths[i])
 		if i != len(values)-1 {
 			style = style.MarginRight(2)
 		}
 
-		result.WriteString(style.Render(ansi.Truncate(values[i], bsi.colWidths[i], "…")))
+		result.WriteString(style.Render(ansi.Truncate(values[i], bi.colWidths[i], "…")))
 	}
 
 	return result.String()
 }
 
-func (bsi *bankImporter) scrollViewport() {
-	if bsi.activeRow >= bsi.preview.YOffset+bsi.preview.Height {
-		bsi.preview.ScrollDown(bsi.activeRow - bsi.preview.YOffset - bsi.preview.Height + 1)
+func (bi *bankImporter) scrollViewport() {
+	if bi.activeRow >= bi.preview.YOffset+bi.preview.Height {
+		bi.preview.ScrollDown(bi.activeRow - bi.preview.YOffset - bi.preview.Height + 1)
 	}
 
-	if bsi.activeRow < bsi.preview.YOffset {
-		bsi.preview.ScrollUp(bsi.preview.YOffset - bsi.activeRow)
+	if bi.activeRow < bi.preview.YOffset {
+		bi.preview.ScrollUp(bi.preview.YOffset - bi.activeRow)
 	}
 }
 
