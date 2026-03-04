@@ -149,3 +149,249 @@ func TestJournalsCreateView_Commit(t *testing.T) {
 	assert.IsType(t, meta.NotificationMessageMsg{}, tw.LastCmdResults[0])
 	assert.IsType(t, meta.SwitchAppViewMsg{}, tw.LastCmdResults[1])
 }
+
+func TestEntryCreateView_Rendering(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	tw.AssertViewContains(t, "Creating new Entry")
+	tw.AssertViewContains(t, "Journal")
+	tw.AssertViewContains(t, "Notes")
+}
+
+func TestEntryCreateView_FocusNavigation(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "initial active input should be journal")
+
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	assert.Equal(t, ENTRIESNOTESINPUT, cv.activeInput, "after NEXT from journal should be notes")
+
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	assert.Equal(t, ENTRIESROWINPUT, cv.activeInput, "after NEXT from notes should be rows")
+
+	// PREVIOUS from rows at the first cell (0, 0) returns to notes
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	assert.Equal(t, ENTRIESNOTESINPUT, cv.activeInput, "PREVIOUS from rows first cell should return to notes")
+
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "PREVIOUS from notes should return to journal")
+}
+
+func TestEntryCreateView_FocusNavigation_WrapsAround(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	// PREVIOUS from journal wraps to rows, focused at last cell
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	assert.Equal(t, ENTRIESROWINPUT, cv.activeInput, "PREVIOUS from journal should wrap to rows")
+
+	// NEXT from the last cell in rows wraps back to journal
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "NEXT from last rows cell should wrap to journal")
+}
+
+func TestEntryCreateView_Commit(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+
+	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
+	ledgerId, err := ledger.Insert(DB)
+	require.NoError(t, err)
+	ledger.Id = ledgerId
+
+	account := database.Account{Name: "Test Account", Type: database.DEBTOR}
+	accountId, err := account.Insert(DB)
+	require.NoError(t, err)
+	account.Id = accountId
+
+	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
+	journalId, err := journal.Insert(DB)
+	require.NoError(t, err)
+	journal.Id = journalId
+
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		meta.NotificationMessageMsg{Message: "Successfully created Entry \"1\""},
+		meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: 1},
+	)
+
+	cv.journalInput.SetValue(journal)
+	cv.notesInput.SetValue("Test Notes")
+
+	cv.entryRowsManager.rows[0].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rows[0].ledgerInput.SetValue(ledger)
+	cv.entryRowsManager.rows[0].accountInput.SetValue(&account)
+	cv.entryRowsManager.rows[0].debitInput.SetValue("50.00")
+
+	cv.entryRowsManager.rows[1].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rows[1].ledgerInput.SetValue(ledger)
+	cv.entryRowsManager.rows[1].accountInput.SetValue(&account)
+	cv.entryRowsManager.rows[1].creditInput.SetValue("50.00")
+
+	tw.Send(meta.CommitMsg{})
+
+	// Verify DB
+	entries, err := database.SelectEntries(DB)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, journalId, entries[0].Journal)
+	assert.Equal(t, meta.Notes{"Test Notes"}, entries[0].Notes)
+
+	rows, err := database.SelectRowsByEntry(DB, entries[0].Id)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, database.CurrencyValue(5000), rows[0].Value)
+	assert.Equal(t, database.CurrencyValue(-5000), rows[1].Value)
+	assert.Equal(t, ledgerId, rows[0].Ledger)
+
+	// Verify messages
+	require.Len(t, tw.LastCmdResults, 2)
+	assert.IsType(t, meta.NotificationMessageMsg{}, tw.LastCmdResults[0])
+	assert.IsType(t, meta.SwitchAppViewMsg{}, tw.LastCmdResults[1])
+
+	switchMsg := tw.LastCmdResults[1].(meta.SwitchAppViewMsg)
+	assert.Equal(t, meta.UPDATEVIEWTYPE, switchMsg.ViewType)
+	assert.Equal(t, entries[0].Id, switchMsg.Data)
+}
+
+func TestEntryCreateView_Commit_NoJournal(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		errors.New("no journal selected (none available)"),
+	)
+
+	tw.Send(meta.CommitMsg{})
+
+	require.Len(t, tw.LastCmdResults, 1)
+	assert.Error(t, tw.LastCmdResults[0].(error))
+}
+
+func TestEntryCreateView_Commit_UnbalancedRows(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+
+	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
+	journalId, err := journal.Insert(DB)
+	require.NoError(t, err)
+	journal.Id = journalId
+
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		errors.New("entry has nonzero total value 20.00"),
+	)
+
+	cv.journalInput.SetValue(journal)
+	cv.entryRowsManager.rows[0].debitInput.SetValue("50.00")
+	cv.entryRowsManager.rows[1].creditInput.SetValue("30.00")
+
+	tw.Send(meta.CommitMsg{})
+
+	require.Len(t, tw.LastCmdResults, 1)
+	assert.Error(t, tw.LastCmdResults[0].(error))
+}
+
+func TestEntryCreateView_CreateRow(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
+	)
+
+	// Navigate to rows input
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	require.Equal(t, ENTRIESROWINPUT, cv.activeInput)
+
+	initialRowCount := len(cv.entryRowsManager.rows)
+
+	tw.Send(CreateEntryRowMsg{After: true})
+
+	assert.Len(t, cv.entryRowsManager.rows, initialRowCount+1, "row count should increase by 1")
+}
+
+func TestEntryCreateView_DeleteRow(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	// Navigate to rows input
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	require.Equal(t, ENTRIESROWINPUT, cv.activeInput)
+
+	initialRowCount := len(cv.entryRowsManager.rows)
+	require.Greater(t, initialRowCount, 1, "initial state must have more than one row to allow deletion")
+
+	tw.Send(DeleteEntryRowMsg{})
+
+	assert.Len(t, cv.entryRowsManager.rows, initialRowCount-1, "row count should decrease by 1")
+}
+
+func TestEntryCreateView_CreateRow_WhenNotInRows(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		errors.New("no entry row highlighted while trying to create one"),
+	)
+
+	require.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput)
+
+	tw.Send(CreateEntryRowMsg{After: true})
+
+	require.Len(t, tw.LastCmdResults, 1)
+	assert.Error(t, tw.LastCmdResults[0].(error))
+}
+
+func TestEntryCreateView_DeleteRow_WhenNotInRows(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv),
+		errors.New("no entry row highlighted while trying to delete one"),
+	)
+
+	require.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput)
+
+	tw.Send(DeleteEntryRowMsg{})
+
+	require.Len(t, tw.LastCmdResults, 1)
+	assert.Error(t, tw.LastCmdResults[0].(error))
+}
+
+func TestEntryCreateView_InputDelegation(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	t.Run("notes input", func(t *testing.T) {
+		// Navigate to notes - SwitchFocusMsg calls notesInput.Focus()
+		tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+		require.Equal(t, ENTRIESNOTESINPUT, cv.activeInput)
+
+		tw.SendText("some notes")
+
+		assert.Equal(t, "some notes", cv.notesInput.Value())
+	})
+
+	t.Run("rows description input", func(t *testing.T) {
+		// Navigate to rows - rows start focused at col 0 (date)
+		tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
+		require.Equal(t, ENTRIESROWINPUT, cv.activeInput)
+
+		// Move right three times to reach col 3 (description)
+		tw.Send(
+			meta.NavigateMsg{Direction: meta.RIGHT},
+			meta.NavigateMsg{Direction: meta.RIGHT},
+			meta.NavigateMsg{Direction: meta.RIGHT},
+		)
+		_, activeCol := cv.entryRowsManager.getActiveCoords()
+		require.Equal(t, 3, activeCol)
+
+		tw.SendText("row description")
+
+		assert.Equal(t, "row description", cv.entryRowsManager.rows[0].descriptionInput.Value())
+	})
+}
