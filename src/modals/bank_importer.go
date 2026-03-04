@@ -625,7 +625,7 @@ func (p ingParser) parseDescription(description string) *string {
 		return nil
 	}
 
-	indexIBAN := strings.Index(description, "IBAN:")
+	indexIBAN := strings.Index(description, " IBAN:")
 
 	result := description[indexDescription+len("Description: ") : indexIBAN]
 
