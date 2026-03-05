@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"terminaccounting/apps"
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,11 +21,11 @@ type appManager struct {
 }
 
 func newAppManager(DB *sqlx.DB) *appManager {
-	apps := make([]meta.App, 4)
-	apps[0] = NewEntriesApp(DB)
-	apps[1] = NewLedgersApp(DB)
-	apps[2] = NewAccountsApp(DB)
-	apps[3] = NewJournalsApp(DB)
+	a := make([]meta.App, 4)
+	a[0] = apps.NewEntriesApp(DB)
+	a[1] = apps.NewLedgersApp(DB)
+	a[2] = apps.NewAccountsApp(DB)
+	a[3] = apps.NewJournalsApp(DB)
 
 	// Map the name(=type) of an app to its index in `apps`
 	appIds := make(map[meta.AppType]int, 4)
@@ -34,7 +35,7 @@ func newAppManager(DB *sqlx.DB) *appManager {
 	appIds[meta.JOURNALSAPP] = 3
 
 	return &appManager{
-		apps:   apps,
+		apps:   a,
 		appIds: appIds,
 	}
 }
