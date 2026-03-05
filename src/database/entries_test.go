@@ -237,3 +237,22 @@ func TestCurrencyValueAddSubtract(t *testing.T) {
 	assert.Equal(t, database.CurrencyValue(0), database.CurrencyValue(100).Add(database.CurrencyValue(-100)))
 }
 
+func TestCalculateTotal(t *testing.T) {
+	rows := []*database.EntryRow{
+		{Value: 1000},
+		{Value: -500},
+		{Value: 250},
+	}
+
+	assert.Equal(t, database.CurrencyValue(750), database.CalculateTotal(rows))
+}
+
+func TestCalculateSize(t *testing.T) {
+	rows := []*database.EntryRow{
+		{Value: 1000},
+		{Value: -500},
+		{Value: 250},
+	}
+
+	assert.Equal(t, database.CurrencyValue(1250), database.CalculateSize(rows))
+}
