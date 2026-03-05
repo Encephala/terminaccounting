@@ -171,6 +171,166 @@ func TestRefreshCacheMsg(t *testing.T) {
 	})
 }
 
+func TestExecuteCommand_Quit(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB), tea.QuitMsg{})
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		SendText("quit").
+		Send(meta.ExecuteCommandMsg{})
+
+	tw.AssertLastMsgsEqual(t, meta.QuitMsg{}, tea.QuitMsg{})
+}
+
+func TestExecuteCommand_QuitAll(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB), tea.QuitMsg{})
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		SendText("qa").
+		Send(meta.ExecuteCommandMsg{})
+
+	tw.AssertLastMsgsEqual(t, meta.QuitMsg{All: true}, tea.QuitMsg{})
+}
+
+func TestExecuteCommand_Messages(t *testing.T) {
+	t.Run("with no notifications returns error", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SwitchMode(meta.COMMANDMODE, false).
+			SendText("messages").
+			Send(meta.ExecuteCommandMsg{})
+
+		tw.AssertLastMsgsEqual(t, meta.ShowNotificationsMsg{}, errors.New("no messages to show"))
+	})
+
+	t.Run("with notifications opens modal", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.Send(errors.New("an error"))
+		tw.SwitchMode(meta.COMMANDMODE, false).
+			SendText("messages").
+			Send(meta.ExecuteCommandMsg{})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.True(t, ta.showModal)
+		})
+	})
+}
+
+func TestExecuteCommand_Import(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		SendText("import").
+		Send(meta.ExecuteCommandMsg{})
+
+	// Without an accounts ledger configured the importer immediately closes and errors
+	tw.Execute(t, func(ta *terminaccounting) {
+		require.NotEmpty(t, ta.notifications)
+		assert.Contains(t, ta.notifications[len(ta.notifications)-1].text, "accounts ledger")
+	})
+}
+
+func TestExecuteCommand_CacheCommands(t *testing.T) {
+	t.Run("refreshcache updates cache without error", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SwitchMode(meta.COMMANDMODE, false).
+			SendText("refreshcache").
+			Send(meta.ExecuteCommandMsg{})
+
+		tw.AssertLastMsgsEqual(t, meta.RefreshCacheMsg{})
+	})
+
+	t.Run("debugcache logs cache without error", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SwitchMode(meta.COMMANDMODE, false).
+			SendText("debugcache").
+			Send(meta.ExecuteCommandMsg{})
+
+		tw.AssertLastMsgsEqual(t, meta.DebugPrintCacheMsg{})
+	})
+}
+
+func TestExecuteCommand_EmptyCommand(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		Send(meta.ExecuteCommandMsg{})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Empty(t, ta.notifications)
+		assert.Equal(t, meta.NORMALMODE, ta.inputMode)
+	})
+}
+
+func TestExecuteCommand_SearchMode(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	tw.SwitchMode(meta.COMMANDMODE, true).
+		SendText("hello").
+		Send(meta.ExecuteCommandMsg{})
+
+	tw.AssertLastMsgsEqual(t, meta.UpdateSearchMsg{Query: "hello"})
+}
+
+func TestQuitMsg_ClosesModalWhenOpen(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	tw.Send(meta.ShowTextModalMsg{Text: []string{"a message"}})
+	tw.Send(meta.QuitMsg{})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.False(t, ta.showModal)
+	})
+}
+
+func TestFatalErrorMsg(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB), tea.QuitMsg{})
+
+	fatalErr := errors.New("something fatal")
+	tw.Send(meta.FatalErrorMsg{Error: fatalErr})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Equal(t, fatalErr, ta.fatalError)
+	})
+	tw.AssertLastMsgsEqual(t, tea.QuitMsg{})
+}
+
+func TestHandleCtrlC_SearchMode(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	tw.SwitchMode(meta.COMMANDMODE, true).
+		Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.NORMALMODE}, meta.UpdateSearchMsg{Query: ""})
+}
+
+func TestHandleCtrlC_ClearsCurrentMotion(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+	// "g" is the start of multi-char motions (gt, gT) — pressing ctrl+c should clear the in-progress motion
+	tw.SendText("g")
+	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Empty(t, ta.currentMotion)
+	})
+}
+
 func TestSwitchApp(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
