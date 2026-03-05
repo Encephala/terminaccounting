@@ -90,6 +90,107 @@ func TestSwitchModesMsg_ModalBlocksInsertMode(t *testing.T) {
 	tw.AssertLastMsgsEqual(t, meta.SwitchModeMsg{InputMode: meta.INSERTMODE}, errors.New("current view doesn't allow insert mode"))
 }
 
+func TestNotifications_Error(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.Send(errors.New("something went wrong"))
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		require.Len(t, ta.notifications, 1)
+		assert.Equal(t, "something went wrong", ta.notifications[0].text)
+		assert.True(t, ta.notifications[0].isError)
+		assert.True(t, ta.displayNotification)
+	})
+	tw.AssertViewContains(t, "something went wrong")
+}
+
+func TestNotifications_NotificationMessageMsg(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.Send(meta.NotificationMessageMsg{Message: "all good"})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		require.Len(t, ta.notifications, 1)
+		assert.Equal(t, "all good", ta.notifications[0].text)
+		assert.False(t, ta.notifications[0].isError)
+		assert.True(t, ta.displayNotification)
+	})
+	tw.AssertViewContains(t, "all good")
+}
+
+func TestShowNotificationsMsg(t *testing.T) {
+	t.Run("no notifications returns error", func(t *testing.T) {
+		tw, _ := initWrapper(t)
+
+		tw.Send(meta.ShowNotificationsMsg{})
+
+		tw.AssertLastMsgsEqual(t, errors.New("no messages to show"))
+	})
+
+	t.Run("with notifications shows modal", func(t *testing.T) {
+		tw, _ := initWrapper(t)
+
+		tw.Send(errors.New("first error"))
+		tw.Send(meta.NotificationMessageMsg{Message: "second message"})
+		tw.Send(meta.ShowNotificationsMsg{})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.True(t, ta.showModal)
+			require.Len(t, ta.notifications, 2)
+		})
+	})
+}
+
+func TestExecuteCommand_InvalidCommand(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		SendText("zzz").
+		Send(meta.ExecuteCommandMsg{})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		require.NotEmpty(t, ta.notifications)
+		lastNotification := ta.notifications[len(ta.notifications)-1]
+		assert.Contains(t, lastNotification.text, "invalid command")
+		assert.True(t, lastNotification.isError)
+	})
+}
+
+func TestHandleKeyMsg_InvalidMotion(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	// "z" is not a defined motion in list view normal mode
+	tw.SendText("z")
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		require.Len(t, ta.notifications, 1)
+		assert.Contains(t, ta.notifications[0].text, "invalid motion")
+		assert.True(t, ta.notifications[0].isError)
+	})
+}
+
+func TestTryCompleteCommandMsg(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.SwitchMode(meta.COMMANDMODE, false).
+		SendText("qui").
+		Send(meta.TryCompleteCommandMsg{})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Equal(t, "quit", ta.commandInput.Value())
+	})
+}
+
+func TestRefreshCacheMsg(t *testing.T) {
+	tw, _ := initWrapper(t)
+
+	tw.Send(meta.RefreshCacheMsg{})
+
+	tw.Execute(t, func(ta *terminaccounting) {
+		assert.Empty(t, ta.notifications)
+	})
+}
+
 func TestSwitchApp(t *testing.T) {
 	tw, _ := initWrapper(t)
 
