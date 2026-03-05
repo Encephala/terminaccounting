@@ -66,6 +66,9 @@ Don't mock stuff.
 Keep things simple.
 
 Use comments sparsely. Only add a comment when it gives context as to why the code is the way it is.
-Don't comment to explain how the code works.
+
+DO NOT add comments to explain how the code works.
 
 Use sqlite in-memory databases for testing if needed.
+
+Don't use `go build` to validate code. Use `go test`. I don't want to have stray build artefacts.
