@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"terminaccounting/database"
 	"terminaccounting/meta"
+	tat "terminaccounting/tat"
 	"terminaccounting/view"
 	"testing"
 
@@ -26,7 +27,8 @@ func TestCreateGeneric(t *testing.T) {
 }
 
 func testCreateGenericHelper(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app)
 
@@ -147,7 +149,8 @@ func TestCreateGeneric_Msg(t *testing.T) {
 }
 
 func testCreate_ViewSwitch(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app).
 		SendText("gc")
@@ -156,7 +159,8 @@ func testCreate_ViewSwitch(t *testing.T, app meta.AppType) {
 }
 
 func testCreate_InsertMode(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE)
@@ -167,7 +171,8 @@ func testCreate_InsertMode(t *testing.T, app meta.AppType) {
 }
 
 func testCreate_SetValues(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -196,7 +201,8 @@ func testCreate_SetValues(t *testing.T, app meta.AppType) {
 }
 
 func testCreate_CommitCmd(t *testing.T, app meta.AppType) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -213,7 +219,8 @@ func testCreate_CommitCmd(t *testing.T, app meta.AppType) {
 }
 
 func testCreate_Commit(t *testing.T, app meta.AppType) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(app).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -276,7 +283,8 @@ func testCreate_Commit(t *testing.T, app meta.AppType) {
 }
 
 func TestCreate_Entries(t *testing.T) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
 	require.NoError(t, err)
@@ -375,7 +383,8 @@ func TestCreate_Entries(t *testing.T) {
 }
 
 func TestCreate_Entries_Motions(t *testing.T) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	_, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
 	require.NoError(t, err)
@@ -498,7 +507,8 @@ func TestCreate_Entries_Msg(t *testing.T) {
 }
 
 func testCreateEntries_ViewSwitch(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SendText("gc")
@@ -507,7 +517,8 @@ func testCreateEntries_ViewSwitch(t *testing.T) {
 }
 
 func testCreateEntries_InsertMode(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SwitchView(meta.CREATEVIEWTYPE)
@@ -518,7 +529,8 @@ func testCreateEntries_InsertMode(t *testing.T) {
 }
 
 func testCreateEntries_SetValues(t *testing.T) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	_, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
 	require.NoError(t, err)
@@ -543,7 +555,8 @@ func testCreateEntries_SetValues(t *testing.T) {
 }
 
 func testCreateEntries_CommitCmd(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.GoToTab(meta.ENTRIESAPP).
 		SwitchView(meta.CREATEVIEWTYPE).
@@ -560,7 +573,8 @@ func testCreateEntries_CommitCmd(t *testing.T) {
 }
 
 func testCreateEntries_Commit(t *testing.T) {
-	tw, DB := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
 	require.NoError(t, err)

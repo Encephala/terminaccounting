@@ -2,47 +2,18 @@ package main
 
 import (
 	"errors"
-	"terminaccounting/database"
 	"terminaccounting/meta"
 	tat "terminaccounting/tat"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func initWrapper(t *testing.T) (*tat.TestWrapper[*terminaccounting], *sqlx.DB) {
-	t.Helper()
-
-	DB := tat.SetupTestEnv(t)
-
-	setUp, err := database.DatabaseTableIsSetUp(DB, "ledgers")
-	require.Nil(t, err)
-	require.True(t, setUp)
-
-	setUp, err = database.DatabaseTableIsSetUp(DB, "accounts")
-	require.Nil(t, err)
-	require.True(t, setUp)
-
-	setUp, err = database.DatabaseTableIsSetUp(DB, "entries")
-	require.Nil(t, err)
-	require.True(t, setUp)
-
-	setUp, err = database.DatabaseTableIsSetUp(DB, "entryrows")
-	require.Nil(t, err)
-	require.True(t, setUp)
-
-	setUp, err = database.DatabaseTableIsSetUp(DB, "journals")
-	require.Nil(t, err)
-	require.True(t, setUp)
-
-	return tat.NewTestWrapperGeneric(newTerminaccounting(DB)), DB
-}
-
 func TestSwitchModesMsg(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	t.Run("cannot go insert mode on list view", func(t *testing.T) {
 		tw.SendText("i")
@@ -82,7 +53,8 @@ func TestSwitchModesMsg(t *testing.T) {
 }
 
 func TestSwitchModesMsg_ModalBlocksInsertMode(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.Send(meta.ShowTextModalMsg{Text: []string{"message"}})
 	tw.SendText("i")
@@ -91,7 +63,8 @@ func TestSwitchModesMsg_ModalBlocksInsertMode(t *testing.T) {
 }
 
 func TestNotifications_Error(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.Send(errors.New("something went wrong"))
 
@@ -105,7 +78,8 @@ func TestNotifications_Error(t *testing.T) {
 }
 
 func TestNotifications_NotificationMessageMsg(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.Send(meta.NotificationMessageMsg{Message: "all good"})
 
@@ -120,7 +94,8 @@ func TestNotifications_NotificationMessageMsg(t *testing.T) {
 
 func TestShowNotificationsMsg(t *testing.T) {
 	t.Run("no notifications returns error", func(t *testing.T) {
-		tw, _ := initWrapper(t)
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 		tw.Send(meta.ShowNotificationsMsg{})
 
@@ -128,7 +103,8 @@ func TestShowNotificationsMsg(t *testing.T) {
 	})
 
 	t.Run("with notifications shows modal", func(t *testing.T) {
-		tw, _ := initWrapper(t)
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 		tw.Send(errors.New("first error"))
 		tw.Send(meta.NotificationMessageMsg{Message: "second message"})
@@ -142,7 +118,8 @@ func TestShowNotificationsMsg(t *testing.T) {
 }
 
 func TestExecuteCommand_InvalidCommand(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("zzz").
@@ -157,7 +134,8 @@ func TestExecuteCommand_InvalidCommand(t *testing.T) {
 }
 
 func TestHandleKeyMsg_InvalidMotion(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	// "z" is not a defined motion in list view normal mode
 	tw.SendText("z")
@@ -170,7 +148,8 @@ func TestHandleKeyMsg_InvalidMotion(t *testing.T) {
 }
 
 func TestTryCompleteCommandMsg(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("qui").
@@ -182,7 +161,8 @@ func TestTryCompleteCommandMsg(t *testing.T) {
 }
 
 func TestRefreshCacheMsg(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.Send(meta.RefreshCacheMsg{})
 
@@ -192,7 +172,8 @@ func TestRefreshCacheMsg(t *testing.T) {
 }
 
 func TestSwitchApp(t *testing.T) {
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	testCases := []struct {
 		name              string

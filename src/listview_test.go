@@ -126,7 +126,8 @@ func testListView_NavigateUp(t *testing.T, appType meta.AppType) {
 func testListView_GoToCreate(t *testing.T, appType meta.AppType) {
 	t.Helper()
 
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 	tw.GoToTab(appType)
 
 	tw.SendText("gc")
@@ -158,7 +159,8 @@ func testListView_GoToDetail(t *testing.T, appType meta.AppType) {
 func testListView_GoToDetail_NoItems(t *testing.T, appType meta.AppType) {
 	t.Helper()
 
-	tw, _ := initWrapper(t)
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 	tw.GoToTab(appType)
 
 	tw.SendText("gd")
