@@ -303,6 +303,85 @@ func TestSelectRowsByJournal(t *testing.T) {
 	assert.Equal(t, entry1.Id, rows[0].Entry)
 }
 
+func TestSetReconciled(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+	insertTestEntry(t, DB, journal.Id, ledger.Id)
+
+	rows, err := database.SelectRows(DB)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.False(t, rows[0].Reconciled)
+
+	rows[0].Reconciled = true
+	changed, err := database.SetReconciled(DB, []*database.EntryRow{&rows[0]})
+	require.NoError(t, err)
+	assert.Equal(t, 1, changed)
+
+	updatedRows, err := database.SelectRows(DB)
+	require.NoError(t, err)
+	require.Len(t, updatedRows, 1)
+	assert.True(t, updatedRows[0].Reconciled)
+}
+
+func TestSetReconciledMultipleRows(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+
+	date, err := database.ToDate("2024-01-01")
+	require.NoError(t, err)
+
+	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	_, err = entry.Insert(DB, []database.EntryRow{
+		{Date: date, Ledger: ledger.Id, Value: 1000},
+		{Date: date, Ledger: ledger.Id, Value: -1000},
+	})
+	require.NoError(t, err)
+
+	rows, err := database.SelectRows(DB)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+
+	rows[0].Reconciled = true
+	rows[1].Reconciled = true
+	changed, err := database.SetReconciled(DB, []*database.EntryRow{&rows[0], &rows[1]})
+	require.NoError(t, err)
+	assert.Equal(t, 2, changed)
+
+	updatedRows, err := database.SelectRows(DB)
+	require.NoError(t, err)
+	assert.True(t, updatedRows[0].Reconciled)
+	assert.True(t, updatedRows[1].Reconciled)
+}
+
+func TestSetReconciledReturnsChangedCount(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+
+	date, err := database.ToDate("2024-01-01")
+	require.NoError(t, err)
+
+	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	_, err = entry.Insert(DB, []database.EntryRow{
+		{Date: date, Ledger: ledger.Id, Value: 500},
+		{Date: date, Ledger: ledger.Id, Value: -500},
+	})
+	require.NoError(t, err)
+
+	rows, err := database.SelectRows(DB)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+
+	// Only reconcile one of two rows
+	rows[0].Reconciled = true
+	changed, err := database.SetReconciled(DB, []*database.EntryRow{&rows[0]})
+	require.NoError(t, err)
+	assert.Equal(t, 1, changed)
+}
+
 func TestSelectRowsByAccount(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	journal := insertTestJournal(t, DB)
