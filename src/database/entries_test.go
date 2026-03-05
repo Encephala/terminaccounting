@@ -256,3 +256,88 @@ func TestCalculateSize(t *testing.T) {
 
 	assert.Equal(t, database.CurrencyValue(1250), database.CalculateSize(rows))
 }
+
+func TestSelectRowsByEntry(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+	entry1 := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry2 := insertTestEntry(t, DB, journal.Id, ledger.Id)
+
+	rows1, err := database.SelectRowsByEntry(DB, entry1.Id)
+	require.NoError(t, err)
+	require.Len(t, rows1, 1)
+	assert.Equal(t, entry1.Id, rows1[0].Entry)
+
+	rows2, err := database.SelectRowsByEntry(DB, entry2.Id)
+	require.NoError(t, err)
+	require.Len(t, rows2, 1)
+	assert.Equal(t, entry2.Id, rows2[0].Entry)
+}
+
+func TestSelectRowsByLedger(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	ledger1 := insertTestLedger(t, DB)
+	ledger2 := insertTestLedger(t, DB)
+	insertTestEntry(t, DB, journal.Id, ledger1.Id)
+	insertTestEntry(t, DB, journal.Id, ledger2.Id)
+
+	rows, err := database.SelectRowsByLedger(DB, ledger1.Id)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, ledger1.Id, rows[0].Ledger)
+}
+
+func TestSelectRowsByJournal(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal1 := insertTestJournal(t, DB)
+	journal2 := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+	entry1 := insertTestEntry(t, DB, journal1.Id, ledger.Id)
+	insertTestEntry(t, DB, journal2.Id, ledger.Id)
+
+	rows, err := database.SelectRowsByJournal(DB, journal1.Id)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, entry1.Id, rows[0].Entry)
+}
+
+func TestSelectRowsByAccount(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal := insertTestJournal(t, DB)
+	account := insertTestAccount(t, DB)
+
+	accountsLedger := database.Ledger{
+		Name:       "accounts ledger",
+		Type:       database.INCOMELEDGER,
+		Notes:      meta.Notes{},
+		IsAccounts: true,
+	}
+	accountsLedgerId, err := accountsLedger.Insert(DB)
+	require.NoError(t, err)
+
+	regularLedger := insertTestLedger(t, DB)
+
+	date, err := database.ToDate("2024-01-01")
+	require.NoError(t, err)
+
+	entryWithAccount := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	_, err = entryWithAccount.Insert(DB, []database.EntryRow{
+		{Date: date, Ledger: accountsLedgerId, Account: &account.Id, Value: 500},
+	})
+	require.NoError(t, err)
+
+	// Row on a non-accounts ledger should not appear
+	entryWithoutAccountsLedger := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	_, err = entryWithoutAccountsLedger.Insert(DB, []database.EntryRow{
+		{Date: date, Ledger: regularLedger.Id, Account: &account.Id, Value: 300},
+	})
+	require.NoError(t, err)
+
+	rows, err := database.SelectRowsByAccount(DB, account.Id)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, accountsLedgerId, rows[0].Ledger)
+	assert.Equal(t, &account.Id, rows[0].Account)
+}
