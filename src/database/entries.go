@@ -421,7 +421,7 @@ func SelectRowsByAccount(DB *sqlx.DB, id int) ([]EntryRow, error) {
 func SelectRowsByJournal(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	result := []EntryRow{}
 
-	query := `SELECT er.* FROM entryrows AS er LEFT JOIN entries AS e ON er.entry = e.id WHERE e.id = $1;`
+	query := `SELECT er.* FROM entryrows AS er LEFT JOIN entries AS e ON er.entry = e.id WHERE e.journal = $1;`
 
 	err := DB.Select(&result, query, id)
 
