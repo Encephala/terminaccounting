@@ -176,3 +176,64 @@ func TestDeleteEntry(t *testing.T) {
 
 	assert.Empty(t, entries)
 }
+
+func TestParseCurrencyValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected database.CurrencyValue
+		hasError bool
+	}{
+		{"0", 0, false},
+		{"1", 100, false},
+		{"100", 10000, false},
+		{"1.", 100, false},
+		{"1.0", 100, false},
+		{"1.5", 150, false},
+		{"1.50", 150, false},
+		{"1.09", 109, false},
+		{"0.99", 99, false},
+		{"abc", 0, true},
+		{"1.abc", 0, true},
+		{"1.123", 0, true},
+		{"1.2.3", 0, true},
+	}
+
+	for _, testCase := range tests {
+		result, err := database.ParseCurrencyValue(testCase.input)
+		if testCase.hasError {
+			assert.Error(t, err, "input: %q", testCase.input)
+		} else {
+			require.NoError(t, err, "input: %q", testCase.input)
+			assert.Equal(t, testCase.expected, result, "input: %q", testCase.input)
+		}
+	}
+}
+
+func TestCurrencyValueString(t *testing.T) {
+	tests := []struct {
+		value    database.CurrencyValue
+		expected string
+	}{
+		{0, "0.00"},
+		{100, "1.00"},
+		{150, "1.50"},
+		{109, "1.09"},
+		{99, "0.99"},
+		{10000, "100.00"},
+		{-100, "-1.00"},
+		{-150, "-1.50"},
+		{-99, "-0.99"},
+	}
+
+	for _, testCase := range tests {
+		assert.Equal(t, testCase.expected, testCase.value.String())
+	}
+}
+
+func TestCurrencyValueAddSubtract(t *testing.T) {
+	assert.Equal(t, database.CurrencyValue(300), database.CurrencyValue(100).Add(database.CurrencyValue(200)))
+	assert.Equal(t, database.CurrencyValue(100), database.CurrencyValue(300).Subtract(database.CurrencyValue(200)))
+	assert.Equal(t, database.CurrencyValue(-100), database.CurrencyValue(100).Subtract(database.CurrencyValue(200)))
+	assert.Equal(t, database.CurrencyValue(0), database.CurrencyValue(100).Add(database.CurrencyValue(-100)))
+}
+
