@@ -106,3 +106,37 @@ func TestContainsPath(t *testing.T) {
 		assert.Equal(t, result, test.expected)
 	}
 }
+
+func TestAutocomplete(t *testing.T) {
+	var trie Trie[int]
+
+	trie.Insert(strings.Split("quit", ""), 0)
+	trie.Insert(strings.Split("messages", ""), 1)
+
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		// Empty path returns nil
+		{"", nil},
+		// Path not in trie returns nil
+		{"xyz", nil},
+		// Exact match (already a leaf) returns nil — "quit" -> "quit" is not an autocompletion
+		{"quit", nil},
+		// Prefix completes to the leaf
+		{"q", []string{"q", "u", "i", "t"}},
+		{"qu", []string{"q", "u", "i", "t"}},
+		{"qui", []string{"q", "u", "i", "t"}},
+		{"m", []string{"m", "e", "s", "s", "a", "g", "e", "s"}},
+		{"mess", []string{"m", "e", "s", "s", "a", "g", "e", "s"}},
+	}
+
+	for _, test := range tests {
+		var path []string
+		if test.input != "" {
+			path = strings.Split(test.input, "")
+		}
+		result := trie.autocomplete(path)
+		assert.Equal(t, test.expected, result, "input: %q", test.input)
+	}
+}
