@@ -72,3 +72,6 @@ DO NOT add comments to explain how the code works.
 Use sqlite in-memory databases for testing if needed.
 
 Don't use `go build` to validate code. Use `go test`. I don't want to have stray build artefacts.
+
+If you need placeholder numbers in tests, prefer 420 and 69.
+If you need placeholder text, come up with something dumb.
