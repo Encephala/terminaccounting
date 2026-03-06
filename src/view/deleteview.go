@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type genericDeleteView interface {
@@ -17,12 +18,13 @@ type genericDeleteView interface {
 	getColour() lipgloss.Color
 }
 
-func genericDeleteViewView(gdv genericDeleteView) string {
+func genericDeleteViewView(gdv genericDeleteView, width, height int) string {
 	var result strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1)
 
-	result.WriteString(titleStyle.Render(gdv.title()))
+	// -4 for MarginLeft and implicit MarginRight, -2 for horizontal padding
+	result.WriteString(titleStyle.Render(ansi.Truncate(gdv.title(), width-4-2, "...")))
 	result.WriteString("\n\n")
 
 	sectionStyle := lipgloss.NewStyle().
@@ -38,16 +40,21 @@ func genericDeleteViewView(gdv genericDeleteView) string {
 	}
 
 	// +2 for padding
-	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
+	greatestNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
 		return cmp.Compare(len(name), len(other))
 	})) + 2
 
+	// -4 for MarginLeft and implicit MarginRight, -2 for padding, -1 for PaddingRight
+	remainingValueWidth := width - 4 - greatestNameColWidth - 2 - 1
+
 	for i := range names {
+		// -4 for padding and border on both sides
+		truncatedValue := ansi.Truncate(values[i], remainingValueWidth-4, "...")
+
 		result.WriteString(lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			sectionStyle.Width(maxNameColWidth).Render(names[i]),
-			" ",
-			sectionStyle.Render(values[i]),
+			sectionStyle.Width(greatestNameColWidth).MarginRight(1).Render(names[i]),
+			sectionStyle.Render(truncatedValue),
 		))
 
 		result.WriteString("\n")

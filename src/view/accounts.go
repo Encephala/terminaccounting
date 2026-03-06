@@ -461,6 +461,8 @@ func (cv *accountsUpdateView) getColour() lipgloss.Color {
 type accountsDeleteView struct {
 	DB *sqlx.DB
 
+	width, height int
+
 	modelId int // only for retrieving the model itself initially
 	model   database.Account
 
@@ -505,7 +507,8 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
-		// TODO
+		dv.width = message.Width
+		dv.height = message.Height
 
 		return dv, nil
 
@@ -515,7 +518,7 @@ func (dv *accountsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (dv *accountsDeleteView) View() string {
-	return genericDeleteViewView(dv)
+	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
 func (dv *accountsDeleteView) Type() meta.ViewType {

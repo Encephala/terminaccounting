@@ -77,10 +77,13 @@ func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		return dv, cmd
 
-	// Returning to prevent panic
-	// Required because other views do accept these messages
 	case tea.WindowSizeMsg:
-		// TODO Maybe rescale the rendering of the inputs by the window size or something
+		// -2 because of horizontal padding
+		dv.listModel.SetWidth(message.Width - 2)
+
+		// -1 to leave some bottom padding
+		dv.listModel.SetHeight(message.Height - 1)
+
 		return dv, nil
 
 	case meta.UpdateSearchMsg:
@@ -468,6 +471,8 @@ func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 type journalsDeleteView struct {
 	DB *sqlx.DB
 
+	width, height int
+
 	modelId int
 	model   database.Journal
 
@@ -512,7 +517,8 @@ func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
-		// TODO
+		dv.width = message.Width
+		dv.height = message.Height
 
 		return dv, nil
 
@@ -522,7 +528,7 @@ func (dv *journalsDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (dv *journalsDeleteView) View() string {
-	return genericDeleteViewView(dv)
+	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
 func (dv *journalsDeleteView) Type() meta.ViewType {

@@ -470,6 +470,8 @@ func (uv *ledgersUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 type ledgersDeleteView struct {
 	DB *sqlx.DB
 
+	width, height int
+
 	modelId int // only for retrieving the model itself initially
 	model   database.Ledger
 
@@ -514,9 +516,8 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
-		// Not much to do, view automatically updates with size of name/notes etc.
-		// TODO: when View() is updated to draw columns, do some stuff here to make columns max out at width of view
-		// with the truncate package
+		dv.width = message.Width
+		dv.height = message.Height
 
 		return dv, nil
 
@@ -526,7 +527,7 @@ func (dv *ledgersDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (dv *ledgersDeleteView) View() string {
-	return genericDeleteViewView(dv)
+	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
 func (dv *ledgersDeleteView) Type() meta.ViewType {

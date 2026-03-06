@@ -54,8 +54,6 @@ func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		return lv, cmd
 
-	// Returning to prevent panic
-	// Required because other views do accept these messages
 	case tea.WindowSizeMsg:
 		// -2 because of horizontal padding
 		lv.listModel.SetWidth(message.Width - 2)
