@@ -81,7 +81,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		viewer.showReconciled = !viewer.showReconciled
 		viewer.updateViewRows()
 
-		if len(viewer.shownRows) == 0 {
+		if len(viewer.shownRows) == 0 || len(oldShownRows) == 0 {
 			return gdv, nil
 		}
 
