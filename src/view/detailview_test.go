@@ -182,6 +182,57 @@ func TestGenericDetailView_ToggleShowReconciled(t *testing.T) {
 		assert.Len(t, view.(*accountsDetailView).viewer.shownRows, 2)
 	})
 }
+func TestGenericDetailView_ToggleShowReconciled_AllRowsReconciled(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+
+	ledger := database.Ledger{Name: "Test Ledger", Type: database.ASSETLEDGER, IsAccounts: true}
+	lID, err := ledger.Insert(DB)
+	require.NoError(t, err)
+
+	account := database.Account{Name: "Test Account", Type: database.DEBTOR}
+	aID, err := account.Insert(DB)
+	require.NoError(t, err)
+
+	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
+	jID, err := journal.Insert(DB)
+	require.NoError(t, err)
+
+	entry := database.Entry{Journal: jID}
+	rows := []database.EntryRow{
+		{
+			Date:       database.Date(time.Now()),
+			Ledger:     lID,
+			Account:    &aID,
+			Value:      database.CurrencyValue(420),
+			Reconciled: true,
+		},
+		{
+			Date:       database.Date(time.Now()),
+			Ledger:     lID,
+			Account:    &aID,
+			Value:      database.CurrencyValue(69),
+			Reconciled: true,
+		},
+	}
+	_, err = entry.Insert(DB, rows)
+	require.NoError(t, err)
+	require.NoError(t, database.UpdateCache(DB))
+
+	dv := NewAccountsDetailView(DB, aID)
+	tw := tat.NewTestWrapperSpecific(View(dv))
+
+	// All rows are reconciled, so shownRows starts empty (showReconciled defaults to false)
+	tw.Execute(t, func(view View) {
+		assert.Empty(t, view.(*accountsDetailView).viewer.shownRows)
+	})
+
+	// Toggling showReconciled to true should not crash
+	tw.Send(meta.ToggleShowReconciledMsg{})
+
+	tw.Execute(t, func(view View) {
+		assert.Len(t, view.(*accountsDetailView).viewer.shownRows, 2)
+	})
+}
 
 func TestGenericDetailView_Navigation(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
