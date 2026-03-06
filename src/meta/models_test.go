@@ -28,3 +28,22 @@ func TestCompileNotes(t *testing.T) {
 		assert.Equal(t, testCase.expected, result, "input: %q", testCase.input)
 	}
 }
+
+func TestCollapse(t *testing.T) {
+	tests := []struct {
+		input    meta.Notes
+		expected string
+	}{
+		{nil, ""},
+		{meta.Notes{}, ""},
+		{meta.Notes{"hello"}, "hello"},
+		{meta.Notes{"a", "b"}, "a\nb"},
+		// Middle blank lines are preserved
+		{meta.Notes{"a", "", "b"}, "a\n\nb"},
+	}
+
+	for _, testCase := range tests {
+		result := testCase.input.Collapse()
+		assert.Equal(t, testCase.expected, result, "input: %q", testCase.input)
+	}
+}
