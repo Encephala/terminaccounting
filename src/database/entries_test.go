@@ -303,6 +303,21 @@ func TestSelectRowsByJournal(t *testing.T) {
 	assert.Equal(t, entry1.Id, rows[0].Entry)
 }
 
+func TestSelectEntriesByJournal(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	journal1 := insertTestJournal(t, DB)
+	journal2 := insertTestJournal(t, DB)
+	ledger := insertTestLedger(t, DB)
+	entry1 := insertTestEntry(t, DB, journal1.Id, ledger.Id)
+	insertTestEntry(t, DB, journal2.Id, ledger.Id)
+
+	entries, err := database.SelectEntriesByJournal(DB, journal1.Id)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, entry1.Id, entries[0].Id)
+	assert.Equal(t, journal1.Id, entries[0].Journal)
+}
+
 func TestSetReconciled(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	journal := insertTestJournal(t, DB)
