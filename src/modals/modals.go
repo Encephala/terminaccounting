@@ -75,7 +75,7 @@ func (mm *ModalManager) View() string {
 		return ""
 	}
 
-	return meta.ModalStyle.Render(mm.Modal.View())
+	return meta.ModalStyle(mm.width, mm.height).Render(mm.Modal.View())
 }
 
 func (mm *ModalManager) CurrentViewAllowsInsertMode() bool {
