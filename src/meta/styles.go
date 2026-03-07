@@ -58,6 +58,14 @@ func BodyStyle(width, height int) lipgloss.Style {
 	return style
 }
 
+func ModalStyle(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Width(width).
+		Height(height-2). // -2 for padding
+		Padding(1, 4)
+}
+
 var StatusLineStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("240")).
 	Foreground(lipgloss.Color("#00EAEA"))
@@ -103,5 +111,3 @@ func NewDetailViewStyles(colour lipgloss.Color) DetailViewStyles {
 		ItemSelected: item.Foreground(colour),
 	}
 }
-
-var ModalStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 4)

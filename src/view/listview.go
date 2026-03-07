@@ -58,8 +58,7 @@ func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 		// -2 because of horizontal padding
 		lv.listModel.SetWidth(message.Width - 2)
 
-		// -1 to leave some bottom padding
-		lv.listModel.SetHeight(message.Height - 1)
+		lv.listModel.SetHeight(message.Height)
 
 		return lv, nil
 

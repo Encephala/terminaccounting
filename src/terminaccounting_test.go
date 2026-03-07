@@ -106,9 +106,9 @@ func TestShowNotificationsMsg(t *testing.T) {
 		DB := tat.SetupTestEnv(t)
 		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
-		tw.Send(errors.New("first error"))
-		tw.Send(meta.NotificationMessageMsg{Message: "second message"})
-		tw.Send(meta.ShowNotificationsMsg{})
+		tw.Send(errors.New("first error")).
+			Send(meta.NotificationMessageMsg{Message: "second message"}).
+			Send(meta.ShowNotificationsMsg{})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.True(t, ta.showModal)
@@ -137,8 +137,8 @@ func TestHandleKeyMsg_InvalidMotion(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
-	// "z" is not a defined motion in list view normal mode
-	tw.SendText("z")
+	// "x" is not a defined motion in list view normal mode
+	tw.SendText("x")
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
