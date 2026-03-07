@@ -23,8 +23,7 @@ type journalsDetailView struct {
 	listModel list.Model
 
 	modelId int
-
-	journal database.Journal
+	model   database.Journal
 }
 
 func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal) *journalsDetailView {
@@ -36,8 +35,7 @@ func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal) *journalsDetai
 
 	// List dimensions will be updated according to tea.WindowSizeMsg
 	model := list.New([]list.Item{}, delegate, 20, 16)
-	model.Title = fmt.Sprintf("Journals detail view: %q", journal.Name)
-	model.Styles.Title = viewStyles.Title
+	model.SetShowTitle(false)
 	model.SetShowHelp(false)
 
 	return &journalsDetailView{
@@ -47,12 +45,12 @@ func NewJournalsDetailView(DB *sqlx.DB, journal database.Journal) *journalsDetai
 
 		modelId: journal.Id,
 
-		journal: journal,
+		model: journal,
 	}
 }
 
 func (dv *journalsDetailView) Init() tea.Cmd {
-	return database.MakeSelectEntriesByJournalCmd(dv.DB, dv.journal.Id)
+	return database.MakeSelectEntriesByJournalCmd(dv.DB, dv.model.Id)
 }
 
 func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
@@ -104,6 +102,11 @@ func (dv *journalsDetailView) View() string {
 	return dv.listModel.View()
 }
 
+func (dv *journalsDetailView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Journal %s details", dv.model.Name))
+}
+
 func (dv *journalsDetailView) Type() meta.ViewType {
 	return meta.DETAILVIEWTYPE
 }
@@ -141,7 +144,7 @@ func (dv *journalsDetailView) CommandSet() meta.CommandSet {
 }
 
 func (dv *journalsDetailView) Reload() View {
-	return NewJournalsDetailView(dv.DB, dv.journal)
+	return NewJournalsDetailView(dv.DB, dv.model)
 }
 
 // Contrary to the generic list view, going to detail view here jumps to an entries detail view
@@ -245,7 +248,12 @@ func (cv *journalsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (cv *journalsCreateView) View() string {
-	return genericMutateViewView(cv)
+	return genericMutateViewView(cv, meta.JOURNALSCOLOUR)
+}
+
+func (cv *journalsCreateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
+	return style.Render("Creating new journal")
 }
 
 func (cv *journalsCreateView) Type() meta.ViewType {
@@ -285,14 +293,6 @@ func (cv *journalsCreateView) Reload() View {
 
 func (cv *journalsCreateView) getInputManager() *inputManager {
 	return cv.inputManager
-}
-
-func (cv *journalsCreateView) title() string {
-	return "Creating new journal"
-}
-
-func (cv *journalsCreateView) getColour() lipgloss.Color {
-	return cv.colour
 }
 
 type journalsUpdateView struct {
@@ -406,7 +406,12 @@ func (uv *journalsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (uv *journalsUpdateView) View() string {
-	return genericMutateViewView(uv)
+	return genericMutateViewView(uv, meta.JOURNALSCOLOUR)
+}
+
+func (uv *journalsUpdateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Updating journal: %s", uv.inputManager.inputs[0].value()))
 }
 
 func (uv *journalsUpdateView) Type() meta.ViewType {
@@ -452,14 +457,6 @@ func (uv *journalsUpdateView) Reload() View {
 
 func (uv *journalsUpdateView) getInputManager() *inputManager {
 	return uv.inputManager
-}
-
-func (uv *journalsUpdateView) title() string {
-	return fmt.Sprintf("Updating journal: %s", uv.startingValue.Name)
-}
-
-func (uv *journalsUpdateView) getColour() lipgloss.Color {
-	return uv.colour
 }
 
 func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
@@ -531,6 +528,11 @@ func (dv *journalsDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
+func (dv *journalsDeleteView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Delete journal: %s", dv.model.String()))
+}
+
 func (dv *journalsDeleteView) Type() meta.ViewType {
 	return meta.DELETEVIEWTYPE
 }
@@ -567,20 +569,12 @@ func (dv *journalsDeleteView) Reload() View {
 	return NewJournalsDeleteView(dv.DB, dv.modelId)
 }
 
-func (dv *journalsDeleteView) title() string {
-	return fmt.Sprintf("Delete journal: %s", dv.model.String())
-}
-
 func (dv *journalsDeleteView) inputValues() []string {
 	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse()}
 }
 
 func (dv *journalsDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Notes"}
-}
-
-func (dv *journalsDeleteView) getColour() lipgloss.Color {
-	return dv.colour
 }
 
 func (dv *journalsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

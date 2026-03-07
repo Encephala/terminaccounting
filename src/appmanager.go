@@ -101,8 +101,9 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		}
 
 	case meta.ScrollVerticalMsg:
-		// -3 for top tabs, -1 to leave some bottom padding
-		bodyHeight := am.height - 3 - 1
+		// -3 for top tabs, -3 for the title, -1 to leave some bottom padding
+		// TODO: This should scroll to the content length, not the body height minus stuff
+		bodyHeight := am.height - 3 - 3 - 1
 
 		switch {
 		case !message.Up && !message.ToEnd:
@@ -118,13 +119,15 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		return am, nil
 
 	case meta.ScrollHorizontalMsg:
-		// TODO: Subtract anything from am.width?
+		// -4 for horizontal padding
+		// TODO: This should scroll to the content width, not the body width minus stuff
+		bodyWidth := am.width - 4
 
 		switch {
 		case !message.Left && !message.ToEnd:
-			am.xscroll = min(am.xscroll+1, am.width-1)
+			am.xscroll = min(am.xscroll+1, bodyWidth-1)
 		case !message.Left && message.ToEnd:
-			am.xscroll = am.width - 1
+			am.xscroll = bodyWidth - 1
 		case message.Left && !message.ToEnd:
 			am.xscroll = max(am.xscroll-1, 0)
 		case message.Left && message.ToEnd:
@@ -166,6 +169,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 }
 
 func (am *appManager) View() string {
+	// Render tabs
 	if am.activeApp < 0 || am.activeApp >= len(am.apps) {
 		panic(fmt.Sprintf("invalid tab index: %d", am.activeApp))
 	}
@@ -189,6 +193,13 @@ func (am *appManager) View() string {
 	}
 
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
+
+	// Render title
+	titleRendered := lipgloss.NewStyle().
+		Margin(0, 1).
+		Render(am.apps[am.activeApp].CurrentTitle())
+
+	// Render body
 	body := am.apps[am.activeApp].View()
 
 	var bodyLines []string
@@ -206,11 +217,11 @@ func (am *appManager) View() string {
 
 	bodyRendered := lipgloss.NewStyle().
 		Width(am.width).
-		// -3 for the top tabs
-		Height(am.height - 3).
+		// -3 for the tabs, -3 for the title
+		Height(am.height - 3 - 3).
 		Render(strings.Join(bodyLines, "\n"))
 
-	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, bodyRendered)
+	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, titleRendered, bodyRendered)
 }
 
 func (am *appManager) CurrentMotionSet() meta.MotionSet {

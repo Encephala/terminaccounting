@@ -77,6 +77,11 @@ func (tm *textModal) View() string {
 	return tm.viewport.View()
 }
 
+func (tm *textModal) Title() string {
+	// TODO?
+	return ""
+}
+
 func (tm *textModal) Type() meta.ViewType {
 	return meta.TEXTMODALVIEWTYPE
 }

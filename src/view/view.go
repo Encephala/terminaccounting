@@ -20,6 +20,7 @@ type View interface {
 	Update(tea.Msg) (View, tea.Cmd)
 	View() string
 
+	Title() string
 	Type() meta.ViewType
 
 	AllowsInsertMode() bool

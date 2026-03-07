@@ -381,6 +381,11 @@ func (bi *bankImporter) View() string {
 	return result.String()
 }
 
+func (bi *bankImporter) Title() string {
+	// TODO?
+	return ""
+}
+
 func (bi *bankImporter) Type() meta.ViewType {
 	return meta.BANKIMPORTERVIEWTYPE
 }

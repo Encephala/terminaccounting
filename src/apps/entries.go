@@ -106,6 +106,10 @@ func (app *entriesApp) Type() meta.AppType {
 	return meta.ENTRIESAPP
 }
 
+func (app *entriesApp) CurrentTitle() string {
+	return app.currentView.Title()
+}
+
 func (app *entriesApp) CurrentViewType() meta.ViewType {
 	return app.currentView.Type()
 }

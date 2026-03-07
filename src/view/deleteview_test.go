@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testGenericDeleteView(t *testing.T, v View, expectedTitle string, expectedInputNames []string, notificationMsg meta.NotificationMessageMsg) {
+func testGenericDeleteView(t *testing.T, v View, expectedInputNames []string, notificationMsg meta.NotificationMessageMsg) {
 	t.Helper()
 
 	tw := tat.NewTestWrapperSpecific(v,
@@ -21,7 +21,6 @@ func testGenericDeleteView(t *testing.T, v View, expectedTitle string, expectedI
 	)
 
 	t.Run("Rendering", func(t *testing.T) {
-		tw.AssertViewContains(t, expectedTitle)
 		for _, name := range expectedInputNames {
 			tw.AssertViewContains(t, name)
 		}
@@ -50,7 +49,6 @@ func TestAccountsDeleteView(t *testing.T) {
 	dv := NewAccountsDeleteView(DB, accountId)
 
 	testGenericDeleteView(t, View(dv),
-		fmt.Sprintf("Delete account: %s", account.String()),
 		[]string{"Name", "Type", "Bank numbers", "Notes"},
 		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted Account %q", account.Name)},
 	)
@@ -71,7 +69,6 @@ func TestLedgersDeleteView(t *testing.T) {
 	dv := NewLedgersDeleteView(DB, ledgerId)
 
 	testGenericDeleteView(t, View(dv),
-		fmt.Sprintf("Delete ledger %s", ledger.String()),
 		[]string{"Name", "Type", "Notes", "Is accounts ledger"},
 		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted Ledger %q", ledger.Name)},
 	)
@@ -92,7 +89,6 @@ func TestJournalsDeleteView(t *testing.T) {
 	dv := NewJournalsDeleteView(DB, journalId)
 
 	testGenericDeleteView(t, View(dv),
-		fmt.Sprintf("Delete journal: %s", journal.String()),
 		[]string{"Name", "Type", "Notes"},
 		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted Journal %q", journal.Name)},
 	)
@@ -130,7 +126,6 @@ func TestEntryDeleteView(t *testing.T) {
 	dv := NewEntryDeleteView(DB, entryId)
 
 	testGenericDeleteView(t, View(dv),
-		fmt.Sprintf("Delete entry %s", entry.String()),
 		[]string{"Journal", "Notes", "# rows", "Entry size"},
 		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted entry \"%d\"", entryId)},
 	)

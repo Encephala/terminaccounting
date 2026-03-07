@@ -83,16 +83,17 @@ func (dv *ledgersDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *ledgersDetailView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Ledger %s details", dv.model.Name))
+}
+
 func (dv *ledgersDetailView) Type() meta.ViewType {
 	return meta.DETAILVIEWTYPE
 }
 
 func (dv *ledgersDetailView) getDB() *sqlx.DB {
 	return dv.DB
-}
-
-func (dv *ledgersDetailView) title() string {
-	return fmt.Sprintf("Ledger %s details", dv.model.Name)
 }
 
 func (dv *ledgersDetailView) getCanReconcile() bool {
@@ -131,10 +132,6 @@ func (dv *ledgersDetailView) Reload() View {
 
 func (dv *ledgersDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *ledgersDetailView) getColour() lipgloss.Color {
-	return meta.LEDGERSCOLOUR
 }
 
 type ledgersCreateView struct {
@@ -195,14 +192,6 @@ func (cv *ledgersCreateView) Init() tea.Cmd {
 	}
 }
 
-func (cv *ledgersCreateView) title() string {
-	return "Creating new ledger"
-}
-
-func (cv *ledgersCreateView) getColour() lipgloss.Color {
-	return cv.colour
-}
-
 func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
@@ -252,7 +241,12 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (cv *ledgersCreateView) View() string {
-	return genericMutateViewView(cv)
+	return genericMutateViewView(cv, meta.LEDGERSCOLOUR)
+}
+
+func (cv *ledgersCreateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
+	return style.Render("Creating new ledger")
 }
 
 func (cv *ledgersCreateView) Type() meta.ViewType {
@@ -350,13 +344,6 @@ func (uv *ledgersUpdateView) Init() tea.Cmd {
 	return database.MakeLoadLedgersDetailCmd(uv.DB, uv.modelId)
 }
 
-func (uv *ledgersUpdateView) title() string {
-	return fmt.Sprintf("Updating ledger: %s", uv.inputManager.inputs[0].value().(string))
-}
-func (uv *ledgersUpdateView) getColour() lipgloss.Color {
-	return uv.colour
-}
-
 func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.DataLoadedMsg:
@@ -425,7 +412,12 @@ func (uv *ledgersUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (uv *ledgersUpdateView) View() string {
-	return genericMutateViewView(uv)
+	return genericMutateViewView(uv, meta.LEDGERSCOLOUR)
+}
+
+func (uv *ledgersUpdateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Delete ledger %s", uv.startingValue.String()))
 }
 
 func (uv *ledgersUpdateView) Type() meta.ViewType {
@@ -542,6 +534,11 @@ func (dv *ledgersDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
+func (dv *ledgersDeleteView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Delete ledger: %s", dv.model.String()))
+}
+
 func (dv *ledgersDeleteView) Type() meta.ViewType {
 	return meta.DELETEVIEWTYPE
 }
@@ -578,20 +575,12 @@ func (dv *ledgersDeleteView) Reload() View {
 	return NewLedgersDeleteView(dv.DB, dv.modelId)
 }
 
-func (dv *ledgersDeleteView) title() string {
-	return fmt.Sprintf("Delete ledger %s", dv.model.String())
-}
-
 func (dv *ledgersDeleteView) inputValues() []string {
 	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse(), renderBoolean(dv.model.IsAccounts)}
 }
 
 func (dv *ledgersDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Notes", "Is accounts ledger"}
-}
-
-func (dv *ledgersDeleteView) getColour() lipgloss.Color {
-	return dv.colour
 }
 
 func (dv *ledgersDeleteView) makeGoToDetailViewCmd() tea.Cmd {

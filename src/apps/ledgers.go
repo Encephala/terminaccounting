@@ -97,6 +97,10 @@ func (app *ledgersApp) Type() meta.AppType {
 	return meta.LEDGERSAPP
 }
 
+func (app *ledgersApp) CurrentTitle() string {
+	return app.currentView.Title()
+}
+
 func (app *ledgersApp) CurrentViewType() meta.ViewType {
 	return app.currentView.Type()
 }

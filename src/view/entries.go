@@ -74,16 +74,17 @@ func (dv *entryDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *entryDetailView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Entry %d details", dv.model.Id))
+}
+
 func (dv *entryDetailView) Type() meta.ViewType {
 	return meta.DETAILVIEWTYPE
 }
 
 func (dv *entryDetailView) getDB() *sqlx.DB {
 	return dv.DB
-}
-
-func (dv *entryDetailView) title() string {
-	return fmt.Sprintf("Entry %d details", dv.model.Id)
 }
 
 func (dv *entryDetailView) getCanReconcile() bool {
@@ -120,10 +121,6 @@ func (dv *entryDetailView) Reload() View {
 
 func (dv *entryDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *entryDetailView) getColour() lipgloss.Color {
-	return meta.ENTRIESCOLOUR
 }
 
 // NOTE: entries doesn't use the genericMutateView, because with the row creating it's too idiosyncratic
@@ -288,6 +285,11 @@ func (cv *entryCreateView) View() string {
 	return entriesMutateViewView(cv)
 }
 
+func (cv *entryCreateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
+	return style.Render("Creating new entry")
+}
+
 func (cv *entryCreateView) Type() meta.ViewType {
 	return meta.CREATEVIEWTYPE
 }
@@ -335,14 +337,6 @@ func (cv *entryCreateView) getManager() *rowsMutateManager {
 
 func (cv *entryCreateView) getActiveInput() *int {
 	return &cv.activeInput
-}
-
-func (cv *entryCreateView) getColour() lipgloss.Color {
-	return cv.colour
-}
-
-func (cv *entryCreateView) title() string {
-	return "Creating new entry"
 }
 
 type entryUpdateView struct {
@@ -514,6 +508,11 @@ func (uv *entryUpdateView) View() string {
 	return entriesMutateViewView(uv)
 }
 
+func (uv *entryUpdateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Updating entry: %d", uv.startingEntry.Id))
+}
+
 func (uv *entryUpdateView) Type() meta.ViewType {
 	return meta.UPDATEVIEWTYPE
 }
@@ -564,15 +563,6 @@ func (uv *entryUpdateView) getManager() *rowsMutateManager {
 
 func (uv *entryUpdateView) getActiveInput() *int {
 	return &uv.activeInput
-}
-
-func (uv *entryUpdateView) getColour() lipgloss.Color {
-	return uv.colour
-}
-
-func (uv *entryUpdateView) title() string {
-	// TODO get some name/id/whatever for the entry here?
-	return fmt.Sprintf("Updating entry: %d", uv.startingEntry.Id)
 }
 
 type rowsMutateManager struct {
@@ -1263,10 +1253,6 @@ type entryMutateView interface {
 	getManager() *rowsMutateManager
 
 	getActiveInput() *int
-
-	getColour() lipgloss.Color
-
-	title() string
 }
 
 func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd) {
@@ -1416,16 +1402,11 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 func entriesMutateViewView(view entryMutateView) string {
 	var result strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Background(view.getColour()).Padding(0, 1)
-	result.WriteString(titleStyle.Render(view.title()))
-
-	result.WriteString("\n\n")
-
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(view.getColour())
+	highlightStyle := sectionStyle.Foreground(meta.ENTRIESCOLOUR)
 
 	inputs := []viewable{view.getJournalInput(), view.getNotesInput(), view.getManager()}
 	names := []string{"Journal", "Notes", ""}
@@ -1592,6 +1573,11 @@ func (dv *entryDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
+func (dv *entryDeleteView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Delete entry: %s", dv.model.String()))
+}
+
 func (dv *entryDeleteView) Type() meta.ViewType {
 	return meta.DELETEVIEWTYPE
 }
@@ -1629,10 +1615,6 @@ func (dv *entryDeleteView) Reload() View {
 	return NewEntryDeleteView(dv.DB, dv.modelId)
 }
 
-func (dv *entryDeleteView) title() string {
-	return fmt.Sprintf("Delete entry %s", dv.model.String())
-}
-
 func (dv *entryDeleteView) inputValues() []string {
 	var result []string
 
@@ -1653,10 +1635,6 @@ func (dv *entryDeleteView) inputValues() []string {
 
 func (dv *entryDeleteView) inputNames() []string {
 	return []string{"Journal", "Notes", "# rows", "Entry size"}
-}
-
-func (dv *entryDeleteView) getColour() lipgloss.Color {
-	return dv.colour
 }
 
 func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

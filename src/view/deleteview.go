@@ -10,22 +10,12 @@ import (
 )
 
 type genericDeleteView interface {
-	title() string
-
 	inputValues() []string
 	inputNames() []string
-
-	getColour() lipgloss.Color
 }
 
 func genericDeleteViewView(gdv genericDeleteView, width, height int) string {
 	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1)
-
-	// -4 for MarginLeft and implicit MarginRight, -2 for horizontal padding
-	result.WriteString(titleStyle.Render(ansi.Truncate(gdv.title(), width-4-2, "...")))
-	result.WriteString("\n\n")
 
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

@@ -68,16 +68,17 @@ func (dv *accountsDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
+func (dv *accountsDetailView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Account %s details", dv.model.Name))
+}
+
 func (dv *accountsDetailView) Type() meta.ViewType {
 	return meta.DETAILVIEWTYPE
 }
 
 func (dv *accountsDetailView) getDB() *sqlx.DB {
 	return dv.DB
-}
-
-func (dv *accountsDetailView) title() string {
-	return fmt.Sprintf("Account %s details", dv.model.Name)
 }
 
 func (dv *accountsDetailView) getCanReconcile() bool {
@@ -116,10 +117,6 @@ func (dv *accountsDetailView) Reload() View {
 
 func (dv *accountsDetailView) getViewer() *entryRowViewer {
 	return dv.viewer
-}
-
-func (dv *accountsDetailView) getColour() lipgloss.Color {
-	return meta.ACCOUNTSCOLOUR
 }
 
 const (
@@ -224,7 +221,12 @@ func (cv *accountsCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (cv *accountsCreateView) View() string {
-	return genericMutateViewView(cv)
+	return genericMutateViewView(cv, meta.ACCOUNTSCOLOUR)
+}
+
+func (cv *accountsCreateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
+	return style.Render("Creating new account")
 }
 
 func (cv *accountsCreateView) Type() meta.ViewType {
@@ -264,14 +266,6 @@ func (cv *accountsCreateView) Reload() View {
 
 func (cv *accountsCreateView) getInputManager() *inputManager {
 	return cv.inputManager
-}
-
-func (cv *accountsCreateView) title() string {
-	return "Creating new account"
-}
-
-func (cv *accountsCreateView) getColour() lipgloss.Color {
-	return cv.colour
 }
 
 type accountsUpdateView struct {
@@ -396,7 +390,12 @@ func (uv *accountsUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (uv *accountsUpdateView) View() string {
-	return genericMutateViewView(uv)
+	return genericMutateViewView(uv, meta.ACCOUNTSCOLOUR)
+}
+
+func (uv *accountsUpdateView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Updating account: %s", uv.inputManager.inputs[0].value()))
 }
 
 func (uv *accountsUpdateView) Type() meta.ViewType {
@@ -448,14 +447,6 @@ func (uv *accountsUpdateView) makeGoToDetailViewCmd() tea.Cmd {
 
 func (uv *accountsUpdateView) getInputManager() *inputManager {
 	return uv.inputManager
-}
-
-func (uv *accountsUpdateView) title() string {
-	return fmt.Sprintf("Updating account: %s", uv.inputManager.inputs[0].value())
-}
-
-func (uv *accountsUpdateView) getColour() lipgloss.Color {
-	return uv.colour
 }
 
 type accountsDeleteView struct {
@@ -521,6 +512,11 @@ func (dv *accountsDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
+func (dv *accountsDeleteView) Title() string {
+	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
+	return style.Render(fmt.Sprintf("Delete account: %s", dv.model.String()))
+}
+
 func (dv *accountsDeleteView) Type() meta.ViewType {
 	return meta.DELETEVIEWTYPE
 }
@@ -557,20 +553,12 @@ func (dv *accountsDeleteView) Reload() View {
 	return NewAccountsDeleteView(dv.DB, dv.modelId)
 }
 
-func (dv *accountsDeleteView) title() string {
-	return fmt.Sprintf("Delete account: %s", dv.model.String())
-}
-
 func (dv *accountsDeleteView) inputValues() []string {
 	return []string{dv.model.Name, dv.model.Type.String(), dv.model.BankNumbers.Collapse(), dv.model.Notes.Collapse()}
 }
 
 func (dv *accountsDeleteView) inputNames() []string {
 	return []string{"Name", "Type", "Bank numbers", "Notes"}
-}
-
-func (dv *accountsDeleteView) getColour() lipgloss.Color {
-	return dv.colour
 }
 
 func (dv *accountsDeleteView) makeGoToDetailViewCmd() tea.Cmd {

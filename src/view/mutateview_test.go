@@ -12,12 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testGenericMutateView_Generic(t *testing.T, v genericMutateView, expectedTitle string, expectedInputNames []string) {
+func testGenericMutateView_Generic(t *testing.T, v genericMutateView, expectedInputNames []string) {
 	tw := tat.NewTestWrapperSpecific(View(v))
 
 	// Generic Rendering
 	t.Run("Rendering", func(t *testing.T) {
-		tw.AssertViewContains(t, expectedTitle)
 		for _, name := range expectedInputNames {
 			tw.AssertViewContains(t, name)
 		}
@@ -61,19 +60,19 @@ func testGenericMutateView_Generic(t *testing.T, v genericMutateView, expectedTi
 func TestAccountsCreateView_Generic(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	v := NewAccountsCreateView(DB)
-	testGenericMutateView_Generic(t, v, "Creating new account", []string{"Name", "Type", "Bank numbers", "Notes"})
+	testGenericMutateView_Generic(t, v, []string{"Name", "Type", "Bank numbers", "Notes"})
 }
 
 func TestLedgersCreateView_Generic(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	v := NewLedgersCreateView(DB)
-	testGenericMutateView_Generic(t, v, "Creating new ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
+	testGenericMutateView_Generic(t, v, []string{"Name", "Type", "Notes", "Is accounts ledger?"})
 }
 
 func TestJournalsCreateView_Generic(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	v := NewJournalsCreateView(DB)
-	testGenericMutateView_Generic(t, v, "Creating new journal", []string{"Name", "Type", "Notes"})
+	testGenericMutateView_Generic(t, v, []string{"Name", "Type", "Notes"})
 }
 
 // Helper to create a rowCreator with populated itempickers

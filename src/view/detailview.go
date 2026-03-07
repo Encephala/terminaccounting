@@ -20,13 +20,9 @@ type genericDetailView interface {
 
 	getDB() *sqlx.DB
 
-	title() string
-
 	getCanReconcile() bool
 
 	getViewer() *entryRowViewer
-
-	getColour() lipgloss.Color
 }
 
 func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.Cmd) {
@@ -158,11 +154,6 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 func genericDetailViewView(gdv genericDetailView) string {
 	var result strings.Builder
-
-	titleStyle := lipgloss.NewStyle().Background(gdv.getColour()).Padding(0, 1)
-	result.WriteString(titleStyle.Render(gdv.title()))
-
-	result.WriteString("\n")
 
 	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))
 

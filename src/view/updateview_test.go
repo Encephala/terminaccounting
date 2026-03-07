@@ -14,13 +14,12 @@ import (
 
 // Like testGenericMutateView_Generic but clears input[0] before the delegation test,
 // since update views pre-populate inputs from loaded data.
-func testGenericUpdateView_Generic(t *testing.T, v genericMutateView, expectedTitle string, expectedInputNames []string) {
+func testGenericUpdateView_Generic(t *testing.T, v genericMutateView, expectedInputNames []string) {
 	t.Helper()
 
 	tw := tat.NewTestWrapperSpecific(View(v))
 
 	t.Run("Rendering", func(t *testing.T) {
-		tw.AssertViewContains(t, expectedTitle)
 		for _, name := range expectedInputNames {
 			tw.AssertViewContains(t, name)
 		}
@@ -65,7 +64,7 @@ func TestAccountsUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewAccountsUpdateView(DB, accountId)
-	testGenericUpdateView_Generic(t, uv, "Updating account: Test Account", []string{"Name", "Type", "Bank numbers", "Notes"})
+	testGenericUpdateView_Generic(t, uv, []string{"Name", "Type", "Bank numbers", "Notes"})
 }
 
 func TestAccountsUpdateView_DataLoaded(t *testing.T) {
@@ -149,7 +148,7 @@ func TestLedgersUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewLedgersUpdateView(DB, ledgerId)
-	testGenericUpdateView_Generic(t, uv, "Updating ledger: Test Ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
+	testGenericUpdateView_Generic(t, uv, []string{"Name", "Type", "Notes", "Is accounts ledger?"})
 }
 
 func TestLedgersUpdateView_DataLoaded(t *testing.T) {
@@ -262,7 +261,7 @@ func TestJournalsUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewJournalsUpdateView(DB, journalId)
-	testGenericUpdateView_Generic(t, uv, "Updating journal: Test Journal", []string{"Name", "Type", "Notes"})
+	testGenericUpdateView_Generic(t, uv, []string{"Name", "Type", "Notes"})
 }
 
 func TestJournalsUpdateView_DataLoaded(t *testing.T) {

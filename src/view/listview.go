@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type ListView struct {
@@ -24,8 +25,7 @@ func NewListView(app meta.App) *ListView {
 
 	// List dimensions will be updated according to tea.WindowSizeMsg
 	model := list.New([]list.Item{}, delegate, 80, 16)
-	model.Title = app.Name()
-	model.Styles.Title = viewStyles.Title
+	model.SetShowTitle(false)
 	model.SetShowHelp(false)
 
 	return &ListView{
@@ -78,6 +78,11 @@ func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 
 func (lv *ListView) View() string {
 	return lv.listModel.View()
+}
+
+func (lv *ListView) Title() string {
+	style := lipgloss.NewStyle().Background(lv.app.Colour()).Padding(0, 1)
+	return style.Render(fmt.Sprintf("%s items", lv.app.Name()))
 }
 
 func (lv *ListView) Type() meta.ViewType {
