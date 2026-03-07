@@ -8,6 +8,7 @@ import (
 	"terminaccounting/meta"
 	"terminaccounting/tat"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -358,6 +359,18 @@ func TestEntryCreateView_DeleteRow_WhenNotInRows(t *testing.T) {
 
 	require.Len(t, tw.LastCmdResults, 1)
 	assert.Error(t, tw.LastCmdResults[0].(error))
+}
+
+func TestEntryCreateView_SmallWindowSize_DoesNotPanic(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	cv := NewEntryCreateView(DB)
+	tw := tat.NewTestWrapperSpecific(View(cv))
+
+	// A negative viewport height causes a panic in the viewport package, ensure an excessively low height
+	// doesn't cause a panic.
+	tw.Send(tea.WindowSizeMsg{Width: 80, Height: 1})
+
+	assert.NotPanics(t, func() { tw.Execute(t, func(view View) { view.View() }) })
 }
 
 func TestEntryCreateView_InputDelegation(t *testing.T) {

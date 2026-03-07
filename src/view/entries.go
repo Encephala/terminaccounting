@@ -1340,9 +1340,9 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 
 		newManager, cmd := rowsMutateManager.Update(tea.WindowSizeMsg{
 			// -4 for borders and horizontal padding
-			Width: message.Width - 4,
+			Width: max(message.Width-4, 0),
 			// 2 for notes borders, -4 for borders, header row and total row
-			Height: message.Height - journalHeight - (notesHeight + 2) - 4,
+			Height: max(message.Height-journalHeight-(notesHeight+2)-4, 0),
 		})
 		*rowsMutateManager = *newManager
 
