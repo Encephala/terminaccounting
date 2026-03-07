@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -170,6 +171,125 @@ func TestAppManager_YScroll(t *testing.T) {
 			require.GreaterOrEqual(t, alphaLine, 0, "Alpha must appear in app content")
 
 			am.yscroll = alphaLine + 1
+			scrolledView := am.View()
+
+			assert.NotContains(t, scrolledView, "Alpha")
+			assert.Contains(t, scrolledView, "Ledgers")
+		})
+	})
+}
+
+func TestAppManager_XScrollMsg(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB)).
+		Send(tea.WindowSizeMsg{Width: 80, Height: 20})
+
+	t.Run("scroll right increases xscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 0
+		})
+
+		tw.Send(meta.ScrollHorizontalMsg{Left: false})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.xscroll)
+		})
+	})
+
+	t.Run("scroll left decreases xscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 5
+		})
+
+		tw.Send(meta.ScrollHorizontalMsg{Left: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 4, ta.appManager.xscroll)
+		})
+	})
+
+	t.Run("scroll left at 0 stays at 0", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 0
+		})
+
+		tw.Send(meta.ScrollHorizontalMsg{Left: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 0, ta.appManager.xscroll)
+		})
+	})
+
+	t.Run("scroll right to end", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 0
+		})
+
+		tw.Send(meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			// bodyWidth = am.width - 1 = 79, max xscroll = bodyWidth - 1 = 78
+			assert.Equal(t, 78, ta.appManager.xscroll)
+		})
+	})
+
+	t.Run("scroll left to start", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 420
+		})
+
+		tw.Send(meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 0, ta.appManager.xscroll)
+		})
+	})
+}
+
+func TestAppManager_XScroll(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+
+	for _, name := range []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"} {
+		_, err := (&database.Ledger{Name: name, Type: database.EXPENSELEDGER}).Insert(DB)
+		require.NoError(t, err)
+	}
+
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB)).
+		GoToTab(meta.LEDGERSAPP).
+		Send(tea.WindowSizeMsg{Width: 80, Height: 20})
+
+	t.Run("xscroll=0 shows content from the left", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 0
+			assert.Contains(t, ta.appManager.View(), "Alpha")
+		})
+	})
+
+	t.Run("tab headers stay visible with large xscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.xscroll = 69
+			assert.Contains(t, ta.appManager.View(), "Ledgers")
+		})
+	})
+
+	t.Run("xscroll hides content scrolled past", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			am := ta.appManager
+
+			// Find which column of the raw app content Alpha starts at.
+			// Strip ANSI codes to get the visual column index.
+			appContentLines := strings.Split(am.apps[am.activeApp].View(), "\n")
+			alphaCol := -1
+			for _, line := range appContentLines {
+				col := strings.Index(ansi.Strip(line), "Alpha")
+				if col >= 0 {
+					alphaCol = col
+					break
+				}
+			}
+			require.GreaterOrEqual(t, alphaCol, 0, "Alpha must appear in app content")
+
+			am.xscroll = alphaCol + len("Alpha")
 			scrolledView := am.View()
 
 			assert.NotContains(t, scrolledView, "Alpha")
