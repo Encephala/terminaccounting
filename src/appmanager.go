@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -117,7 +118,18 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		return am, nil
 
 	case meta.ScrollHorizontalMsg:
-		// TODO
+		// TODO: Subtract anything from am.width?
+
+		switch {
+		case !message.Left && !message.ToEnd:
+			am.xscroll = min(am.xscroll+1, am.width-1)
+		case !message.Left && message.ToEnd:
+			am.xscroll = am.width - 1
+		case message.Left && !message.ToEnd:
+			am.xscroll = max(am.xscroll-1, 0)
+		case message.Left && message.ToEnd:
+			am.xscroll = 0
+		}
 
 		return am, nil
 
@@ -177,10 +189,21 @@ func (am *appManager) View() string {
 	}
 
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
+	body := am.apps[am.activeApp].View()
 
-	bodyLines := strings.Split(am.apps[am.activeApp].View(), "\n")
-	// Assumes am.yscroll is in a sane state. Otherwise, panics
-	bodyLines = bodyLines[am.yscroll:]
+	var bodyLines []string
+	for i, line := range strings.Split(body, "\n") {
+		// Apply vertical scrolling
+		if i < am.yscroll {
+			continue
+		}
+
+		// Apply horizontal scrolling
+		line = ansi.TruncateLeft(line, am.xscroll, "")
+
+		bodyLines = append(bodyLines, line)
+	}
+
 	bodyRendered := lipgloss.NewStyle().
 		Width(am.width).
 		// -3 for the top tabs
