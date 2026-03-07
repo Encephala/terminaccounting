@@ -302,7 +302,7 @@ func (bi *bankImporter) View() string {
 	}
 
 	style := lipgloss.NewStyle()
-	highlightStyle := style.Foreground(lipgloss.Color("212"))
+	highlightStyle := style.Foreground(lipgloss.ANSIColor(212))
 	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).Margin(0, 1)
 
 	formatSelectorStyle := style
@@ -363,7 +363,7 @@ func (bi *bankImporter) View() string {
 	for i, header := range bi.headers {
 		style := lipgloss.NewStyle()
 		if slices.Contains(usedColumns, i) {
-			style = style.Foreground(lipgloss.Color("212"))
+			style = style.Foreground(lipgloss.ANSIColor(212))
 		}
 
 		headersStyled[i] = style.Render(header)
@@ -497,7 +497,7 @@ func (bi *bankImporter) setViewportContent(doHighlight bool) {
 	for i, row := range bi.data {
 		style := lipgloss.NewStyle()
 		if doHighlight && i == bi.activeRow {
-			style = style.Foreground(lipgloss.Color("212"))
+			style = style.Foreground(lipgloss.ANSIColor(212))
 		}
 
 		rows = append(rows, style.Render(bi.renderRow(row)))

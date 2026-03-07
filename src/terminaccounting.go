@@ -460,7 +460,7 @@ type notificationMsg struct {
 
 func (nm notificationMsg) String() string {
 	if nm.isError {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(nm.text)
+		return lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(9)).Render(nm.text)
 	}
 
 	return nm.text

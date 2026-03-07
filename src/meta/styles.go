@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	ENTRIESCOLOUR  = lipgloss.Color("#F0F1B2")
-	LEDGERSCOLOUR  = lipgloss.Color("#A1EEBD")
-	ACCOUNTSCOLOUR = lipgloss.Color("#7BD4EA")
-	JOURNALSCOLOUR = lipgloss.Color("#F6D6D6")
+	ENTRIESCOLOUR  = lipgloss.Color("#7D7E00")
+	LEDGERSCOLOUR  = lipgloss.Color("#3E7D56")
+	ACCOUNTSCOLOUR = lipgloss.Color("#006B85")
+	JOURNALSCOLOUR = lipgloss.Color("#915E5E")
 )
 
 var tabBorder = lipgloss.Border{
@@ -82,7 +82,7 @@ func NewListViewStyles(colour lipgloss.Color) ListViewStyles {
 	defaultItemStyles := list.NewDefaultItemStyles()
 
 	return ListViewStyles{
-		Title: defaultTitleStyles.Background(colour),
+		Title: defaultTitleStyles.Background(colour).Foreground(lipgloss.ANSIColor(7)),
 
 		ListDelegateSelectedTitle: defaultItemStyles.SelectedTitle.
 			Foreground(colour).
