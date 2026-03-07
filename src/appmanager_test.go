@@ -1,11 +1,13 @@
 package main
 
 import (
+	"strings"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	tat "terminaccounting/tat"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -121,6 +123,57 @@ func insertItemForApp(t *testing.T, DB *sqlx.DB, appType meta.AppType) int {
 		t.Fatalf("unexpected meta.AppType: %#v", appType)
 		return 0
 	}
+}
+
+func TestAppManager_YScroll(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+
+	for _, name := range []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"} {
+		_, err := (&database.Ledger{Name: name, Type: database.EXPENSELEDGER}).Insert(DB)
+		require.NoError(t, err)
+	}
+
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+	tw.GoToTab(meta.LEDGERSAPP)
+	tw.Send(tea.WindowSizeMsg{Width: 80, Height: 10})
+
+	t.Run("yscroll=0 shows content from the top", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 0
+			assert.Contains(t, ta.appManager.View(), "Alpha")
+		})
+	})
+
+	t.Run("tab headers stay visible with large yscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 420
+			assert.Contains(t, ta.appManager.View(), "Ledgers")
+		})
+	})
+
+	t.Run("yscroll hides content scrolled past", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			am := ta.appManager
+
+			// Find which line of the raw app content Alpha appears on.
+			// The app view is unaffected by yscroll — only appManager.View() clips it.
+			appContentLines := strings.Split(am.apps[am.activeApp].View(), "\n")
+			alphaLine := -1
+			for i, line := range appContentLines {
+				if strings.Contains(line, "Alpha") {
+					alphaLine = i
+					break
+				}
+			}
+			require.GreaterOrEqual(t, alphaLine, 0, "Alpha must appear in app content")
+
+			am.yscroll = alphaLine + 1
+			scrolledView := am.View()
+
+			assert.NotContains(t, scrolledView, "Alpha")
+			assert.Contains(t, scrolledView, "Ledgers")
+		})
+	})
 }
 
 // Each app's detail view only reads the ID from the struct, so only that field needs to be set.
