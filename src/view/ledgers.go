@@ -185,7 +185,14 @@ func NewLedgersCreateView(DB *sqlx.DB) *ledgersCreateView {
 }
 
 func (cv *ledgersCreateView) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		currentAccountsLedger := database.GetAccountsLedger()
+		if currentAccountsLedger != nil {
+			return meta.DisableInputMsg{Index: 3}
+		}
+
+		return nil
+	}
 }
 
 func (cv *ledgersCreateView) title() string {
@@ -197,7 +204,7 @@ func (cv *ledgersCreateView) getColour() lipgloss.Color {
 }
 
 func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
-	switch message.(type) {
+	switch message := message.(type) {
 	case meta.CommitMsg:
 		name := cv.inputManager.inputs[0].value().(string)
 		ledgerType := cv.inputManager.inputs[1].value().(database.LedgerType)
@@ -234,6 +241,11 @@ func (cv *ledgersCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		}))
 
 		return cv, tea.Batch(cmds...)
+
+	case meta.DisableInputMsg:
+		cv.inputManager.disabled[message.Index] = true
+
+		return cv, nil
 	}
 
 	return genericMutateViewUpdate(cv, message)
