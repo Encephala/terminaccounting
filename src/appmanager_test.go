@@ -179,7 +179,75 @@ func TestAppManager_YScroll(t *testing.T) {
 	})
 }
 
-func TestAppManager_XScrollMsg(t *testing.T) {
+func TestAppManager_YScrollState(t *testing.T) {
+	DB := tat.SetupTestEnv(t)
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB)).
+		Send(tea.WindowSizeMsg{Width: 80, Height: 20})
+
+	t.Run("scroll down increases yscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 0
+		})
+
+		tw.Send(meta.ScrollVerticalMsg{Up: false})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.yscroll)
+		})
+	})
+
+	t.Run("scroll up decreases yscroll", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 5
+		})
+
+		tw.Send(meta.ScrollVerticalMsg{Up: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 4, ta.appManager.yscroll)
+		})
+	})
+
+	t.Run("scroll up at 0 stays at 0", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 0
+		})
+
+		tw.Send(meta.ScrollVerticalMsg{Up: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 0, ta.appManager.yscroll)
+		})
+	})
+
+	t.Run("scroll down to end", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 0
+		})
+
+		tw.Send(meta.ScrollVerticalMsg{Up: false, ToEnd: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			// terminaccounting passes height-2 to appManager, so am.height = 18
+			// bodyHeight = 18 - 3 - 1 = 14, max yscroll = bodyHeight - 1 = 13
+			assert.Equal(t, 13, ta.appManager.yscroll)
+		})
+	})
+
+	t.Run("scroll up to start", func(t *testing.T) {
+		tw.Execute(t, func(ta *terminaccounting) {
+			ta.appManager.yscroll = 420
+		})
+
+		tw.Send(meta.ScrollVerticalMsg{Up: true, ToEnd: true})
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 0, ta.appManager.yscroll)
+		})
+	})
+}
+
+func TestAppManager_XScrollState(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB)).
 		Send(tea.WindowSizeMsg{Width: 80, Height: 20})
@@ -228,8 +296,8 @@ func TestAppManager_XScrollMsg(t *testing.T) {
 		tw.Send(meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
-			// bodyWidth = am.width - 1 = 79, max xscroll = bodyWidth - 1 = 78
-			assert.Equal(t, 78, ta.appManager.xscroll)
+			// bodyWidth = am.width, max xscroll = bodyWidth - 1 = 79
+			assert.Equal(t, 79, ta.appManager.xscroll)
 		})
 	})
 
