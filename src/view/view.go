@@ -184,6 +184,7 @@ type inputManager struct {
 	activeInput int
 	inputs      []input
 	names       []string
+	disabled    []bool
 }
 
 func newInputManager(inputs []any, names []string) *inputManager {
@@ -193,9 +194,12 @@ func newInputManager(inputs []any, names []string) *inputManager {
 		inputsAdapted[i] = newAdapterFrom(input)
 	}
 
+	disabled := slices.Repeat([]bool{false}, len(inputs))
+
 	return &inputManager{
-		inputs: inputsAdapted,
-		names:  names,
+		inputs:   inputsAdapted,
+		names:    names,
+		disabled: disabled,
 	}
 }
 
@@ -210,17 +214,26 @@ func (im *inputManager) Update(message tea.Msg) (*inputManager, tea.Cmd) {
 	case meta.SwitchFocusMsg:
 		im.inputs[im.activeInput].blur()
 
+		var subCmd tea.Cmd
+		// If new input is disabled, move again
+		// TODO: this doesn't handle the edge case where all inputs are disabled, would give infinite recursion
 		switch message.Direction {
 		case meta.PREVIOUS:
 			im.previous()
+			if im.disabled[im.activeInput] {
+				im.previous()
+			}
 
 		case meta.NEXT:
 			im.next()
+			if im.disabled[im.activeInput] {
+				im.next()
+			}
 		}
 
 		cmd := im.inputs[im.activeInput].focus()
 
-		return im, cmd
+		return im, tea.Batch(cmd, subCmd)
 
 	case tea.KeyMsg:
 		newInput, cmd := im.inputs[im.activeInput].update(message)
@@ -255,15 +268,27 @@ func (im *inputManager) View(highlightColour lipgloss.Color) string {
 		return cmp.Compare(len(name), len(other))
 	})) + 2
 
+	sectionStyle = sectionStyle.Width(maxNameColWidth)
+
 	for i := range im.names {
 		if im.names[i] == "" {
 			result.WriteString(sectionStyle.Render(im.inputs[i].view()))
 		} else {
+			var name, input string
+
+			if im.disabled[i] {
+				name = sectionStyle.Foreground(lipgloss.ANSIColor(8)).Render(im.names[i])
+				input = styles[i].Foreground(lipgloss.ANSIColor(8)).Render(im.inputs[i].view())
+			} else {
+				name = sectionStyle.Width(maxNameColWidth).Render(im.names[i])
+				input = styles[i].Render(im.inputs[i].view())
+			}
+
 			result.WriteString(lipgloss.JoinHorizontal(
 				lipgloss.Top,
-				sectionStyle.Width(maxNameColWidth).Render(im.names[i]),
+				name,
 				" ",
-				styles[i].Render(im.inputs[i].view()),
+				input,
 			))
 		}
 

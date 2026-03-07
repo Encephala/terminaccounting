@@ -163,6 +163,10 @@ type RefreshCacheMsg struct{}
 
 type DebugPrintCacheMsg struct{}
 
+type DisableInputMsg struct {
+	Index int
+}
+
 // When inputting e.g. `j`, this gets captured as a motion,
 // and gets propagated through Model.Update() calls as a Navigate message
 // When passing the message back to a bubbletea model (i.e. not one I made but one from the bubbles package),
