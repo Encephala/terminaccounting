@@ -109,6 +109,16 @@ type SwitchTabMsg struct {
 	Direction Sequence
 }
 
+type ScrollVerticalMsg struct {
+	Up    bool
+	ToEnd bool
+}
+
+type ScrollHorizontalMsg struct {
+	Left  bool
+	ToEnd bool
+}
+
 type ViewType string
 
 const (

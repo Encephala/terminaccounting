@@ -133,9 +133,10 @@ func TestAppManager_YScroll(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
-	tw.GoToTab(meta.LEDGERSAPP)
-	tw.Send(tea.WindowSizeMsg{Width: 80, Height: 10})
+	testHeight := 10
+	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB)).
+		GoToTab(meta.LEDGERSAPP).
+		Send(tea.WindowSizeMsg{Width: 80, Height: testHeight})
 
 	t.Run("yscroll=0 shows content from the top", func(t *testing.T) {
 		tw.Execute(t, func(ta *terminaccounting) {
@@ -146,7 +147,8 @@ func TestAppManager_YScroll(t *testing.T) {
 
 	t.Run("tab headers stay visible with large yscroll", func(t *testing.T) {
 		tw.Execute(t, func(ta *terminaccounting) {
-			ta.appManager.yscroll = 420
+			// -3 for the top tabs
+			ta.appManager.yscroll = testHeight - 3
 			assert.Contains(t, ta.appManager.View(), "Ledgers")
 		})
 	})

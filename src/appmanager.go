@@ -13,7 +13,8 @@ import (
 )
 
 type appManager struct {
-	width, height int
+	width, height    int
+	xscroll, yscroll int
 
 	activeApp int
 	apps      []meta.App
@@ -98,6 +99,28 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
+	case meta.ScrollVerticalMsg:
+		// -3 for top tabs, -1 to leave some bottom padding
+		bodyHeight := am.height - 3 - 1
+
+		switch {
+		case !message.Up && !message.ToEnd:
+			am.yscroll = min(am.yscroll+1, bodyHeight-1)
+		case !message.Up && message.ToEnd:
+			am.yscroll = bodyHeight - 1
+		case message.Up && !message.ToEnd:
+			am.yscroll = max(am.yscroll-1, 0)
+		case message.Up && message.ToEnd:
+			am.yscroll = 0
+		}
+
+		return am, nil
+
+	case meta.ScrollHorizontalMsg:
+		// TODO
+
+		return am, nil
+
 	case meta.SwitchAppViewMsg:
 		if message.App != nil {
 			am.setActiveApp(am.appIds[*message.App])
@@ -131,8 +154,6 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 }
 
 func (am *appManager) View() string {
-	result := []string{}
-
 	if am.activeApp < 0 || am.activeApp >= len(am.apps) {
 		panic(fmt.Sprintf("invalid tab index: %d", am.activeApp))
 	}
@@ -156,15 +177,32 @@ func (am *appManager) View() string {
 	}
 
 	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
-	result = append(result, tabsRendered)
 
-	result = append(result, am.apps[am.activeApp].View())
+	bodyLines := strings.Split(am.apps[am.activeApp].View(), "\n")
+	// Assumes am.yscroll is in a sane state. Otherwise, panics
+	bodyLines = bodyLines[am.yscroll:]
+	bodyRendered := lipgloss.NewStyle().
+		Width(am.width).
+		// -3 for the top tabs
+		Height(am.height - 3).
+		Render(strings.Join(bodyLines, "\n"))
 
-	return lipgloss.JoinVertical(lipgloss.Left, result...)
+	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, bodyRendered)
 }
 
 func (am *appManager) CurrentMotionSet() meta.MotionSet {
-	return am.apps[am.activeApp].CurrentMotionSet()
+	result := am.apps[am.activeApp].CurrentMotionSet()
+
+	result.Normal.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
+	result.Normal.Insert([]string{"z", "J"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
+	result.Normal.Insert([]string{"z", "k"}, meta.ScrollVerticalMsg{Up: true})
+	result.Normal.Insert([]string{"z", "K"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
+	result.Normal.Insert([]string{"z", "l"}, meta.ScrollHorizontalMsg{Left: false})
+	result.Normal.Insert([]string{"z", "L"}, meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
+	result.Normal.Insert([]string{"z", "h"}, meta.ScrollHorizontalMsg{Left: true})
+	result.Normal.Insert([]string{"z", "H"}, meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
+
+	return result
 }
 
 func (am *appManager) CurrentCommandSet() meta.CommandSet {
