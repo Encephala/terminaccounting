@@ -31,10 +31,9 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		newViewer, cmd := viewer.Update(tea.WindowSizeMsg{
-			// -4 for margin on each side
-			Width: message.Width - 4,
-			// -4 for the title, reconcilableness info
-			Height: message.Height - 4,
+			Width: message.Width,
+			// -1 for the title, reconcilableness info
+			Height: message.Height - 1,
 		})
 		*viewer = *newViewer
 
@@ -165,7 +164,7 @@ func genericDetailViewView(gdv genericDetailView) string {
 
 	result.WriteString(gdv.getViewer().View())
 
-	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
+	return result.String()
 }
 
 func genericDetailViewMotionSet() meta.MotionSet {
@@ -249,8 +248,8 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		erv.height = message.Height
 
 		erv.viewport.Width = message.Width
-		// -6 for the total rows and their vertical margin
-		erv.viewport.Height = message.Height - 6
+		// -8 for the total rows and their vertical margin
+		erv.viewport.Height = message.Height - 8
 
 		return erv, nil
 
@@ -326,8 +325,7 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 	reconciledWidth := len("Reconciled")
 
 	var colWidths []int
-	// -4 because of left/right margin
-	remainingWidth := erv.width - dateWidth - reconciledWidth - 4
+	remainingWidth := erv.width - dateWidth - reconciledWidth
 	descriptionWidth := remainingWidth / 3
 
 	// -12 because of the 2-wide padding between columns, 6x

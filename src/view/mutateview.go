@@ -33,5 +33,5 @@ func genericMutateViewView(gmv genericMutateView, colour lipgloss.Color) string 
 
 	result.WriteString(gmv.getInputManager().View(colour))
 
-	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
+	return result.String()
 }

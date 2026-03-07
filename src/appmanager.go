@@ -188,7 +188,11 @@ func (am *appManager) View() string {
 	numberOfTrailingEmptyCells := am.width - len(am.apps)*14
 	if numberOfTrailingEmptyCells >= 0 {
 		tabFill := strings.Repeat(" ", numberOfTrailingEmptyCells)
-		style := lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(activeTabColour)
+
+		style := lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder(), false, false, true, false).
+			BorderForeground(activeTabColour)
+
 		tabs = append(tabs, style.Render(tabFill))
 	}
 
@@ -196,7 +200,7 @@ func (am *appManager) View() string {
 
 	// Render title
 	titleRendered := lipgloss.NewStyle().
-		Margin(0, 1).
+		Margin(1, 2).
 		Render(am.apps[am.activeApp].CurrentTitle())
 
 	// Render body
@@ -216,9 +220,11 @@ func (am *appManager) View() string {
 	}
 
 	bodyRendered := lipgloss.NewStyle().
-		Width(am.width).
+		// -4 for vertical horizontal margin
+		Width(am.width-4).
 		// -3 for the tabs, -3 for the title
-		Height(am.height - 3 - 3).
+		Height(am.height-3-3).
+		Margin(0, 2).
 		Render(strings.Join(bodyLines, "\n"))
 
 	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, titleRendered, bodyRendered)
@@ -254,12 +260,15 @@ func (am *appManager) currentViewType() meta.ViewType {
 func (am *appManager) updateAppsViewSize(message tea.WindowSizeMsg) []tea.Cmd {
 	var cmds []tea.Cmd
 
-	// -3 for the tabs and their borders
-	remainingHeight := message.Height - 3
+	// -4 for horizontal margins
+	remainingWidth := message.Width - 4
+	// -3 for the tabs, -3 for the title, -1 for bottom margin
+	remainingHeight := message.Height - 3 - 3 - 1
+
 	for i, app := range am.apps {
 		var cmd tea.Cmd
 		am.apps[i], cmd = app.Update(tea.WindowSizeMsg{
-			Width:  message.Width,
+			Width:  remainingWidth,
 			Height: remainingHeight,
 		})
 

@@ -603,10 +603,8 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 		rmm.width = message.Width
 		rmm.height = message.Height
 
-		// -8 for border and horizontal padding and margin
-		rmm.viewport.Width = message.Width - 8
-		// -6 for borders, header row, vertical margin and total row
-		rmm.viewport.Height = message.Height - 6
+		rmm.viewport.Width = message.Width
+		rmm.viewport.Height = message.Height
 
 		rmm.calculateColumnWidths()
 
@@ -751,10 +749,10 @@ func (rmm *rowsMutateManager) View() string {
 func (rmm *rowsMutateManager) calculateColumnWidths() {
 	idxWidth := 3
 	// 10 for yyyy-MM-dd and 2 for prompt and 1 for cursor
-	dateWidth := 13
+	dateWidth := 10 + 2 + 1
 
-	// -12 for padding between columns 6x, -4 for borders and left/right margin
-	remainingWidth := rmm.width - idxWidth - dateWidth - 12 - 6
+	// -12 for padding between columns 6x, -4 for padding and borders
+	remainingWidth := rmm.width - idxWidth - dateWidth - 12 - 4
 	descriptionWidth := remainingWidth / 3
 	othersWidth := (remainingWidth - descriptionWidth) / 4
 
@@ -1259,7 +1257,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 	activeInput := view.getActiveInput()
 	journalInput := view.getJournalInput()
 	notesInput := view.getNotesInput()
-	entryRowsManager := view.getManager()
+	rowsMutateManager := view.getManager()
 
 	switch message := message.(type) {
 	case meta.SwitchFocusMsg:
@@ -1284,10 +1282,10 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 
 			// If it changed to entryrow input
 			if *activeInput == ENTRIESROWINPUT {
-				entryRowsManager.focus(message.Direction)
+				rowsMutateManager.focus(message.Direction)
 			}
 		} else {
-			preceeded, exceeded := entryRowsManager.switchFocus(message.Direction)
+			preceeded, exceeded := rowsMutateManager.switchFocus(message.Direction)
 
 			if exceeded {
 				*activeInput = 0
@@ -1308,8 +1306,8 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 			return view, meta.MessageCmd(errors.New("hjkl navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.Update(message)
-		*entryRowsManager = *manager
+		manager, cmd := rowsMutateManager.Update(message)
+		*rowsMutateManager = *manager
 
 		return view, cmd
 
@@ -1318,8 +1316,8 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 			return view, meta.MessageCmd(errors.New("$/_ navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.Update(message)
-		*entryRowsManager = *manager
+		manager, cmd := rowsMutateManager.Update(message)
+		*rowsMutateManager = *manager
 
 		return view, cmd
 
@@ -1328,24 +1326,25 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 			return view, meta.MessageCmd(errors.New("'gg'/'G' navigation only works within the entryrows"))
 		}
 
-		manager, cmd := entryRowsManager.Update(message)
-		*entryRowsManager = *manager
+		manager, cmd := rowsMutateManager.Update(message)
+		*rowsMutateManager = *manager
 
 		return view, cmd
 
 	case tea.WindowSizeMsg:
-		manager := view.getManager()
+		rowsMutateManager := view.getManager()
 
 		journalHeight := 3
 		notesHeight := (message.Height - journalHeight) / 4
 		view.getNotesInput().SetHeight(notesHeight)
 
-		newManager, cmd := manager.Update(tea.WindowSizeMsg{
-			Width: message.Width,
-			// -2 for notes border
-			Height: message.Height - journalHeight - notesHeight - 2,
+		newManager, cmd := rowsMutateManager.Update(tea.WindowSizeMsg{
+			// -4 for borders and horizontal padding
+			Width: message.Width - 4,
+			// 2 for notes borders, -4 for borders, header row and total row
+			Height: message.Height - journalHeight - (notesHeight + 2) - 4,
 		})
-		*manager = *newManager
+		*rowsMutateManager = *newManager
 
 		return view, cmd
 
@@ -1357,9 +1356,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 		case ENTRIESNOTESINPUT:
 			*notesInput, cmd = notesInput.Update(message)
 		case ENTRIESROWINPUT:
-			var manager *rowsMutateManager
-			manager, cmd = entryRowsManager.Update(message)
-			*entryRowsManager = *manager
+			rowsMutateManager, cmd = rowsMutateManager.Update(message)
 
 		default:
 			panic(fmt.Sprintf("Updating create view but active input was %d", *activeInput))
@@ -1372,8 +1369,8 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 			return view, meta.MessageCmd(errors.New("no entry row highlighted while trying to delete one"))
 		}
 
-		manager, cmd := entryRowsManager.deleteRow()
-		*entryRowsManager = *manager
+		manager, cmd := rowsMutateManager.deleteRow()
+		*rowsMutateManager = *manager
 
 		return view, cmd
 
@@ -1384,8 +1381,8 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 
 		var cmds []tea.Cmd
 
-		manager, cmd := entryRowsManager.addRow(message.After)
-		*entryRowsManager = *manager
+		manager, cmd := rowsMutateManager.addRow(message.After)
+		*rowsMutateManager = *manager
 		cmds = append(cmds, cmd)
 
 		cmds = append(cmds, meta.MessageCmd(meta.SwitchModeMsg{
@@ -1434,7 +1431,7 @@ func entriesMutateViewView(view entryMutateView) string {
 		result.WriteString("\n")
 	}
 
-	return lipgloss.NewStyle().MarginLeft(2).Render(result.String())
+	return result.String()
 }
 
 func entriesMutateViewMotionSet() meta.MotionSet {
