@@ -454,12 +454,12 @@ func (uv *journalsUpdateView) getInputManager() *inputManager {
 	return uv.inputManager
 }
 
-func (cv *journalsUpdateView) title() string {
-	return "Creating new journal"
+func (uv *journalsUpdateView) title() string {
+	return fmt.Sprintf("Updating journal: %s", uv.startingValue.Name)
 }
 
-func (cv *journalsUpdateView) getColour() lipgloss.Color {
-	return cv.colour
+func (uv *journalsUpdateView) getColour() lipgloss.Color {
+	return uv.colour
 }
 
 func (uv *journalsUpdateView) makeGoToDetailViewCmd() tea.Cmd {

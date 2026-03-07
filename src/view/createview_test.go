@@ -155,7 +155,7 @@ func TestEntryCreateView_Rendering(t *testing.T) {
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv))
 
-	tw.AssertViewContains(t, "Creating new Entry")
+	tw.AssertViewContains(t, "Creating new entry")
 	tw.AssertViewContains(t, "Journal")
 	tw.AssertViewContains(t, "Notes")
 }

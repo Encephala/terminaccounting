@@ -342,7 +342,7 @@ func (cv *entryCreateView) getColour() lipgloss.Color {
 }
 
 func (cv *entryCreateView) title() string {
-	return "Creating new Entry"
+	return "Creating new entry"
 }
 
 type entryUpdateView struct {
@@ -572,7 +572,7 @@ func (uv *entryUpdateView) getColour() lipgloss.Color {
 
 func (uv *entryUpdateView) title() string {
 	// TODO get some name/id/whatever for the entry here?
-	return fmt.Sprintf("Update Entry: %s", "TODO")
+	return fmt.Sprintf("Updating entry: %d", uv.startingEntry.Id)
 }
 
 type rowsMutateManager struct {

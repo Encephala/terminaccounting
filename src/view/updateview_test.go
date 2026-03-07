@@ -65,7 +65,7 @@ func TestAccountsUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewAccountsUpdateView(DB, accountId)
-	testGenericUpdateView_Generic(t, uv, "Creating new account", []string{"Name", "Type", "Bank numbers", "Notes"})
+	testGenericUpdateView_Generic(t, uv, "Updating account: Test Account", []string{"Name", "Type", "Bank numbers", "Notes"})
 }
 
 func TestAccountsUpdateView_DataLoaded(t *testing.T) {
@@ -149,7 +149,7 @@ func TestLedgersUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewLedgersUpdateView(DB, ledgerId)
-	testGenericUpdateView_Generic(t, uv, "Update Ledger: Test Ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
+	testGenericUpdateView_Generic(t, uv, "Updating ledger: Test Ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
 }
 
 func TestLedgersUpdateView_DataLoaded(t *testing.T) {
@@ -262,7 +262,7 @@ func TestJournalsUpdateView_Generic(t *testing.T) {
 	require.NoError(t, err)
 
 	uv := NewJournalsUpdateView(DB, journalId)
-	testGenericUpdateView_Generic(t, uv, "Creating new journal", []string{"Name", "Type", "Notes"})
+	testGenericUpdateView_Generic(t, uv, "Updating journal: Test Journal", []string{"Name", "Type", "Notes"})
 }
 
 func TestJournalsUpdateView_DataLoaded(t *testing.T) {

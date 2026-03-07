@@ -189,7 +189,7 @@ func (cv *ledgersCreateView) Init() tea.Cmd {
 }
 
 func (cv *ledgersCreateView) title() string {
-	return "Create new Ledger"
+	return "Creating new ledger"
 }
 
 func (cv *ledgersCreateView) getColour() lipgloss.Color {
@@ -339,7 +339,7 @@ func (uv *ledgersUpdateView) Init() tea.Cmd {
 }
 
 func (uv *ledgersUpdateView) title() string {
-	return fmt.Sprintf("Update Ledger: %s", uv.inputManager.inputs[0].value().(string))
+	return fmt.Sprintf("Updating ledger: %s", uv.inputManager.inputs[0].value().(string))
 }
 func (uv *ledgersUpdateView) getColour() lipgloss.Color {
 	return uv.colour

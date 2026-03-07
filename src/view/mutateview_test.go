@@ -67,7 +67,7 @@ func TestAccountsCreateView_Generic(t *testing.T) {
 func TestLedgersCreateView_Generic(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	v := NewLedgersCreateView(DB)
-	testGenericMutateView_Generic(t, v, "Create new Ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
+	testGenericMutateView_Generic(t, v, "Creating new ledger", []string{"Name", "Type", "Notes", "Is accounts ledger?"})
 }
 
 func TestJournalsCreateView_Generic(t *testing.T) {

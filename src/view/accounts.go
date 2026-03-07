@@ -450,12 +450,12 @@ func (uv *accountsUpdateView) getInputManager() *inputManager {
 	return uv.inputManager
 }
 
-func (cv *accountsUpdateView) title() string {
-	return "Creating new account"
+func (uv *accountsUpdateView) title() string {
+	return fmt.Sprintf("Updating account: %s", uv.inputManager.inputs[0].value())
 }
 
-func (cv *accountsUpdateView) getColour() lipgloss.Color {
-	return cv.colour
+func (uv *accountsUpdateView) getColour() lipgloss.Color {
+	return uv.colour
 }
 
 type accountsDeleteView struct {
