@@ -226,8 +226,7 @@ func (am *appManager) View() string {
 	}
 
 	bodyRendered := lipgloss.NewStyle().
-		// -4 for vertical horizontal margin
-		Width(am.width-4).
+		// Set fixed height so that status line at bottom doesn't move when scrolling
 		// -3 for the tabs, -3 for the title
 		Height(am.height-3-3).
 		Margin(0, 2).

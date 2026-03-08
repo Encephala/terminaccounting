@@ -776,6 +776,8 @@ func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) st
 
 	var result strings.Builder
 	for i := range values {
+		// TODO: truncate the contents with a nice "..." to indicate wrapping
+		// Does that work? I guess edge cases are prevented by the minimum widths on the inputs
 		style := lipgloss.NewStyle().Width(rmm.colWidths[i]).MaxHeight(1)
 
 		// +1 because never highlight idx column
@@ -1428,6 +1430,8 @@ func entryMutateViewView(view entryMutateView) string {
 	// +2 for padding
 	maxNameColWidth += 2
 
+	// TODO: don't like this. "hardcoded" that if name is blank, we don't look at styles, and it's not that clean rn anyway
+	// can be simplified
 	for i := range names {
 		if names[i] == "" {
 			result.WriteString(sectionStyle.Render(inputs[i].View()))
