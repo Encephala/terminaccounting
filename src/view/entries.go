@@ -776,7 +776,7 @@ func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) st
 
 	var result strings.Builder
 	for i := range values {
-		style := lipgloss.NewStyle().Width(rmm.colWidths[i])
+		style := lipgloss.NewStyle().Width(rmm.colWidths[i]).MaxHeight(1)
 
 		// +1 because never highlight idx column
 		if highlightedCol != nil && i == *highlightedCol+1 {
