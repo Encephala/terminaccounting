@@ -1428,7 +1428,9 @@ func entriesMutateViewView(view entryMutateView) string {
 			))
 		}
 
-		result.WriteString("\n")
+		if i != len(names)-1 {
+			result.WriteString("\n")
+		}
 	}
 
 	return result.String()
