@@ -1,7 +1,6 @@
 package view
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"slices"
@@ -18,6 +17,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -278,11 +278,11 @@ func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		return cv, tea.Batch(cmds...)
 	}
 
-	return entriesMutateViewUpdate(cv, message)
+	return entryMutateViewUpdate(cv, message)
 }
 
 func (cv *entryCreateView) View() string {
-	return entriesMutateViewView(cv)
+	return entryMutateViewView(cv)
 }
 
 func (cv *entryCreateView) Title() string {
@@ -312,11 +312,11 @@ type CreateEntryRowMsg struct {
 }
 
 func (cv *entryCreateView) MotionSet() meta.MotionSet {
-	return entriesMutateViewMotionSet()
+	return entryMutateViewMotionSet()
 }
 
 func (cv *entryCreateView) CommandSet() meta.CommandSet {
-	return entriesMutateViewCommandSet()
+	return entryMutateViewCommandSet()
 }
 
 func (cv *entryCreateView) Reload() View {
@@ -501,11 +501,11 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		return uv, nil
 	}
 
-	return entriesMutateViewUpdate(uv, message)
+	return entryMutateViewUpdate(uv, message)
 }
 
 func (uv *entryUpdateView) View() string {
-	return entriesMutateViewView(uv)
+	return entryMutateViewView(uv)
 }
 
 func (uv *entryUpdateView) Title() string {
@@ -532,7 +532,7 @@ func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (uv *entryUpdateView) MotionSet() meta.MotionSet {
-	result := entriesMutateViewMotionSet()
+	result := entryMutateViewMotionSet()
 
 	result.Normal.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
@@ -542,7 +542,7 @@ func (uv *entryUpdateView) MotionSet() meta.MotionSet {
 }
 
 func (uv *entryUpdateView) CommandSet() meta.CommandSet {
-	return entriesMutateViewCommandSet()
+	return entryMutateViewCommandSet()
 }
 
 func (uv *entryUpdateView) Reload() View {
@@ -1253,7 +1253,7 @@ type entryMutateView interface {
 	getActiveInput() *int
 }
 
-func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd) {
+func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd) {
 	activeInput := view.getActiveInput()
 	journalInput := view.getJournalInput()
 	notesInput := view.getNotesInput()
@@ -1396,7 +1396,7 @@ func entriesMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.C
 	}
 }
 
-func entriesMutateViewView(view entryMutateView) string {
+func entryMutateViewView(view entryMutateView) string {
 	var result strings.Builder
 
 	sectionStyle := lipgloss.NewStyle().
@@ -1411,10 +1411,12 @@ func entriesMutateViewView(view entryMutateView) string {
 	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
 	styles[*view.getActiveInput()] = highlightStyle
 
+	maxNameColWidth := 0
+	for _, name := range names {
+		maxNameColWidth = max(maxNameColWidth, ansi.StringWidth(name))
+	}
 	// +2 for padding
-	maxNameColWidth := len(slices.MaxFunc(names, func(name string, other string) int {
-		return cmp.Compare(len(name), len(other))
-	})) + 2
+	maxNameColWidth += 2
 
 	for i := range names {
 		if names[i] == "" {
@@ -1436,7 +1438,7 @@ func entriesMutateViewView(view entryMutateView) string {
 	return result.String()
 }
 
-func entriesMutateViewMotionSet() meta.MotionSet {
+func entryMutateViewMotionSet() meta.MotionSet {
 	var normalMotions meta.Trie[tea.Msg]
 
 	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
@@ -1471,7 +1473,7 @@ func entriesMutateViewMotionSet() meta.MotionSet {
 	}
 }
 
-func entriesMutateViewCommandSet() meta.CommandSet {
+func entryMutateViewCommandSet() meta.CommandSet {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})

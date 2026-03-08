@@ -124,7 +124,10 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		if len(contentLines) == 0 {
 			panic("Body was empty, can't determine scroll bounds")
 		}
-		contentWidth := ansi.StringWidth(contentLines[0])
+		contentWidth := 0
+		for _, line := range contentLines {
+			contentWidth = max(contentWidth, ansi.StringWidth(line))
+		}
 
 		switch {
 		case !message.Left && !message.ToEnd:
