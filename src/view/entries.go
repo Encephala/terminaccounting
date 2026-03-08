@@ -186,14 +186,12 @@ func NewEntryCreateViewPrefilled(DB *sqlx.DB, data EntryPrefillData) (*entryCrea
 		return nil, err
 	}
 
-	result.entryRowsManager.rows = entryRowCreateView
+	result.entryRowsManager.rowCreators = entryRowCreateView
 
 	return result, nil
 }
 
 type rowCreator struct {
-	width int
-
 	dateInput        textinput.Model
 	ledgerInput      itempicker.Model
 	accountInput     itempicker.Model
@@ -461,7 +459,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 				return uv, meta.MessageCmd(err)
 			}
 
-			uv.getManager().rows = formRows
+			uv.getManager().rowCreators = formRows
 
 			return uv, nil
 		}
@@ -488,7 +486,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		case ENTRIESROWINPUT:
 			var err error
-			uv.entryRowsManager.rows, err = decompileRows(uv.startingEntryRows)
+			uv.entryRowsManager.rowCreators, err = decompileRows(uv.startingEntryRows)
 
 			if err != nil {
 				return uv, meta.MessageCmd(err)
@@ -568,8 +566,8 @@ func (uv *entryUpdateView) getActiveInput() *int {
 type rowsMutateManager struct {
 	width, height int
 
-	headers []string
-	rows    []*rowCreator
+	headers     []string
+	rowCreators []*rowCreator
 
 	isActive    bool
 	activeInput int
@@ -587,8 +585,8 @@ func newRowsMutateManager() *rowsMutateManager {
 	rows[1] = newRowCreator(database.Today())
 
 	result := &rowsMutateManager{
-		headers: []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"},
-		rows:    rows,
+		headers:     []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"},
+		rowCreators: rows,
 
 		colWidths: []int{0, 0, 0, 0, 0, 0, 0},
 		viewport:  viewport.New(0, 0),
@@ -603,21 +601,16 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 		rmm.width = message.Width
 		rmm.height = message.Height
 
-		rmm.viewport.Width = message.Width
-		rmm.viewport.Height = message.Height
-
+		rmm.viewport.Width = max(message.Width, 83) // See calculateColumnWidths for why 83
+		rmm.viewport.Height = max(message.Height, 10)
 		rmm.calculateColumnWidths()
-
-		for _, row := range rmm.rows {
-			row.width = message.Width
-		}
 
 		return rmm, nil
 
 	case tea.KeyMsg:
 		highlightRow, highlightCol := rmm.getActiveCoords()
 
-		row := rmm.rows[highlightRow]
+		row := rmm.rowCreators[highlightRow]
 		var cmd tea.Cmd
 		switch highlightCol {
 		case 0:
@@ -650,7 +643,7 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 			}
 		}
 
-		rmm.rows[highlightRow] = row
+		rmm.rowCreators[highlightRow] = row
 
 		return rmm, cmd
 
@@ -747,16 +740,33 @@ func (rmm *rowsMutateManager) View() string {
 }
 
 func (rmm *rowsMutateManager) calculateColumnWidths() {
-	idxWidth := 3
+	idxWidth := 4 // Surely there'll never be more than 9999 rows on an entry
 	// 10 for yyyy-MM-dd and 2 for prompt and 1 for cursor
 	dateWidth := 10 + 2 + 1
 
-	// -12 for padding between columns 6x, -4 for padding and borders
-	remainingWidth := rmm.width - idxWidth - dateWidth - 12 - 4
-	descriptionWidth := remainingWidth / 3
-	othersWidth := (remainingWidth - descriptionWidth) / 4
+	// -12 for 2-wide padding between columns 6x
+	remainingWidth := rmm.viewport.Width - idxWidth - dateWidth - 12
 
-	rmm.colWidths = []int{idxWidth, dateWidth, othersWidth, othersWidth, descriptionWidth, othersWidth, othersWidth}
+	descriptionWidth := max(remainingWidth/3, 20)
+	remainingWidth -= descriptionWidth
+
+	ledgerWidth := max((remainingWidth)/3, 15)
+	accountWidth := ledgerWidth
+	remainingWidth -= ledgerWidth + accountWidth
+
+	valuesWidth := max((remainingWidth)/5, 8)
+	remainingWidth -= 2 * valuesWidth
+
+	// Total minimum width: 4 + 13 + 20 + 2 * 15 + 2 * 8 = 83
+
+	// Distribute remaining width
+	for ; remainingWidth >= 4; remainingWidth -= 4 {
+		descriptionWidth += 2
+		ledgerWidth += 1
+		accountWidth += 1
+	}
+
+	rmm.colWidths = []int{idxWidth, dateWidth, ledgerWidth, accountWidth, descriptionWidth, valuesWidth, valuesWidth}
 }
 
 func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
@@ -803,7 +813,7 @@ func (rmm *rowsMutateManager) updateViewportContent() {
 func (rmm *rowsMutateManager) makeShownRows() [][]string {
 	var result [][]string
 
-	for i, row := range rmm.rows {
+	for i, row := range rmm.rowCreators {
 		var currentRow []string
 
 		currentRow = append(currentRow, strconv.Itoa(i))
@@ -855,7 +865,7 @@ func (rmm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
 		return nil, fmt.Errorf("entry has nonzero total value %s", total)
 	}
 
-	for i, formRow := range rmm.rows {
+	for i, formRow := range rmm.rowCreators {
 		formLedger := formRow.ledgerInput.Value()
 		if formLedger == nil {
 			return nil, fmt.Errorf("invalid ledger selected in row %d (none available)", i)
@@ -943,7 +953,7 @@ func (rmm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, e
 	switch direction {
 	case meta.PREVIOUS:
 		if oldRow == 0 && oldCol == 0 {
-			rmm.rows[0].dateInput.Blur()
+			rmm.rowCreators[0].dateInput.Blur()
 			rmm.isActive = false
 			return true, false
 		}
@@ -952,7 +962,7 @@ func (rmm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, e
 
 	case meta.NEXT:
 		if oldRow == rmm.numRows()-1 && oldCol == rmm.numInputsPerRow()-1 {
-			rmm.rows[oldRow].creditInput.Blur()
+			rmm.rowCreators[oldRow].creditInput.Blur()
 			rmm.isActive = false
 			return false, true
 		}
@@ -969,7 +979,7 @@ func (rmm *rowsMutateManager) switchFocus(direction meta.Sequence) (preceeded, e
 func (rmm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, error) {
 	var total database.CurrencyValue
 
-	for _, row := range rmm.rows {
+	for _, row := range rmm.rowCreators {
 		if row.debitInput.Value() != "" {
 			change, err := database.ParseCurrencyValue(row.debitInput.Value())
 			if err != nil {
@@ -992,7 +1002,7 @@ func (rmm *rowsMutateManager) calculateCurrentTotal() (database.CurrencyValue, e
 }
 
 func (rmm *rowsMutateManager) numRows() int {
-	return len(rmm.rows)
+	return len(rmm.rowCreators)
 }
 
 func (rmm *rowsMutateManager) numInputs() int {
@@ -1015,11 +1025,11 @@ func (rmm *rowsMutateManager) focus(direction meta.Sequence) {
 	switch direction {
 	case meta.PREVIOUS:
 		rmm.activeInput = numInputs - 1
-		rmm.rows[rmm.numRows()-1].creditInput.Focus()
+		rmm.rowCreators[rmm.numRows()-1].creditInput.Focus()
 
 	case meta.NEXT:
 		rmm.activeInput = 0
-		rmm.rows[0].dateInput.Focus()
+		rmm.rowCreators[0].dateInput.Focus()
 	}
 }
 
@@ -1056,26 +1066,26 @@ func (rmm *rowsMutateManager) setActiveCoords(newRow, newCol int) {
 	oldRow, oldCol := rmm.getActiveCoords()
 	switch oldCol {
 	case 0:
-		rmm.rows[oldRow].dateInput.Blur()
+		rmm.rowCreators[oldRow].dateInput.Blur()
 	case 3:
-		rmm.rows[oldRow].descriptionInput.Blur()
+		rmm.rowCreators[oldRow].descriptionInput.Blur()
 	case 4:
-		rmm.rows[oldRow].debitInput.Blur()
+		rmm.rowCreators[oldRow].debitInput.Blur()
 	case 5:
-		rmm.rows[oldRow].creditInput.Blur()
+		rmm.rowCreators[oldRow].creditInput.Blur()
 	}
 
 	rmm.activeInput = newRow*numPerRow + newCol
 
 	switch newCol {
 	case 0:
-		rmm.rows[newRow].dateInput.Focus()
+		rmm.rowCreators[newRow].dateInput.Focus()
 	case 3:
-		rmm.rows[newRow].descriptionInput.Focus()
+		rmm.rowCreators[newRow].descriptionInput.Focus()
 	case 4:
-		rmm.rows[newRow].debitInput.Focus()
+		rmm.rowCreators[newRow].debitInput.Focus()
 	case 5:
-		rmm.rows[newRow].creditInput.Focus()
+		rmm.rowCreators[newRow].creditInput.Focus()
 	}
 }
 
@@ -1192,10 +1202,10 @@ func (rmm *rowsMutateManager) deleteRow() (*rowsMutateManager, tea.Cmd) {
 		// Switch focus first to avoid index out of bounds panic when unblurring oldRow
 		rmm.setActiveCoords(newRow, newCol)
 
-		rmm.rows = append(rmm.rows[:activeRow], rmm.rows[activeRow+1:]...)
+		rmm.rowCreators = append(rmm.rowCreators[:activeRow], rmm.rowCreators[activeRow+1:]...)
 	} else {
 		// Switch focus after because otherwise the to-be-deleted row gets highlighted
-		rmm.rows = append(rmm.rows[:activeRow], rmm.rows[activeRow+1:]...)
+		rmm.rowCreators = append(rmm.rowCreators[:activeRow], rmm.rowCreators[activeRow+1:]...)
 
 		rmm.setActiveCoords(newRow, newCol)
 	}
@@ -1210,7 +1220,7 @@ func (rmm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
 
 	// If the row that the new-row-creation was triggered from had a valid date,
 	// prefill it in the new row. Otherwise, just leave new row empty
-	prefillDate, parseErr := database.ToDate(rmm.rows[activeRow].dateInput.Value())
+	prefillDate, parseErr := database.ToDate(rmm.rowCreators[activeRow].dateInput.Value())
 	if parseErr == nil {
 		newRow = newRowCreator(&prefillDate)
 	} else {
@@ -1221,20 +1231,20 @@ func (rmm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
 
 	if after {
 		// Insert after activeRow
-		newRows = append(newRows, rmm.rows[:activeRow+1]...)
+		newRows = append(newRows, rmm.rowCreators[:activeRow+1]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, rmm.rows[activeRow+1:]...)
+		newRows = append(newRows, rmm.rowCreators[activeRow+1:]...)
 
-		rmm.rows = newRows
+		rmm.rowCreators = newRows
 
 		rmm.setActiveCoords(activeRow+1, 0)
 	} else {
 		// Insert before activeRow
-		newRows = append(newRows, rmm.rows[:activeRow]...)
+		newRows = append(newRows, rmm.rowCreators[:activeRow]...)
 		newRows = append(newRows, newRow)
-		newRows = append(newRows, rmm.rows[activeRow:]...)
+		newRows = append(newRows, rmm.rowCreators[activeRow:]...)
 
-		rmm.rows = newRows
+		rmm.rowCreators = newRows
 
 		rmm.activeInput += rmm.numInputsPerRow()
 		rmm.setActiveCoords(activeRow, 0)

@@ -119,7 +119,7 @@ func TestRowsMutateManager_CompileRows_Success(t *testing.T) {
 	rc2.creditInput.SetValue("10.00")
 
 	manager := &rowsMutateManager{
-		rows: []*rowCreator{rc1, rc2},
+		rowCreators: []*rowCreator{rc1, rc2},
 	}
 
 	rows, err := manager.compileRows()
@@ -153,7 +153,7 @@ func TestRowsMutateManager_CompileRows_Unbalanced(t *testing.T) {
 	rc1.debitInput.SetValue("10.00")
 
 	manager := &rowsMutateManager{
-		rows: []*rowCreator{rc1},
+		rowCreators: []*rowCreator{rc1},
 	}
 
 	_, err := manager.compileRows()
@@ -170,7 +170,7 @@ func TestRowsMutateManager_CalculateCurrentTotal(t *testing.T) {
 	rc2.creditInput.SetValue("5.25")
 
 	manager := &rowsMutateManager{
-		rows: []*rowCreator{rc1, rc2},
+		rowCreators: []*rowCreator{rc1, rc2},
 	}
 
 	total, err := manager.calculateCurrentTotal()
@@ -192,20 +192,20 @@ func TestRowsMutateManager_AddRow(t *testing.T) {
 	rc1.dateInput.SetValue("2024-05-20")
 
 	manager := &rowsMutateManager{
-		rows:        []*rowCreator{rc1},
+		rowCreators: []*rowCreator{rc1},
 		activeInput: 0, // Focus on first row
 	}
 
 	// Add row after
 	manager.addRow(true)
 
-	if len(manager.rows) != 2 {
-		t.Fatalf("Expected 2 rows, got %d", len(manager.rows))
+	if len(manager.rowCreators) != 2 {
+		t.Fatalf("Expected 2 rows, got %d", len(manager.rowCreators))
 	}
 
 	// Check if date was prefilled
-	if manager.rows[1].dateInput.Value() != "2024-05-20" {
-		t.Errorf("Expected new row to have prefilled date '2024-05-20', got '%s'", manager.rows[1].dateInput.Value())
+	if manager.rowCreators[1].dateInput.Value() != "2024-05-20" {
+		t.Errorf("Expected new row to have prefilled date '2024-05-20', got '%s'", manager.rowCreators[1].dateInput.Value())
 	}
 }
 
@@ -215,21 +215,21 @@ func TestRowsMutateManager_DeleteRow(t *testing.T) {
 	rc3 := newTestRowCreator(nil, nil)
 
 	manager := &rowsMutateManager{
-		rows:        []*rowCreator{rc1, rc2, rc3},
+		rowCreators: []*rowCreator{rc1, rc2, rc3},
 		activeInput: 1 * 6, // Focus on second row (index 1)
 	}
 
 	manager.deleteRow()
 
-	if len(manager.rows) != 2 {
-		t.Fatalf("Expected 2 rows, got %d", len(manager.rows))
+	if len(manager.rowCreators) != 2 {
+		t.Fatalf("Expected 2 rows, got %d", len(manager.rowCreators))
 	}
 
 	// We deleted the middle one, so we should have rc1 and rc3
-	if manager.rows[0] != rc1 {
+	if manager.rowCreators[0] != rc1 {
 		t.Error("First row should still be rc1")
 	}
-	if manager.rows[1] != rc3 {
+	if manager.rowCreators[1] != rc3 {
 		t.Error("Second row should be rc3")
 	}
 }
