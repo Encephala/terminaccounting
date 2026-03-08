@@ -101,15 +101,14 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		}
 
 	case meta.ScrollVerticalMsg:
-		// -3 for top tabs, -3 for the title, -1 to leave some bottom padding
-		// TODO: This should scroll to the content length, not the body height minus stuff
-		bodyHeight := am.height - 3 - 3 - 1
+		bodyContent := am.apps[am.activeApp].View()
+		contentHeight := len(strings.Split(bodyContent, "\n"))
 
 		switch {
 		case !message.Up && !message.ToEnd:
-			am.yscroll = min(am.yscroll+1, bodyHeight-1)
+			am.yscroll = min(am.yscroll+1, contentHeight-1)
 		case !message.Up && message.ToEnd:
-			am.yscroll = bodyHeight - 1
+			am.yscroll = contentHeight - 1
 		case message.Up && !message.ToEnd:
 			am.yscroll = max(am.yscroll-1, 0)
 		case message.Up && message.ToEnd:
@@ -119,15 +118,19 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 		return am, nil
 
 	case meta.ScrollHorizontalMsg:
-		// -4 for horizontal padding
-		// TODO: This should scroll to the content width, not the body width minus stuff
-		bodyWidth := am.width - 4
+		bodyContent := am.apps[am.activeApp].View()
+		contentLines := strings.Split(bodyContent, "\n")
+
+		if len(contentLines) == 0 {
+			panic("Body was empty, can't determine scroll bounds")
+		}
+		contentWidth := ansi.StringWidth(contentLines[0])
 
 		switch {
 		case !message.Left && !message.ToEnd:
-			am.xscroll = min(am.xscroll+1, bodyWidth-1)
+			am.xscroll = min(am.xscroll+1, contentWidth-1)
 		case !message.Left && message.ToEnd:
-			am.xscroll = bodyWidth - 1
+			am.xscroll = contentWidth - 1
 		case message.Left && !message.ToEnd:
 			am.xscroll = max(am.xscroll-1, 0)
 		case message.Left && message.ToEnd:

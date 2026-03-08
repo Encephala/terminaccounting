@@ -51,11 +51,9 @@ func ActiveTabStyle(accentColour lipgloss.Color) lipgloss.Style {
 }
 
 func BodyStyle(width, height int) lipgloss.Style {
-	style := lipgloss.NewStyle().
+	return lipgloss.NewStyle().
 		Width(width).
 		Height(height)
-
-	return style
 }
 
 func ModalStyle(width, height int) lipgloss.Style {

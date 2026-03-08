@@ -228,9 +228,11 @@ func TestAppManager_YScrollState(t *testing.T) {
 		tw.Send(meta.ScrollVerticalMsg{Up: false, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
-			// terminaccounting passes height-2 to appManager, so am.height = 18
-			// bodyHeight = 18 - 3 - 1 = 14, max yscroll = bodyHeight - 1 = 13
-			assert.Equal(t, 13, ta.appManager.yscroll)
+			// base height is 20
+			// appmanager gets -2 for the status/command lines = 18
+			// then contentHeight has -3 for tabs, -3 for top title, -1 for bottom margin = 11
+			// max yscroll is contentHeight - 1 = 10
+			assert.Equal(t, 10, ta.appManager.yscroll)
 		})
 	})
 
@@ -296,8 +298,10 @@ func TestAppManager_XScrollState(t *testing.T) {
 		tw.Send(meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
-			// bodyWidth = am.width, max xscroll = bodyWidth - 1 = 79
-			assert.Equal(t, 79, ta.appManager.xscroll)
+			// base width = 80
+			// then contentWidth has -4 for horizontal margin
+			// max xscroll is contentWidth - 1 = 75
+			assert.Equal(t, 75, ta.appManager.xscroll)
 		})
 	})
 
