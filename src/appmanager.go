@@ -234,8 +234,10 @@ func (am *appManager) CurrentMotionSet() meta.MotionSet {
 	result := am.apps[am.activeApp].CurrentMotionSet()
 
 	result.Normal.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
+	result.Normal.Insert([]string{"down"}, meta.ScrollVerticalMsg{Up: false})
 	result.Normal.Insert([]string{"z", "J"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
 	result.Normal.Insert([]string{"z", "k"}, meta.ScrollVerticalMsg{Up: true})
+	result.Normal.Insert([]string{"up"}, meta.ScrollVerticalMsg{Up: true})
 	result.Normal.Insert([]string{"z", "K"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
 	result.Normal.Insert([]string{"z", "l"}, meta.ScrollHorizontalMsg{Left: false})
 	result.Normal.Insert([]string{"z", "L"}, meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
