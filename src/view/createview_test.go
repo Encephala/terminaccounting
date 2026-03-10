@@ -222,15 +222,15 @@ func TestEntryCreateView_Commit(t *testing.T) {
 	cv.journalInput.SetValue(journal)
 	cv.notesInput.SetValue("Test Notes")
 
-	cv.entryRowsManager.rowCreators[0].dateInput.SetValue("2024-01-01")
-	cv.entryRowsManager.rowCreators[0].ledgerInput.SetValue(ledger)
-	cv.entryRowsManager.rowCreators[0].accountInput.SetValue(&account)
-	cv.entryRowsManager.rowCreators[0].debitInput.SetValue("50.00")
+	cv.entryRowsManager.rowMutators[0].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rowMutators[0].ledgerInput.SetValue(ledger)
+	cv.entryRowsManager.rowMutators[0].accountInput.SetValue(&account)
+	cv.entryRowsManager.rowMutators[0].debitInput.SetValue("50.00")
 
-	cv.entryRowsManager.rowCreators[1].dateInput.SetValue("2024-01-01")
-	cv.entryRowsManager.rowCreators[1].ledgerInput.SetValue(ledger)
-	cv.entryRowsManager.rowCreators[1].accountInput.SetValue(&account)
-	cv.entryRowsManager.rowCreators[1].creditInput.SetValue("50.00")
+	cv.entryRowsManager.rowMutators[1].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rowMutators[1].ledgerInput.SetValue(ledger)
+	cv.entryRowsManager.rowMutators[1].accountInput.SetValue(&account)
+	cv.entryRowsManager.rowMutators[1].creditInput.SetValue("50.00")
 
 	tw.Send(meta.CommitMsg{})
 
@@ -285,8 +285,8 @@ func TestEntryCreateView_Commit_UnbalancedRows(t *testing.T) {
 	)
 
 	cv.journalInput.SetValue(journal)
-	cv.entryRowsManager.rowCreators[0].debitInput.SetValue("50.00")
-	cv.entryRowsManager.rowCreators[1].creditInput.SetValue("30.00")
+	cv.entryRowsManager.rowMutators[0].debitInput.SetValue("50.00")
+	cv.entryRowsManager.rowMutators[1].creditInput.SetValue("30.00")
 
 	tw.Send(meta.CommitMsg{})
 
@@ -306,11 +306,11 @@ func TestEntryCreateView_CreateRow(t *testing.T) {
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
 	require.Equal(t, ENTRIESROWINPUT, cv.activeInput)
 
-	initialRowCount := len(cv.entryRowsManager.rowCreators)
+	initialRowCount := len(cv.entryRowsManager.rowMutators)
 
 	tw.Send(CreateEntryRowMsg{After: true})
 
-	assert.Len(t, cv.entryRowsManager.rowCreators, initialRowCount+1, "row count should increase by 1")
+	assert.Len(t, cv.entryRowsManager.rowMutators, initialRowCount+1, "row count should increase by 1")
 }
 
 func TestEntryCreateView_DeleteRow(t *testing.T) {
@@ -323,12 +323,12 @@ func TestEntryCreateView_DeleteRow(t *testing.T) {
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
 	require.Equal(t, ENTRIESROWINPUT, cv.activeInput)
 
-	initialRowCount := len(cv.entryRowsManager.rowCreators)
+	initialRowCount := len(cv.entryRowsManager.rowMutators)
 	require.Greater(t, initialRowCount, 1, "initial state must have more than one row to allow deletion")
 
 	tw.Send(DeleteEntryRowMsg{})
 
-	assert.Len(t, cv.entryRowsManager.rowCreators, initialRowCount-1, "row count should decrease by 1")
+	assert.Len(t, cv.entryRowsManager.rowMutators, initialRowCount-1, "row count should decrease by 1")
 }
 
 func TestEntryCreateView_CreateRow_WhenNotInRows(t *testing.T) {
@@ -404,6 +404,6 @@ func TestEntryCreateView_InputDelegation(t *testing.T) {
 
 		tw.SendText("row description")
 
-		assert.Equal(t, "row description", cv.entryRowsManager.rowCreators[0].descriptionInput.Value())
+		assert.Equal(t, "row description", cv.entryRowsManager.rowMutators[0].descriptionInput.Value())
 	})
 }

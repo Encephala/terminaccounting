@@ -402,7 +402,7 @@ func TestEntryUpdateView_DataLoaded(t *testing.T) {
 	assert.Equal(t, "Original notes", uv.notesInput.Value())
 	assert.NotNil(t, uv.journalInput.Value(), "journal input should be populated")
 	assert.Equal(t, journalId, uv.journalInput.Value().(database.Journal).Id)
-	assert.Len(t, uv.entryRowsManager.rowCreators, 2)
+	assert.Len(t, uv.entryRowsManager.rowMutators, 2)
 	assert.Len(t, uv.startingEntryRows, 2)
 }
 
@@ -600,10 +600,10 @@ func TestEntryUpdateView_ResetInputField_Rows(t *testing.T) {
 	require.Equal(t, ENTRIESROWINPUT, uv.activeInput)
 
 	tw.Send(CreateEntryRowMsg{After: true})
-	require.Len(t, uv.entryRowsManager.rowCreators, 3)
+	require.Len(t, uv.entryRowsManager.rowMutators, 3)
 
 	uv.activeInput = ENTRIESROWINPUT
 	tw.Send(meta.ResetInputFieldMsg{})
 
-	assert.Len(t, uv.entryRowsManager.rowCreators, 2, "rows should be reset to original count")
+	assert.Len(t, uv.entryRowsManager.rowMutators, 2, "rows should be reset to original count")
 }
