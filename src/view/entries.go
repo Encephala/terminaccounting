@@ -603,6 +603,7 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 		rmm.viewport.Width = max(message.Width, 83) // See calculateColumnWidths for why 83
 		rmm.viewport.Height = max(message.Height, 10)
 		rmm.calculateColumnWidths()
+		rmm.updateRowMutatorWidths(rmm.colWidths)
 
 		return rmm, nil
 
@@ -766,6 +767,18 @@ func (rmm *rowsMutateManager) calculateColumnWidths() {
 	}
 
 	rmm.colWidths = []int{idxWidth, dateWidth, ledgerWidth, accountWidth, descriptionWidth, valuesWidth, valuesWidth}
+}
+
+func (rmm *rowsMutateManager) updateRowMutatorWidths(colWidths []int) {
+	for _, rowMutator := range rmm.rowMutators {
+		// The -2 are for the prompt "> ", and then -1 for the cursor
+		// Because for some reason the textinput model doesn't count the cursor in the width
+		rowMutator.dateInput.Width = colWidths[1] - 2 - 1
+		// itempicker bubbles don't have width setting (yet)
+		rowMutator.descriptionInput.Width = colWidths[4] - 2 - 1
+		rowMutator.debitInput.Width = colWidths[5] - 2 - 1
+		rowMutator.creditInput.Width = colWidths[6] - 2 - 1
+	}
 }
 
 func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
