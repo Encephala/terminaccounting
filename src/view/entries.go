@@ -17,7 +17,6 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -588,7 +587,7 @@ func newRowsMutateManager() *rowsMutateManager {
 		headers:     []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"},
 		rowCreators: rows,
 
-		colWidths: []int{0, 0, 0, 0, 0, 0, 0},
+		colWidths: []int{0, 0, 0, 0, 0, 0, 0}, // Initialise with right number of elements
 		viewport:  viewport.New(0, 0),
 	}
 
@@ -1417,37 +1416,42 @@ func entryMutateViewView(view entryMutateView) string {
 		Align(lipgloss.Left)
 	highlightStyle := sectionStyle.Foreground(meta.ENTRIESCOLOUR)
 
-	inputs := []viewable{view.getJournalInput(), view.getNotesInput(), view.getManager()}
-	names := []string{"Journal", "Notes", ""}
-
-	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(names))
-	styles[*view.getActiveInput()] = highlightStyle
-
-	maxNameColWidth := 0
-	for _, name := range names {
-		maxNameColWidth = max(maxNameColWidth, ansi.StringWidth(name))
+	journalInputStyle := sectionStyle
+	notesInputStyle := sectionStyle
+	rowMutateManagerStyle := sectionStyle
+	switch *view.getActiveInput() {
+	case 0:
+		journalInputStyle = highlightStyle
+	case 1:
+		notesInputStyle = highlightStyle
+	case 2:
+		// pass
+	default:
+		panic(fmt.Sprintf("invalid active input %d", *view.getActiveInput()))
 	}
+
 	// +2 for padding
-	maxNameColWidth += 2
+	maxNameColWidth := len("Journal") + 2
 
-	// TODO: don't like this. "hardcoded" that if name is blank, we don't look at styles, and it's not that clean rn anyway
-	// can be simplified
-	for i := range names {
-		if names[i] == "" {
-			result.WriteString(sectionStyle.Render(inputs[i].View()))
-		} else {
-			result.WriteString(lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				sectionStyle.Width(maxNameColWidth).Render(names[i]),
-				" ",
-				styles[i].Render(inputs[i].View()),
-			))
-		}
+	result.WriteString(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		sectionStyle.Width(maxNameColWidth).Render("Journal"),
+		" ",
+		journalInputStyle.Render(view.getJournalInput().View()),
+	))
 
-		if i != len(names)-1 {
-			result.WriteString("\n")
-		}
-	}
+	result.WriteString("\n")
+
+	result.WriteString(lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		sectionStyle.Width(maxNameColWidth).Render("Notes"),
+		" ",
+		notesInputStyle.Render(view.getNotesInput().View()),
+	))
+
+	result.WriteString("\n")
+
+	result.WriteString(rowMutateManagerStyle.Render(view.getManager().View()))
 
 	return result.String()
 }
