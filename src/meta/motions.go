@@ -1,8 +1,21 @@
 package meta
 
 import (
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func isDigit(str string) bool {
+	if len(str) != 1 {
+		return false
+	}
+
+	return str[0] >= '0' && str[0] <= '9'
+}
 
 type CompleteMotionSet struct {
 	globalMotionSet Trie[tea.Msg]
@@ -16,15 +29,42 @@ func NewCompleteMotionSet(viewMotionSet Trie[tea.Msg]) CompleteMotionSet {
 	}
 }
 
-func (cms *CompleteMotionSet) Get(path Motion) (tea.Msg, bool) {
-	if msg, ok := cms.viewMotionSet.Get(path); ok {
-		return msg, ok
+func (cms *CompleteMotionSet) Get(path Motion) ([]tea.Msg, bool) {
+	var prefix []string
+
+	for len(path) > 0 && isDigit(path[0]) {
+		prefix = append(prefix, path[0])
+		path = path[1:]
 	}
 
-	return cms.globalMotionSet.Get(path)
+	var count int
+	if len(prefix) == 0 {
+		count = 1
+	} else {
+		var err error
+		count, err = strconv.Atoi(strings.Join(prefix, ""))
+		if err != nil {
+			panic(fmt.Sprintf("errrr %s", err.Error()))
+		}
+	}
+
+	if msg, ok := cms.viewMotionSet.Get(path); ok {
+		return slices.Repeat([]tea.Msg{msg}, count), true
+	}
+
+	msg, ok := cms.globalMotionSet.Get(path)
+	if !ok {
+		return nil, false
+	}
+
+	return slices.Repeat([]tea.Msg{msg}, count), true
 }
 
 func (cms *CompleteMotionSet) ContainsPath(path Motion) bool {
+	for len(path) > 0 && isDigit(path[0]) {
+		path = path[1:]
+	}
+
 	if cms.viewMotionSet.ContainsPath(path) {
 		return true
 	}

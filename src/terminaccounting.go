@@ -334,6 +334,7 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 
 	newMotion := append(ta.currentMotion, message.String())
 
+<<<<<<< HEAD
 	switch ta.inputMode {
 	case meta.NORMALMODE:
 		if completedMotionMsg, ok := ta.motionSet().Get(newMotion); ok {
@@ -351,6 +352,18 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 		ta.resetCurrentMotion()
 
 		return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %q", newMotion.View()))
+=======
+	if completedMotionMsgs, ok := ta.motionSet().Get(ta.inputMode, newMotion); ok {
+		ta.resetCurrentMotion()
+
+		cmds := make([]tea.Cmd, len(completedMotionMsgs))
+		for i, msg := range completedMotionMsgs {
+			cmds[i] = meta.MessageCmd(msg)
+		}
+
+		return ta, tea.Batch(cmds...)
+	}
+>>>>>>> ad3653f (Handle repeating a motion by prefixing with integer)
 
 	case meta.INSERTMODE:
 		var messageToSend tea.Msg

@@ -43,7 +43,7 @@ func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
 	viewMotions.Insert(Motion{"i"}, ShowNotificationsMsg{})
 	cms := NewCompleteMotionSet(viewMotions)
 
-	msg, ok := cms.Get(Motion{"i"})
+	msgs, ok := cms.Get(Motion{"i"})
 	require.True(t, ok)
 	require.Len(t, msgs, 1)
 	assert.Equal(t, ShowNotificationsMsg{}, msgs[0])
