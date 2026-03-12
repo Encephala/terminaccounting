@@ -107,6 +107,28 @@ func TestContainsPath(t *testing.T) {
 	}
 }
 
+func TestInsertPanicsIfFirstKeyIsDigit(t *testing.T) {
+	for _, digitKey := range []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+		digitKey := digitKey
+		t.Run("panics for leading digit "+digitKey, func(t *testing.T) {
+			var trie Trie[int]
+			assert.Panics(t, func() {
+				trie.Insert([]string{digitKey}, 420)
+			})
+			assert.Panics(t, func() {
+				trie.Insert([]string{digitKey, "j"}, 420)
+			})
+		})
+	}
+
+	t.Run("does not panic when digit appears in non-first position", func(t *testing.T) {
+		var trie Trie[int]
+		assert.NotPanics(t, func() {
+			trie.Insert([]string{"j", "5"}, 420)
+		})
+	})
+}
+
 func TestAutocomplete(t *testing.T) {
 	var trie Trie[int]
 
