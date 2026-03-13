@@ -142,7 +142,7 @@ func (j *Journal) Insert(DB *sqlx.DB) (int, error) {
 
 	err = UpdateJournalsCache(DB)
 	if err != nil {
-		return int(id), err
+		return id, err
 	}
 
 	return id, nil
@@ -160,9 +160,7 @@ func (j *Journal) Update(DB *sqlx.DB) error {
 		return err
 	}
 
-	err = UpdateJournalsCache(DB)
-
-	return err
+	return UpdateJournalsCache(DB)
 }
 
 func SelectJournals(DB *sqlx.DB) ([]Journal, error) {
@@ -198,9 +196,7 @@ func DeleteJournal(DB *sqlx.DB, id int) error {
 		return err
 	}
 
-	err = UpdateJournalsCache(DB)
-
-	return err
+	return UpdateJournalsCache(DB)
 }
 
 func MakeSelectJournalsCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {

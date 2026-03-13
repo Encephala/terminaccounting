@@ -40,9 +40,9 @@ func renderBoolean(reconciled bool) string {
 	if reconciled {
 		// Font Awesome checkbox because it's monospace, standard emoji character is too wide
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("")
-	} else {
-		return "□"
 	}
+
+	return "□"
 }
 
 // This `input` interface is needed, even though inputAdapter[T] is the only implementation of it.

@@ -36,9 +36,9 @@ func (t *Trie[T]) Get(path []string) (T, bool) {
 
 	if t.isLeaf {
 		return t.value, true
-	} else {
-		return null, false
 	}
+
+	return null, false
 }
 
 func (t *Trie[T]) ContainsPath(path []string) bool {

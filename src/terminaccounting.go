@@ -289,9 +289,9 @@ func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) tea.Cmd {
 func (ta *terminaccounting) currentViewAllowsInsertMode() bool {
 	if ta.showModal {
 		return ta.modalManager.CurrentViewAllowsInsertMode()
-	} else {
-		return ta.appManager.currentViewAllowsInsertMode()
 	}
+
+	return ta.appManager.currentViewAllowsInsertMode()
 }
 
 func (ta *terminaccounting) executeCommand() (*terminaccounting, tea.Cmd) {
