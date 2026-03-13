@@ -398,8 +398,8 @@ func (bi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }
 
-func (bi *bankImporter) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (bi *bankImporter) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
@@ -413,12 +413,12 @@ func (bi *bankImporter) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (bi *bankImporter) CommandSet() meta.CommandSet {
+func (bi *bankImporter) CommandSet() meta.Trie[tea.Msg] {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(result)
+	return result
 }
 
 func (bi *bankImporter) Reload() view.View {

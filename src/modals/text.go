@@ -94,8 +94,8 @@ func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }
 
-func (tm *textModal) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (tm *textModal) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
@@ -103,8 +103,8 @@ func (tm *textModal) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (tm *textModal) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+func (tm *textModal) CommandSet() meta.Trie[tea.Msg] {
+	return meta.Trie[tea.Msg]{}
 }
 
 func (tm *textModal) Reload() view.View {

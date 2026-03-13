@@ -235,7 +235,7 @@ func (am *appManager) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, titleRendered, bodyRendered)
 }
 
-func (am *appManager) CurrentMotionSet() meta.MotionSet {
+func (am *appManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	result := am.apps[am.activeApp].CurrentMotionSet()
 
 	result.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
@@ -252,7 +252,7 @@ func (am *appManager) CurrentMotionSet() meta.MotionSet {
 	return result
 }
 
-func (am *appManager) CurrentCommandSet() meta.CommandSet {
+func (am *appManager) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return am.apps[am.activeApp].CurrentCommandSet()
 }
 

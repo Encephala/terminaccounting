@@ -26,8 +26,8 @@ type View interface {
 	AllowsInsertMode() bool
 	AcceptedModels() map[meta.ModelType]struct{}
 
-	MotionSet() meta.MotionSet
-	CommandSet() meta.CommandSet
+	MotionSet() meta.Trie[tea.Msg]
+	CommandSet() meta.Trie[tea.Msg]
 
 	Reload() View
 }

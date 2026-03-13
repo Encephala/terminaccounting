@@ -82,11 +82,11 @@ func (mm *ModalManager) CurrentViewAllowsInsertMode() bool {
 	return mm.Modal.AllowsInsertMode()
 }
 
-func (mm *ModalManager) CurrentMotionSet() meta.MotionSet {
+func (mm *ModalManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	return mm.Modal.MotionSet()
 }
 
-func (mm *ModalManager) CurrentCommandSet() meta.CommandSet {
+func (mm *ModalManager) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return mm.Modal.CommandSet()
 }
 

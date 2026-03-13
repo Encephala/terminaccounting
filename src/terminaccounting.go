@@ -218,7 +218,7 @@ func (ta *terminaccounting) View() string {
 }
 
 func (ta *terminaccounting) motionSet() *meta.CompleteMotionSet {
-	var viewMotionSet meta.MotionSet
+	var viewMotionSet meta.Trie[tea.Msg]
 
 	if ta.showModal {
 		viewMotionSet = ta.modalManager.CurrentMotionSet()
@@ -232,7 +232,7 @@ func (ta *terminaccounting) motionSet() *meta.CompleteMotionSet {
 }
 
 func (ta *terminaccounting) commandSet() *meta.CompleteCommandSet {
-	var viewCommandSet meta.CommandSet
+	var viewCommandSet meta.Trie[tea.Msg]
 
 	if ta.showModal {
 		viewCommandSet = ta.modalManager.CurrentCommandSet()

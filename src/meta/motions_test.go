@@ -9,7 +9,7 @@ import (
 )
 
 func TestGlobalMotionsReachable(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
 	tests := []struct {
 		motion   Motion
@@ -30,7 +30,7 @@ func TestGlobalMotionsReachable(t *testing.T) {
 }
 
 func TestCompleteMotionSetContainsPath(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
 	assert.True(t, cms.ContainsPath(Motion{"g"}))
 	assert.True(t, cms.ContainsPath(Motion{"g", "t"}))
@@ -40,7 +40,7 @@ func TestCompleteMotionSetContainsPath(t *testing.T) {
 func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
 	var viewMotions Trie[tea.Msg]
 	viewMotions.Insert(Motion{"i"}, ShowNotificationsMsg{})
-	cms := NewCompleteMotionSet(MotionSet(viewMotions))
+	cms := NewCompleteMotionSet(viewMotions)
 
 	msg, ok := cms.Get(Motion{"i"})
 	require.True(t, ok)
@@ -48,7 +48,7 @@ func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
 }
 
 func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
 	msg, ok := cms.Get(Motion{"ctrl+l"})
 	require.True(t, ok)

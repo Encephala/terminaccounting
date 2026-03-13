@@ -4,31 +4,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type MotionSet Trie[tea.Msg]
-
-func (ms *MotionSet) get(path Motion) (tea.Msg, bool) {
-	asTrie := Trie[tea.Msg](*ms)
-
-	return asTrie.get(path)
-}
-
-func (ms *MotionSet) containsPath(path Motion) bool {
-	asTrie := Trie[tea.Msg](*ms)
-	return asTrie.containsPath(path)
-}
-
-func (ms *MotionSet) Insert(path Motion, message tea.Msg) {
-	asTrie := (*Trie[tea.Msg])(ms)
-
-	asTrie.Insert(path, message)
-}
-
 type CompleteMotionSet struct {
-	globalMotionSet MotionSet
-	viewMotionSet   MotionSet
+	globalMotionSet Trie[tea.Msg]
+	viewMotionSet   Trie[tea.Msg]
 }
 
-func NewCompleteMotionSet(viewMotionSet MotionSet) CompleteMotionSet {
+func NewCompleteMotionSet(viewMotionSet Trie[tea.Msg]) CompleteMotionSet {
 	return CompleteMotionSet{
 		globalMotionSet: globalMotions(),
 		viewMotionSet:   viewMotionSet,
@@ -36,19 +17,19 @@ func NewCompleteMotionSet(viewMotionSet MotionSet) CompleteMotionSet {
 }
 
 func (cms *CompleteMotionSet) Get(path Motion) (tea.Msg, bool) {
-	if msg, ok := cms.viewMotionSet.get(path); ok {
+	if msg, ok := cms.viewMotionSet.Get(path); ok {
 		return msg, ok
 	}
 
-	return cms.globalMotionSet.get(path)
+	return cms.globalMotionSet.Get(path)
 }
 
 func (cms *CompleteMotionSet) ContainsPath(path Motion) bool {
-	if cms.viewMotionSet.containsPath(path) {
+	if cms.viewMotionSet.ContainsPath(path) {
 		return true
 	}
 
-	return cms.globalMotionSet.containsPath(path)
+	return cms.globalMotionSet.ContainsPath(path)
 }
 
 type motionWithValue struct {
@@ -56,7 +37,7 @@ type motionWithValue struct {
 	value tea.Msg
 }
 
-func globalMotions() MotionSet {
+func globalMotions() Trie[tea.Msg] {
 	motionsToMake := make([]motionWithValue, 0)
 
 	// Single-stroke/no prefix
@@ -76,7 +57,7 @@ func globalMotions() MotionSet {
 		{Motion{"T"}, SwitchTabMsg{Direction: PREVIOUS}}, // [g]oto Previous [T]ab
 	})
 
-	var motions MotionSet
+	var motions Trie[tea.Msg]
 	for _, m := range motionsToMake {
 		motions.Insert(m.path, m.value)
 	}

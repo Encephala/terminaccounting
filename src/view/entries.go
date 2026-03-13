@@ -101,7 +101,7 @@ func (dv *entryDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *entryDetailView) MotionSet() meta.MotionSet {
+func (dv *entryDetailView) MotionSet() meta.Trie[tea.Msg] {
 	result := genericDetailViewMotionSet()
 
 	result.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
@@ -110,7 +110,7 @@ func (dv *entryDetailView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (dv *entryDetailView) CommandSet() meta.CommandSet {
+func (dv *entryDetailView) CommandSet() meta.Trie[tea.Msg] {
 	return genericDetailViewCommandSet()
 }
 
@@ -308,11 +308,11 @@ type CreateEntryRowMsg struct {
 	After bool
 }
 
-func (cv *entryCreateView) MotionSet() meta.MotionSet {
+func (cv *entryCreateView) MotionSet() meta.Trie[tea.Msg] {
 	return entryMutateViewMotionSet()
 }
 
-func (cv *entryCreateView) CommandSet() meta.CommandSet {
+func (cv *entryCreateView) CommandSet() meta.Trie[tea.Msg] {
 	return entryMutateViewCommandSet()
 }
 
@@ -528,7 +528,7 @@ func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *entryUpdateView) MotionSet() meta.MotionSet {
+func (uv *entryUpdateView) MotionSet() meta.Trie[tea.Msg] {
 	result := entryMutateViewMotionSet()
 
 	result.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
@@ -538,7 +538,7 @@ func (uv *entryUpdateView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (uv *entryUpdateView) CommandSet() meta.CommandSet {
+func (uv *entryUpdateView) CommandSet() meta.Trie[tea.Msg] {
 	return entryMutateViewCommandSet()
 }
 
@@ -1469,8 +1469,8 @@ func entryMutateViewView(view entryMutateView) string {
 	return result.String()
 }
 
-func entryMutateViewMotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func entryMutateViewMotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -1502,12 +1502,12 @@ func entryMutateViewMotionSet() meta.MotionSet {
 	return motions
 }
 
-func entryMutateViewCommandSet() meta.CommandSet {
+func entryMutateViewCommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 type entryDeleteView struct {
@@ -1623,8 +1623,8 @@ func (dv *entryDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *entryDeleteView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (dv *entryDeleteView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -1633,12 +1633,12 @@ func (dv *entryDeleteView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (dv *entryDeleteView) CommandSet() meta.CommandSet {
+func (dv *entryDeleteView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (dv *entryDeleteView) Reload() View {

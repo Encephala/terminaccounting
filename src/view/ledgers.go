@@ -111,7 +111,7 @@ func (dv *ledgersDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *ledgersDetailView) MotionSet() meta.MotionSet {
+func (dv *ledgersDetailView) MotionSet() meta.Trie[tea.Msg] {
 	result := genericDetailViewMotionSet()
 
 	result.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
@@ -122,7 +122,7 @@ func (dv *ledgersDetailView) MotionSet() meta.MotionSet {
 	return result
 }
 
-func (dv *ledgersDetailView) CommandSet() meta.CommandSet {
+func (dv *ledgersDetailView) CommandSet() meta.Trie[tea.Msg] {
 	return genericDetailViewCommandSet()
 }
 
@@ -261,8 +261,8 @@ func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (cv *ledgersCreateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -272,12 +272,12 @@ func (cv *ledgersCreateView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (cv *ledgersCreateView) CommandSet() meta.CommandSet {
+func (cv *ledgersCreateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (cv *ledgersCreateView) Reload() View {
@@ -434,8 +434,8 @@ func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (uv *ledgersUpdateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -449,12 +449,12 @@ func (uv *ledgersUpdateView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (uv *ledgersUpdateView) CommandSet() meta.CommandSet {
+func (uv *ledgersUpdateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (uv *ledgersUpdateView) Reload() View {
@@ -553,8 +553,8 @@ func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *ledgersDeleteView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (dv *ledgersDeleteView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -563,12 +563,12 @@ func (dv *ledgersDeleteView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (dv *ledgersDeleteView) CommandSet() meta.CommandSet {
+func (dv *ledgersDeleteView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (dv *ledgersDeleteView) Reload() View {

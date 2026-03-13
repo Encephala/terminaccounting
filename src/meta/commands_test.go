@@ -10,7 +10,7 @@ import (
 )
 
 func TestGlobalCommandsReachable(t *testing.T) {
-	ccs := NewCompleteCommandSet(CommandSet{})
+	ccs := NewCompleteCommandSet(Trie[tea.Msg]{})
 
 	tests := []struct {
 		path     string
@@ -31,7 +31,7 @@ func TestGlobalCommandsReachable(t *testing.T) {
 }
 
 func TestCompleteCommandSetContainsPath(t *testing.T) {
-	ccs := NewCompleteCommandSet(CommandSet{})
+	ccs := NewCompleteCommandSet(Trie[tea.Msg]{})
 
 	assert.True(t, ccs.ContainsPath(Command{"q"}))
 	assert.True(t, ccs.ContainsPath(Command(strings.Split("quit", ""))))
@@ -39,9 +39,9 @@ func TestCompleteCommandSetContainsPath(t *testing.T) {
 }
 
 func TestCompleteCommandSetViewTakesPriority(t *testing.T) {
-	var viewTrie Trie[tea.Msg]
-	viewTrie.Insert(strings.Split("quit", ""), ShowNotificationsMsg{})
-	ccs := NewCompleteCommandSet(CommandSet(viewTrie))
+	var viewCommands Trie[tea.Msg]
+	viewCommands.Insert(strings.Split("quit", ""), ShowNotificationsMsg{})
+	ccs := NewCompleteCommandSet(viewCommands)
 
 	msg, ok := ccs.Get(Command(strings.Split("quit", "")))
 	require.True(t, ok)
@@ -49,7 +49,7 @@ func TestCompleteCommandSetViewTakesPriority(t *testing.T) {
 }
 
 func TestCompleteCommandSetFallsBackToGlobal(t *testing.T) {
-	ccs := NewCompleteCommandSet(CommandSet{})
+	ccs := NewCompleteCommandSet(Trie[tea.Msg]{})
 
 	msg, ok := ccs.Get(Command(strings.Split("refreshcache", "")))
 	require.True(t, ok)
@@ -57,16 +57,16 @@ func TestCompleteCommandSetFallsBackToGlobal(t *testing.T) {
 }
 
 func TestCompleteCommandSetAutocomplete(t *testing.T) {
-	ccs := NewCompleteCommandSet(CommandSet{})
+	ccs := NewCompleteCommandSet(Trie[tea.Msg]{})
 
 	result := ccs.Autocomplete(strings.Split("qui", ""))
 	assert.Equal(t, strings.Split("quit", ""), result)
 }
 
 func TestCompleteCommandSetAutocompleteViewTakesPriority(t *testing.T) {
-	var viewTrie Trie[tea.Msg]
-	viewTrie.Insert(strings.Split("query", ""), ShowNotificationsMsg{})
-	ccs := NewCompleteCommandSet(CommandSet(viewTrie))
+	var viewCommands Trie[tea.Msg]
+	viewCommands.Insert(strings.Split("query", ""), ShowNotificationsMsg{})
+	ccs := NewCompleteCommandSet(viewCommands)
 
 	result := ccs.Autocomplete(strings.Split("q", ""))
 	assert.Equal(t, strings.Split("query", ""), result)

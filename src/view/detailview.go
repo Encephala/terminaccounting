@@ -167,8 +167,8 @@ func genericDetailViewView(gdv genericDetailView) string {
 	return result.String()
 }
 
-func genericDetailViewMotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func genericDetailViewMotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
@@ -181,12 +181,12 @@ func genericDetailViewMotionSet() meta.MotionSet {
 	return motions
 }
 
-func genericDetailViewCommandSet() meta.CommandSet {
+func genericDetailViewCommandSet() meta.Trie[tea.Msg] {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(result)
+	return result
 }
 
 func makeGoToEntryDetailViewCmd(DB *sqlx.DB, activeEntryRow *database.EntryRow) tea.Cmd {

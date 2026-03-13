@@ -109,11 +109,11 @@ func (app *accountsApp) Colour() lipgloss.Color {
 	return meta.ACCOUNTSCOLOUR
 }
 
-func (app *accountsApp) CurrentMotionSet() meta.MotionSet {
+func (app *accountsApp) CurrentMotionSet() meta.Trie[tea.Msg] {
 	return app.currentView.MotionSet()
 }
 
-func (app *accountsApp) CurrentCommandSet() meta.CommandSet {
+func (app *accountsApp) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return app.currentView.CommandSet()
 }
 

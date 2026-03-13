@@ -109,11 +109,11 @@ func (app *journalsApp) Colour() lipgloss.Color {
 	return meta.JOURNALSCOLOUR
 }
 
-func (app *journalsApp) CurrentMotionSet() meta.MotionSet {
+func (app *journalsApp) CurrentMotionSet() meta.Trie[tea.Msg] {
 	return app.currentView.MotionSet()
 }
 
-func (app *journalsApp) CurrentCommandSet() meta.CommandSet {
+func (app *journalsApp) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return app.currentView.CommandSet()
 }
 

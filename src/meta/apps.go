@@ -19,8 +19,8 @@ type App interface {
 
 	Colour() lipgloss.Color
 
-	CurrentMotionSet() MotionSet
-	CurrentCommandSet() CommandSet
+	CurrentMotionSet() Trie[tea.Msg]
+	CurrentCommandSet() Trie[tea.Msg]
 
 	CurrentViewAllowsInsertMode() bool
 	AcceptedModels() map[ModelType]struct{}

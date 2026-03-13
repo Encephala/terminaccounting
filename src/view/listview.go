@@ -102,8 +102,8 @@ func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (lv *ListView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (lv *ListView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
@@ -120,8 +120,8 @@ func (lv *ListView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (lv *ListView) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+func (lv *ListView) CommandSet() meta.Trie[tea.Msg] {
+	return meta.Trie[tea.Msg]{}
 }
 
 func (lv *ListView) Reload() View {

@@ -121,8 +121,8 @@ func (dv *journalsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *journalsDetailView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (dv *journalsDetailView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
@@ -139,8 +139,8 @@ func (dv *journalsDetailView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (dv *journalsDetailView) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+func (dv *journalsDetailView) CommandSet() meta.Trie[tea.Msg] {
+	return meta.Trie[tea.Msg]{}
 }
 
 func (dv *journalsDetailView) Reload() View {
@@ -268,8 +268,8 @@ func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *journalsCreateView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (cv *journalsCreateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -279,12 +279,12 @@ func (cv *journalsCreateView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (cv *journalsCreateView) CommandSet() meta.CommandSet {
+func (cv *journalsCreateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (cv *journalsCreateView) Reload() View {
@@ -428,8 +428,8 @@ func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *journalsUpdateView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (uv *journalsUpdateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -443,12 +443,12 @@ func (uv *journalsUpdateView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (uv *journalsUpdateView) CommandSet() meta.CommandSet {
+func (uv *journalsUpdateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (uv *journalsUpdateView) Reload() View {
@@ -547,8 +547,8 @@ func (dv *journalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *journalsDeleteView) MotionSet() meta.MotionSet {
-	var motions meta.MotionSet
+func (dv *journalsDeleteView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
@@ -557,12 +557,12 @@ func (dv *journalsDeleteView) MotionSet() meta.MotionSet {
 	return motions
 }
 
-func (dv *journalsDeleteView) CommandSet() meta.CommandSet {
+func (dv *journalsDeleteView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (dv *journalsDeleteView) Reload() View {
