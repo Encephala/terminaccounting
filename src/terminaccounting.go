@@ -336,10 +336,15 @@ func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting,
 
 	switch ta.inputMode {
 	case meta.NORMALMODE:
-		if completedMotionMsg, ok := ta.motionSet().Get(newMotion); ok {
+		if completedMotionMsgs, ok := ta.motionSet().Get(newMotion); ok {
 			ta.resetCurrentMotion()
 
-			return ta, meta.MessageCmd(completedMotionMsg)
+			cmds := make([]tea.Cmd, len(completedMotionMsgs))
+			for i, msg := range completedMotionMsgs {
+				cmds[i] = meta.MessageCmd(msg)
+			}
+
+			return ta, tea.Batch(cmds...)
 		}
 
 		if ta.motionSet().ContainsPath(newMotion) {

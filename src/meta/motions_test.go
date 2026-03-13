@@ -23,9 +23,10 @@ func TestGlobalMotionsReachable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		msg, ok := cms.Get(test.motion)
+		msgs, ok := cms.Get(test.motion)
 		require.True(t, ok, "expected %v to be a known normal motion", test.motion)
-		assert.Equal(t, test.expected, msg)
+		require.Len(t, msgs, 1)
+		assert.Equal(t, test.expected, msgs[0])
 	}
 }
 
@@ -42,15 +43,72 @@ func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
 	viewMotions.Insert(Motion{"i"}, ShowNotificationsMsg{})
 	cms := NewCompleteMotionSet(viewMotions)
 
-	msg, ok := cms.Get(Motion{"i"})
+	msgs, ok := cms.Get(Motion{"i"})
 	require.True(t, ok)
-	assert.Equal(t, ShowNotificationsMsg{}, msg)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, ShowNotificationsMsg{}, msgs[0])
 }
 
 func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
 	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
-	msg, ok := cms.Get(Motion{"ctrl+l"})
+	msgs, ok := cms.Get(Motion{"ctrl+l"})
 	require.True(t, ok)
-	assert.Equal(t, ReloadViewMsg{}, msg)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, ReloadViewMsg{}, msgs[0])
+}
+
+func TestGet_CountPrefixRepeatsMsg(t *testing.T) {
+	var viewMotions Trie[tea.Msg]
+	viewMotions.Insert(Motion{"j"}, ScrollVerticalMsg{Up: false})
+	cms := NewCompleteMotionSet(viewMotions)
+
+	tests := []struct {
+		motion        Motion
+		expectedCount int
+	}{
+		{Motion{"5", "j"}, 5},
+		{Motion{"1", "j"}, 1},
+		{Motion{"9", "j"}, 9},
+	}
+
+	for _, test := range tests {
+		msgs, ok := cms.Get(test.motion)
+		require.True(t, ok, "expected %v to resolve", test.motion)
+		require.Len(t, msgs, test.expectedCount)
+		for _, msg := range msgs {
+			assert.Equal(t, ScrollVerticalMsg{Up: false}, msg)
+		}
+	}
+}
+
+func TestGet_MultiDigitCountPrefix(t *testing.T) {
+	var viewMotions Trie[tea.Msg]
+	viewMotions.Insert(Motion{"g", "t"}, SwitchTabMsg{Direction: NEXT})
+	cms := NewCompleteMotionSet(viewMotions)
+
+	msgs, ok := cms.Get(Motion{"1", "2", "g", "t"})
+	require.True(t, ok)
+	require.Len(t, msgs, 12)
+	for _, msg := range msgs {
+		assert.Equal(t, SwitchTabMsg{Direction: NEXT}, msg)
+	}
+}
+
+func TestGet_CountPrefixNotFoundIfMotionUnknown(t *testing.T) {
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
+
+	_, ok := cms.Get(Motion{"5", "x"})
+	assert.False(t, ok)
+}
+
+func TestContainsPath_CountPrefixIsValidPrefix(t *testing.T) {
+	var viewMotions Trie[tea.Msg]
+	viewMotions.Insert(Motion{"j"}, ScrollVerticalMsg{Up: false})
+	cms := NewCompleteMotionSet(viewMotions)
+
+	// A leading digit is always a valid in-progress path in normal mode
+	assert.True(t, cms.ContainsPath(Motion{"5"}))
+	// Digits followed by a known motion prefix are also valid
+	assert.True(t, cms.ContainsPath(Motion{"5", "j"}))
 }

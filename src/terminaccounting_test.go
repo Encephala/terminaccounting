@@ -333,6 +333,80 @@ func TestHandleCtrlC_ClearsCurrentMotion(t *testing.T) {
 	})
 }
 
+func TestRepeatingMotionUnit(t *testing.T) {
+	t.Run("5gt switches tab 5 times", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("5gt")
+
+		// Starting at tab 0, 5 forward switches: 0→1→2→3→0→1 = tab 1
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.activeApp)
+		})
+	})
+
+	t.Run("3gT switches tab backward 3 times", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("3gT")
+
+		// Starting at tab 0, 3 backward switches: 0→3→2→1 = tab 1
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.activeApp)
+		})
+	})
+
+	t.Run("multi-digit count 12gt switches tab 12 times", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("12gt")
+
+		// Starting at tab 0, 12 forward switches: 12 % 4 = 0, final tab = 0
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 0, ta.appManager.activeApp)
+		})
+	})
+
+	t.Run("count of 1 acts same as no count", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("1gt")
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.activeApp)
+		})
+	})
+
+	t.Run("count digit does not produce invalid motion notification", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("5gt")
+
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Empty(t, ta.notifications)
+		})
+	})
+
+	t.Run("ctrl+c clears pending count", func(t *testing.T) {
+		DB := tat.SetupTestEnv(t)
+		tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
+
+		tw.SendText("5")
+		tw.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+		tw.SendText("gt")
+
+		// Count was cancelled, should switch only once
+		tw.Execute(t, func(ta *terminaccounting) {
+			assert.Equal(t, 1, ta.appManager.activeApp)
+		})
+	})
+}
+
 func TestSwitchApp(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
