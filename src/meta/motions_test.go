@@ -52,10 +52,10 @@ func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
 func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
 	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
-	msgs, ok := cms.Get(Motion{"tab"})
+	msgs, ok := cms.Get(Motion{"ctrl+l"})
 	require.True(t, ok)
 	require.Len(t, msgs, 1)
-	assert.Equal(t, SwitchFocusMsg{Direction: NEXT}, msgs[0])
+	assert.Equal(t, ReloadViewMsg{}, msgs[0])
 }
 
 func TestGet_CountPrefixRepeatsMsg(t *testing.T) {

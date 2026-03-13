@@ -90,6 +90,10 @@ func (t *Trie[T]) Autocomplete(path []string) []string {
 }
 
 func (t *Trie[T]) Insert(path []string, value T) (changed bool) {
+	if len(path) != 0 && isDigit(path[0]) {
+		panic("can't insert a motion that starts with a digit")
+	}
+
 	changed = false
 
 	for i, key := range path {
