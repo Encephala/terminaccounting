@@ -167,26 +167,26 @@ func genericDetailViewView(gdv genericDetailView) string {
 	return result.String()
 }
 
-func genericDetailViewMotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func genericDetailViewMotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"s", "r"}, meta.ToggleShowReconciledMsg{}) // [S]how [R]econciled
-	normalMotions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
+	motions.Insert(meta.Motion{"s", "r"}, meta.ToggleShowReconciledMsg{}) // [S]how [R]econciled
+	motions.Insert(meta.Motion{"enter"}, meta.ReconcileMsg{})
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func genericDetailViewCommandSet() meta.CommandSet {
+func genericDetailViewCommandSet() meta.Trie[tea.Msg] {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(result)
+	return result
 }
 
 func makeGoToEntryDetailViewCmd(DB *sqlx.DB, activeEntryRow *database.EntryRow) tea.Cmd {

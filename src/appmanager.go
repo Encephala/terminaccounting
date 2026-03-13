@@ -235,24 +235,24 @@ func (am *appManager) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, titleRendered, bodyRendered)
 }
 
-func (am *appManager) CurrentMotionSet() meta.MotionSet {
+func (am *appManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	result := am.apps[am.activeApp].CurrentMotionSet()
 
-	result.Normal.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
-	result.Normal.Insert([]string{"down"}, meta.ScrollVerticalMsg{Up: false})
-	result.Normal.Insert([]string{"z", "J"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
-	result.Normal.Insert([]string{"z", "k"}, meta.ScrollVerticalMsg{Up: true})
-	result.Normal.Insert([]string{"up"}, meta.ScrollVerticalMsg{Up: true})
-	result.Normal.Insert([]string{"z", "K"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
-	result.Normal.Insert([]string{"z", "l"}, meta.ScrollHorizontalMsg{Left: false})
-	result.Normal.Insert([]string{"z", "L"}, meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
-	result.Normal.Insert([]string{"z", "h"}, meta.ScrollHorizontalMsg{Left: true})
-	result.Normal.Insert([]string{"z", "H"}, meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
+	result.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
+	result.Insert([]string{"down"}, meta.ScrollVerticalMsg{Up: false})
+	result.Insert([]string{"z", "J"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
+	result.Insert([]string{"z", "k"}, meta.ScrollVerticalMsg{Up: true})
+	result.Insert([]string{"up"}, meta.ScrollVerticalMsg{Up: true})
+	result.Insert([]string{"z", "K"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
+	result.Insert([]string{"z", "l"}, meta.ScrollHorizontalMsg{Left: false})
+	result.Insert([]string{"z", "L"}, meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
+	result.Insert([]string{"z", "h"}, meta.ScrollHorizontalMsg{Left: true})
+	result.Insert([]string{"z", "H"}, meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
 
 	return result
 }
 
-func (am *appManager) CurrentCommandSet() meta.CommandSet {
+func (am *appManager) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return am.apps[am.activeApp].CurrentCommandSet()
 }
 

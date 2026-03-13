@@ -26,11 +26,11 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, exists := trie.get(strings.Split(test.value, ""))
+		_, exists := trie.Get(strings.Split(test.value, ""))
 		assert.True(t, exists)
 	}
 
-	_, exists := trie.get([]string{"a", "b"})
+	_, exists := trie.Get([]string{"a", "b"})
 	assert.False(t, exists)
 }
 
@@ -38,10 +38,10 @@ func TestInsertTrieKeysOnly(t *testing.T) {
 func TestDefaultValueSane(t *testing.T) {
 	var trie Trie[int]
 
-	_, exists := trie.get([]string{})
+	_, exists := trie.Get([]string{})
 	assert.False(t, exists)
 
-	_, exists = trie.get([]string{""})
+	_, exists = trie.Get([]string{""})
 	assert.False(t, exists)
 }
 
@@ -51,7 +51,7 @@ func TestHandleEmptyKey(t *testing.T) {
 	changed := trie.Insert([]string{}, 0)
 	assert.False(t, changed)
 
-	_, exists := trie.get([]string{})
+	_, exists := trie.Get([]string{})
 	assert.False(t, exists)
 }
 
@@ -61,10 +61,10 @@ func TestInsertTrieWithValues(t *testing.T) {
 	trie.Insert([]string{"f", "1"}, 0)
 	trie.Insert([]string{"f", "2"}, 1)
 
-	f1, _ := trie.get([]string{"f", "1"})
+	f1, _ := trie.Get([]string{"f", "1"})
 	assert.Equal(t, f1, 0)
 
-	f2, _ := trie.get([]string{"f", "2"})
+	f2, _ := trie.Get([]string{"f", "2"})
 	assert.Equal(t, f2, 1)
 }
 
@@ -73,11 +73,11 @@ func TestTrieInsertValueOnExistingPath(t *testing.T) {
 
 	trie.Insert(strings.Split("asdf", ""), 0)
 
-	_, ok := trie.get(strings.Split("as", ""))
+	_, ok := trie.Get(strings.Split("as", ""))
 	assert.False(t, ok)
 
 	trie.Insert(strings.Split("as", ""), 69)
-	result, ok := trie.get(strings.Split("as", ""))
+	result, ok := trie.Get(strings.Split("as", ""))
 
 	assert.True(t, ok)
 	assert.Equal(t, result, 69)
@@ -101,7 +101,7 @@ func TestContainsPath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := trie.containsPath(strings.Split(test.testValue, ""))
+		result := trie.ContainsPath(strings.Split(test.testValue, ""))
 
 		assert.Equal(t, result, test.expected)
 	}
@@ -136,7 +136,7 @@ func TestAutocomplete(t *testing.T) {
 		if test.input != "" {
 			path = strings.Split(test.input, "")
 		}
-		result := trie.autocomplete(path)
+		result := trie.Autocomplete(path)
 		assert.Equal(t, test.expected, result, "input: %q", test.input)
 	}
 }

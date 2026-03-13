@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGlobalNormalMotionsReachable(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+func TestGlobalMotionsReachable(t *testing.T) {
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
 	tests := []struct {
 		motion   Motion
@@ -23,72 +23,34 @@ func TestGlobalNormalMotionsReachable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		msg, ok := cms.Get(NORMALMODE, test.motion)
+		msg, ok := cms.Get(test.motion)
 		require.True(t, ok, "expected %v to be a known normal motion", test.motion)
 		assert.Equal(t, test.expected, msg)
 	}
 }
 
-func TestGlobalInsertMotionsReachable(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
-
-	tests := []struct {
-		motion   Motion
-		expected tea.Msg
-	}{
-		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
-		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
-		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
-	}
-
-	for _, test := range tests {
-		msg, ok := cms.Get(INSERTMODE, test.motion)
-		require.True(t, ok, "expected %v to be a known insert motion", test.motion)
-		assert.Equal(t, test.expected, msg)
-	}
-}
-
-func TestGlobalCommandMotionsReachable(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
-
-	tests := []struct {
-		motion   Motion
-		expected tea.Msg
-	}{
-		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
-		{Motion{"enter"}, ExecuteCommandMsg{}},
-		{Motion{"tab"}, TryCompleteCommandMsg{}},
-	}
-
-	for _, test := range tests {
-		msg, ok := cms.Get(COMMANDMODE, test.motion)
-		require.True(t, ok, "expected %v to be a known command-mode motion", test.motion)
-		assert.Equal(t, test.expected, msg)
-	}
-}
-
 func TestCompleteMotionSetContainsPath(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
-	assert.True(t, cms.ContainsPath(NORMALMODE, Motion{"g"}))
-	assert.True(t, cms.ContainsPath(NORMALMODE, Motion{"g", "t"}))
-	assert.False(t, cms.ContainsPath(NORMALMODE, Motion{"x", "y", "z"}))
+	assert.True(t, cms.ContainsPath(Motion{"g"}))
+	assert.True(t, cms.ContainsPath(Motion{"g", "t"}))
+	assert.False(t, cms.ContainsPath(Motion{"x", "y", "z"}))
 }
 
 func TestCompleteMotionSetViewTakesPriority(t *testing.T) {
-	var viewNormal Trie[tea.Msg]
-	viewNormal.Insert(Motion{"i"}, ShowNotificationsMsg{})
-	cms := NewCompleteMotionSet(MotionSet{Normal: viewNormal})
+	var viewMotions Trie[tea.Msg]
+	viewMotions.Insert(Motion{"i"}, ShowNotificationsMsg{})
+	cms := NewCompleteMotionSet(viewMotions)
 
-	msg, ok := cms.Get(NORMALMODE, Motion{"i"})
+	msg, ok := cms.Get(Motion{"i"})
 	require.True(t, ok)
 	assert.Equal(t, ShowNotificationsMsg{}, msg)
 }
 
 func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
-	cms := NewCompleteMotionSet(MotionSet{})
+	cms := NewCompleteMotionSet(Trie[tea.Msg]{})
 
-	msg, ok := cms.Get(INSERTMODE, Motion{"tab"})
+	msg, ok := cms.Get(Motion{"ctrl+l"})
 	require.True(t, ok)
-	assert.Equal(t, SwitchFocusMsg{Direction: NEXT}, msg)
+	assert.Equal(t, ReloadViewMsg{}, msg)
 }

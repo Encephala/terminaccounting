@@ -186,9 +186,7 @@ func (a Account) Update(DB *sqlx.DB) error {
 		return err
 	}
 
-	err = UpdateAccountsCache(DB)
-
-	return err
+	return UpdateAccountsCache(DB)
 }
 
 func (a Account) HasBankNumber(bankNumber string) bool {
@@ -234,9 +232,7 @@ func DeleteAccount(DB *sqlx.DB, accountId int) error {
 		return err
 	}
 
-	err = UpdateAccountsCache(DB)
-
-	return err
+	return UpdateAccountsCache(DB)
 }
 
 func MakeSelectAccountsCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {

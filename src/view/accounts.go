@@ -96,18 +96,18 @@ func (dv *accountsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *accountsDetailView) MotionSet() meta.MotionSet {
+func (dv *accountsDetailView) MotionSet() meta.Trie[tea.Msg] {
 	result := genericDetailViewMotionSet()
 
-	result.Normal.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-	result.Normal.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+	result.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	result.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	result.Normal.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, dv.viewer.getActiveRow()))
+	result.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, dv.viewer.getActiveRow()))
 
 	return result
 }
 
-func (dv *accountsDetailView) CommandSet() meta.CommandSet {
+func (dv *accountsDetailView) CommandSet() meta.Trie[tea.Msg] {
 	return genericDetailViewCommandSet()
 }
 
@@ -241,23 +241,23 @@ func (cv *accountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
 
-func (cv *accountsCreateView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func (cv *accountsCreateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func (cv *accountsCreateView) CommandSet() meta.CommandSet {
+func (cv *accountsCreateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (cv *accountsCreateView) Reload() View {
@@ -412,27 +412,27 @@ func (uv *accountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (uv *accountsUpdateView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func (uv *accountsUpdateView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	normalMotions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
+	motions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+	motions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func (uv *accountsUpdateView) CommandSet() meta.CommandSet {
+func (uv *accountsUpdateView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (uv *accountsUpdateView) Reload() View {
@@ -531,22 +531,22 @@ func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (dv *accountsDeleteView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func (dv *accountsDeleteView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
+	motions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func (dv *accountsDeleteView) CommandSet() meta.CommandSet {
+func (dv *accountsDeleteView) CommandSet() meta.Trie[tea.Msg] {
 	var commands meta.Trie[tea.Msg]
 
 	commands.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(commands)
+	return commands
 }
 
 func (dv *accountsDeleteView) Reload() View {

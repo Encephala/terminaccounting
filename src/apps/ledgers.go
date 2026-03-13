@@ -109,11 +109,11 @@ func (app *ledgersApp) Colour() lipgloss.Color {
 	return meta.LEDGERSCOLOUR
 }
 
-func (app *ledgersApp) CurrentMotionSet() meta.MotionSet {
+func (app *ledgersApp) CurrentMotionSet() meta.Trie[tea.Msg] {
 	return app.currentView.MotionSet()
 }
 
-func (app *ledgersApp) CurrentCommandSet() meta.CommandSet {
+func (app *ledgersApp) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return app.currentView.CommandSet()
 }
 

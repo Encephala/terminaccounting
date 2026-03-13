@@ -26,8 +26,8 @@ type View interface {
 	AllowsInsertMode() bool
 	AcceptedModels() map[meta.ModelType]struct{}
 
-	MotionSet() meta.MotionSet
-	CommandSet() meta.CommandSet
+	MotionSet() meta.Trie[tea.Msg]
+	CommandSet() meta.Trie[tea.Msg]
 
 	Reload() View
 }
@@ -40,9 +40,9 @@ func renderBoolean(reconciled bool) string {
 	if reconciled {
 		// Font Awesome checkbox because it's monospace, standard emoji character is too wide
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("")
-	} else {
-		return "□"
 	}
+
+	return "□"
 }
 
 // This `input` interface is needed, even though inputAdapter[T] is the only implementation of it.

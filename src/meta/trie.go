@@ -19,7 +19,7 @@ func (t *Trie[T]) getChild(key string) (child *Trie[T], found bool) {
 	return nil, false
 }
 
-func (t *Trie[T]) get(path []string) (T, bool) {
+func (t *Trie[T]) Get(path []string) (T, bool) {
 	var null T
 
 	if len(path) == 0 {
@@ -36,12 +36,12 @@ func (t *Trie[T]) get(path []string) (T, bool) {
 
 	if t.isLeaf {
 		return t.value, true
-	} else {
-		return null, false
 	}
+
+	return null, false
 }
 
-func (t *Trie[T]) containsPath(path []string) bool {
+func (t *Trie[T]) ContainsPath(path []string) bool {
 	for _, value := range path {
 		if child, ok := t.getChild(value); !ok {
 			return false
@@ -56,7 +56,7 @@ func (t *Trie[T]) containsPath(path []string) bool {
 // Short-circuiting method to get a leaf node from the current path
 // Might upgrade it to not be short-circuiting anymore in the future (i.e. return [][]string, all possible autocompletions)
 // but KISS for now, I don't have that many commands anwyays
-func (t *Trie[T]) autocomplete(path []string) []string {
+func (t *Trie[T]) Autocomplete(path []string) []string {
 	if len(path) == 0 {
 		return nil
 	}

@@ -1,75 +1,35 @@
 package meta
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type MotionSet struct {
-	Normal  Trie[tea.Msg]
-	Insert  Trie[tea.Msg]
-	Command Trie[tea.Msg]
-}
-
-func (ms *MotionSet) get(mode InputMode, path Motion) (tea.Msg, bool) {
-	switch mode {
-	case NORMALMODE:
-		return ms.Normal.get(path)
-
-	case INSERTMODE:
-		return ms.Insert.get(path)
-
-	case COMMANDMODE:
-		return ms.Command.get(path)
-
-	default:
-		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
-	}
-}
-
-func (ms *MotionSet) containsPath(mode InputMode, path Motion) bool {
-	switch mode {
-	case NORMALMODE:
-		return ms.Normal.containsPath(path)
-
-	case INSERTMODE:
-		return ms.Insert.containsPath(path)
-
-	case COMMANDMODE:
-		return ms.Command.containsPath(path)
-
-	default:
-		panic(fmt.Sprintf("unexpected vim.InputMode: %#v", mode))
-	}
-}
-
 type CompleteMotionSet struct {
-	globalMotionSet MotionSet
-	viewMotionSet   MotionSet
+	globalMotionSet Trie[tea.Msg]
+	viewMotionSet   Trie[tea.Msg]
 }
 
-func NewCompleteMotionSet(viewMotionSet MotionSet) CompleteMotionSet {
+func NewCompleteMotionSet(viewMotionSet Trie[tea.Msg]) CompleteMotionSet {
 	return CompleteMotionSet{
 		globalMotionSet: globalMotions(),
 		viewMotionSet:   viewMotionSet,
 	}
 }
 
-func (cms *CompleteMotionSet) Get(mode InputMode, path Motion) (tea.Msg, bool) {
-	if msg, ok := cms.viewMotionSet.get(mode, path); ok {
+func (cms *CompleteMotionSet) Get(path Motion) (tea.Msg, bool) {
+	if msg, ok := cms.viewMotionSet.Get(path); ok {
 		return msg, ok
 	}
 
-	return cms.globalMotionSet.get(mode, path)
+	return cms.globalMotionSet.Get(path)
 }
 
-func (cms *CompleteMotionSet) ContainsPath(mode InputMode, path Motion) bool {
-	if cms.viewMotionSet.containsPath(mode, path) {
+func (cms *CompleteMotionSet) ContainsPath(path Motion) bool {
+	if cms.viewMotionSet.ContainsPath(path) {
 		return true
 	}
 
-	return cms.globalMotionSet.containsPath(mode, path)
+	return cms.globalMotionSet.ContainsPath(path)
 }
 
 type motionWithValue struct {
@@ -77,11 +37,11 @@ type motionWithValue struct {
 	value tea.Msg
 }
 
-func globalMotions() MotionSet {
-	normalMotions := make([]motionWithValue, 0)
+func globalMotions() Trie[tea.Msg] {
+	motionsToMake := make([]motionWithValue, 0)
 
 	// Single-stroke/no prefix
-	extendMotionsBy(&normalMotions, Motion{}, []motionWithValue{
+	extendMotionsBy(&motionsToMake, Motion{}, []motionWithValue{
 		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: false}}, // false -> not search mode
@@ -89,46 +49,20 @@ func globalMotions() MotionSet {
 	})
 
 	// LEADER
-	extendMotionsBy(&normalMotions, Motion{LEADER}, []motionWithValue{})
+	extendMotionsBy(&motionsToMake, Motion{LEADER}, []motionWithValue{})
 
 	// "g"
-	extendMotionsBy(&normalMotions, Motion{"g"}, []motionWithValue{
+	extendMotionsBy(&motionsToMake, Motion{"g"}, []motionWithValue{
 		{Motion{"t"}, SwitchTabMsg{Direction: NEXT}},     // [g]oto Next [t]ab
 		{Motion{"T"}, SwitchTabMsg{Direction: PREVIOUS}}, // [g]oto Previous [T]ab
 	})
 
-	var normal Trie[tea.Msg]
-	for _, m := range normalMotions {
-		normal.Insert(m.path, m.value)
+	var motions Trie[tea.Msg]
+	for _, m := range motionsToMake {
+		motions.Insert(m.path, m.value)
 	}
 
-	insertMotions := []motionWithValue{
-		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
-		{Motion{"tab"}, SwitchFocusMsg{Direction: NEXT}},
-		{Motion{"shift+tab"}, SwitchFocusMsg{Direction: PREVIOUS}},
-	}
-
-	var insert Trie[tea.Msg]
-	for _, m := range insertMotions {
-		insert.Insert(m.path, m.value)
-	}
-
-	commandMotions := []motionWithValue{
-		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
-		{Motion{"enter"}, ExecuteCommandMsg{}},
-		{Motion{"tab"}, TryCompleteCommandMsg{}},
-	}
-
-	var command Trie[tea.Msg]
-	for _, m := range commandMotions {
-		command.Insert(m.path, m.value)
-	}
-
-	return MotionSet{
-		Normal:  normal,
-		Insert:  insert,
-		Command: command,
-	}
+	return motions
 }
 
 func extendMotionsBy(motions *[]motionWithValue, base Motion, tail []motionWithValue) {

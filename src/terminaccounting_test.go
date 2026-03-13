@@ -66,30 +66,32 @@ func TestNotifications_Error(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
-	tw.Send(errors.New("something went wrong"))
+	errorMsg := "something went wrong"
+	tw.Send(errors.New(errorMsg))
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
-		assert.Equal(t, "something went wrong", ta.notifications[0].text)
+		assert.Equal(t, errorMsg, ta.notifications[0].text)
 		assert.True(t, ta.notifications[0].isError)
 		assert.True(t, ta.displayNotification)
 	})
-	tw.AssertViewContains(t, "something went wrong")
+	tw.AssertViewContains(t, errorMsg)
 }
 
 func TestNotifications_NotificationMessageMsg(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
-	tw.Send(meta.NotificationMessageMsg{Message: "all good"})
+	notificationMsg := "all good"
+	tw.Send(meta.NotificationMessageMsg{Message: notificationMsg})
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
-		assert.Equal(t, "all good", ta.notifications[0].text)
+		assert.Equal(t, notificationMsg, ta.notifications[0].text)
 		assert.False(t, ta.notifications[0].isError)
 		assert.True(t, ta.displayNotification)
 	})
-	tw.AssertViewContains(t, "all good")
+	tw.AssertViewContains(t, notificationMsg)
 }
 
 func TestShowNotificationsMsg(t *testing.T) {
@@ -123,7 +125,7 @@ func TestExecuteCommand_InvalidCommand(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("zzz").
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.NotEmpty(t, ta.notifications)
@@ -153,7 +155,7 @@ func TestTryCompleteCommandMsg(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("qui").
-		Send(meta.TryCompleteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyTab})
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		assert.Equal(t, "quit", ta.commandInput.Value())
@@ -177,7 +179,7 @@ func TestExecuteCommand_Quit(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("quit").
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.AssertLastMsgsEqual(t, meta.QuitMsg{}, tea.QuitMsg{})
 }
@@ -188,7 +190,7 @@ func TestExecuteCommand_QuitAll(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("qa").
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.AssertLastMsgsEqual(t, meta.QuitMsg{All: true}, tea.QuitMsg{})
 }
@@ -200,7 +202,7 @@ func TestExecuteCommand_Messages(t *testing.T) {
 
 		tw.SwitchMode(meta.COMMANDMODE, false).
 			SendText("messages").
-			Send(meta.ExecuteCommandMsg{})
+			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 		tw.AssertLastMsgsEqual(t, meta.ShowNotificationsMsg{}, errors.New("no messages to show"))
 	})
@@ -212,7 +214,7 @@ func TestExecuteCommand_Messages(t *testing.T) {
 		tw.Send(errors.New("an error"))
 		tw.SwitchMode(meta.COMMANDMODE, false).
 			SendText("messages").
-			Send(meta.ExecuteCommandMsg{})
+			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.True(t, ta.showModal)
@@ -226,7 +228,7 @@ func TestExecuteCommand_Import(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
 		SendText("import").
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Without an accounts ledger configured the importer immediately closes and errors
 	tw.Execute(t, func(ta *terminaccounting) {
@@ -242,7 +244,7 @@ func TestExecuteCommand_CacheCommands(t *testing.T) {
 
 		tw.SwitchMode(meta.COMMANDMODE, false).
 			SendText("refreshcache").
-			Send(meta.ExecuteCommandMsg{})
+			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 		tw.AssertLastMsgsEqual(t, meta.RefreshCacheMsg{})
 	})
@@ -253,7 +255,7 @@ func TestExecuteCommand_CacheCommands(t *testing.T) {
 
 		tw.SwitchMode(meta.COMMANDMODE, false).
 			SendText("debugcache").
-			Send(meta.ExecuteCommandMsg{})
+			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 		tw.AssertLastMsgsEqual(t, meta.DebugPrintCacheMsg{})
 	})
@@ -264,7 +266,7 @@ func TestExecuteCommand_EmptyCommand(t *testing.T) {
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	tw.SwitchMode(meta.COMMANDMODE, false).
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		assert.Empty(t, ta.notifications)
@@ -278,7 +280,7 @@ func TestExecuteCommand_SearchMode(t *testing.T) {
 
 	tw.SwitchMode(meta.COMMANDMODE, true).
 		SendText("hello").
-		Send(meta.ExecuteCommandMsg{})
+		Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.AssertLastMsgsEqual(t, meta.UpdateSearchMsg{Query: "hello"})
 }

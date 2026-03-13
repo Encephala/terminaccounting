@@ -141,10 +141,6 @@ type SwitchAppViewMsg struct {
 
 type ReloadViewMsg struct{}
 
-type ExecuteCommandMsg struct{}
-
-type TryCompleteCommandMsg struct{}
-
 type UpdateSearchMsg struct {
 	Query string
 }

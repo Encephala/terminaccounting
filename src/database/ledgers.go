@@ -184,9 +184,7 @@ func (l Ledger) Update(DB *sqlx.DB) error {
 		return err
 	}
 
-	err = UpdateLedgersCache(DB)
-
-	return err
+	return UpdateLedgersCache(DB)
 }
 
 func SelectLedgers(DB *sqlx.DB) ([]Ledger, error) {
@@ -222,9 +220,7 @@ func DeleteLedger(DB *sqlx.DB, ledgerId int) error {
 		return err
 	}
 
-	err = UpdateLedgersCache(DB)
-
-	return err
+	return UpdateLedgersCache(DB)
 }
 
 func MakeSelectLedgersCmd(DB *sqlx.DB, targetApp meta.AppType) tea.Cmd {

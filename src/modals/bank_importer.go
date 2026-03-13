@@ -398,27 +398,27 @@ func (bi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }
 
-func (bi *bankImporter) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func (bi *bankImporter) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 
-	normalMotions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
-	normalMotions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func (bi *bankImporter) CommandSet() meta.CommandSet {
+func (bi *bankImporter) CommandSet() meta.Trie[tea.Msg] {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Command(strings.Split("write", "")), meta.CommitMsg{})
 
-	return meta.CommandSet(result)
+	return result
 }
 
 func (bi *bankImporter) Reload() view.View {

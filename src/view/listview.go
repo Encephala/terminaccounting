@@ -102,26 +102,26 @@ func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	}
 }
 
-func (lv *ListView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+func (lv *ListView) MotionSet() meta.Trie[tea.Msg] {
+	var motions meta.Trie[tea.Msg]
 
-	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
-	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+	motions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	motions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, lv.makeGoToDetailViewCmd()) // [g]oto [d]etails
-	normalMotions.Insert(meta.Motion{"g", "c"}, meta.SwitchAppViewMsg{
+	motions.Insert(meta.Motion{"g", "d"}, lv.makeGoToDetailViewCmd()) // [g]oto [d]etails
+	motions.Insert(meta.Motion{"g", "c"}, meta.SwitchAppViewMsg{
 		ViewType: meta.CREATEVIEWTYPE,
 	}) // [g]oto [c]reate view
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
-func (lv *ListView) CommandSet() meta.CommandSet {
-	return meta.CommandSet{}
+func (lv *ListView) CommandSet() meta.Trie[tea.Msg] {
+	return meta.Trie[tea.Msg]{}
 }
 
 func (lv *ListView) Reload() View {
