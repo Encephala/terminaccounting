@@ -60,7 +60,7 @@ func (ccs *CompleteCommandSet) ContainsPath(path Command) bool {
 	return ccs.globalCommandSet.containsPath(path)
 }
 
-func (ccs *CompleteCommandSet) Autocomplete(path []string) []string {
+func (ccs *CompleteCommandSet) Autocomplete(path Command) []string {
 	viewSpecific := ccs.viewCommandSet.autocomplete(path)
 
 	if viewSpecific != nil {

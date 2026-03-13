@@ -81,8 +81,8 @@ func testCreateGenericHelper(t *testing.T, app meta.AppType) {
 		switch app {
 		case meta.LEDGERSAPP:
 			ledgers, err := database.SelectLedgers(DB)
-
 			require.Nil(t, err)
+
 			assert.Len(t, ledgers, 1)
 
 			expected := database.Ledger{
@@ -97,8 +97,8 @@ func testCreateGenericHelper(t *testing.T, app meta.AppType) {
 
 		case meta.ACCOUNTSAPP:
 			accounts, err := database.SelectAccounts(DB)
-
 			require.Nil(t, err)
+
 			assert.Len(t, accounts, 1)
 
 			expected := database.Account{
@@ -113,9 +113,9 @@ func testCreateGenericHelper(t *testing.T, app meta.AppType) {
 
 		case meta.JOURNALSAPP:
 			journals, err := database.SelectJournals(DB)
-
 			require.Nil(t, err)
-			assert.Len(t, journals, 1)
+
+			require.Len(t, journals, 1)
 
 			expected := database.Journal{
 				Id:    1,
@@ -184,8 +184,6 @@ func testCreate_SetValues(t *testing.T, app meta.AppType) {
 
 	tw.Send(tea.KeyMsg{Type: tea.KeyTab})
 
-	tw.AssertLastMsgsEqual(t, meta.SwitchFocusMsg{Direction: meta.NEXT})
-
 	tw.Send(tea.KeyMsg{Type: tea.KeyCtrlN}, tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	switch app {
@@ -214,8 +212,8 @@ func testCreate_CommitCmd(t *testing.T, app meta.AppType) {
 	tw.SendText("w")
 	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	assert.Equal(t, meta.ExecuteCommandMsg{}, tw.LastCmdResults[0])
-	assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[1])
+	require.GreaterOrEqual(t, len(tw.LastCmdResults), 1)
+	assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[0])
 }
 
 func testCreate_Commit(t *testing.T, app meta.AppType) {
@@ -456,11 +454,12 @@ func TestCreate_Entries_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		assert.Equal(t, tw.LastCmdResults[:2], []tea.Msg{meta.ExecuteCommandMsg{}, meta.CommitMsg{}})
+		require.Len(t, tw.LastCmdResults, 2)
+		assert.Equal(t, tw.LastCmdResults[0], meta.CommitMsg{})
 
 		// Error because debit/credit is not filled in in both rows
-		// CBA to test the actual error itself
-		assert.IsType(t, errors.New(""), tw.LastCmdResults[2])
+		// CBA to test the actual error message itself
+		assert.IsType(t, errors.New(""), tw.LastCmdResults[1])
 	})
 
 	t.Run("write success", func(t *testing.T) {
@@ -489,11 +488,11 @@ func TestCreate_Entries_Motions(t *testing.T) {
 			SendText("w").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		assert.Equal(t, meta.ExecuteCommandMsg{}, tw.LastCmdResults[0])
-		assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[1])
+		require.GreaterOrEqual(t, len(tw.LastCmdResults), 2)
+		assert.Equal(t, meta.CommitMsg{}, tw.LastCmdResults[0])
 		assert.Equal(t,
 			meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully created Entry %q", "1")},
-			tw.LastCmdResults[2],
+			tw.LastCmdResults[1],
 		)
 	})
 }
@@ -566,7 +565,6 @@ func testCreateEntries_CommitCmd(t *testing.T) {
 	tw.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	tw.AssertLastMsgsEqual(t,
-		meta.ExecuteCommandMsg{},
 		meta.CommitMsg{},
 		errors.New("no journal selected (none available)"),
 	)

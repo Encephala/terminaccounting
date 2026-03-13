@@ -165,23 +165,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case meta.SwitchModeMsg:
 		return ta, ta.switchMode(message)
 
-	case meta.ExecuteCommandMsg:
-		command := ta.commandInput.Value()
-
-		return ta.executeCommand(command)
-
-	case meta.TryCompleteCommandMsg:
-		commandSoFar := strings.Split(ta.commandInput.Value(), "")
-
-		completed := ta.commandSet().Autocomplete(commandSoFar)
-
-		if completed != nil {
-			ta.commandInput.SetValue(strings.Join(completed, ""))
-			ta.commandInput.CursorEnd()
-		}
-
-		return ta, nil
-
 	case tea.KeyMsg:
 		return ta.handleKeyMsg(message)
 
@@ -311,8 +294,10 @@ func (ta *terminaccounting) currentViewAllowsInsertMode() bool {
 	}
 }
 
-func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, tea.Cmd) {
+func (ta *terminaccounting) executeCommand() (*terminaccounting, tea.Cmd) {
 	var cmd tea.Cmd
+
+	command := ta.commandInput.Value()
 
 	if ta.currentCommandIsSearch {
 		cmd = meta.MessageCmd(meta.UpdateSearchMsg{Query: command})
@@ -342,61 +327,83 @@ func (ta *terminaccounting) executeCommand(command string) (*terminaccounting, t
 }
 
 func (ta *terminaccounting) handleKeyMsg(message tea.KeyMsg) (*terminaccounting, tea.Cmd) {
-	if message.Type == tea.KeyCtrlC {
+	// TODO: really long function that does multiple things, maybe simplify it
+	if message.Type == tea.KeyCtrlC || message.String() == "esc" {
 		return ta.handleCtrlC()
 	}
 
 	newMotion := append(ta.currentMotion, message.String())
 
-	if completedMotionMsg, ok := ta.motionSet().Get(ta.inputMode, newMotion); ok {
+	switch ta.inputMode {
+	case meta.NORMALMODE:
+		if completedMotionMsg, ok := ta.motionSet().Get(newMotion); ok {
+			ta.resetCurrentMotion()
+
+			return ta, meta.MessageCmd(completedMotionMsg)
+		}
+
+		if ta.motionSet().ContainsPath(newMotion) {
+			ta.currentMotion = newMotion
+
+			return ta, nil
+		}
+
 		ta.resetCurrentMotion()
 
-		return ta, meta.MessageCmd(completedMotionMsg)
-	}
+		return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %q", newMotion.View()))
 
-	if ta.motionSet().ContainsPath(ta.inputMode, newMotion) {
-		ta.currentMotion = newMotion
+	case meta.INSERTMODE:
+		var messageToSend tea.Msg
 
-		return ta, nil
-	}
-
-	// If this was the first button pressed/no keys before this in current motion,
-	// forward the keyMsg to the appropriate input
-	if len(ta.currentMotion) == 0 {
-		switch ta.inputMode {
-		case meta.NORMALMODE:
-			// pass
-
-		case meta.INSERTMODE:
-			var cmd tea.Cmd
-			if ta.showModal {
-				ta.modalManager, cmd = ta.modalManager.Update(message)
-
-				return ta, cmd
-			}
-
-			ta.appManager, cmd = ta.appManager.Update(message)
-
-			return ta, cmd
-
-		case meta.COMMANDMODE:
-			var cmd tea.Cmd
-			ta.commandInput, cmd = ta.commandInput.Update(message)
-
-			if ta.currentCommandIsSearch {
-				cmd = tea.Batch(cmd, meta.MessageCmd(meta.UpdateSearchMsg{Query: ta.commandInput.Value()}))
-			}
-
-			return ta, cmd
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
+		if message.String() == "tab" {
+			messageToSend = meta.SwitchFocusMsg{Direction: meta.NEXT}
+		} else if message.String() == "shift+tab" {
+			messageToSend = meta.SwitchFocusMsg{Direction: meta.PREVIOUS}
+		} else {
+			messageToSend = message
 		}
+
+		var cmd tea.Cmd
+		if ta.showModal {
+			ta.modalManager, cmd = ta.modalManager.Update(messageToSend)
+
+			return ta, cmd
+		}
+
+		ta.appManager, cmd = ta.appManager.Update(messageToSend)
+
+		return ta, cmd
+
+	case meta.COMMANDMODE:
+		if message.Type == tea.KeyEnter {
+			return ta.executeCommand()
+		}
+
+		if message.String() == "tab" {
+			commandSoFar := strings.Split(ta.commandInput.Value(), "")
+
+			completed := ta.commandSet().Autocomplete(commandSoFar)
+
+			if completed != nil {
+				ta.commandInput.SetValue(strings.Join(completed, ""))
+				ta.commandInput.CursorEnd()
+			}
+
+			return ta, nil
+		}
+
+		var cmd tea.Cmd
+		ta.commandInput, cmd = ta.commandInput.Update(message)
+
+		if ta.currentCommandIsSearch {
+			cmd = tea.Batch(cmd, meta.MessageCmd(meta.UpdateSearchMsg{Query: ta.commandInput.Value()}))
+		}
+
+		return ta, cmd
+
+	default:
+		panic(fmt.Sprintf("unexpected meta.InputMode: %#v", ta.inputMode))
 	}
-
-	ta.resetCurrentMotion()
-
-	return ta, meta.MessageCmd(fmt.Errorf("invalid motion: %q", newMotion.View()))
 }
 
 func (ta *terminaccounting) handleCtrlC() (*terminaccounting, tea.Cmd) {

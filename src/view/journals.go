@@ -122,21 +122,21 @@ func (dv *journalsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (dv *journalsDetailView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+	var motions meta.MotionSet
 
-	normalMotions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
-	normalMotions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
-	normalMotions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
-	normalMotions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
-	normalMotions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+	motions.Insert(meta.Motion{"h"}, meta.NavigateMsg{Direction: meta.LEFT})
+	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
+	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+	motions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
-	normalMotions.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
-	normalMotions.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
+	motions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
+	motions.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
 func (dv *journalsDetailView) CommandSet() meta.CommandSet {
@@ -269,14 +269,14 @@ func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (cv *journalsCreateView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+	var motions meta.MotionSet
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
 func (cv *journalsCreateView) CommandSet() meta.CommandSet {
@@ -429,18 +429,18 @@ func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (uv *journalsUpdateView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+	var motions meta.MotionSet
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
-	normalMotions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
+	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	normalMotions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
+	motions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+	motions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
 func (uv *journalsUpdateView) CommandSet() meta.CommandSet {
@@ -548,13 +548,13 @@ func (dv *journalsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {
 }
 
 func (dv *journalsDeleteView) MotionSet() meta.MotionSet {
-	var normalMotions meta.Trie[tea.Msg]
+	var motions meta.MotionSet
 
-	normalMotions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
+	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
-	normalMotions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
+	motions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 
-	return meta.MotionSet{Normal: normalMotions}
+	return motions
 }
 
 func (dv *journalsDeleteView) CommandSet() meta.CommandSet {
