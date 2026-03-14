@@ -91,7 +91,7 @@ func (lv *ListView) View() string {
 
 func (lv *ListView) Title() string {
 	style := lipgloss.NewStyle().Background(lv.app.Colour()).Padding(0, 1)
-	return style.Render(fmt.Sprintf("%s items", lv.app.Name()))
+	return style.Render(fmt.Sprintf("%s", lv.app.Name()))
 }
 
 func (lv *ListView) Type() meta.ViewType {
