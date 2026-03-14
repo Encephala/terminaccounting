@@ -59,7 +59,13 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 	case meta.ReloadViewMsg:
 		mm.Modal = mm.Modal.Reload()
 
-		return mm, mm.Modal.Init()
+		var updateCmd tea.Cmd
+		mm.Modal, updateCmd = mm.Modal.Update(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(updateCmd, mm.Modal.Init())
 	}
 
 	var cmd tea.Cmd
