@@ -18,8 +18,6 @@ type textModal struct {
 
 	text     []string
 	viewport viewport.Model
-
-	ready bool
 }
 
 func NewTextModal(text ...string) *textModal {

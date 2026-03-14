@@ -33,15 +33,11 @@ func TestTextModal_Scroll(t *testing.T) {
 	tm := NewTextModal(lines...)
 	tw := tat.NewTestWrapperSpecific(view.View(tm))
 
-	// After init, viewport is at bottom (GotoBottom is called on the first WindowSizeMsg)
-	initialOffset := tm.viewport.YOffset
-	assert.Greater(t, initialOffset, 0, "viewport should not be at top with 50 lines and height 40")
+	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
+	assert.Equal(t, 1, tm.viewport.YOffset, "scrolling down should increase YOffset")
 
 	tw.Send(meta.NavigateMsg{Direction: meta.UP})
-	assert.Less(t, tm.viewport.YOffset, initialOffset, "scrolling up should decrease YOffset")
-
-	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
-	assert.Equal(t, initialOffset, tm.viewport.YOffset, "scrolling down should restore YOffset")
+	assert.Equal(t, 0, tm.viewport.YOffset, "scrolling up should restore YOffset")
 }
 
 var testCSVHeaders = []string{"Date", "Name", "Account", "Counterparty", "Code", "Direction", "Amount", "Type", "Description"}

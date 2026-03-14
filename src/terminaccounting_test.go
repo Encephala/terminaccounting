@@ -101,7 +101,7 @@ func TestShowNotificationsMsg(t *testing.T) {
 
 		tw.Send(meta.ShowNotificationsMsg{})
 
-		tw.AssertLastMsgsEqual(t, errors.New("no messages to show"))
+		tw.AssertLastMsgsEqual(t, meta.FetchNotificationHistoryMsg{}, errors.New("no messages to show"), meta.QuitMsg{})
 	})
 
 	t.Run("with notifications shows modal", func(t *testing.T) {
@@ -204,7 +204,7 @@ func TestExecuteCommand_Messages(t *testing.T) {
 			SendText("messages").
 			Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-		tw.AssertLastMsgsEqual(t, meta.ShowNotificationsMsg{}, errors.New("no messages to show"))
+		tw.AssertLastMsgsEqual(t, meta.ShowNotificationsMsg{}, meta.FetchNotificationHistoryMsg{}, errors.New("no messages to show"), meta.QuitMsg{})
 	})
 
 	t.Run("with notifications opens modal", func(t *testing.T) {
