@@ -188,9 +188,7 @@ func (am *appManager) View() string {
 	bodyRendered := am.renderBody()
 
 	contentStyle := lipgloss.NewStyle().
-		Margin(0, horizontalMargin).
-		MaxWidth(am.width).
-		MaxHeight(am.height)
+		Margin(0, horizontalMargin)
 	content := contentStyle.Render(lipgloss.JoinVertical(lipgloss.Left, headerRendered, bodyRendered))
 
 	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, content)
