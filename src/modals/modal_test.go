@@ -97,10 +97,12 @@ func TestBankImporter_FocusNavigation(t *testing.T) {
 	bi.Update(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 	assert.Equal(t, 2, bi.activeInput, "PREVIOUS from preview should return to bank ledger (2)")
 
-	// PREVIOUS from parser (0) wraps to last input (numInputs-1 = 4)
 	bi.activeInput = 0
 	bi.Update(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	assert.Equal(t, 4, bi.activeInput, "PREVIOUS from parser should wrap to last input (4)")
+	assert.Equal(t, 3, bi.activeInput, "PREVIOUS from parser should wrap to preview (3)")
+
+	bi.Update(meta.SwitchFocusMsg{Direction: meta.NEXT})
+	assert.Equal(t, 0, bi.activeInput, "NEXT from preview should wrap to parser picker (0)")
 }
 
 func TestBankImporter_Commit(t *testing.T) {

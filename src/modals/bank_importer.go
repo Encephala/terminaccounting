@@ -95,7 +95,7 @@ func (bi *bankImporter) Init() tea.Cmd {
 }
 
 func (bi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
-	numInputs := 5
+	numInputs := 4
 
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
