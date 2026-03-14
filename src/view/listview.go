@@ -54,6 +54,15 @@ func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		return lv, cmd
 
+	case meta.JumpVerticalMsg:
+		if message.Down {
+			lv.listModel.GoToEnd()
+		} else {
+			lv.listModel.GoToStart()
+		}
+
+		return lv, nil
+
 	case tea.WindowSizeMsg:
 		// -2 because of horizontal padding
 		lv.listModel.SetWidth(message.Width - 2)
@@ -111,6 +120,9 @@ func (lv *ListView) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 	motions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	motions.Insert(meta.Motion{"g", "d"}, lv.makeGoToDetailViewCmd()) // [g]oto [d]etails
 	motions.Insert(meta.Motion{"g", "c"}, meta.SwitchAppViewMsg{

@@ -75,6 +75,15 @@ func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 
 		return dv, cmd
 
+	case meta.JumpVerticalMsg:
+		if message.Down {
+			dv.listModel.GoToEnd()
+		} else {
+			dv.listModel.GoToStart()
+		}
+
+		return dv, nil
+
 	case tea.WindowSizeMsg:
 		// -2 because of horizontal padding
 		dv.listModel.SetWidth(message.Width - 2)
@@ -130,6 +139,9 @@ func (dv *journalsDetailView) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 	motions.Insert(meta.Motion{"l"}, meta.NavigateMsg{Direction: meta.RIGHT})
+
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	motions.Insert(meta.Motion{"g", "d"}, dv.makeGoToDetailViewCmd())
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
