@@ -19,6 +19,8 @@ type genericDetailView interface {
 	View
 
 	title() string
+	metadata() metadata
+	getWidth() int
 
 	getDB() *sqlx.DB
 
@@ -167,7 +169,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 func genericDetailViewView(gdv genericDetailView) string {
 	var result strings.Builder
 
-	result.WriteString(meta.TitleStyle.Render(gdv.title()))
+	result.WriteString(renderHeader(gdv.title(), gdv.metadata(), gdv.getWidth()))
 	result.WriteString("\n")
 
 	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))

@@ -18,6 +18,8 @@ import (
 )
 
 type ledgersDetailView struct {
+	width, height int
+
 	DB *sqlx.DB
 
 	// The ledger whose rows are being shown
@@ -50,6 +52,10 @@ func (dv *ledgersDetailView) Init() tea.Cmd {
 
 func (dv *ledgersDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		dv.width = message.Width
+		dv.height = message.Height
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.LEDGERMODEL:
@@ -85,7 +91,18 @@ func (dv *ledgersDetailView) View() string {
 
 func (dv *ledgersDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
-	return style.Render(fmt.Sprintf("Ledger %s details", dv.model.Name))
+	return style.Render(fmt.Sprintf("Ledger %s", dv.model.Name))
+}
+
+func (dv *ledgersDetailView) metadata() metadata {
+	return metadata{
+		names:  []string{"Type", "Is accounts ledger"},
+		values: []string{dv.model.Type.String(), renderBoolean(dv.model.IsAccounts)},
+	}
+}
+
+func (dv *ledgersDetailView) getWidth() int {
+	return dv.width
 }
 
 func (dv *ledgersDetailView) Type() meta.ViewType {
@@ -417,7 +434,7 @@ func (uv *ledgersUpdateView) View() string {
 
 func (uv *ledgersUpdateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
-	return style.Render(fmt.Sprintf("Delete ledger %s", uv.startingValue.String()))
+	return style.Render(fmt.Sprintf("Update ledger %s", uv.startingValue.String()))
 }
 
 func (uv *ledgersUpdateView) Type() meta.ViewType {

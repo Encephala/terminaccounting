@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type View interface {
@@ -42,6 +43,52 @@ func renderBoolean(reconciled bool) string {
 	}
 
 	return "□"
+}
+
+type metadata struct {
+	names  []string
+	values []string
+}
+
+func renderHeader(title string, metadata metadata, width int) string {
+	if len(metadata.names) != len(metadata.values) {
+		panic("que")
+	}
+
+	// Metadata
+	var metadataBuilder strings.Builder
+	for i := range metadata.names {
+		metadataBuilder.WriteString(fmt.Sprintf("%s: %s", metadata.names[i], metadata.values[i]))
+
+		if i != len(metadata.names)-1 {
+			metadataBuilder.WriteString("\n")
+		}
+	}
+
+	metadataRendered := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1).
+		Render(metadataBuilder.String())
+	metadataWidth := ansi.StringWidth(strings.Split(metadataRendered, "\n")[0])
+
+	// Title
+	maxTitleWidth := max(width-metadataWidth, 30)
+
+	titleRendered := lipgloss.NewStyle().
+		Margin(1, 0).
+		// TODO: width scaled by with space needed for metadata
+		Render(ansi.Truncate(title, maxTitleWidth, "..."))
+	titleWidth := ansi.StringWidth(strings.Split(titleRendered, "\n")[0])
+
+	if len(metadata.names) == 0 {
+		return titleRendered
+	}
+
+	// Middle empty space
+	numEmptyCells := width - titleWidth - metadataWidth
+	titleFill := strings.Repeat(" ", max(0, numEmptyCells))
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, titleRendered, titleFill, metadataRendered)
 }
 
 // This `input` interface is needed, even though inputAdapter[T] is the only implementation of it.

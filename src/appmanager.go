@@ -243,11 +243,14 @@ func (am *appManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	result.Insert([]string{"z", "j"}, meta.GlobalScrollVerticalMsg{Up: false})
 	result.Insert([]string{"down"}, meta.GlobalScrollVerticalMsg{Up: false})
 	result.Insert([]string{"z", "J"}, meta.GlobalScrollVerticalMsg{Up: false, ToEnd: true})
+
 	result.Insert([]string{"z", "k"}, meta.GlobalScrollVerticalMsg{Up: true})
 	result.Insert([]string{"up"}, meta.GlobalScrollVerticalMsg{Up: true})
 	result.Insert([]string{"z", "K"}, meta.GlobalScrollVerticalMsg{Up: true, ToEnd: true})
+
 	result.Insert([]string{"z", "l"}, meta.GlobalScrollHorizontalMsg{Left: false})
 	result.Insert([]string{"z", "L"}, meta.GlobalScrollHorizontalMsg{Left: false, ToEnd: true})
+
 	result.Insert([]string{"z", "h"}, meta.GlobalScrollHorizontalMsg{Left: true})
 	result.Insert([]string{"z", "H"}, meta.GlobalScrollHorizontalMsg{Left: true, ToEnd: true})
 

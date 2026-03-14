@@ -16,6 +16,8 @@ import (
 )
 
 type accountsDetailView struct {
+	width, height int
+
 	DB *sqlx.DB
 
 	// The account whose rows are being shown
@@ -46,6 +48,10 @@ func (dv *accountsDetailView) Init() tea.Cmd {
 
 func (dv *accountsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		dv.width = message.Width
+		dv.height = message.Height
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ACCOUNTMODEL:
@@ -70,7 +76,18 @@ func (dv *accountsDetailView) View() string {
 
 func (dv *accountsDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
-	return style.Render(fmt.Sprintf("Account %s details", dv.model.Name))
+	return style.Render(fmt.Sprintf("Account %s", dv.model.Name))
+}
+
+func (dv *accountsDetailView) metadata() metadata {
+	return metadata{
+		names:  []string{"Type", "Bank numbers"},
+		values: []string{dv.model.Type.String(), dv.model.BankNumbers.Collapse("; ")},
+	}
+}
+
+func (dv *accountsDetailView) getWidth() int {
+	return dv.width
 }
 
 func (dv *accountsDetailView) Type() meta.ViewType {

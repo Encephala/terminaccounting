@@ -57,6 +57,16 @@ func allNextLinesBlank(nextLines []string) bool {
 }
 
 // Joins the Notes together into a newline-delimited string.
-func (n Notes) Collapse() string {
-	return strings.Join(n, "\n")
+func (n Notes) Collapse(delimiter ...string) string {
+	d := "\n"
+
+	if len(delimiter) > 1 {
+		panic("wat")
+	}
+
+	if len(delimiter) == 1 {
+		d = delimiter[0]
+	}
+
+	return strings.Join(n, d)
 }

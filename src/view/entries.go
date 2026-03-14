@@ -21,6 +21,8 @@ import (
 )
 
 type entryDetailView struct {
+	width, height int
+
 	DB *sqlx.DB
 
 	// The entries whose rows are being shown
@@ -51,6 +53,10 @@ func (dv *entryDetailView) Init() tea.Cmd {
 
 func (dv *entryDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		dv.width = message.Width
+		dv.height = message.Height
+
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRYMODEL:
@@ -75,7 +81,33 @@ func (dv *entryDetailView) View() string {
 
 func (dv *entryDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
-	return style.Render(fmt.Sprintf("Entry %d details", dv.model.Id))
+	return style.Render(fmt.Sprintf("Entry %d", dv.model.Id))
+}
+
+func (dv *entryDetailView) metadata() metadata {
+	availableJournals := database.AvailableJournals()
+
+	journalIndex := slices.IndexFunc(availableJournals, func(j database.Journal) bool {
+		return j.Id == dv.model.Journal
+	})
+
+	if journalIndex == -1 {
+		if dv.model.Id != 0 {
+			// Data seems loaded (SQLITE autoincrement starts at 1), but journal not found?
+			panic(fmt.Sprintf("journal %d not found for entry %d", dv.model.Journal, dv.model.Id))
+		}
+
+		return metadata{}
+	}
+
+	return metadata{
+		names:  []string{"Journal"},
+		values: []string{availableJournals[journalIndex].Name},
+	}
+}
+
+func (dv *entryDetailView) getWidth() int {
+	return dv.width
 }
 
 func (dv *entryDetailView) Type() meta.ViewType {

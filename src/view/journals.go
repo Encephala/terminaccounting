@@ -18,6 +18,8 @@ import (
 )
 
 type journalsDetailView struct {
+	width, height int
+
 	DB *sqlx.DB
 
 	listModel list.Model
@@ -85,11 +87,12 @@ func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 		return dv, nil
 
 	case tea.WindowSizeMsg:
-		// -2 because of horizontal padding
-		dv.listModel.SetWidth(message.Width - 2)
+		dv.width = message.Width
+		dv.height = message.Height
 
-		// -1 to leave some bottom padding
-		dv.listModel.SetHeight(message.Height - 1)
+		dv.listModel.SetWidth(message.Width)
+		// -3 for title
+		dv.listModel.SetHeight(message.Height - 3)
 
 		return dv, nil
 
@@ -108,12 +111,26 @@ func (dv *journalsDetailView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (dv *journalsDetailView) View() string {
-	return dv.listModel.View()
+	var result strings.Builder
+
+	result.WriteString(renderHeader(dv.title(), dv.metadata(), dv.width))
+	result.WriteString("\n")
+
+	result.WriteString(dv.listModel.View())
+
+	return result.String()
 }
 
-func (dv *journalsDetailView) Title() string {
+func (dv *journalsDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
-	return style.Render(fmt.Sprintf("Journal %s details", dv.model.Name))
+	return style.Render(fmt.Sprintf("Journal %s", dv.model.Name))
+}
+
+func (dv *journalsDetailView) metadata() metadata {
+	return metadata{
+		names:  []string{"Type"},
+		values: []string{dv.model.Type.String()},
+	}
 }
 
 func (dv *journalsDetailView) Type() meta.ViewType {
