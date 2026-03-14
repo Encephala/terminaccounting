@@ -183,6 +183,72 @@ func TestBankImporter_Commit_NoBankLedger(t *testing.T) {
 	assert.EqualError(t, err, "no bank ledger selected (none available)")
 }
 
+func TestBankImporter_Navigate(t *testing.T) {
+	tat.SetupTestEnv(t)
+	bi := setupBankImporter(t)
+	bi.activeInput = 3
+	bi.View() // populate viewport content so TotalLineCount() is correct
+
+	bi.Update(meta.NavigateMsg{Direction: meta.DOWN})
+	assert.Equal(t, 1, bi.activeRow)
+
+	bi.Update(meta.NavigateMsg{Direction: meta.UP})
+	assert.Equal(t, 0, bi.activeRow)
+
+	bi.Update(meta.NavigateMsg{Direction: meta.UP})
+	assert.Equal(t, 0, bi.activeRow)
+
+	bi.activeRow = 1
+	bi.Update(meta.NavigateMsg{Direction: meta.DOWN})
+	assert.Equal(t, 1, bi.activeRow)
+}
+
+func TestBankImporter_Navigate_RequiresPreviewFocus(t *testing.T) {
+	tat.SetupTestEnv(t)
+	bi := setupBankImporter(t)
+
+	_, cmd := bi.Update(meta.NavigateMsg{Direction: meta.DOWN})
+	require.NotNil(t, cmd)
+
+	err, ok := cmd().(error)
+	require.True(t, ok)
+	assert.Contains(t, err.Error(), "jk navigation only works within preview table")
+}
+
+func TestBankImporter_Navigate_ScrollsViewport(t *testing.T) {
+	tat.SetupTestEnv(t)
+
+	// Need more rows than preview viewport height (Height:40 -> preview.Height = 31)
+	manyRows := make([][]string, 40)
+	for i := range manyRows {
+		manyRows[i] = []string{
+			fmt.Sprintf("202401%02d", i%28+1),
+			"My Account", "ACC001", "ACC002", "GT",
+			"Credit", "420,00", "Transfer",
+			fmt.Sprintf("transaction %d", i),
+		}
+	}
+
+	bi := NewBankImporter()
+	bi.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	bi.fileLoaded = true
+	bi.headers = testCSVHeaders
+	bi.data = manyRows
+	bi.colWidths = bi.calculateColWidths(100)
+	bi.activeInput = 3
+	bi.View() // populate viewport content
+
+	for i := 0; i < bi.preview.Height+1; i++ {
+		bi.Update(meta.NavigateMsg{Direction: meta.DOWN})
+	}
+	assert.Greater(t, bi.preview.YOffset, 0)
+
+	for i := 0; i < bi.preview.Height+1; i++ {
+		bi.Update(meta.NavigateMsg{Direction: meta.UP})
+	}
+	assert.Equal(t, 0, bi.preview.YOffset)
+}
+
 // Kinda silly test, but helpful to have this one fail to remind me to fix tests, should ING CSV format ever change
 func TestIngParser_UsedColumns(t *testing.T) {
 	ip := ingParser{}
