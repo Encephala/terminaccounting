@@ -26,7 +26,7 @@ type terminaccounting struct {
 	showModal     bool
 	width, height int
 
-	notifications       []notificationMsg
+	notifications       []meta.Notification
 	displayNotification bool
 	fatalError          error // To print to screen on exit
 
@@ -92,9 +92,9 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case error:
 		slog.Debug("Error", "error", message)
-		notification := notificationMsg{
-			text:    message.Error(),
-			isError: true,
+		notification := meta.Notification{
+			Text:    message.Error(),
+			IsError: true,
 		}
 		ta.notifications = append(ta.notifications, notification)
 		ta.displayNotification = true
@@ -127,13 +127,13 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, tea.Batch(cmds...)
 
-	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg, meta.SwitchAppViewMsg:
+	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg, meta.SwitchAppViewMsg:
 		return ta.handleViewSwitch(message)
 
 	case meta.NotificationMessageMsg:
-		notification := notificationMsg{
-			text:    message.Message,
-			isError: false,
+		notification := meta.Notification{
+			Text:    message.Message,
+			IsError: false,
 		}
 		ta.notifications = append(ta.notifications, notification)
 		ta.displayNotification = true
@@ -142,20 +142,13 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, nil
 
-	case meta.ShowNotificationsMsg:
-		if len(ta.notifications) == 0 {
-			return ta, meta.MessageCmd(errors.New("no messages to show"))
-		}
+	case meta.FetchNotificationHistoryMsg:
+		var cmd tea.Cmd
+		ta.modalManager, cmd = ta.modalManager.Update(meta.NotificationHistoryLoadedMsg{
+			Notifications: ta.notifications,
+		})
 
-		var rendered []string
-
-		for i, notification := range ta.notifications {
-			newLine := fmt.Sprintf("%d: %s", i, notification.String())
-
-			rendered = append(rendered, newLine)
-		}
-
-		return ta, meta.MessageCmd(meta.ShowTextModalMsg{Text: rendered})
+		return ta, cmd
 
 	case meta.FatalErrorMsg:
 		slog.Error("Fatal error", "error", message.Error)
@@ -452,7 +445,7 @@ func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting
 
 		return ta, cmd
 
-	case meta.ShowTextModalMsg, meta.ShowBankImporterMsg:
+	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg:
 		var cmd tea.Cmd
 		ta.modalManager, cmd = ta.modalManager.Update(message)
 
@@ -463,26 +456,6 @@ func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
-}
-
-type notificationMsg struct {
-	text    string
-	isError bool
-}
-
-func (nm notificationMsg) String() string {
-	if nm.isError {
-		return lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(9)).Render(nm.text)
-	}
-
-	return nm.text
-}
-
-func (nm notificationMsg) LogValue() slog.Value {
-	return slog.GroupValue(
-		slog.String("text", nm.text),
-		slog.Bool("isError", nm.isError),
-	)
 }
 
 func newOverlay(main *terminaccounting) *overlay.Model {

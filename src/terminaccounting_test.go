@@ -71,8 +71,8 @@ func TestNotifications_Error(t *testing.T) {
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
-		assert.Equal(t, errorMsg, ta.notifications[0].text)
-		assert.True(t, ta.notifications[0].isError)
+		assert.Equal(t, errorMsg, ta.notifications[0].Text)
+		assert.True(t, ta.notifications[0].IsError)
 		assert.True(t, ta.displayNotification)
 	})
 	tw.AssertViewContains(t, errorMsg)
@@ -87,8 +87,8 @@ func TestNotifications_NotificationMessageMsg(t *testing.T) {
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
-		assert.Equal(t, notificationMsg, ta.notifications[0].text)
-		assert.False(t, ta.notifications[0].isError)
+		assert.Equal(t, notificationMsg, ta.notifications[0].Text)
+		assert.False(t, ta.notifications[0].IsError)
 		assert.True(t, ta.displayNotification)
 	})
 	tw.AssertViewContains(t, notificationMsg)
@@ -130,8 +130,8 @@ func TestExecuteCommand_InvalidCommand(t *testing.T) {
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.NotEmpty(t, ta.notifications)
 		lastNotification := ta.notifications[len(ta.notifications)-1]
-		assert.Contains(t, lastNotification.text, "invalid command")
-		assert.True(t, lastNotification.isError)
+		assert.Contains(t, lastNotification.Text, "invalid command")
+		assert.True(t, lastNotification.IsError)
 	})
 }
 
@@ -144,8 +144,8 @@ func TestHandleKeyMsg_InvalidMotion(t *testing.T) {
 
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.Len(t, ta.notifications, 1)
-		assert.Contains(t, ta.notifications[0].text, "invalid motion")
-		assert.True(t, ta.notifications[0].isError)
+		assert.Contains(t, ta.notifications[0].Text, "invalid motion")
+		assert.True(t, ta.notifications[0].IsError)
 	})
 }
 
@@ -233,7 +233,7 @@ func TestExecuteCommand_Import(t *testing.T) {
 	// Without an accounts ledger configured the importer immediately closes and errors
 	tw.Execute(t, func(ta *terminaccounting) {
 		require.NotEmpty(t, ta.notifications)
-		assert.Contains(t, ta.notifications[len(ta.notifications)-1].text, "accounts ledger")
+		assert.Contains(t, ta.notifications[len(ta.notifications)-1].Text, "accounts ledger")
 	})
 }
 

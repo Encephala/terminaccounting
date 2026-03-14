@@ -35,7 +35,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, cmd
 
 	case meta.ShowTextModalMsg:
-		mm.Modal = NewTextModal(message.Text)
+		mm.Modal = NewTextModal(message.Text...)
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
@@ -56,16 +56,32 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
-	case meta.ReloadViewMsg:
-		mm.Modal = mm.Modal.Reload()
+	case meta.ShowNotificationsMsg:
+		mm.Modal = NewNotificationsModal()
 
-		var updateCmd tea.Cmd
-		mm.Modal, updateCmd = mm.Modal.Update(tea.WindowSizeMsg{
+		var cmd tea.Cmd
+		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
 			Width:  mm.width,
 			Height: mm.height,
 		})
 
-		return mm, tea.Batch(updateCmd, mm.Modal.Init())
+		return mm, tea.Batch(mm.Modal.Init(), cmd)
+
+	case meta.ReloadViewMsg:
+		mm.Modal = mm.Modal.Reload()
+
+		var windowSizeCmd tea.Cmd
+		mm.Modal, windowSizeCmd = mm.Modal.Update(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		notificationCmd := meta.MessageCmd(meta.NotificationMessageMsg{Message: "Refreshed modal"})
+
+		// There's supposedly no guarantee on the order of cmds
+		// But in practice putting notificationCmd after Modal.Init makes the refreshed modal
+		// always contain the "Refreshed modal" message
+		return mm, tea.Batch(mm.Modal.Init(), notificationCmd, windowSizeCmd)
 	}
 
 	var cmd tea.Cmd

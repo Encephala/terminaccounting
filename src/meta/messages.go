@@ -33,6 +33,12 @@ type ShowTextModalMsg struct {
 	Text []string
 }
 
+type FetchNotificationHistoryMsg struct{}
+
+type NotificationHistoryLoadedMsg struct {
+	Notifications []Notification
+}
+
 type FatalErrorMsg struct {
 	Error error
 }
@@ -128,8 +134,9 @@ const (
 	UPDATEVIEWTYPE ViewType = "UPDATE VIEW"
 	DELETEVIEWTYPE ViewType = "DELETE VIEW"
 
-	TEXTMODALVIEWTYPE    ViewType = "TEXT MODAL"
-	BANKIMPORTERVIEWTYPE ViewType = "BANK IMPORTER"
+	TEXTMODALVIEWTYPE          ViewType = "TEXT MODAL"
+	NOTIFICATIONSMODALVIEWTYPE ViewType = "NOTIFICATIONS MODAL"
+	BANKIMPORTERVIEWTYPE       ViewType = "BANK IMPORTER"
 )
 
 // To switch to specific View (in specific App if provided)

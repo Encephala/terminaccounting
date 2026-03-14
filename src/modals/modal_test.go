@@ -15,7 +15,7 @@ import (
 )
 
 func TestTextModal_Rendering(t *testing.T) {
-	tm := NewTextModal([]string{"first line", "second line", "third line"})
+	tm := NewTextModal("first line", "second line", "third line")
 	tw := tat.NewTestWrapperSpecific(view.View(tm))
 
 	tw.AssertViewContains(t, "first line")
@@ -30,7 +30,7 @@ func TestTextModal_Scroll(t *testing.T) {
 		lines[i] = fmt.Sprintf("line %d", i)
 	}
 
-	tm := NewTextModal(lines)
+	tm := NewTextModal(lines...)
 	tw := tat.NewTestWrapperSpecific(view.View(tm))
 
 	// After init, viewport is at bottom (GotoBottom is called on the first WindowSizeMsg)
