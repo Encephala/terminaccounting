@@ -240,7 +240,7 @@ func (bi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
 			return bi, meta.MessageCmd(errors.New("gg/G navigation only works within preview table"))
 		}
 
-		if message.ToEnd {
+		if message.Down {
 			bi.activeRow = bi.preview.TotalLineCount() - 1
 			bi.preview.GotoBottom()
 		} else {
@@ -407,8 +407,8 @@ func (bi *bankImporter) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 
-	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
-	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	return motions
 }

@@ -60,7 +60,7 @@ func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
 
 func TestGet_CountPrefixRepeatsMsg(t *testing.T) {
 	var viewMotions Trie[tea.Msg]
-	viewMotions.Insert(Motion{"j"}, ScrollVerticalMsg{Up: false})
+	viewMotions.Insert(Motion{"j"}, GlobalScrollVerticalMsg{Up: false})
 	cms := NewCompleteMotionSet(viewMotions)
 
 	tests := []struct {
@@ -77,7 +77,7 @@ func TestGet_CountPrefixRepeatsMsg(t *testing.T) {
 		require.True(t, ok, "expected %v to resolve", test.motion)
 		require.Len(t, msgs, test.expectedCount)
 		for _, msg := range msgs {
-			assert.Equal(t, ScrollVerticalMsg{Up: false}, msg)
+			assert.Equal(t, GlobalScrollVerticalMsg{Up: false}, msg)
 		}
 	}
 }
@@ -104,7 +104,7 @@ func TestGet_CountPrefixNotFoundIfMotionUnknown(t *testing.T) {
 
 func TestContainsPath_CountPrefixIsValidPrefix(t *testing.T) {
 	var viewMotions Trie[tea.Msg]
-	viewMotions.Insert(Motion{"j"}, ScrollVerticalMsg{Up: false})
+	viewMotions.Insert(Motion{"j"}, GlobalScrollVerticalMsg{Up: false})
 	cms := NewCompleteMotionSet(viewMotions)
 
 	// A leading digit is always a valid in-progress path in normal mode

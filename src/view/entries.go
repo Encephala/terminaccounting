@@ -695,7 +695,7 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 	case meta.JumpVerticalMsg:
 		_, oldCol := rmm.getActiveCoords()
 
-		if message.ToEnd {
+		if message.Down {
 			rmm.setActiveCoords(rmm.numRows()-1, oldCol)
 		} else {
 			rmm.setActiveCoords(0, oldCol)
@@ -1496,8 +1496,8 @@ func entryMutateViewMotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"_"}, meta.JumpHorizontalMsg{ToEnd: false})
 
 	// Extra vertical navigation
-	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{ToEnd: false})
-	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{ToEnd: true})
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	return motions
 }

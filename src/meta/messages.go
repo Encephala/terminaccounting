@@ -90,7 +90,7 @@ type JumpHorizontalMsg struct {
 
 // For gg and G motions
 type JumpVerticalMsg struct {
-	ToEnd bool
+	Down bool
 }
 
 type SwitchModeMsg struct {
@@ -115,12 +115,12 @@ type SwitchTabMsg struct {
 	Direction Sequence
 }
 
-type ScrollVerticalMsg struct {
+type GlobalScrollVerticalMsg struct {
 	Up    bool
 	ToEnd bool
 }
 
-type ScrollHorizontalMsg struct {
+type GlobalScrollHorizontalMsg struct {
 	Left  bool
 	ToEnd bool
 }

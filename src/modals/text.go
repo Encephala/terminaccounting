@@ -64,15 +64,11 @@ func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
 
 		return tm, nil
 
-	case meta.ScrollVerticalMsg:
-		if !message.ToEnd {
-			panic("not implemented")
-		}
-
-		if message.Up {
-			tm.viewport.GotoTop()
-		} else {
+	case meta.JumpVerticalMsg:
+		if message.Down {
 			tm.viewport.GotoBottom()
+		} else {
+			tm.viewport.GotoTop()
 		}
 
 		return tm, nil
@@ -121,8 +117,8 @@ func (tm *textModal) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
-	motions.Insert(meta.Motion{"g", "g"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
-	motions.Insert(meta.Motion{"G"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	return motions
 }

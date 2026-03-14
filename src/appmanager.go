@@ -100,7 +100,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-	case meta.ScrollVerticalMsg:
+	case meta.GlobalScrollVerticalMsg:
 		bodyContent := am.apps[am.activeApp].View()
 		contentHeight := len(strings.Split(bodyContent, "\n"))
 
@@ -117,7 +117,7 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 
 		return am, nil
 
-	case meta.ScrollHorizontalMsg:
+	case meta.GlobalScrollHorizontalMsg:
 		bodyContent := am.apps[am.activeApp].View()
 		contentLines := strings.Split(bodyContent, "\n")
 
@@ -238,16 +238,16 @@ func (am *appManager) View() string {
 func (am *appManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	result := am.apps[am.activeApp].CurrentMotionSet()
 
-	result.Insert([]string{"z", "j"}, meta.ScrollVerticalMsg{Up: false})
-	result.Insert([]string{"down"}, meta.ScrollVerticalMsg{Up: false})
-	result.Insert([]string{"z", "J"}, meta.ScrollVerticalMsg{Up: false, ToEnd: true})
-	result.Insert([]string{"z", "k"}, meta.ScrollVerticalMsg{Up: true})
-	result.Insert([]string{"up"}, meta.ScrollVerticalMsg{Up: true})
-	result.Insert([]string{"z", "K"}, meta.ScrollVerticalMsg{Up: true, ToEnd: true})
-	result.Insert([]string{"z", "l"}, meta.ScrollHorizontalMsg{Left: false})
-	result.Insert([]string{"z", "L"}, meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
-	result.Insert([]string{"z", "h"}, meta.ScrollHorizontalMsg{Left: true})
-	result.Insert([]string{"z", "H"}, meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
+	result.Insert([]string{"z", "j"}, meta.GlobalScrollVerticalMsg{Up: false})
+	result.Insert([]string{"down"}, meta.GlobalScrollVerticalMsg{Up: false})
+	result.Insert([]string{"z", "J"}, meta.GlobalScrollVerticalMsg{Up: false, ToEnd: true})
+	result.Insert([]string{"z", "k"}, meta.GlobalScrollVerticalMsg{Up: true})
+	result.Insert([]string{"up"}, meta.GlobalScrollVerticalMsg{Up: true})
+	result.Insert([]string{"z", "K"}, meta.GlobalScrollVerticalMsg{Up: true, ToEnd: true})
+	result.Insert([]string{"z", "l"}, meta.GlobalScrollHorizontalMsg{Left: false})
+	result.Insert([]string{"z", "L"}, meta.GlobalScrollHorizontalMsg{Left: false, ToEnd: true})
+	result.Insert([]string{"z", "h"}, meta.GlobalScrollHorizontalMsg{Left: true})
+	result.Insert([]string{"z", "H"}, meta.GlobalScrollHorizontalMsg{Left: true, ToEnd: true})
 
 	return result
 }

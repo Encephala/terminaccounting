@@ -189,7 +189,7 @@ func TestAppManager_YScrollState(t *testing.T) {
 			ta.appManager.yscroll = 0
 		})
 
-		tw.Send(meta.ScrollVerticalMsg{Up: false})
+		tw.Send(meta.GlobalScrollVerticalMsg{Up: false})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 1, ta.appManager.yscroll)
@@ -201,7 +201,7 @@ func TestAppManager_YScrollState(t *testing.T) {
 			ta.appManager.yscroll = 5
 		})
 
-		tw.Send(meta.ScrollVerticalMsg{Up: true})
+		tw.Send(meta.GlobalScrollVerticalMsg{Up: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 4, ta.appManager.yscroll)
@@ -213,7 +213,7 @@ func TestAppManager_YScrollState(t *testing.T) {
 			ta.appManager.yscroll = 0
 		})
 
-		tw.Send(meta.ScrollVerticalMsg{Up: true})
+		tw.Send(meta.GlobalScrollVerticalMsg{Up: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 0, ta.appManager.yscroll)
@@ -225,7 +225,7 @@ func TestAppManager_YScrollState(t *testing.T) {
 			ta.appManager.yscroll = 0
 		})
 
-		tw.Send(meta.ScrollVerticalMsg{Up: false, ToEnd: true})
+		tw.Send(meta.GlobalScrollVerticalMsg{Up: false, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			// base height is 20
@@ -241,7 +241,7 @@ func TestAppManager_YScrollState(t *testing.T) {
 			ta.appManager.yscroll = 420
 		})
 
-		tw.Send(meta.ScrollVerticalMsg{Up: true, ToEnd: true})
+		tw.Send(meta.GlobalScrollVerticalMsg{Up: true, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 0, ta.appManager.yscroll)
@@ -259,7 +259,7 @@ func TestAppManager_XScrollState(t *testing.T) {
 			ta.appManager.xscroll = 0
 		})
 
-		tw.Send(meta.ScrollHorizontalMsg{Left: false})
+		tw.Send(meta.GlobalScrollHorizontalMsg{Left: false})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 1, ta.appManager.xscroll)
@@ -271,7 +271,7 @@ func TestAppManager_XScrollState(t *testing.T) {
 			ta.appManager.xscroll = 5
 		})
 
-		tw.Send(meta.ScrollHorizontalMsg{Left: true})
+		tw.Send(meta.GlobalScrollHorizontalMsg{Left: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 4, ta.appManager.xscroll)
@@ -283,7 +283,7 @@ func TestAppManager_XScrollState(t *testing.T) {
 			ta.appManager.xscroll = 0
 		})
 
-		tw.Send(meta.ScrollHorizontalMsg{Left: true})
+		tw.Send(meta.GlobalScrollHorizontalMsg{Left: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 0, ta.appManager.xscroll)
@@ -295,7 +295,7 @@ func TestAppManager_XScrollState(t *testing.T) {
 			ta.appManager.xscroll = 0
 		})
 
-		tw.Send(meta.ScrollHorizontalMsg{Left: false, ToEnd: true})
+		tw.Send(meta.GlobalScrollHorizontalMsg{Left: false, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			// base width = 80
@@ -310,7 +310,7 @@ func TestAppManager_XScrollState(t *testing.T) {
 			ta.appManager.xscroll = 420
 		})
 
-		tw.Send(meta.ScrollHorizontalMsg{Left: true, ToEnd: true})
+		tw.Send(meta.GlobalScrollHorizontalMsg{Left: true, ToEnd: true})
 
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 0, ta.appManager.xscroll)

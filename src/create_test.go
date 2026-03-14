@@ -443,10 +443,10 @@ func TestCreate_Entries_Motions(t *testing.T) {
 
 	t.Run("jump vertical", func(t *testing.T) {
 		tw.SendText("G")
-		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{ToEnd: true})
+		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{Down: true})
 
 		tw.SendText("gg")
-		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{ToEnd: false})
+		tw.AssertLastMsgsEqual(t, meta.JumpVerticalMsg{Down: false})
 	})
 
 	t.Run("write error", func(t *testing.T) {

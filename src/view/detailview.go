@@ -68,6 +68,17 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 		return gdv, cmd
 
+	case meta.JumpVerticalMsg:
+		if message.Down {
+			viewer.activeRow = len(viewer.shownRows) - 1
+		} else {
+			viewer.activeRow = 0
+		}
+
+		viewer.scrollViewport()
+
+		return gdv, nil
+
 	case meta.ToggleShowReconciledMsg:
 		oldShownRows := make([]*database.EntryRow, len(viewer.shownRows))
 		oldActiveIndex := viewer.activeRow
@@ -172,6 +183,9 @@ func genericDetailViewMotionSet() meta.Trie[tea.Msg] {
 
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
+
+	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	motions.Insert(meta.Motion{"g", "l"}, meta.SwitchAppViewMsg{ViewType: meta.LISTVIEWTYPE})
 
