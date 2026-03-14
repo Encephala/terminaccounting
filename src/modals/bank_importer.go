@@ -94,7 +94,7 @@ func (bi *bankImporter) Init() tea.Cmd {
 	return pickFileCmd
 }
 
-func (bi *bankImporter) Update(message tea.Msg) (view.View, tea.Cmd) {
+func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 	numInputs := 4
 
 	switch message := message.(type) {
@@ -386,16 +386,8 @@ func (bi *bankImporter) Title() string {
 	return ""
 }
 
-func (bi *bankImporter) Type() meta.ViewType {
-	return meta.BANKIMPORTERVIEWTYPE
-}
-
 func (bi *bankImporter) AllowsInsertMode() bool {
 	return true
-}
-
-func (bi *bankImporter) AcceptedModels() map[meta.ModelType]struct{} {
-	return make(map[meta.ModelType]struct{})
 }
 
 func (bi *bankImporter) MotionSet() meta.Trie[tea.Msg] {
@@ -421,7 +413,7 @@ func (bi *bankImporter) CommandSet() meta.Trie[tea.Msg] {
 	return result
 }
 
-func (bi *bankImporter) Reload() view.View {
+func (bi *bankImporter) Reload() Modal {
 	return NewBankImporter()
 }
 

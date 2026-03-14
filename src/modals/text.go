@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 	"terminaccounting/meta"
-	"terminaccounting/view"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,7 +34,7 @@ func (tm *textModal) Init() tea.Cmd {
 	return nil
 }
 
-func (tm *textModal) Update(message tea.Msg) (view.View, tea.Cmd) {
+func (tm *textModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		tm.width = message.Width
@@ -92,15 +91,6 @@ func (tm *textModal) View() string {
 	return tm.viewport.View()
 }
 
-func (tm *textModal) Title() string {
-	// TODO?
-	return ""
-}
-
-func (tm *textModal) Type() meta.ViewType {
-	return meta.TEXTMODALVIEWTYPE
-}
-
 func (tm *textModal) AllowsInsertMode() bool {
 	return false
 }
@@ -125,7 +115,7 @@ func (tm *textModal) CommandSet() meta.Trie[tea.Msg] {
 	return meta.Trie[tea.Msg]{}
 }
 
-func (tm *textModal) Reload() view.View {
+func (tm *textModal) Reload() Modal {
 	return NewTextModal(tm.text...)
 }
 
@@ -143,7 +133,7 @@ func (nm *notificationsModal) Init() tea.Cmd {
 	return meta.MessageCmd(meta.FetchNotificationHistoryMsg{})
 }
 
-func (nm *notificationsModal) Update(message tea.Msg) (view.View, tea.Cmd) {
+func (nm *notificationsModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.NotificationHistoryLoadedMsg:
 		slog.Debug("loaded notif history")
@@ -181,15 +171,6 @@ func (nm *notificationsModal) View() string {
 	return nm.textModal.View()
 }
 
-func (nm *notificationsModal) Title() string {
-	// TODO?
-	return ""
-}
-
-func (nm *notificationsModal) Type() meta.ViewType {
-	return meta.NOTIFICATIONSMODALVIEWTYPE
-}
-
 func (nm *notificationsModal) AllowsInsertMode() bool {
 	return false
 }
@@ -206,6 +187,6 @@ func (nm *notificationsModal) CommandSet() meta.Trie[tea.Msg] {
 	return nm.textModal.CommandSet()
 }
 
-func (nm *notificationsModal) Reload() view.View {
+func (nm *notificationsModal) Reload() Modal {
 	return NewNotificationsModal()
 }

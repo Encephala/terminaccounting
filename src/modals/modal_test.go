@@ -16,7 +16,7 @@ import (
 
 func TestTextModal_Rendering(t *testing.T) {
 	tm := NewTextModal("first line", "second line", "third line")
-	tw := tat.NewTestWrapperSpecific(view.View(tm))
+	tw := tat.NewTestWrapperSpecific(Modal(tm))
 
 	tw.AssertViewContains(t, "first line")
 	tw.AssertViewContains(t, "second line")
@@ -31,7 +31,7 @@ func TestTextModal_Scroll(t *testing.T) {
 	}
 
 	tm := NewTextModal(lines...)
-	tw := tat.NewTestWrapperSpecific(view.View(tm))
+	tw := tat.NewTestWrapperSpecific(Modal(tm))
 
 	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
 	assert.Equal(t, 1, tm.viewport.YOffset, "scrolling down should increase YOffset")

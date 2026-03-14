@@ -2,15 +2,27 @@ package modals
 
 import (
 	"terminaccounting/meta"
-	"terminaccounting/view"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type Modal interface {
+	Init() tea.Cmd
+	Update(tea.Msg) (Modal, tea.Cmd)
+	View() string
+
+	AllowsInsertMode() bool
+
+	MotionSet() meta.Trie[tea.Msg]
+	CommandSet() meta.Trie[tea.Msg]
+
+	Reload() Modal
+}
+
 type ModalManager struct {
 	width, height int
 
-	Modal view.View
+	Modal Modal
 }
 
 func NewModalManager() *ModalManager {
@@ -110,8 +122,4 @@ func (mm *ModalManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 
 func (mm *ModalManager) CurrentCommandSet() meta.Trie[tea.Msg] {
 	return mm.Modal.CommandSet()
-}
-
-func (mm *ModalManager) CurrentViewType() meta.ViewType {
-	return mm.Modal.Type()
 }
