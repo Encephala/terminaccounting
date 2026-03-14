@@ -4,18 +4,24 @@ import (
 	"cmp"
 	"slices"
 	"strings"
+	"terminaccounting/meta"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
 
 type genericDeleteView interface {
+	title() string
+
 	inputValues() []string
 	inputNames() []string
 }
 
 func genericDeleteViewView(gdv genericDeleteView, width, height int) string {
 	var result strings.Builder
+
+	result.WriteString(meta.TitleStyle.Render(gdv.title()))
+	result.WriteString("\n")
 
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

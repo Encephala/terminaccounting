@@ -14,7 +14,6 @@ type App interface {
 	Name() string
 	Type() AppType
 
-	CurrentTitle() string
 	CurrentViewType() ViewType
 
 	Colour() lipgloss.Color

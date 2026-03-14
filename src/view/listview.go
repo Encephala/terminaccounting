@@ -3,6 +3,7 @@ package view
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"terminaccounting/meta"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -86,10 +87,18 @@ func (lv *ListView) Update(message tea.Msg) (View, tea.Cmd) {
 }
 
 func (lv *ListView) View() string {
-	return lv.listModel.View()
+	var result strings.Builder
+
+	result.WriteString(meta.TitleStyle.Render(lv.title()))
+
+	result.WriteString("\n")
+
+	result.WriteString(lv.listModel.View())
+
+	return result.String()
 }
 
-func (lv *ListView) Title() string {
+func (lv *ListView) title() string {
 	style := lipgloss.NewStyle().Background(lv.app.Colour()).Padding(0, 1)
 	return style.Render(fmt.Sprintf("%s", lv.app.Name()))
 }

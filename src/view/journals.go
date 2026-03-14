@@ -263,7 +263,7 @@ func (cv *journalsCreateView) View() string {
 	return genericMutateViewView(cv, meta.JOURNALSCOLOUR)
 }
 
-func (cv *journalsCreateView) Title() string {
+func (cv *journalsCreateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
 	return style.Render("Creating new journal")
 }
@@ -421,7 +421,7 @@ func (uv *journalsUpdateView) View() string {
 	return genericMutateViewView(uv, meta.JOURNALSCOLOUR)
 }
 
-func (uv *journalsUpdateView) Title() string {
+func (uv *journalsUpdateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Updating journal: %s", uv.inputManager.inputs[0].value()))
 }
@@ -540,7 +540,7 @@ func (dv *journalsDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
-func (dv *journalsDeleteView) Title() string {
+func (dv *journalsDeleteView) title() string {
 	style := lipgloss.NewStyle().Background(meta.JOURNALSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Delete journal: %s", dv.model.String()))
 }

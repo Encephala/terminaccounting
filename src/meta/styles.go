@@ -109,3 +109,5 @@ func NewDetailViewStyles(colour lipgloss.Color) DetailViewStyles {
 		ItemSelected: item.Foreground(colour),
 	}
 }
+
+var TitleStyle = lipgloss.NewStyle().Margin(1, 0)

@@ -73,7 +73,7 @@ func (dv *entryDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
-func (dv *entryDetailView) Title() string {
+func (dv *entryDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Entry %d details", dv.model.Id))
 }
@@ -282,7 +282,7 @@ func (cv *entryCreateView) View() string {
 	return entryMutateViewView(cv)
 }
 
-func (cv *entryCreateView) Title() string {
+func (cv *entryCreateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
 	return style.Render("Creating new entry")
 }
@@ -505,7 +505,7 @@ func (uv *entryUpdateView) View() string {
 	return entryMutateViewView(uv)
 }
 
-func (uv *entryUpdateView) Title() string {
+func (uv *entryUpdateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Updating entry: %d", uv.startingEntry.Id))
 }
@@ -1270,6 +1270,8 @@ func (rmm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
 type entryMutateView interface {
 	View
 
+	title() string
+
 	getJournalInput() *itempicker.Model
 	getNotesInput() *textarea.Model
 	getManager() *rowsMutateManager
@@ -1422,6 +1424,9 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 
 func entryMutateViewView(view entryMutateView) string {
 	var result strings.Builder
+
+	result.WriteString(meta.TitleStyle.Render(view.title()))
+	result.WriteString("\n")
 
 	sectionStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -1603,7 +1608,7 @@ func (dv *entryDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
-func (dv *entryDeleteView) Title() string {
+func (dv *entryDeleteView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ENTRIESCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Delete entry: %s", dv.model.String()))
 }

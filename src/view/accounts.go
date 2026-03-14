@@ -68,7 +68,7 @@ func (dv *accountsDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
-func (dv *accountsDetailView) Title() string {
+func (dv *accountsDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Account %s details", dv.model.Name))
 }
@@ -224,7 +224,7 @@ func (cv *accountsCreateView) View() string {
 	return genericMutateViewView(cv, meta.ACCOUNTSCOLOUR)
 }
 
-func (cv *accountsCreateView) Title() string {
+func (cv *accountsCreateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
 	return style.Render("Creating new account")
 }
@@ -393,7 +393,7 @@ func (uv *accountsUpdateView) View() string {
 	return genericMutateViewView(uv, meta.ACCOUNTSCOLOUR)
 }
 
-func (uv *accountsUpdateView) Title() string {
+func (uv *accountsUpdateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Updating account: %s", uv.inputManager.inputs[0].value()))
 }
@@ -512,7 +512,7 @@ func (dv *accountsDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
-func (dv *accountsDeleteView) Title() string {
+func (dv *accountsDeleteView) title() string {
 	style := lipgloss.NewStyle().Background(meta.ACCOUNTSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Delete account: %s", dv.model.String()))
 }

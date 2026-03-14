@@ -97,10 +97,6 @@ func (app *accountsApp) Type() meta.AppType {
 	return meta.ACCOUNTSAPP
 }
 
-func (app *accountsApp) CurrentTitle() string {
-	return app.currentView.Title()
-}
-
 func (app *accountsApp) CurrentViewType() meta.ViewType {
 	return app.currentView.Type()
 }

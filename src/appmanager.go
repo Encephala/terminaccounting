@@ -175,23 +175,11 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 }
 
 func (am *appManager) View() string {
-	horizontalMargin := 2
-
 	tabsRendered := am.renderTabs()
-
-	// TODO: not hardcoded
-	testNames := []string{"asdf", "b"}
-	testValues := []string{"very good", "kinda bad"}
-
-	headerRendered := am.renderHeader(testNames, testValues, horizontalMargin)
 
 	bodyRendered := am.renderBody()
 
-	contentStyle := lipgloss.NewStyle().
-		Margin(0, horizontalMargin)
-	content := contentStyle.Render(lipgloss.JoinVertical(lipgloss.Left, headerRendered, bodyRendered))
-
-	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, content)
+	return lipgloss.JoinVertical(lipgloss.Left, tabsRendered, bodyRendered)
 }
 
 // Renders the top tabs (one for each app)
@@ -225,47 +213,6 @@ func (am *appManager) renderTabs() string {
 	return lipgloss.JoinHorizontal(lipgloss.Bottom, tabs...)
 }
 
-// Renders the title and model metadata
-func (am *appManager) renderHeader(metadataNames, metadataValues []string, horizontalMargin int) string {
-	if len(metadataNames) != len(metadataValues) {
-		panic("que")
-	}
-
-	// Metadata
-	var metadata strings.Builder
-	for i := range metadataNames {
-		metadata.WriteString(fmt.Sprintf("%s: %s", metadataNames[i], metadataValues[i]))
-
-		if i != len(metadataNames)-1 {
-			metadata.WriteString("\n")
-		}
-	}
-
-	metadataRendered := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1).
-		Render(metadata.String())
-	metadataWidth := ansi.StringWidth(strings.Split(metadataRendered, "\n")[0])
-
-	// Title
-	currentTitle := am.apps[am.activeApp].CurrentTitle()
-	titleRendered := lipgloss.NewStyle().
-		Margin(1, 0).
-		// TODO: make width scale with space needed for metadata
-		Render(ansi.Truncate(currentTitle, (am.width-2*horizontalMargin)/2, "..."))
-	titleWidth := ansi.StringWidth(strings.Split(titleRendered, "\n")[0])
-
-	if len(metadataNames) == 0 {
-		return titleRendered
-	}
-
-	// Middle empty space
-	numberOfCentralEmptyCells := am.width - titleWidth - metadataWidth - 2*horizontalMargin
-	titleFill := strings.Repeat(" ", max(0, numberOfCentralEmptyCells))
-
-	return lipgloss.JoinHorizontal(lipgloss.Top, titleRendered, titleFill, metadataRendered)
-}
-
 func (am *appManager) renderBody() string {
 	body := am.apps[am.activeApp].View()
 
@@ -284,8 +231,9 @@ func (am *appManager) renderBody() string {
 
 	return lipgloss.NewStyle().
 		// Set fixed height so that status line at bottom doesn't move when scrolling
-		// -3 for the tabs, -3 for the title
-		Height(am.height - 3 - 3).
+		// -3 for the tabs
+		Height(am.height-3).
+		Margin(0, 2).
 		Render(strings.Join(bodyLines, "\n"))
 }
 

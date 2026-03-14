@@ -12,6 +12,8 @@ import (
 type genericMutateView interface {
 	View
 
+	title() string
+
 	getInputManager() *inputManager
 }
 
@@ -30,6 +32,9 @@ func genericMutateViewUpdate(gmv genericMutateView, message tea.Msg) (View, tea.
 
 func genericMutateViewView(gmv genericMutateView, colour lipgloss.Color) string {
 	var result strings.Builder
+
+	result.WriteString(meta.TitleStyle.Render(gmv.title()))
+	result.WriteString("\n")
 
 	result.WriteString(gmv.getInputManager().View(colour))
 

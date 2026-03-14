@@ -97,10 +97,6 @@ func (app *journalsApp) Type() meta.AppType {
 	return meta.JOURNALSAPP
 }
 
-func (app *journalsApp) CurrentTitle() string {
-	return app.currentView.Title()
-}
-
 func (app *journalsApp) CurrentViewType() meta.ViewType {
 	return app.currentView.Type()
 }

@@ -83,7 +83,7 @@ func (dv *ledgersDetailView) View() string {
 	return genericDetailViewView(dv)
 }
 
-func (dv *ledgersDetailView) Title() string {
+func (dv *ledgersDetailView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Ledger %s details", dv.model.Name))
 }
@@ -244,7 +244,7 @@ func (cv *ledgersCreateView) View() string {
 	return genericMutateViewView(cv, meta.LEDGERSCOLOUR)
 }
 
-func (cv *ledgersCreateView) Title() string {
+func (cv *ledgersCreateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
 	return style.Render("Creating new ledger")
 }
@@ -415,7 +415,7 @@ func (uv *ledgersUpdateView) View() string {
 	return genericMutateViewView(uv, meta.LEDGERSCOLOUR)
 }
 
-func (uv *ledgersUpdateView) Title() string {
+func (uv *ledgersUpdateView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Delete ledger %s", uv.startingValue.String()))
 }
@@ -534,7 +534,7 @@ func (dv *ledgersDeleteView) View() string {
 	return genericDeleteViewView(dv, dv.width, dv.height)
 }
 
-func (dv *ledgersDeleteView) Title() string {
+func (dv *ledgersDeleteView) title() string {
 	style := lipgloss.NewStyle().Background(meta.LEDGERSCOLOUR).Padding(0, 1)
 	return style.Render(fmt.Sprintf("Delete ledger: %s", dv.model.String()))
 }

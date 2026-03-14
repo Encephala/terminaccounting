@@ -18,6 +18,8 @@ import (
 type genericDetailView interface {
 	View
 
+	title() string
+
 	getDB() *sqlx.DB
 
 	getCanReconcile() bool
@@ -165,12 +167,13 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 func genericDetailViewView(gdv genericDetailView) string {
 	var result strings.Builder
 
-	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))
+	result.WriteString(meta.TitleStyle.Render(gdv.title()))
+	result.WriteString("\n")
 
+	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))
 	result.WriteString("\n")
 
 	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", renderBoolean(gdv.getCanReconcile())))
-
 	result.WriteString("\n\n")
 
 	result.WriteString(gdv.getViewer().View())
