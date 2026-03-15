@@ -272,6 +272,14 @@ func (cv CurrencyValue) String() string {
 	}
 }
 
+func (cv CurrencyValue) Abs() CurrencyValue {
+	if cv < 0 {
+		return -cv
+	}
+
+	return cv
+}
+
 func (left CurrencyValue) Add(right CurrencyValue) CurrencyValue {
 	return left + right
 }

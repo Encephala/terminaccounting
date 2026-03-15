@@ -83,6 +83,12 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 		return gdv, nil
 
+	case meta.UpdateSearchMsg:
+		newViewer, cmd := viewer.Update(message)
+		*viewer = *newViewer
+
+		return gdv, cmd
+
 	case meta.ToggleShowReconciledMsg:
 		oldShownRows := make([]*database.EntryRow, len(viewer.shownRows))
 		oldActiveIndex := viewer.activeRow
@@ -186,6 +192,8 @@ func genericDetailViewView(gdv genericDetailView) string {
 func genericDetailViewMotionSet() meta.Trie[tea.Msg] {
 	var motions meta.Trie[tea.Msg]
 
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
+
 	motions.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
 	motions.Insert(meta.Motion{"k"}, meta.NavigateMsg{Direction: meta.UP})
 
@@ -234,13 +242,21 @@ type entryRowViewer struct {
 	highlightColour lipgloss.Color
 
 	viewport viewport.Model
-	viewRows [][]string
 
-	rows         []*database.EntryRow
-	shownRows    []*database.EntryRow
+	// All the rows in this viewer
+	rows []*database.EntryRow
+	// The rows being shown in the view right now
+	shownRows []*database.EntryRow
+	// THe shownRows, rendered to strings slices
+	viewRows [][]string
+	// The original rows in the viewer (for comparing reconciled-state)
 	originalRows []database.EntryRow
 
 	activeRow int
+
+	// The query to filter shownRows by
+	// If nil, no filter
+	filter *string
 
 	showReconciled bool
 
@@ -289,6 +305,17 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		}
 
 		erv.scrollViewport()
+
+		return erv, nil
+
+	case meta.UpdateSearchMsg:
+		if message.Query == "" {
+			erv.filter = nil
+		} else {
+			erv.filter = &message.Query
+		}
+
+		erv.updateViewRows()
 
 		return erv, nil
 
@@ -355,11 +382,12 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 	erv.colWidths = colWidths
 }
 
+// Takes the rows, and depending on state, updates the shownRows and viewRows based off of them
 func (erv *entryRowViewer) updateViewRows() {
 	if erv.showReconciled {
-		erv.shownRows = erv.rows
+		erv.shownRows = filterRows(erv.rows, erv.filter)
 	} else {
-		erv.shownRows = erv.getUnreconciledRows()
+		erv.shownRows = filterRows(erv.getUnreconciledRows(), erv.filter)
 	}
 
 	availableLedgers := database.AvailableLedgers()
@@ -370,40 +398,17 @@ func (erv *entryRowViewer) updateViewRows() {
 		var viewRow []string
 		viewRow = append(viewRow, row.Date.String())
 
-		var ledger, account string
+		ledger, account := getRowLedgerAndAccount(row, availableLedgers, availableAccounts)
 
-		availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger database.Ledger) bool {
-			return ledger.Id == row.Ledger
-		})
-		if availableLedgerIndex != -1 {
-			ledger = availableLedgers[availableLedgerIndex].String()
-		} else {
-			ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
+		viewRow = append(viewRow, ledger.String(), account.String(), row.Description)
+
+		if row.Value == 0 {
+			panic(fmt.Sprintf("row %#v had zero debit and credit?", row))
 		}
-
-		if row.Account == nil {
-			account = lipgloss.NewStyle().Italic(true).Render("None")
-		} else {
-			availableAccountIndex := slices.IndexFunc(availableAccounts, func(account database.Account) bool {
-				return account.Id == *row.Account
-			})
-
-			if availableAccountIndex != -1 {
-				account = availableAccounts[availableAccountIndex].String()
-			} else {
-				ledger = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Italic(true).Render("error")
-			}
-		}
-
-		viewRow = append(viewRow, ledger)
-		viewRow = append(viewRow, account)
-		viewRow = append(viewRow, row.Description)
 		if row.Value > 0 {
-			viewRow = append(viewRow, row.Value.String())
-			viewRow = append(viewRow, "")
+			viewRow = append(viewRow, row.Value.String(), "")
 		} else {
-			viewRow = append(viewRow, "")
-			viewRow = append(viewRow, (-row.Value).String())
+			viewRow = append(viewRow, "", (-row.Value).String())
 		}
 
 		viewRow = append(viewRow, renderBoolean(row.Reconciled))
@@ -412,6 +417,77 @@ func (erv *entryRowViewer) updateViewRows() {
 	}
 
 	erv.viewRows = viewRows
+}
+
+func getRowLedgerAndAccount(row *database.EntryRow,
+	availableLedgers []database.Ledger,
+	availableAccounts []database.Account) (database.Ledger, *database.Account) {
+	var ledger database.Ledger
+	availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger database.Ledger) bool {
+		return ledger.Id == row.Ledger
+	})
+	if availableLedgerIndex == -1 {
+		panic(fmt.Sprintf("ledger for row %#v wasn't found in cache", row))
+	}
+	ledger = availableLedgers[availableLedgerIndex]
+
+	var account *database.Account
+	if row.Account == nil {
+		account = nil
+	} else {
+		availableAccountIndex := slices.IndexFunc(availableAccounts, func(account database.Account) bool {
+			return account.Id == *row.Account
+		})
+
+		if availableAccountIndex == -1 {
+			panic(fmt.Sprintf("account for row %#v wasn't found in cache", row))
+		}
+
+		account = &availableAccounts[availableAccountIndex]
+	}
+
+	return ledger, account
+}
+
+func filterRows(rows []*database.EntryRow, filter *string) []*database.EntryRow {
+	if filter == nil {
+		return rows
+	}
+
+	availableLedgers := database.AvailableLedgers()
+	availableAccounts := database.AvailableAccounts()
+
+	var result []*database.EntryRow
+	for _, row := range rows {
+		ledger, account := getRowLedgerAndAccount(row, availableLedgers, availableAccounts)
+
+		if strings.Contains(row.Date.String(), *filter) {
+			result = append(result, row)
+			continue
+		}
+
+		if strings.Contains(ledger.String(), *filter) {
+			result = append(result, row)
+			continue
+		}
+
+		if strings.Contains(account.String(), *filter) {
+			result = append(result, row)
+			continue
+		}
+
+		if strings.Contains(row.Description, *filter) {
+			result = append(result, row)
+			continue
+		}
+
+		if strings.Contains(row.Value.Abs().String(), *filter) {
+			result = append(result, row)
+			continue
+		}
+	}
+
+	return result
 }
 
 func (erv *entryRowViewer) scrollViewport() {
