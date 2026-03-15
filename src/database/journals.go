@@ -193,6 +193,10 @@ func SelectJournal(DB *sqlx.DB, id int) (Journal, error) {
 func DeleteJournal(DB *sqlx.DB, id int) error {
 	_, err := DB.Exec(`DELETE FROM journals WHERE id = $1;`, id)
 	if err != nil {
+		if err.Error() == "FOREIGN KEY constraint failed" {
+			return fmt.Errorf("Journal has entries, can't delete")
+		}
+
 		return err
 	}
 

@@ -229,6 +229,10 @@ func SelectAccount(DB *sqlx.DB, id int) (Account, error) {
 func DeleteAccount(DB *sqlx.DB, accountId int) error {
 	_, err := DB.Exec(`DELETE FROM accounts WHERE id = $1;`, accountId)
 	if err != nil {
+		if err.Error() == "FOREIGN KEY constraint failed" {
+			return fmt.Errorf("Account has entries, can't delete")
+		}
+
 		return err
 	}
 

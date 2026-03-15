@@ -217,6 +217,10 @@ func SelectLedger(DB *sqlx.DB, ledgerId int) (Ledger, error) {
 func DeleteLedger(DB *sqlx.DB, ledgerId int) error {
 	_, err := DB.Exec(`DELETE FROM ledgers WHERE id = $1;`, ledgerId)
 	if err != nil {
+		if err.Error() == "FOREIGN KEY constraint failed" {
+			return fmt.Errorf("Ledger has entries, can't delete")
+		}
+
 		return err
 	}
 
