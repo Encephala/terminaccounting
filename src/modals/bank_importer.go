@@ -107,6 +107,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		// -9 for the various inputs and confirmation prompt and vertical padding
 		bi.preview.Height = message.Height - 9
 
+		bi.updatePickerWidths()
 		bi.colWidths = bi.calculateColWidths(message.Width)
 
 		return bi, nil
@@ -303,13 +304,13 @@ func (bi *bankImporter) View() string {
 
 	style := lipgloss.NewStyle()
 	highlightStyle := style.Foreground(lipgloss.ANSIColor(212))
-	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).Margin(0, 1)
+	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
 
 	formatSelectorStyle := style
 	journalSelectorStyle := style
 	bankLedgerSelectorStyle := style
 
-	highlightRow := false
+	previewIsActive := false
 
 	switch bi.activeInput {
 	case 0:
@@ -319,15 +320,16 @@ func (bi *bankImporter) View() string {
 	case 2:
 		bankLedgerSelectorStyle = highlightStyle
 	case 3:
-		highlightRow = true
+		previewIsActive = true
 	default:
 		panic(fmt.Sprintf("unexpected bi.activeInput: %#v", bi.activeInput))
 	}
 
-	bi.setViewportContent(highlightRow)
+	bi.setViewportContent(previewIsActive)
 
 	var result strings.Builder
 
+	// Remove margin on left-most picker
 	formatSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		"File format",
@@ -352,7 +354,9 @@ func (bi *bankImporter) View() string {
 	result.WriteString(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		formatSelectorRendered,
+		" ",
 		journalSelectorRendered,
+		" ",
 		bankLedgerSelectorRendered,
 	))
 
@@ -433,6 +437,38 @@ func (bi *bankImporter) readFile(path string) ([][]string, error) {
 	}
 
 	return result, nil
+}
+
+func (bi *bankImporter) updatePickerWidths() {
+	// 3*4 for horizontal padding and border of each picker, 2 for between-picker space, 2*4 for left/right margin
+	fillerWidth := 3*4 + 2 + 2*4
+	// Width when just using 1/3 for each picker
+	defaultWidth := (bi.width - fillerWidth) / 3
+
+	parserWidth := bi.parserPicker.MaxViewLength() + len("File format ")
+	journalWidth := bi.journalPicker.MaxViewLength() + len("Journal ")
+	bankWidth := bi.bankLedgerPicker.MaxViewLength() + len("Bank ledger ")
+
+	widths := []int{parserWidth, journalWidth, bankWidth}
+
+	remainingWidth := bi.width - fillerWidth
+	remainingElements := 3
+	for _, width := range widths {
+		if width <= defaultWidth {
+			remainingWidth -= width
+			remainingElements--
+		}
+	}
+
+	for j, width := range widths {
+		if width > defaultWidth {
+			widths[j] = min(widths[j], max(remainingWidth/remainingElements, 20))
+		}
+	}
+
+	bi.parserPicker.MaxWidth = widths[0] - len("File format ")
+	bi.journalPicker.MaxWidth = widths[1] - len("Journal ")
+	bi.bankLedgerPicker.MaxWidth = widths[2] - len("Bank ledger ")
 }
 
 func (bi *bankImporter) calculateColWidths(totalWidth int) []int {

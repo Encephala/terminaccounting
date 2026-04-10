@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type Item interface {
@@ -15,6 +16,8 @@ type Item interface {
 }
 
 type Model struct {
+	MaxWidth int
+
 	Items      []Item
 	activeItem int
 }
@@ -47,11 +50,18 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	var result string
 	if len(m.Items) == 0 {
-		return lipgloss.NewStyle().Italic(true).Render("No items")
+		result = lipgloss.NewStyle().Italic(true).Render("No items")
 	}
 
-	return fmt.Sprintf("> %s", m.Items[m.activeItem].String())
+	result = fmt.Sprintf("> %s", m.Items[m.activeItem].String())
+
+	if m.MaxWidth == 0 {
+		return result
+	}
+
+	return ansi.Truncate(result, m.MaxWidth, "…")
 }
 
 // Allows to manually retrieve the currently selected value.
@@ -80,12 +90,15 @@ func (m *Model) SetValue(value Item) error {
 }
 
 func (m Model) MaxViewLength() int {
-	emptyWidth := len("No items")
-	maxItemWidth := 0
-
-	for _, item := range m.Items {
-		maxItemWidth = max(maxItemWidth, len(item.String()))
+	if len(m.Items) == 0 {
+		return len("No items")
 	}
 
-	return max(emptyWidth, maxItemWidth+2)
+	result := 0
+	for _, item := range m.Items {
+		// +2 for prompt "> "
+		result = max(result, len(item.String())+2)
+	}
+
+	return result
 }

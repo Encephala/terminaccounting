@@ -806,7 +806,8 @@ func (rmm *rowsMutateManager) updateRowMutatorWidths(colWidths []int) {
 		// The -2 are for the prompt "> ", and then -1 for the cursor
 		// Because for some reason the textinput model doesn't count the cursor in the width
 		rowMutator.dateInput.Width = colWidths[1] - 2 - 1
-		// itempicker bubbles don't have width setting (yet)
+		rowMutator.ledgerInput.MaxWidth = colWidths[2]
+		rowMutator.ledgerInput.MaxWidth = colWidths[3]
 		rowMutator.descriptionInput.Width = colWidths[4] - 2 - 1
 		rowMutator.debitInput.Width = colWidths[5] - 2 - 1
 		rowMutator.creditInput.Width = colWidths[6] - 2 - 1
