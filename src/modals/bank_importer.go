@@ -442,46 +442,36 @@ func (bi *bankImporter) calculateColWidths(totalWidth int) []int {
 
 	numCols := len(bi.data[0])
 
-	colWidths := make([]int, numCols)
+	maxColWidths := make([]int, numCols)
 	for j, header := range bi.headers {
-		colWidths[j] = len(header)
+		maxColWidths[j] = len(header)
 	}
 
 	for _, row := range bi.data {
 		for j, val := range row {
-			colWidths[j] = max(colWidths[j], len(val))
+			maxColWidths[j] = max(maxColWidths[j], len(val))
 		}
 	}
 
-	// Make it all fit nicely
-	threshold := totalWidth / numCols
+	// Make it all fit nicely by distributing unused width among long columns.
+	// margin between columns is 2, 2*4 for horizontal padding on both sides
+	fillerWidth := 2*(numCols-1) + 2*4
 
-	// Fit all the short columns
-	remainingWidth := totalWidth
-	for _, width := range colWidths {
-		if width < threshold {
-			remainingWidth -= width
+	colWidths := make([]int, numCols)
+	remainingWidth := totalWidth - fillerWidth
+
+outer:
+	for {
+		for j := range colWidths {
+			if colWidths[j] < maxColWidths[j] {
+				colWidths[j]++
+				remainingWidth--
+			}
+
+			if remainingWidth == 0 {
+				break outer
+			}
 		}
-	}
-
-	// Distribute remaining length across other columns
-	otherColWidth := remainingWidth / numCols
-	for j, width := range colWidths {
-		if width > otherColWidth {
-			colWidths[j] = otherColWidth
-		}
-	}
-
-	// Use some extra space if wasted due to integer rounding
-	usedWidth := 0
-	for _, width := range colWidths {
-		usedWidth += width
-	}
-	// -2 is padding
-	wastedWidth := totalWidth - usedWidth - 2*(numCols-1)
-
-	for j := range colWidths {
-		colWidths[j] += wastedWidth / numCols
 	}
 
 	return colWidths
