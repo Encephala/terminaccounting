@@ -53,9 +53,9 @@ func (m Model) View() string {
 	var result string
 	if len(m.Items) == 0 {
 		result = lipgloss.NewStyle().Italic(true).Render("No items")
+	} else {
+		result = fmt.Sprintf("> %s", m.Items[m.activeItem].String())
 	}
-
-	result = fmt.Sprintf("> %s", m.Items[m.activeItem].String())
 
 	if m.MaxWidth == 0 {
 		return result
