@@ -31,6 +31,10 @@ func New(items []Item) Model {
 func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.KeyMsg:
+		if len(m.Items) == 0 {
+			break
+		}
+
 		switch message.String() {
 		case "ctrl+n", "j":
 			m.activeItem++
