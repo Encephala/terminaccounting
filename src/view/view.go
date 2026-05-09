@@ -99,6 +99,7 @@ type input interface {
 
 	focus() tea.Cmd
 	blur()
+	setWidth(int)
 
 	value() any
 	setValue(any) error
@@ -111,6 +112,7 @@ type inputAdapter[T viewable] struct {
 	// No adapter for View, because T is constrained viewable so we can use a blanket implementation
 	focusFn    func(*T) tea.Cmd
 	blurFn     func(*T)
+	setWidthFn func(*T, int)
 	valueFn    func(T) any
 	setValueFn func(*T, any) error
 }
@@ -132,6 +134,10 @@ func (ia *inputAdapter[T]) focus() tea.Cmd {
 
 func (ia *inputAdapter[T]) blur() {
 	ia.blurFn(&ia.model)
+}
+
+func (ia *inputAdapter[T]) setWidth(width int) {
+	ia.setWidthFn(&ia.model, width)
 }
 
 func (ia *inputAdapter[T]) value() any {
@@ -156,6 +162,10 @@ func newAdapterFrom(input any) input {
 			blurFn: func(model *textinput.Model) {
 				model.Blur()
 			},
+			setWidthFn: func(model *textinput.Model, width int) {
+				// -3 for the prompt + cursor (I think), because textinput's definition of Width is weird af
+				model.Width = width - 3
+			},
 			valueFn: func(model textinput.Model) any {
 				return model.Value()
 			},
@@ -177,6 +187,9 @@ func newAdapterFrom(input any) input {
 			blurFn: func(model *textarea.Model) {
 				model.Blur()
 			},
+			setWidthFn: func(model *textarea.Model, width int) {
+				model.SetWidth(width)
+			},
 			valueFn: func(model textarea.Model) any {
 				return model.Value()
 			},
@@ -192,8 +205,9 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model itempicker.Model, message tea.Msg) (itempicker.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn: func(model *itempicker.Model) tea.Cmd { return nil },
-			blurFn:  func(model *itempicker.Model) {},
+			focusFn:    func(model *itempicker.Model) tea.Cmd { return nil },
+			blurFn:     func(model *itempicker.Model) {},
+			setWidthFn: func(model *itempicker.Model, width int) {},
 			valueFn: func(model itempicker.Model) any {
 				return model.Value()
 			},
@@ -209,8 +223,9 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model booleaninput.Model, message tea.Msg) (booleaninput.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn: func(*booleaninput.Model) tea.Cmd { return nil },
-			blurFn:  func(*booleaninput.Model) {},
+			focusFn:    func(*booleaninput.Model) tea.Cmd { return nil },
+			blurFn:     func(*booleaninput.Model) {},
+			setWidthFn: func(model *booleaninput.Model, width int) {},
 			valueFn: func(model booleaninput.Model) any {
 				return model.Value()
 			},
@@ -255,6 +270,14 @@ func (im *inputManager) Update(message tea.Msg) (*inputManager, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		im.width = message.Width
 		im.height = message.Height
+
+		maxNameWidth := len(slices.MaxFunc(im.names, func(a, b string) int { return len(a) - len(b) }))
+		// 4 is for padding + borders, 1 is for padding between name and input
+		reservedWidth := maxNameWidth + 2*4 + 1
+
+		for _, input := range im.inputs {
+			input.setWidth(message.Width - reservedWidth)
+		}
 
 		return im, nil
 
