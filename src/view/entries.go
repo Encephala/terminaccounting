@@ -856,6 +856,12 @@ func (rmm *rowsMutateManager) updateRowMutatorWidths(colWidths []int) {
 		rowMutator.descriptionInput.Width = colWidths[4] - 2 - 1
 		rowMutator.debitInput.Width = colWidths[5] - 2 - 1
 		rowMutator.creditInput.Width = colWidths[6] - 2 - 1
+
+		// Redraw the models to handle overflow
+		rowMutator.dateInput.SetCursor(rowMutator.dateInput.Position())
+		rowMutator.descriptionInput.SetCursor(rowMutator.descriptionInput.Position())
+		rowMutator.debitInput.SetCursor(rowMutator.debitInput.Position())
+		rowMutator.creditInput.SetCursor(rowMutator.creditInput.Position())
 	}
 }
 

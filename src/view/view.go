@@ -171,6 +171,8 @@ func newAdapterFrom(input any) input {
 			setWidthFn: func(model *textinput.Model, width int) {
 				// -3 for the prompt + cursor (I think), because textinput's definition of Width is weird af
 				model.Width = width - 3
+				// Redraw the model to handle overflow
+				model.SetCursor(model.Position())
 			},
 			setTextColourFn: func(model *textinput.Model, colour lipgloss.Color) {
 				style := lipgloss.NewStyle().Foreground(colour)
