@@ -121,6 +121,11 @@ func (dv *ledgersDetailView) AllowsInsertMode() bool {
 	return false
 }
 
+func (dv *ledgersDetailView) AllowsSearchMode() bool {
+	// TODO: implement
+	return true
+}
+
 func (dv *ledgersDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:   {},
@@ -272,6 +277,10 @@ func (cv *ledgersCreateView) Type() meta.ViewType {
 
 func (cv *ledgersCreateView) AllowsInsertMode() bool {
 	return true
+}
+
+func (cv *ledgersCreateView) AllowsSearchMode() bool {
+	return cv.inputManager.activeInput == 1
 }
 
 func (cv *ledgersCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -445,6 +454,10 @@ func (uv *ledgersUpdateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (uv *ledgersUpdateView) AllowsSearchMode() bool {
+	return uv.inputManager.activeInput == 1
+}
+
 func (uv *ledgersUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL: {},
@@ -562,6 +575,10 @@ func (dv *ledgersDeleteView) Type() meta.ViewType {
 
 func (dv *ledgersDeleteView) AllowsInsertMode() bool {
 	return false
+}
+
+func (dv *ledgersDeleteView) AllowsSearchMode() bool {
+	return true
 }
 
 func (dv *ledgersDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

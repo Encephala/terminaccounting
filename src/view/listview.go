@@ -111,6 +111,10 @@ func (lv *ListView) AllowsInsertMode() bool {
 	return false
 }
 
+func (lv *ListView) AllowsSearchMode() bool {
+	return true
+}
+
 func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},

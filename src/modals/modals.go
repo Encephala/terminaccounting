@@ -12,6 +12,7 @@ type Modal interface {
 	View() string
 
 	AllowsInsertMode() bool
+	AllowsSearchMode() bool
 
 	MotionSet() meta.Trie[tea.Msg]
 	CommandSet() meta.Trie[tea.Msg]
@@ -114,6 +115,10 @@ func (mm *ModalManager) View() string {
 
 func (mm *ModalManager) CurrentViewAllowsInsertMode() bool {
 	return mm.Modal.AllowsInsertMode()
+}
+
+func (mm *ModalManager) CurrentViewAllowsSearchMode() bool {
+	return mm.Modal.AllowsSearchMode()
 }
 
 func (mm *ModalManager) CurrentMotionSet() meta.Trie[tea.Msg] {

@@ -95,6 +95,10 @@ func (tm *textModal) AllowsInsertMode() bool {
 	return false
 }
 
+func (tm *textModal) AllowsSearchMode() bool {
+	return false
+}
+
 func (tm *textModal) AcceptedModels() map[meta.ModelType]struct{} {
 	return make(map[meta.ModelType]struct{})
 }

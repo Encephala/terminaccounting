@@ -126,6 +126,10 @@ func (dv *entryDetailView) AllowsInsertMode() bool {
 	return false
 }
 
+func (dv *entryDetailView) AllowsSearchMode() bool {
+	return true
+}
+
 func (dv *entryDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL:    {},
@@ -372,6 +376,20 @@ func (cv *entryCreateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (cv *entryCreateView) AllowsSearchMode() bool {
+	if cv.activeInput == 0 {
+		return true
+	}
+
+	if cv.activeInput == 1 {
+		return false
+	}
+
+	_, activeCol := cv.getManager().getActiveCoords()
+
+	return activeCol == 1 || activeCol == 2
+}
+
 func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:  {},
@@ -595,6 +613,20 @@ func (uv *entryUpdateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (cv *entryUpdateView) AllowsSearchMode() bool {
+	if cv.activeInput == 0 {
+		return true
+	}
+
+	if cv.activeInput == 1 {
+		return false
+	}
+
+	_, activeCol := cv.getManager().getActiveCoords()
+
+	return activeCol == 1 || activeCol == 2
+}
+
 func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:   {},
@@ -779,6 +811,24 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 		}
 
 		return rmm, nil
+
+	case meta.UpdateSearchMsg:
+		row, col := rmm.getActiveCoords()
+
+		var input *itempicker.Model
+		switch col {
+		case 1:
+			input = &rmm.rowMutators[row].ledgerInput
+		case 2:
+			input = &rmm.rowMutators[row].accountInput
+		default:
+			panic(fmt.Sprintf("unexpected active column: %#v", col))
+		}
+
+		var cmd tea.Cmd
+		*input, cmd = input.Update(itempicker.FuzzySelectMsg{Query: message.Query})
+
+		return rmm, cmd
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
@@ -1502,6 +1552,29 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 
 		return view, tea.Batch(cmds...)
 
+	case meta.UpdateSearchMsg:
+		activeInput := view.getActiveInput()
+
+		if *activeInput == 0 {
+			journalInput, cmd := view.getJournalInput().Update(itempicker.FuzzySelectMsg{Query: message.Query})
+			*view.getJournalInput() = journalInput
+
+			return view, cmd
+		}
+
+		if *activeInput == 1 {
+			return view, nil
+		}
+
+		if *activeInput != 2 {
+			panic(fmt.Sprintf("unexpected activeInput: %#v", activeInput))
+		}
+
+		erm, cmd := view.getManager().Update(message)
+		*view.getManager() = *erm
+
+		return view, cmd
+
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
@@ -1583,6 +1656,8 @@ func entryMutateViewMotionSet() meta.Trie[tea.Msg] {
 	// Extra vertical navigation
 	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
 	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
+
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	return motions
 }
@@ -1698,6 +1773,10 @@ func (dv *entryDeleteView) Type() meta.ViewType {
 }
 
 func (dv *entryDeleteView) AllowsInsertMode() bool {
+	return false
+}
+
+func (dv *entryDeleteView) AllowsSearchMode() bool {
 	return false
 }
 

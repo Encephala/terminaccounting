@@ -141,6 +141,10 @@ func (dv *journalsDetailView) AllowsInsertMode() bool {
 	return false
 }
 
+func (dv *journalsDetailView) AllowsSearchMode() bool {
+	return true
+}
+
 func (dv *journalsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ENTRYMODEL: {},
@@ -291,6 +295,10 @@ func (cv *journalsCreateView) Type() meta.ViewType {
 
 func (cv *journalsCreateView) AllowsInsertMode() bool {
 	return true
+}
+
+func (cv *journalsCreateView) AllowsSearchMode() bool {
+	return cv.inputManager.activeInput == 1
 }
 
 func (cv *journalsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
@@ -451,6 +459,10 @@ func (uv *journalsUpdateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (uv *journalsUpdateView) AllowsSearchMode() bool {
+	return uv.inputManager.activeInput == 1
+}
+
 func (uv *journalsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.JOURNALMODEL: {},
@@ -567,6 +579,10 @@ func (dv *journalsDeleteView) Type() meta.ViewType {
 }
 
 func (dv *journalsDeleteView) AllowsInsertMode() bool {
+	return false
+}
+
+func (dv *journalsDeleteView) AllowsSearchMode() bool {
 	return false
 }
 

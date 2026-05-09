@@ -265,6 +265,10 @@ func (am *appManager) currentViewAllowsInsertMode() bool {
 	return am.apps[am.activeApp].CurrentViewAllowsInsertMode()
 }
 
+func (am *appManager) currentViewAllowsSearchMode() bool {
+	return am.apps[am.activeApp].CurrentViewAllowsSearchMode()
+}
+
 func (am *appManager) currentViewType() meta.ViewType {
 	return am.apps[am.activeApp].CurrentViewType()
 }

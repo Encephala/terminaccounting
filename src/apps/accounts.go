@@ -117,6 +117,10 @@ func (app *accountsApp) CurrentViewAllowsInsertMode() bool {
 	return app.currentView.AllowsInsertMode()
 }
 
+func (app *accountsApp) CurrentViewAllowsSearchMode() bool {
+	return app.currentView.AllowsSearchMode()
+}
+
 func (app *accountsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }

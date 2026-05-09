@@ -3,16 +3,22 @@ package itempicker
 import (
 	"fmt"
 	"slices"
+	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/sahilm/fuzzy"
 )
 
 type Item interface {
 	fmt.Stringer
 
 	CompareId() int
+}
+
+type FuzzySelectMsg struct {
+	Query string
 }
 
 type Model struct {
@@ -33,7 +39,7 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.KeyMsg:
 		if len(m.Items) == 0 {
-			break
+			return m, nil
 		}
 
 		switch message.String() {
@@ -49,9 +55,32 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 				m.activeItem = len(m.Items) - 1
 			}
 		}
-	}
 
-	return m, nil
+		return m, nil
+
+	case FuzzySelectMsg:
+		if message.Query == "" {
+			return m, nil
+		}
+
+		var stringReprs []string
+		for _, item := range m.Items {
+			stringReprs = append(stringReprs, item.String())
+		}
+
+		matches := fuzzy.Find(message.Query, stringReprs)
+
+		if len(matches) == 0 {
+			return m, meta.MessageCmd(fmt.Errorf("%q not found in items", message.Query))
+		}
+
+		m.activeItem = matches[0].Index
+
+		return m, nil
+
+	default:
+		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
+	}
 }
 
 func (m Model) View() string {

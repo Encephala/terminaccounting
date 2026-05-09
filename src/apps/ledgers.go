@@ -117,6 +117,10 @@ func (app *ledgersApp) CurrentViewAllowsInsertMode() bool {
 	return app.currentView.AllowsInsertMode()
 }
 
+func (app *ledgersApp) CurrentViewAllowsSearchMode() bool {
+	return app.currentView.AllowsSearchMode()
+}
+
 func (app *ledgersApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }

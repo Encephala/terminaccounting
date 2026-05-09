@@ -24,6 +24,7 @@ type View interface {
 	Type() meta.ViewType
 
 	AllowsInsertMode() bool
+	AllowsSearchMode() bool
 	AcceptedModels() map[meta.ModelType]struct{}
 
 	MotionSet() meta.Trie[tea.Msg]

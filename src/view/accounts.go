@@ -106,6 +106,10 @@ func (dv *accountsDetailView) AllowsInsertMode() bool {
 	return false
 }
 
+func (dv *accountsDetailView) AllowsSearchMode() bool {
+	return true
+}
+
 func (dv *accountsDetailView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL:  {},
@@ -254,6 +258,10 @@ func (cv *accountsCreateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (cv *accountsCreateView) AllowsSearchMode() bool {
+	return cv.inputManager.activeInput == 1
+}
+
 func (cv *accountsCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{}
 }
@@ -265,6 +273,8 @@ func (cv *accountsCreateView) MotionSet() meta.Trie[tea.Msg] {
 
 	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
+
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	return motions
 }
@@ -423,6 +433,10 @@ func (uv *accountsUpdateView) AllowsInsertMode() bool {
 	return true
 }
 
+func (uv *accountsUpdateView) AllowsSearchMode() bool {
+	return uv.inputManager.activeInput == 1
+}
+
 func (uv *accountsUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.ACCOUNTMODEL: {},
@@ -440,6 +454,8 @@ func (uv *accountsUpdateView) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
 	motions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
+
+	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	return motions
 }
@@ -539,7 +555,11 @@ func (dv *accountsDeleteView) Type() meta.ViewType {
 }
 
 func (dv *accountsDeleteView) AllowsInsertMode() bool {
-	return true
+	return false
+}
+
+func (dv *accountsDeleteView) AllowsSearchMode() bool {
+	return false
 }
 
 func (dv *accountsDeleteView) AcceptedModels() map[meta.ModelType]struct{} {

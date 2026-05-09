@@ -394,6 +394,10 @@ func (bi *bankImporter) AllowsInsertMode() bool {
 	return true
 }
 
+func (bi *bankImporter) AllowsSearchMode() bool {
+	return bi.activeInput == 0 || bi.activeInput == 1 || bi.activeInput == 2
+}
+
 func (bi *bankImporter) MotionSet() meta.Trie[tea.Msg] {
 	var motions meta.Trie[tea.Msg]
 

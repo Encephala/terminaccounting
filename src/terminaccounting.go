@@ -256,6 +256,11 @@ func (ta *terminaccounting) switchMode(message meta.SwitchModeMsg) tea.Cmd {
 		return meta.MessageCmd(errors.New("current view doesn't allow insert mode"))
 	}
 
+	// If switching to search but current view doesn't allow, don't switch
+	if message.InputMode == meta.COMMANDMODE && message.Data.(bool) && !ta.currentViewAllowsSearchMode() {
+		return meta.MessageCmd(errors.New("Search currently not allowed"))
+	}
+
 	ta.inputMode = message.InputMode
 
 	if message.InputMode == meta.COMMANDMODE {
@@ -285,6 +290,14 @@ func (ta *terminaccounting) currentViewAllowsInsertMode() bool {
 	}
 
 	return ta.appManager.currentViewAllowsInsertMode()
+}
+
+func (ta *terminaccounting) currentViewAllowsSearchMode() bool {
+	if ta.showModal {
+		return ta.modalManager.CurrentViewAllowsSearchMode()
+	}
+
+	return ta.appManager.currentViewAllowsSearchMode()
 }
 
 func (ta *terminaccounting) executeCommand() (*terminaccounting, tea.Cmd) {

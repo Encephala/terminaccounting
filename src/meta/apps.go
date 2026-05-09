@@ -22,6 +22,7 @@ type App interface {
 	CurrentCommandSet() Trie[tea.Msg]
 
 	CurrentViewAllowsInsertMode() bool
+	CurrentViewAllowsSearchMode() bool
 	AcceptedModels() map[ModelType]struct{}
 
 	MakeLoadListCmd() tea.Cmd

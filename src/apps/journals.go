@@ -117,6 +117,10 @@ func (app *journalsApp) CurrentViewAllowsInsertMode() bool {
 	return app.currentView.AllowsInsertMode()
 }
 
+func (app *journalsApp) CurrentViewAllowsSearchMode() bool {
+	return app.currentView.AllowsSearchMode()
+}
+
 func (app *journalsApp) AcceptedModels() map[meta.ModelType]struct{} {
 	return app.currentView.AcceptedModels()
 }
