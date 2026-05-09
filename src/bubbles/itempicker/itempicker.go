@@ -17,6 +17,7 @@ type Item interface {
 
 type Model struct {
 	MaxWidth int
+	Colour   lipgloss.Color
 
 	Items      []Item
 	activeItem int
@@ -54,11 +55,13 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	style := lipgloss.NewStyle().Foreground(m.Colour)
+
 	var result string
 	if len(m.Items) == 0 {
-		result = lipgloss.NewStyle().Italic(true).Render("No items")
+		result = style.Italic(true).Render("No items")
 	} else {
-		result = fmt.Sprintf("> %s", m.Items[m.activeItem].String())
+		result = style.Render(fmt.Sprintf("> %s", m.Items[m.activeItem].String()))
 	}
 
 	if m.MaxWidth == 0 {

@@ -176,6 +176,7 @@ func newAdapterFrom(input any) input {
 				style := lipgloss.NewStyle().Foreground(colour)
 				model.TextStyle = style
 				model.PromptStyle = style
+				model.Cursor.Style = style
 			},
 			valueFn: func(model textinput.Model) any {
 				return model.Value()
@@ -217,16 +218,17 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model itempicker.Model, message tea.Msg) (itempicker.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn:         func(model *itempicker.Model) tea.Cmd { return nil },
-			blurFn:          func(model *itempicker.Model) {},
-			setWidthFn:      func(model *itempicker.Model, width int) {},
-			setTextColourFn: func(model *itempicker.Model, colour lipgloss.Color) {},
+			focusFn:    func(model *itempicker.Model) tea.Cmd { return nil },
+			blurFn:     func(model *itempicker.Model) {},
+			setWidthFn: func(model *itempicker.Model, width int) {},
+			setTextColourFn: func(model *itempicker.Model, colour lipgloss.Color) {
+				model.Colour = colour
+			},
 			valueFn: func(model itempicker.Model) any {
 				return model.Value()
 			},
 			setValueFn: func(model *itempicker.Model, value any) error {
-				model.SetValue(value.(itempicker.Item))
-				return nil
+				return model.SetValue(value.(itempicker.Item))
 			},
 		}
 

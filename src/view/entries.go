@@ -265,6 +265,51 @@ func newRowMutator(startDate *database.Date) *rowMutator {
 	return &result
 }
 
+func (rm *rowMutator) setActiveColour(col int, colour lipgloss.Color) {
+	rm.clearColours()
+	style := lipgloss.NewStyle().Foreground(colour)
+
+	switch col {
+	case 0:
+		rm.dateInput.TextStyle = style
+		rm.dateInput.PromptStyle = style
+		rm.dateInput.Cursor.Style = style
+	case 1:
+		rm.ledgerInput.Colour = colour
+	case 2:
+		rm.accountInput.Colour = colour
+	case 3:
+		rm.descriptionInput.TextStyle = style
+		rm.descriptionInput.PromptStyle = style
+		rm.descriptionInput.Cursor.Style = style
+	case 4:
+		rm.debitInput.TextStyle = style
+		rm.debitInput.PromptStyle = style
+		rm.debitInput.Cursor.Style = style
+	case 5:
+		rm.creditInput.TextStyle = style
+		rm.creditInput.PromptStyle = style
+		rm.creditInput.Cursor.Style = style
+	}
+}
+
+func (rm *rowMutator) clearColours() {
+	rm.dateInput.TextStyle = lipgloss.Style{}
+	rm.dateInput.PromptStyle = lipgloss.Style{}
+	rm.dateInput.Cursor.Style = lipgloss.Style{}
+	rm.ledgerInput.Colour = ""
+	rm.accountInput.Colour = ""
+	rm.descriptionInput.TextStyle = lipgloss.Style{}
+	rm.descriptionInput.PromptStyle = lipgloss.Style{}
+	rm.descriptionInput.Cursor.Style = lipgloss.Style{}
+	rm.debitInput.TextStyle = lipgloss.Style{}
+	rm.debitInput.PromptStyle = lipgloss.Style{}
+	rm.debitInput.Cursor.Style = lipgloss.Style{}
+	rm.creditInput.TextStyle = lipgloss.Style{}
+	rm.creditInput.PromptStyle = lipgloss.Style{}
+	rm.creditInput.Cursor.Style = lipgloss.Style{}
+}
+
 func (cv *entryCreateView) Init() tea.Cmd {
 	return nil
 }
@@ -743,7 +788,7 @@ func (rmm *rowsMutateManager) Update(message tea.Msg) (*rowsMutateManager, tea.C
 func (rmm *rowsMutateManager) View() string {
 	var result strings.Builder
 
-	result.WriteString(rmm.renderRow(rmm.headers, nil))
+	result.WriteString(rmm.renderRow(rmm.headers))
 
 	result.WriteString("\n")
 
@@ -814,7 +859,7 @@ func (rmm *rowsMutateManager) updateRowMutatorWidths(colWidths []int) {
 	}
 }
 
-func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) string {
+func (rmm *rowsMutateManager) renderRow(values []string) string {
 	if len(values) != len(rmm.colWidths) {
 		panic("you absolute dingus")
 	}
@@ -824,11 +869,6 @@ func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) st
 		// TODO: truncate the contents with a nice "..." to indicate wrapping
 		// Does that work? I guess edge cases are prevented by the minimum widths on the inputs
 		style := lipgloss.NewStyle().Width(rmm.colWidths[i]).MaxHeight(1)
-
-		// +1 because never highlight idx column
-		if highlightedCol != nil && i == *highlightedCol+1 {
-			style = style.Foreground(meta.ENTRIESCOLOUR)
-		}
 
 		if i != len(values)-1 {
 			style = style.MarginRight(2)
@@ -841,16 +881,19 @@ func (rmm *rowsMutateManager) renderRow(values []string, highlightedCol *int) st
 }
 
 func (rmm *rowsMutateManager) updateViewportContent() {
-	var rows []string
-
 	activeRow, activeCol := rmm.getActiveCoords()
 
-	for i, row := range rmm.makeShownRows() {
+	for i, rowMutator := range rmm.rowMutators {
 		if rmm.isActive && i == activeRow {
-			rows = append(rows, rmm.renderRow(row, &activeCol))
+			rowMutator.setActiveColour(activeCol, meta.ENTRIESCOLOUR)
 		} else {
-			rows = append(rows, rmm.renderRow(row, nil))
+			rowMutator.clearColours()
 		}
+	}
+
+	var rows []string
+	for _, row := range rmm.makeShownRows() {
+		rows = append(rows, rmm.renderRow(row))
 	}
 
 	rmm.viewport.SetContent(strings.Join(rows, "\n"))
@@ -1468,18 +1511,13 @@ func entryMutateViewView(view entryMutateView) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(meta.ENTRIESCOLOUR)
 
-	journalInputStyle := sectionStyle
-	notesInputStyle := sectionStyle
-	rowMutateManagerStyle := sectionStyle
+	journalInput := view.getJournalInput()
 	switch *view.getActiveInput() {
 	case 0:
-		journalInputStyle = highlightStyle
-	case 1:
-		notesInputStyle = highlightStyle
-	case 2:
-		// pass
+		journalInput.Colour = meta.ENTRIESCOLOUR
+	case 1, 2:
+		journalInput.Colour = ""
 	default:
 		panic(fmt.Sprintf("invalid active input %d", *view.getActiveInput()))
 	}
@@ -1491,7 +1529,7 @@ func entryMutateViewView(view entryMutateView) string {
 		lipgloss.Top,
 		sectionStyle.Width(maxNameColWidth).Render("Journal"),
 		" ",
-		journalInputStyle.Render(view.getJournalInput().View()),
+		sectionStyle.Render(journalInput.View()),
 	))
 
 	result.WriteString("\n")
@@ -1500,12 +1538,12 @@ func entryMutateViewView(view entryMutateView) string {
 		lipgloss.Top,
 		sectionStyle.Width(maxNameColWidth).Render("Notes"),
 		" ",
-		notesInputStyle.Render(view.getNotesInput().View()),
+		sectionStyle.Render(view.getNotesInput().View()),
 	))
 
 	result.WriteString("\n")
 
-	result.WriteString(rowMutateManagerStyle.Render(view.getManager().View()))
+	result.WriteString(sectionStyle.Render(view.getManager().View()))
 
 	return result.String()
 }
