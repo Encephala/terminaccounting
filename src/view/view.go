@@ -100,6 +100,7 @@ type input interface {
 	focus() tea.Cmd
 	blur()
 	setWidth(int)
+	setTextColour(lipgloss.Color)
 
 	value() any
 	setValue(any) error
@@ -110,11 +111,12 @@ type inputAdapter[T viewable] struct {
 	model    T
 	updateFn func(T, tea.Msg) (T, tea.Cmd)
 	// No adapter for View, because T is constrained viewable so we can use a blanket implementation
-	focusFn    func(*T) tea.Cmd
-	blurFn     func(*T)
-	setWidthFn func(*T, int)
-	valueFn    func(T) any
-	setValueFn func(*T, any) error
+	focusFn         func(*T) tea.Cmd
+	blurFn          func(*T)
+	setWidthFn      func(*T, int)
+	setTextColourFn func(*T, lipgloss.Color)
+	valueFn         func(T) any
+	setValueFn      func(*T, any) error
 }
 
 func (ia *inputAdapter[T]) update(message tea.Msg) (input, tea.Cmd) {
@@ -138,6 +140,10 @@ func (ia *inputAdapter[T]) blur() {
 
 func (ia *inputAdapter[T]) setWidth(width int) {
 	ia.setWidthFn(&ia.model, width)
+}
+
+func (ia *inputAdapter[T]) setTextColour(colour lipgloss.Color) {
+	ia.setTextColourFn(&ia.model, colour)
 }
 
 func (ia *inputAdapter[T]) value() any {
@@ -166,6 +172,11 @@ func newAdapterFrom(input any) input {
 				// -3 for the prompt + cursor (I think), because textinput's definition of Width is weird af
 				model.Width = width - 3
 			},
+			setTextColourFn: func(model *textinput.Model, colour lipgloss.Color) {
+				style := lipgloss.NewStyle().Foreground(colour)
+				model.TextStyle = style
+				model.PromptStyle = style
+			},
 			valueFn: func(model textinput.Model) any {
 				return model.Value()
 			},
@@ -190,6 +201,7 @@ func newAdapterFrom(input any) input {
 			setWidthFn: func(model *textarea.Model, width int) {
 				model.SetWidth(width)
 			},
+			setTextColourFn: func(model *textarea.Model, colour lipgloss.Color) {},
 			valueFn: func(model textarea.Model) any {
 				return model.Value()
 			},
@@ -205,9 +217,10 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model itempicker.Model, message tea.Msg) (itempicker.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn:    func(model *itempicker.Model) tea.Cmd { return nil },
-			blurFn:     func(model *itempicker.Model) {},
-			setWidthFn: func(model *itempicker.Model, width int) {},
+			focusFn:         func(model *itempicker.Model) tea.Cmd { return nil },
+			blurFn:          func(model *itempicker.Model) {},
+			setWidthFn:      func(model *itempicker.Model, width int) {},
+			setTextColourFn: func(model *itempicker.Model, colour lipgloss.Color) {},
 			valueFn: func(model itempicker.Model) any {
 				return model.Value()
 			},
@@ -223,9 +236,10 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model booleaninput.Model, message tea.Msg) (booleaninput.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn:    func(*booleaninput.Model) tea.Cmd { return nil },
-			blurFn:     func(*booleaninput.Model) {},
-			setWidthFn: func(model *booleaninput.Model, width int) {},
+			focusFn:         func(*booleaninput.Model) tea.Cmd { return nil },
+			blurFn:          func(*booleaninput.Model) {},
+			setWidthFn:      func(model *booleaninput.Model, width int) {},
+			setTextColourFn: func(model *booleaninput.Model, colour lipgloss.Color) {},
 			valueFn: func(model booleaninput.Model) any {
 				return model.Value()
 			},
@@ -324,34 +338,36 @@ func (im *inputManager) View(highlightColour lipgloss.Color) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1).
 		Align(lipgloss.Left)
-	highlightStyle := sectionStyle.Foreground(highlightColour)
 
 	if len(im.names) != len(im.inputs) {
 		panic("what in the fuck")
 	}
-
-	styles := slices.Repeat([]lipgloss.Style{sectionStyle}, len(im.names))
-	styles[im.activeInput] = highlightStyle
 
 	// +2 for padding
 	maxNameColWidth := len(slices.MaxFunc(im.names, func(name string, other string) int {
 		return cmp.Compare(len(name), len(other))
 	})) + 2
 
-	sectionStyle = sectionStyle.Width(maxNameColWidth)
+	nameStyle := sectionStyle.Width(maxNameColWidth)
 
 	for i := range im.names {
+		if i == im.activeInput {
+			im.inputs[i].setTextColour(highlightColour)
+		} else {
+			im.inputs[i].setTextColour(lipgloss.Color(""))
+		}
+
 		if im.names[i] == "" {
 			result.WriteString(sectionStyle.Render(im.inputs[i].view()))
 		} else {
 			var name, input string
 
 			if im.disabled[i] {
-				name = sectionStyle.Foreground(lipgloss.ANSIColor(8)).Render(im.names[i])
-				input = styles[i].Foreground(lipgloss.ANSIColor(8)).Render(im.inputs[i].view())
+				name = nameStyle.Foreground(lipgloss.ANSIColor(8)).Render(im.names[i])
+				input = sectionStyle.Foreground(lipgloss.ANSIColor(8)).Render(im.inputs[i].view())
 			} else {
-				name = sectionStyle.Width(maxNameColWidth).Render(im.names[i])
-				input = styles[i].Render(im.inputs[i].view())
+				name = nameStyle.Render(im.names[i])
+				input = sectionStyle.Render(im.inputs[i].view())
 			}
 
 			result.WriteString(lipgloss.JoinHorizontal(
