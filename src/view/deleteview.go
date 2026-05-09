@@ -45,7 +45,7 @@ func genericDeleteViewView(gdv genericDeleteView, width, height int) string {
 
 	for i := range names {
 		// -4 for padding and border on both sides
-		truncatedValue := ansi.Truncate(values[i], remainingValueWidth-4, "...")
+		truncatedValue := ansi.Truncate(values[i], remainingValueWidth-4, "…")
 
 		result.WriteString(lipgloss.JoinHorizontal(
 			lipgloss.Top,

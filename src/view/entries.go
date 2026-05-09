@@ -848,11 +848,11 @@ func (rmm *rowsMutateManager) calculateColumnWidths() {
 
 func (rmm *rowsMutateManager) updateRowMutatorWidths(colWidths []int) {
 	for _, rowMutator := range rmm.rowMutators {
-		// The -2 are for the prompt "> ", and then -1 for the cursor
-		// Because for some reason the textinput model doesn't count the cursor in the width
-		rowMutator.dateInput.Width = colWidths[1] - 2 - 1
+		rowMutator.dateInput.Width = colWidths[1]
 		rowMutator.ledgerInput.MaxWidth = colWidths[2]
 		rowMutator.accountInput.MaxWidth = colWidths[3]
+		// The -2 are for the prompt "> ", and then -1 for the cursor
+		// Because for some reason the textinput model doesn't count the cursor in the width
 		rowMutator.descriptionInput.Width = colWidths[4] - 2 - 1
 		rowMutator.debitInput.Width = colWidths[5] - 2 - 1
 		rowMutator.creditInput.Width = colWidths[6] - 2 - 1
@@ -866,7 +866,7 @@ func (rmm *rowsMutateManager) renderRow(values []string) string {
 
 	var result strings.Builder
 	for i := range values {
-		// TODO: truncate the contents with a nice "..." to indicate wrapping
+		// TODO: truncate the contents with a nice "…" to indicate wrapping
 		// Does that work? I guess edge cases are prevented by the minimum widths on the inputs
 		style := lipgloss.NewStyle().Width(rmm.colWidths[i]).MaxHeight(1)
 

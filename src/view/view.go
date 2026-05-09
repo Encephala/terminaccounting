@@ -77,7 +77,7 @@ func renderHeader(title string, metadata metadata, width int) string {
 	titleRendered := lipgloss.NewStyle().
 		Margin(1, 0).
 		// TODO: width scaled by with space needed for metadata
-		Render(ansi.Truncate(title, maxTitleWidth, "..."))
+		Render(ansi.Truncate(title, maxTitleWidth, "…"))
 	titleWidth := ansi.StringWidth(strings.Split(titleRendered, "\n")[0])
 
 	if len(metadata.names) == 0 {
