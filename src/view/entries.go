@@ -1319,6 +1319,26 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 	rowsMutateManager := view.getManager()
 
 	switch message := message.(type) {
+	case tea.WindowSizeMsg:
+		rowsMutateManager := view.getManager()
+
+		journalHeight := 3
+		notesHeight := (message.Height - journalHeight) / 4
+		view.getNotesInput().SetHeight(notesHeight)
+		// -4 for borders and padding, -1 for margin between name and input
+		notesWidth := message.Width - len("Journal") - 2*4 - 1
+		view.getNotesInput().SetWidth(notesWidth)
+
+		newManager, cmd := rowsMutateManager.Update(tea.WindowSizeMsg{
+			// -4 for borders and horizontal padding
+			Width: max(message.Width-4, 0),
+			// 2 for notes borders, -4 for borders, header row and total row
+			Height: max(message.Height-journalHeight-(notesHeight+2)-4, 0),
+		})
+		*rowsMutateManager = *newManager
+
+		return view, cmd
+
 	case meta.SwitchFocusMsg:
 		if *activeInput == ENTRIESNOTESINPUT {
 			notesInput.Blur()
@@ -1387,23 +1407,6 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 
 		manager, cmd := rowsMutateManager.Update(message)
 		*rowsMutateManager = *manager
-
-		return view, cmd
-
-	case tea.WindowSizeMsg:
-		rowsMutateManager := view.getManager()
-
-		journalHeight := 3
-		notesHeight := (message.Height - journalHeight) / 4
-		view.getNotesInput().SetHeight(notesHeight)
-
-		newManager, cmd := rowsMutateManager.Update(tea.WindowSizeMsg{
-			// -4 for borders and horizontal padding
-			Width: max(message.Width-4, 0),
-			// 2 for notes borders, -4 for borders, header row and total row
-			Height: max(message.Height-journalHeight-(notesHeight+2)-4, 0),
-		})
-		*rowsMutateManager = *newManager
 
 		return view, cmd
 

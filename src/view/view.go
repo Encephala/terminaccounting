@@ -272,7 +272,7 @@ func (im *inputManager) Update(message tea.Msg) (*inputManager, tea.Cmd) {
 		im.height = message.Height
 
 		maxNameWidth := len(slices.MaxFunc(im.names, func(a, b string) int { return len(a) - len(b) }))
-		// 4 is for padding + borders, 1 is for padding between name and input
+		// 4 is for padding + borders, 1 is for margin between name and input
 		reservedWidth := maxNameWidth + 2*4 + 1
 
 		for _, input := range im.inputs {
