@@ -230,9 +230,9 @@ func TestAppManager_YScrollState(t *testing.T) {
 		tw.Execute(t, func(ta *terminaccounting) {
 			// base height is 20
 			// appmanager gets -2 for the status/command lines = 18
-			// then contentHeight has -3 for tabs, -3 for top title, -1 for bottom margin = 11
-			// max yscroll is contentHeight - 1 = 10
-			assert.Equal(t, 10, ta.appManager.yscroll)
+			// then contentHeight has -3 for tabs, -1 for bottom margin = 14
+			// max yscroll is contentHeight - 1 = 13
+			assert.Equal(t, 13, ta.appManager.yscroll)
 		})
 	})
 
