@@ -371,32 +371,7 @@ func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, a
 }
 
 func TestEntryUpdateView_DataLoaded(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
-
-	account := database.Account{Name: "Test Account", Type: database.DEBTOR}
-	accountId, err := account.Insert(DB)
-	require.NoError(t, err)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	require.NoError(t, database.UpdateCache(DB))
-
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
-
-	entry := database.Entry{Journal: journalId, Notes: meta.Notes{"Original notes"}}
-	entryRows := []database.EntryRow{
-		{Ledger: ledgerId, Account: &accountId, Date: date, Value: 5000},
-		{Ledger: ledgerId, Account: &accountId, Date: date, Value: -5000},
-	}
-	entryId, err := entry.Insert(DB, entryRows)
-	require.NoError(t, err)
+	DB, journalId, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tat.NewTestWrapperSpecific(View(uv))
@@ -410,28 +385,7 @@ func TestEntryUpdateView_DataLoaded(t *testing.T) {
 }
 
 func TestEntryUpdateView_FocusNavigation(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
-
-	require.NoError(t, database.UpdateCache(DB))
-
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
-
-	entry := database.Entry{Journal: journalId}
-	entryRows := []database.EntryRow{
-		{Ledger: ledgerId, Date: date, Value: 1000},
-		{Ledger: ledgerId, Date: date, Value: -1000},
-	}
-	entryId, err := entry.Insert(DB, entryRows)
-	require.NoError(t, err)
+	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
@@ -452,28 +406,7 @@ func TestEntryUpdateView_FocusNavigation(t *testing.T) {
 }
 
 func TestEntryUpdateView_FocusNavigation_WrapsAround(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
-
-	require.NoError(t, database.UpdateCache(DB))
-
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
-
-	entry := database.Entry{Journal: journalId}
-	entryRows := []database.EntryRow{
-		{Ledger: ledgerId, Date: date, Value: 1000},
-		{Ledger: ledgerId, Date: date, Value: -1000},
-	}
-	entryId, err := entry.Insert(DB, entryRows)
-	require.NoError(t, err)
+	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
@@ -486,32 +419,7 @@ func TestEntryUpdateView_FocusNavigation_WrapsAround(t *testing.T) {
 }
 
 func TestEntryUpdateView_Commit(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
-
-	account := database.Account{Name: "Test Account", Type: database.DEBTOR}
-	accountId, err := account.Insert(DB)
-	require.NoError(t, err)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	require.NoError(t, database.UpdateCache(DB))
-
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
-
-	entry := database.Entry{Journal: journalId, Notes: meta.Notes{"Original notes"}}
-	originalRows := []database.EntryRow{
-		{Ledger: ledgerId, Account: &accountId, Date: date, Value: 5000},
-		{Ledger: ledgerId, Account: &accountId, Date: date, Value: -5000},
-	}
-	entryId, err := entry.Insert(DB, originalRows)
-	require.NoError(t, err)
+	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv),
@@ -535,28 +443,7 @@ func TestEntryUpdateView_Commit(t *testing.T) {
 }
 
 func TestEntryUpdateView_ResetInputField_Notes(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	require.NoError(t, database.UpdateCache(DB))
-
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
-
-	entry := database.Entry{Journal: journalId, Notes: meta.Notes{"Original notes"}}
-	entryRows := []database.EntryRow{
-		{Ledger: ledgerId, Date: date, Value: 1000},
-		{Ledger: ledgerId, Date: date, Value: -1000},
-	}
-	entryId, err := entry.Insert(DB, entryRows)
-	require.NoError(t, err)
+	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
