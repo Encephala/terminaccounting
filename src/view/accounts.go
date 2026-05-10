@@ -80,9 +80,16 @@ func (dv *accountsDetailView) title() string {
 }
 
 func (dv *accountsDetailView) metadata() metadata {
+	var bankNumbersRendered string
+	if len(dv.model.BankNumbers) == 0 {
+		bankNumbersRendered = lipgloss.NewStyle().Italic(true).Render("none")
+	} else {
+		bankNumbersRendered = dv.model.BankNumbers.Collapse("; ")
+	}
+
 	return metadata{
 		names:  []string{"Type", "Bank numbers"},
-		values: []string{dv.model.Type.String(), dv.model.BankNumbers.Collapse("; ")},
+		values: []string{dv.model.Type.String(), bankNumbersRendered},
 	}
 }
 
