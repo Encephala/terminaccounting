@@ -1,12 +1,15 @@
 package view
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	"terminaccounting/database"
 	"terminaccounting/meta"
 	"terminaccounting/tat"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -334,7 +337,7 @@ func TestJournalsUpdateView_ResetInputField(t *testing.T) {
 	assert.Equal(t, "Test Journal", uv.inputManager.inputs[0].value())
 }
 
-func setupEntryUpdateViewTest(t *testing.T) (DB interface{ Close() error }, journalId, ledgerId, accountId, entryId int) {
+func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, accountId, entryId int) {
 	t.Helper()
 
 	dbConn := tat.SetupTestEnv(t)
@@ -568,42 +571,39 @@ func TestEntryUpdateView_ResetInputField_Notes(t *testing.T) {
 }
 
 func TestEntryUpdateView_ResetInputField_Rows(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
+	t.Run("resets existing row to original value", func(t *testing.T) {
+		DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
-	ledgerId, err := ledger.Insert(DB)
-	require.NoError(t, err)
+		uv := NewEntryUpdateView(DB, entryId)
+		tw := tat.NewTestWrapperSpecific(View(uv))
 
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
+		uv.activeInput = ENTRIESROWINPUT
+		uv.entryRowsManager.rowMutators[0].dateInput.SetValue("2099-12-31")
+		assert.Equal(t, "2099-12-31", uv.entryRowsManager.rowMutators[0].dateInput.Value())
 
-	require.NoError(t, database.UpdateCache(DB))
+		tw.Send(meta.ResetInputFieldMsg{})
 
-	date, err := database.ToDate("2024-01-01")
-	require.NoError(t, err)
+		assert.Equal(t, "2024-01-01", uv.entryRowsManager.rowMutators[0].dateInput.Value())
+		assert.Equal(t, "50.00", uv.entryRowsManager.rowMutators[0].debitInput.Value())
+	})
 
-	entry := database.Entry{Journal: journalId}
-	entryRows := []database.EntryRow{
-		{Ledger: ledgerId, Date: date, Value: 1000},
-		{Ledger: ledgerId, Date: date, Value: -1000},
-	}
-	entryId, err := entry.Insert(DB, entryRows)
-	require.NoError(t, err)
+	t.Run("returns error for added row with no original", func(t *testing.T) {
+		DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
 
-	uv := NewEntryUpdateView(DB, entryId)
-	tw := tat.NewTestWrapperSpecific(View(uv), meta.SwitchModeMsg{InputMode: meta.INSERTMODE})
+		uv := NewEntryUpdateView(DB, entryId)
+		tw := tat.NewTestWrapperSpecific(View(uv),
+			meta.SwitchModeMsg{InputMode: meta.INSERTMODE},
+			errors.New("Row has no starting value to reset to"),
+		)
 
-	// Navigate to rows, then add an extra row
-	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	require.Equal(t, ENTRIESROWINPUT, uv.activeInput)
+		uv.activeInput = ENTRIESROWINPUT
+		tw.Send(CreateEntryRowMsg{After: true})
+		require.Len(t, uv.entryRowsManager.rowMutators, 3)
 
-	tw.Send(CreateEntryRowMsg{After: true})
-	require.Len(t, uv.entryRowsManager.rowMutators, 3)
+		// Active row is now 1 (the newly added row, which has no original)
+		tw.Send(meta.ResetInputFieldMsg{})
 
-	uv.activeInput = ENTRIESROWINPUT
-	tw.Send(meta.ResetInputFieldMsg{})
-
-	assert.Len(t, uv.entryRowsManager.rowMutators, 2, "rows should be reset to original count")
+		require.Len(t, tw.LastCmdResults, 1)
+		assert.Equal(t, errors.New("Row has no starting value to reset to"), tw.LastCmdResults[0])
+	})
 }

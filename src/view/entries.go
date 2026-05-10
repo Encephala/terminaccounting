@@ -3,6 +3,7 @@ package view
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -235,9 +236,11 @@ type rowMutator struct {
 	// https://github.com/charmbracelet/bubbles/tree/master/filepicker
 	debitInput  textinput.Model
 	creditInput textinput.Model
+
+	originalValue *database.EntryRow
 }
 
-func newRowMutator(startDate *database.Date) *rowMutator {
+func newRowMutator(startDate *database.Date, originalValue *database.EntryRow) *rowMutator {
 	dateInput := textinput.New()
 	dateInput.Cursor.SetMode(cursor.CursorStatic)
 	dateInput.Placeholder = "yyyy-MM-dd"
@@ -264,9 +267,27 @@ func newRowMutator(startDate *database.Date) *rowMutator {
 		descriptionInput: descriptionInput,
 		debitInput:       debitInput,
 		creditInput:      creditInput,
+
+		originalValue: originalValue,
 	}
 
 	return &result
+}
+
+func (rm *rowMutator) resetToOriginalValue() error {
+	if rm.originalValue == nil {
+		return errors.New("Row has no starting value to reset to")
+	}
+
+	rowToDecompile := []database.EntryRow{*rm.originalValue}
+	decompiled, err := decompileRows(rowToDecompile)
+	if err != nil {
+		return err
+	}
+
+	*rm = *decompiled[0]
+
+	return nil
 }
 
 func (rm *rowMutator) setActiveColour(col int, colour lipgloss.Color) {
@@ -579,12 +600,15 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			uv.notesInput.SetValue(uv.startingEntry.Notes.Collapse())
 
 		case ENTRIESROWINPUT:
-			var err error
-			uv.entryRowsManager.rowMutators, err = decompileRows(uv.startingEntryRows)
+			activeRow, activeCol := uv.entryRowsManager.getActiveCoords()
 
+			slog.Debug("resetting", "row", activeRow, "col", activeCol)
+			err := uv.entryRowsManager.rowMutators[activeRow].resetToOriginalValue()
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
+
+			uv.entryRowsManager.setActiveCoords(activeRow, activeCol)
 
 		default:
 			panic(fmt.Sprintf("unexpected view.activeInput: %#v", uv.activeInput))
@@ -689,8 +713,8 @@ func newRowsMutateManager() *rowsMutateManager {
 	// Prefill with two empty rows
 	rows := make([]*rowMutator, 2)
 
-	rows[0] = newRowMutator(database.Today())
-	rows[1] = newRowMutator(database.Today())
+	rows[0] = newRowMutator(database.Today(), nil)
+	rows[1] = newRowMutator(database.Today(), nil)
 
 	result := &rowsMutateManager{
 		headers:     []string{"Row", "Date", "Ledger", "Account", "Description", "Debit", "Credit"},
@@ -1264,7 +1288,7 @@ func decompileRows(rows []database.EntryRow) ([]*rowMutator, error) {
 			account = &availableAccounts[availableAccountIndex]
 		}
 
-		formRow := newRowMutator(&row.Date)
+		formRow := newRowMutator(&row.Date, &row)
 
 		err := formRow.ledgerInput.SetValue(ledger)
 		if err != nil {
@@ -1368,9 +1392,10 @@ func (rmm *rowsMutateManager) addRow(after bool) (*rowsMutateManager, tea.Cmd) {
 	// prefill it in the new row. Otherwise, just leave new row empty
 	prefillDate, parseErr := database.ToDate(rmm.rowMutators[activeRow].dateInput.Value())
 	if parseErr == nil {
-		newRow = newRowMutator(&prefillDate)
+		newRow = newRowMutator(&prefillDate, nil)
 	} else {
-		newRow = newRowMutator(nil)
+		slog.Debug("Failed to parse date, can't prefill", "error", parseErr)
+		newRow = newRowMutator(nil, nil)
 	}
 
 	newRows := make([]*rowMutator, 0, rmm.numRows()+1)
