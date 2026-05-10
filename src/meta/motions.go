@@ -85,6 +85,7 @@ func globalMotions() Trie[tea.Msg] {
 		{Motion{"esc"}, tea.KeyMsg{Type: tea.KeyCtrlC}},
 		{Motion{"i"}, SwitchModeMsg{InputMode: INSERTMODE}},
 		{Motion{":"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: false}}, // false -> not search mode
+		{Motion{"/"}, SwitchModeMsg{InputMode: COMMANDMODE, Data: true}},  // true -> yes search mode
 		{Motion{"ctrl+l"}, ReloadViewMsg{}},
 	})
 

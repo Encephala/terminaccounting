@@ -1682,8 +1682,6 @@ func entryMutateViewMotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
 	motions.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
-	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
-
 	return motions
 }
 

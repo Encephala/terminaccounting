@@ -281,8 +281,6 @@ func (cv *accountsCreateView) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"tab"}, meta.SwitchFocusMsg{Direction: meta.NEXT})
 	motions.Insert(meta.Motion{"shift+tab"}, meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
 
-	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
-
 	return motions
 }
 
@@ -461,8 +459,6 @@ func (uv *accountsUpdateView) MotionSet() meta.Trie[tea.Msg] {
 	motions.Insert(meta.Motion{"u"}, meta.ResetInputFieldMsg{})
 
 	motions.Insert(meta.Motion{"g", "d"}, uv.makeGoToDetailViewCmd())
-
-	motions.Insert(meta.Motion{"/"}, meta.SwitchModeMsg{InputMode: meta.COMMANDMODE, Data: true}) // true -> yes search mode
 
 	return motions
 }
