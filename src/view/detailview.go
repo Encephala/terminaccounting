@@ -256,7 +256,7 @@ type entryRowViewer struct {
 
 	// The query to filter shownRows by
 	// If nil, no filter
-	filter *string
+	filterQuery *string
 
 	showReconciled bool
 
@@ -310,9 +310,12 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 
 	case meta.UpdateSearchMsg:
 		if message.Query == "" {
-			erv.filter = nil
+			erv.filterQuery = nil
+			erv.viewport.Height = erv.height - 8
 		} else {
-			erv.filter = &message.Query
+			erv.filterQuery = &message.Query
+			// Add -2 to show filter state
+			erv.viewport.Height = erv.height - 8 - 2
 		}
 
 		erv.updateViewRows()
@@ -326,6 +329,13 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 
 func (erv *entryRowViewer) View() string {
 	var result strings.Builder
+
+	if erv.filterQuery != nil {
+		style := lipgloss.NewStyle().Foreground(erv.highlightColour)
+
+		result.WriteString("Rows filtered by: " + style.Render(*erv.filterQuery))
+		result.WriteString("\n\n")
+	}
 
 	erv.setViewportContent()
 
@@ -385,9 +395,9 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 // Takes the rows, and depending on state, updates the shownRows and viewRows based off of them
 func (erv *entryRowViewer) updateViewRows() {
 	if erv.showReconciled {
-		erv.shownRows = filterRows(erv.rows, erv.filter)
+		erv.shownRows = filterRows(erv.rows, erv.filterQuery)
 	} else {
-		erv.shownRows = filterRows(erv.getUnreconciledRows(), erv.filter)
+		erv.shownRows = filterRows(erv.getUnreconciledRows(), erv.filterQuery)
 	}
 
 	availableLedgers := database.AvailableLedgers()
