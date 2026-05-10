@@ -46,7 +46,7 @@ func newTerminaccounting(DB *sqlx.DB) *terminaccounting {
 	commandInput.Prompt = ":"
 
 	am := newAppManager(DB)
-	mm := modals.NewModalManager()
+	mm := modals.NewModalManager(DB)
 
 	return &terminaccounting{
 		DB: DB,
@@ -101,6 +101,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case tea.Cmd:
+		slog.Debug("asdf")
 		return ta, message
 
 	case tea.WindowSizeMsg:
@@ -127,7 +128,7 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 		return ta, tea.Batch(cmds...)
 
-	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg, meta.SwitchAppViewMsg:
+	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg, meta.SwitchAppViewMsg, meta.ShowGlobalSearchMsg:
 		return ta.handleViewSwitch(message)
 
 	case meta.NotificationMessageMsg:
@@ -458,7 +459,7 @@ func (ta *terminaccounting) handleViewSwitch(message tea.Msg) (*terminaccounting
 
 		return ta, cmd
 
-	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg:
+	case meta.ShowTextModalMsg, meta.ShowNotificationsMsg, meta.ShowBankImporterMsg, meta.ShowGlobalSearchMsg:
 		var cmd tea.Cmd
 		ta.modalManager, cmd = ta.modalManager.Update(message)
 

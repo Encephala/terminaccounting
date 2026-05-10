@@ -33,6 +33,12 @@ type ShowTextModalMsg struct {
 	Text []string
 }
 
+type ShowGlobalSearchMsg struct{}
+
+type GlobalSearchDataLoadedMsg struct {
+	Data []any
+}
+
 type FetchNotificationHistoryMsg struct{}
 
 type NotificationHistoryLoadedMsg struct {
@@ -127,6 +133,7 @@ const (
 	TEXTMODALVIEWTYPE          ViewType = "TEXT MODAL"
 	NOTIFICATIONSMODALVIEWTYPE ViewType = "NOTIFICATIONS MODAL"
 	BANKIMPORTERVIEWTYPE       ViewType = "BANK IMPORTER"
+	GLOBALSEARCHVIEWTYPE       ViewType = "GLOBAL SEARCH"
 )
 
 // To switch to specific View (in specific App if provided)

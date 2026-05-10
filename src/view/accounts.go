@@ -172,7 +172,6 @@ func NewAccountsCreateView(DB *sqlx.DB) *accountsCreateView {
 
 	nameInput := textinput.New()
 	nameInput.Focus()
-	// -2 because of the prompt, -1 because of the cursor
 	nameInput.Cursor.SetMode(cursor.CursorStatic)
 
 	typeInput := itempicker.New(accountTypes)

@@ -4,6 +4,7 @@ import (
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 )
 
 type Modal interface {
@@ -21,13 +22,15 @@ type Modal interface {
 }
 
 type ModalManager struct {
+	DB *sqlx.DB
+
 	width, height int
 
 	Modal Modal
 }
 
-func NewModalManager() *ModalManager {
-	return &ModalManager{}
+func NewModalManager(DB *sqlx.DB) *ModalManager {
+	return &ModalManager{DB: DB}
 }
 
 func (mm *ModalManager) Init() tea.Cmd {
@@ -48,7 +51,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, cmd
 
 	case meta.ShowTextModalMsg:
-		mm.Modal = NewTextModal(message.Text...)
+		mm.Modal = newTextModal(message.Text...)
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
@@ -59,7 +62,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
 	case meta.ShowBankImporterMsg:
-		mm.Modal = NewBankImporter()
+		mm.Modal = newBankImporter()
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
@@ -70,7 +73,18 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		return mm, tea.Batch(mm.Modal.Init(), cmd)
 
 	case meta.ShowNotificationsMsg:
-		mm.Modal = NewNotificationsModal()
+		mm.Modal = newNotificationsModal()
+
+		var cmd tea.Cmd
+		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
+			Width:  mm.width,
+			Height: mm.height,
+		})
+
+		return mm, tea.Batch(mm.Modal.Init(), cmd)
+
+	case meta.ShowGlobalSearchMsg:
+		mm.Modal = newGlobalSearchModal(mm.DB)
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
@@ -92,7 +106,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 		notificationCmd := meta.MessageCmd(meta.NotificationMessageMsg{Message: "Refreshed modal"})
 
 		// There's supposedly no guarantee on the order of cmds
-		// But in practice putting notificationCmd after Modal.Init makes the refreshed modal
+		// But in practice putting notificationCmd after Modal.Init makes the refreshed notificationsModal
 		// always contain the "Refreshed modal" message
 		return mm, tea.Batch(mm.Modal.Init(), notificationCmd, windowSizeCmd)
 	}

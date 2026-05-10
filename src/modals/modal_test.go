@@ -15,7 +15,7 @@ import (
 )
 
 func TestTextModal_Rendering(t *testing.T) {
-	tm := NewTextModal("first line", "second line", "third line")
+	tm := newTextModal("first line", "second line", "third line")
 	tw := tat.NewTestWrapperSpecific(Modal(tm))
 
 	tw.AssertViewContains(t, "first line")
@@ -30,7 +30,7 @@ func TestTextModal_Scroll(t *testing.T) {
 		lines[i] = fmt.Sprintf("line %d", i)
 	}
 
-	tm := NewTextModal(lines...)
+	tm := newTextModal(lines...)
 	tw := tat.NewTestWrapperSpecific(Modal(tm))
 
 	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
@@ -51,7 +51,7 @@ var testCSVData = [][]string{
 func setupBankImporter(t *testing.T) *bankImporter {
 	t.Helper()
 
-	bi := NewBankImporter()
+	bi := newBankImporter()
 	bi.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 
 	bi.fileLoaded = true
@@ -225,7 +225,7 @@ func TestBankImporter_Navigate_ScrollsViewport(t *testing.T) {
 		}
 	}
 
-	bi := NewBankImporter()
+	bi := newBankImporter()
 	bi.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	bi.fileLoaded = true
 	bi.headers = testCSVHeaders

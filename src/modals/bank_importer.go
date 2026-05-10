@@ -51,7 +51,7 @@ type bankParser interface {
 	compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error)
 }
 
-func NewBankImporter() *bankImporter {
+func newBankImporter() *bankImporter {
 	parserPicker := itempicker.New([]itempicker.Item{ingParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
@@ -422,7 +422,7 @@ func (bi *bankImporter) CommandSet() meta.Trie[tea.Msg] {
 }
 
 func (bi *bankImporter) Reload() Modal {
-	return NewBankImporter()
+	return newBankImporter()
 }
 
 func (bi *bankImporter) readFile(path string) ([][]string, error) {

@@ -90,7 +90,9 @@ func globalMotions() Trie[tea.Msg] {
 	})
 
 	// LEADER
-	extendMotionsBy(&motionsToMake, Motion{LEADER}, []motionWithValue{})
+	extendMotionsBy(&motionsToMake, Motion{LEADER}, []motionWithValue{
+		{Motion{"s", "g"}, ShowGlobalSearchMsg{}},
+	})
 
 	// "g"
 	extendMotionsBy(&motionsToMake, Motion{"g"}, []motionWithValue{

@@ -19,7 +19,7 @@ type textModal struct {
 	viewport viewport.Model
 }
 
-func NewTextModal(text ...string) *textModal {
+func newTextModal(text ...string) *textModal {
 	viewport := viewport.New(0, 0)
 	viewport.SetContent(strings.Join(text, "\n"))
 
@@ -120,16 +120,16 @@ func (tm *textModal) CommandSet() meta.Trie[tea.Msg] {
 }
 
 func (tm *textModal) Reload() Modal {
-	return NewTextModal(tm.text...)
+	return newTextModal(tm.text...)
 }
 
 type notificationsModal struct {
 	*textModal
 }
 
-func NewNotificationsModal() *notificationsModal {
+func newNotificationsModal() *notificationsModal {
 	return &notificationsModal{
-		textModal: NewTextModal(),
+		textModal: newTextModal(),
 	}
 }
 
@@ -192,5 +192,5 @@ func (nm *notificationsModal) CommandSet() meta.Trie[tea.Msg] {
 }
 
 func (nm *notificationsModal) Reload() Modal {
-	return NewNotificationsModal()
+	return newNotificationsModal()
 }
