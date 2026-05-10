@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"terminaccounting/meta"
@@ -66,7 +67,7 @@ type Journal struct {
 }
 
 func (j Journal) String() string {
-	return j.Name
+	return j.Name + " (" + strconv.Itoa(j.Id) + ")"
 }
 
 func (j Journal) CompareId() int {
