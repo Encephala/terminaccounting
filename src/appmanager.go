@@ -9,13 +9,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 )
 
 type appManager struct {
-	width, height    int
-	xscroll, yscroll int
+	width, height int
 
 	activeApp int
 	apps      []meta.App
@@ -100,48 +98,6 @@ func (am *appManager) Update(message tea.Msg) (*appManager, tea.Cmd) {
 			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
 		}
 
-	case meta.GlobalScrollVerticalMsg:
-		bodyContent := am.apps[am.activeApp].View()
-		contentHeight := len(strings.Split(bodyContent, "\n"))
-
-		switch {
-		case !message.Up && !message.ToEnd:
-			am.yscroll = min(am.yscroll+1, contentHeight-1)
-		case !message.Up && message.ToEnd:
-			am.yscroll = contentHeight - 1
-		case message.Up && !message.ToEnd:
-			am.yscroll = max(am.yscroll-1, 0)
-		case message.Up && message.ToEnd:
-			am.yscroll = 0
-		}
-
-		return am, nil
-
-	case meta.GlobalScrollHorizontalMsg:
-		bodyContent := am.apps[am.activeApp].View()
-		contentLines := strings.Split(bodyContent, "\n")
-
-		if len(contentLines) == 0 {
-			panic("Body was empty, can't determine scroll bounds")
-		}
-		contentWidth := 0
-		for _, line := range contentLines {
-			contentWidth = max(contentWidth, ansi.StringWidth(line))
-		}
-
-		switch {
-		case !message.Left && !message.ToEnd:
-			am.xscroll = min(am.xscroll+1, contentWidth-1)
-		case !message.Left && message.ToEnd:
-			am.xscroll = contentWidth - 1
-		case message.Left && !message.ToEnd:
-			am.xscroll = max(am.xscroll-1, 0)
-		case message.Left && message.ToEnd:
-			am.xscroll = 0
-		}
-
-		return am, nil
-
 	case meta.SwitchAppViewMsg:
 		if message.App != nil {
 			am.setActiveApp(am.appIds[*message.App])
@@ -214,45 +170,16 @@ func (am *appManager) renderTabs() string {
 }
 
 func (am *appManager) renderBody() string {
-	body := am.apps[am.activeApp].View()
-
-	var bodyLines []string
-	for i, line := range strings.Split(body, "\n") {
-		// Apply vertical scrolling
-		if i < am.yscroll {
-			continue
-		}
-
-		// Apply horizontal scrolling
-		line = ansi.TruncateLeft(line, am.xscroll, "")
-
-		bodyLines = append(bodyLines, line)
-	}
-
 	return lipgloss.NewStyle().
 		// Set fixed height so that status line at bottom doesn't move when scrolling
 		// -3 for the tabs
 		Height(am.height-3).
 		Margin(0, 2).
-		Render(strings.Join(bodyLines, "\n"))
+		Render(am.apps[am.activeApp].View())
 }
 
 func (am *appManager) CurrentMotionSet() meta.Trie[tea.Msg] {
 	result := am.apps[am.activeApp].CurrentMotionSet()
-
-	result.Insert([]string{"z", "j"}, meta.GlobalScrollVerticalMsg{Up: false})
-	result.Insert([]string{"down"}, meta.GlobalScrollVerticalMsg{Up: false})
-	result.Insert([]string{"z", "J"}, meta.GlobalScrollVerticalMsg{Up: false, ToEnd: true})
-
-	result.Insert([]string{"z", "k"}, meta.GlobalScrollVerticalMsg{Up: true})
-	result.Insert([]string{"up"}, meta.GlobalScrollVerticalMsg{Up: true})
-	result.Insert([]string{"z", "K"}, meta.GlobalScrollVerticalMsg{Up: true, ToEnd: true})
-
-	result.Insert([]string{"z", "l"}, meta.GlobalScrollHorizontalMsg{Left: false})
-	result.Insert([]string{"z", "L"}, meta.GlobalScrollHorizontalMsg{Left: false, ToEnd: true})
-
-	result.Insert([]string{"z", "h"}, meta.GlobalScrollHorizontalMsg{Left: true})
-	result.Insert([]string{"z", "H"}, meta.GlobalScrollHorizontalMsg{Left: true, ToEnd: true})
 
 	return result
 }

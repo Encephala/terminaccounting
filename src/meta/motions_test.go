@@ -60,16 +60,16 @@ func TestCompleteMotionSetFallsBackToGlobal(t *testing.T) {
 
 func TestGet_CountPrefixRepeatsMsg(t *testing.T) {
 	var viewMotions Trie[tea.Msg]
-	viewMotions.Insert(Motion{"j"}, GlobalScrollVerticalMsg{Up: false})
+	viewMotions.Insert(Motion{"g", "d"}, SwitchAppViewMsg{ViewType: DETAILVIEWTYPE})
 	cms := NewCompleteMotionSet(viewMotions)
 
 	tests := []struct {
 		motion        Motion
 		expectedCount int
 	}{
-		{Motion{"5", "j"}, 5},
-		{Motion{"1", "j"}, 1},
-		{Motion{"9", "j"}, 9},
+		{Motion{"5", "g", "d"}, 5},
+		{Motion{"1", "g", "d"}, 1},
+		{Motion{"9", "g", "d"}, 9},
 	}
 
 	for _, test := range tests {
@@ -77,7 +77,7 @@ func TestGet_CountPrefixRepeatsMsg(t *testing.T) {
 		require.True(t, ok, "expected %v to resolve", test.motion)
 		require.Len(t, msgs, test.expectedCount)
 		for _, msg := range msgs {
-			assert.Equal(t, GlobalScrollVerticalMsg{Up: false}, msg)
+			assert.Equal(t, SwitchAppViewMsg{ViewType: DETAILVIEWTYPE}, msg)
 		}
 	}
 }
@@ -104,7 +104,7 @@ func TestGet_CountPrefixNotFoundIfMotionUnknown(t *testing.T) {
 
 func TestContainsPath_CountPrefixIsValidPrefix(t *testing.T) {
 	var viewMotions Trie[tea.Msg]
-	viewMotions.Insert(Motion{"j"}, GlobalScrollVerticalMsg{Up: false})
+	viewMotions.Insert(Motion{"j"}, SwitchAppViewMsg{ViewType: DETAILVIEWTYPE})
 	cms := NewCompleteMotionSet(viewMotions)
 
 	// A leading digit is always a valid in-progress path in normal mode

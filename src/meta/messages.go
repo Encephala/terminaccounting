@@ -115,16 +115,6 @@ type SwitchTabMsg struct {
 	Direction Sequence
 }
 
-type GlobalScrollVerticalMsg struct {
-	Up    bool
-	ToEnd bool
-}
-
-type GlobalScrollHorizontalMsg struct {
-	Left  bool
-	ToEnd bool
-}
-
 type ViewType string
 
 const (
