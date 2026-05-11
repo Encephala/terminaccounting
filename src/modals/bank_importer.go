@@ -612,6 +612,7 @@ func (ip ingParser) compileRows(data [][]string, accountLedger, bankLedger int) 
 			value *= -1
 		}
 
+		// TODO: implement documents
 		entryRow := database.EntryRow{
 			Date:        database.Date(date),
 			Ledger:      accountLedger,
