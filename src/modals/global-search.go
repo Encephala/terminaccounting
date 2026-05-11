@@ -1,6 +1,7 @@
 package modals
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -260,10 +261,12 @@ func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 	// Closures to the rescue once more
 	var gotoDetailViewCmd tea.Cmd
 	gotoDetailViewCmd = func() tea.Msg {
+		if len(sm.shownItems) == 0 {
+			return errors.New("no items shown to go to detail view of")
+		}
+
 		var appType *meta.AppType
 		var data any
-
-		// TODO: handle panic if zero items shown
 
 		activeItem := sm.shownItems[sm.activeRow]
 		switch model := activeItem.model.(type) {
