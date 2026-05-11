@@ -350,6 +350,14 @@ func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 		return 0, nil
 	}
 
+	accountLedger := GetAccountsLedger()
+
+	for i, row := range rows {
+		if row.Ledger == accountLedger.Id && row.Account == nil {
+			return 0, fmt.Errorf("Row %d is on accounts ledger but has no account set", i)
+		}
+	}
+
 	query := `INSERT INTO entryrows
 	(entry, date, ledger, account, description, document, value, reconciled)
 	VALUES
