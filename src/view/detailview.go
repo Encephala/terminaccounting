@@ -314,6 +314,8 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 			erv.filterQuery = &message.Query
 			// Add -2 to show filter state
 			erv.viewport.Height = erv.height - 8 - 2
+
+			erv.activeRow = 0
 		}
 
 		erv.updateViewRows()
