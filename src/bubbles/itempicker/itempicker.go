@@ -3,7 +3,6 @@ package itempicker
 import (
 	"fmt"
 	"slices"
-	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -71,7 +70,7 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 		matches := fuzzy.Find(message.Query, stringReprs)
 
 		if len(matches) == 0 {
-			return m, meta.MessageCmd(fmt.Errorf("%q not found in items", message.Query))
+			return m, nil
 		}
 
 		m.activeItem = matches[0].Index
