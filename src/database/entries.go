@@ -352,9 +352,12 @@ func insertRows(transaction *sqlx.Tx, rows []EntryRow) (int, error) {
 
 	accountLedger := GetAccountsLedger()
 
-	for i, row := range rows {
-		if row.Ledger == accountLedger.Id && row.Account == nil {
-			return 0, fmt.Errorf("Row %d is on accounts ledger but has no account set", i)
+	// If accountLedger is set, ensure all rows on it have an account set
+	if accountLedger != nil {
+		for i, row := range rows {
+			if row.Ledger == accountLedger.Id && row.Account == nil {
+				return 0, fmt.Errorf("Row %d is on accounts ledger but has no account set", i)
+			}
 		}
 	}
 
