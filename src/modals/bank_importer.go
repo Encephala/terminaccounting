@@ -52,7 +52,7 @@ type bankParser interface {
 }
 
 func newBankImporter() *bankImporter {
-	parserPicker := itempicker.New([]itempicker.Item{ingParser{}})
+	parserPicker := itempicker.New([]itempicker.Item{ingParser{}, minimalParser{}})
 	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
@@ -108,7 +108,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		bi.preview.Height = message.Height - 9
 
 		bi.updatePickerWidths()
-		bi.colWidths = bi.calculateColWidths(message.Width)
+		bi.colWidths = bi.calculateColWidths()
 
 		return bi, nil
 
@@ -124,7 +124,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		bi.headers = data[0]
 		bi.data = data[1:]
 
-		bi.colWidths = bi.calculateColWidths(bi.width)
+		bi.colWidths = bi.calculateColWidths()
 
 		return bi, nil
 
@@ -213,6 +213,10 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		default:
 			panic(fmt.Sprintf("unexpected bi.activeInput: %#v", bi.activeInput))
 		}
+
+	case meta.UpdateSearchMsg:
+		// TODO
+		return bi, nil
 
 	case meta.NavigateMsg:
 		if bi.activeInput != numInputs-1 {
@@ -475,7 +479,7 @@ func (bi *bankImporter) updatePickerWidths() {
 	bi.bankLedgerPicker.MaxWidth = widths[2] - len("Bank ledger ")
 }
 
-func (bi *bankImporter) calculateColWidths(totalWidth int) []int {
+func (bi *bankImporter) calculateColWidths() []int {
 	if bi.data == nil {
 		return nil
 	}
@@ -498,7 +502,7 @@ func (bi *bankImporter) calculateColWidths(totalWidth int) []int {
 	fillerWidth := 2*(numCols-1) + 2*4
 
 	colWidths := make([]int, numCols)
-	remainingWidth := totalWidth - fillerWidth
+	remainingWidth := bi.width - fillerWidth
 
 outer:
 	for {
@@ -508,7 +512,7 @@ outer:
 				remainingWidth--
 			}
 
-			if remainingWidth == 0 {
+			if remainingWidth == 0 || slices.Equal(colWidths, maxColWidths) {
 				break outer
 			}
 		}
@@ -563,6 +567,50 @@ func (bi *bankImporter) scrollViewport() {
 	}
 }
 
+// A parser for a minimal data format that has exactly what terminaccounting needs.
+// Easy to translate other data formats to.
+type minimalParser struct{}
+
+func (mp minimalParser) String() string {
+	return "minimal"
+}
+
+func (mp minimalParser) CompareId() int {
+	return 0
+}
+
+// Row format: date | bankNumber | value (may be negative) | description
+func (mp minimalParser) usedColumns() []int {
+	return []int{0, 1, 2, 3}
+}
+
+func (mp minimalParser) compileRows(data [][]string, accountLedger, bankLedger int) ([]database.EntryRow, error) {
+	var result []database.EntryRow
+
+	for _, row := range data {
+		date, err := time.Parse("060102", row[0])
+		if err != nil {
+			return result, err
+		}
+
+		value := row[2]
+
+		var isDebit bool
+		if value[0] == '-' {
+			isDebit = true
+		}
+
+		rows, err := makeRows(date, row[1], row[2][1:], row[3], isDebit, accountLedger, bankLedger)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, rows[:]...)
+	}
+
+	return result, nil
+}
+
 type ingParser struct{}
 
 func (ip ingParser) usedColumns() []int {
@@ -575,7 +623,7 @@ func (ip ingParser) compileRows(data [][]string, accountLedger, bankLedger int) 
 	for _, row := range data {
 		date, err := time.Parse("20060102", row[0])
 		if err != nil {
-			return nil, err
+			return result, err
 		}
 
 		rowDescription := row[8]
@@ -584,56 +632,12 @@ func (ip ingParser) compileRows(data [][]string, accountLedger, bankLedger int) 
 			rowDescription = *parsedDescription
 		}
 
-		availableAccounts := database.AvailableAccounts()
-
-		counterpartyAccount := row[3]
-		var matchedAccountId *int
-		indexMatchedAccount := slices.IndexFunc(availableAccounts, func(a database.Account) bool {
-			return a.HasBankNumber(counterpartyAccount)
-		})
-		if indexMatchedAccount != -1 {
-			matchedAccountId = &availableAccounts[indexMatchedAccount].Id
-		}
-
-		valueParts := strings.Split(row[6], ",")
-
-		whole, err := strconv.Atoi(valueParts[0])
-		if err != nil {
-			return nil, err
-		}
-		decimal, err := strconv.Atoi(valueParts[1])
+		rows, err := makeRows(date, row[3], row[6], rowDescription, row[5] == "Debit", accountLedger, bankLedger)
 		if err != nil {
 			return nil, err
 		}
 
-		value := whole*100 + decimal
-
-		if row[5] == "Debit" {
-			value *= -1
-		}
-
-		// TODO: implement documents
-		entryRow := database.EntryRow{
-			Date:        database.Date(date),
-			Ledger:      accountLedger,
-			Account:     matchedAccountId,
-			Description: rowDescription,
-			Document:    nil,
-			Value:       database.CurrencyValue(value),
-			Reconciled:  false,
-		}
-		result = append(result, entryRow)
-
-		counterpartRow := database.EntryRow{
-			Date:        database.Date(date),
-			Ledger:      bankLedger,
-			Account:     matchedAccountId,
-			Description: rowDescription,
-			Document:    nil,
-			Value:       database.CurrencyValue(-value),
-			Reconciled:  false,
-		}
-		result = append(result, counterpartRow)
+		result = append(result, rows[:]...)
 	}
 
 	return result, nil
@@ -644,7 +648,7 @@ func (ip ingParser) String() string {
 }
 
 func (ip ingParser) CompareId() int {
-	return 0
+	return 1
 }
 
 func (p ingParser) parseDescription(description string) *string {
@@ -658,4 +662,56 @@ func (p ingParser) parseDescription(description string) *string {
 	result := description[indexDescription+len("Description: ") : indexIBAN]
 
 	return &result
+}
+
+func makeRows(date time.Time, bankNumber, value, description string, isDebit bool, accountLedger, bankLedger int) ([2]database.EntryRow, error) {
+	var result [2]database.EntryRow
+
+	availableAccounts := database.AvailableAccounts()
+
+	var matchedAccountId *int
+	indexMatchedAccount := slices.IndexFunc(availableAccounts, func(a database.Account) bool {
+		return a.HasBankNumber(bankNumber)
+	})
+	if indexMatchedAccount != -1 {
+		matchedAccountId = &availableAccounts[indexMatchedAccount].Id
+	}
+
+	valueParts := strings.Split(value, ",")
+	whole, err := strconv.Atoi(valueParts[0])
+	if err != nil {
+		return result, err
+	}
+	decimal, err := strconv.Atoi(valueParts[1])
+	if err != nil {
+		return result, err
+	}
+
+	valueParsed := whole*100 + decimal
+	if isDebit {
+		valueParsed *= -1
+	}
+
+	// TODO: implement documents
+	result[0] = database.EntryRow{
+		Date:        database.Date(date),
+		Ledger:      accountLedger,
+		Account:     matchedAccountId,
+		Description: description,
+		Document:    nil,
+		Value:       database.CurrencyValue(valueParsed),
+		Reconciled:  false,
+	}
+
+	result[1] = database.EntryRow{
+		Date:        database.Date(date),
+		Ledger:      bankLedger,
+		Account:     matchedAccountId,
+		Description: description,
+		Document:    nil,
+		Value:       database.CurrencyValue(-valueParsed),
+		Reconciled:  false,
+	}
+
+	return result, nil
 }
