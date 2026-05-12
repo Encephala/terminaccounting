@@ -105,14 +105,14 @@ func TestRowsMutateManager_CompileRows_Success(t *testing.T) {
 	a1 := database.Account{Name: "Account 1"}
 
 	rc1 := newTestRowCreator([]database.Ledger{l1}, []database.Account{a1})
-	rc1.dateInput.SetValue("2024-01-01")
+	rc1.dateInput.SetValue("24-01-01")
 	rc1.ledgerInput.SetValue(l1)
 	rc1.accountInput.SetValue(&a1)
 	rc1.descriptionInput.SetValue("Desc 1")
 	rc1.debitInput.SetValue("10.00")
 
 	rc2 := newTestRowCreator([]database.Ledger{l1}, []database.Account{a1})
-	rc2.dateInput.SetValue("2024-01-01")
+	rc2.dateInput.SetValue("24-01-01")
 	rc2.ledgerInput.SetValue(l1)
 	rc2.accountInput.SetValue(&a1)
 	rc2.descriptionInput.SetValue("Desc 2")
@@ -147,7 +147,7 @@ func TestRowsMutateManager_CompileRows_Unbalanced(t *testing.T) {
 	a1 := database.Account{Name: "Account 1"}
 
 	rc1 := newTestRowCreator([]database.Ledger{l1}, []database.Account{a1})
-	rc1.dateInput.SetValue("2024-01-01")
+	rc1.dateInput.SetValue("24-01-01")
 	rc1.ledgerInput.SetValue(l1)
 	rc1.accountInput.SetValue(&a1)
 	rc1.debitInput.SetValue("10.00")
@@ -189,7 +189,7 @@ func TestRowsMutateManager_AddRow(t *testing.T) {
 	tat.SetupTestEnv(t)
 
 	rc1 := newTestRowCreator(nil, nil)
-	rc1.dateInput.SetValue("2024-05-20")
+	rc1.dateInput.SetValue("24-05-20")
 
 	manager := &rowsMutateManager{
 		rowMutators: []*rowMutator{rc1},
@@ -204,8 +204,8 @@ func TestRowsMutateManager_AddRow(t *testing.T) {
 	}
 
 	// Check if date was prefilled
-	if manager.rowMutators[1].dateInput.Value() != "2024-05-20" {
-		t.Errorf("Expected new row to have prefilled date '2024-05-20', got '%s'", manager.rowMutators[1].dateInput.Value())
+	if manager.rowMutators[1].dateInput.Value() != "24-05-20" {
+		t.Errorf("Expected new row to have prefilled date '24-05-20', got '%s'", manager.rowMutators[1].dateInput.Value())
 	}
 }
 

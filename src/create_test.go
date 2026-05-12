@@ -317,8 +317,8 @@ func TestCreate_Entries(t *testing.T) {
 		tw.Send(tea.KeyMsg{Type: tea.KeyTab}).
 			// Clear prefilled date
 			Send(tea.KeyMsg{Type: tea.KeyCtrlW}).
-			SendText("2023-01-01").
-			AssertViewContains(t, "2023-01-01")
+			SendText("23-01-01").
+			AssertViewContains(t, "23-01-01")
 
 		tw.Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
 			SendText("Row 1").
@@ -586,7 +586,7 @@ func testCreateEntries_Commit(t *testing.T) {
 		Send(tea.KeyMsg{Type: tea.KeyTab}).
 		SendText("My Entry").
 		Send(tea.KeyMsg{Type: tea.KeyTab}).
-		SendText("2023-01-01").
+		SendText("23-01-01").
 		Send(tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyTab}).
 		SendText("Row 1").
 		Send(tea.KeyMsg{Type: tea.KeyTab}).

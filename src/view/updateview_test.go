@@ -356,7 +356,7 @@ func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, a
 
 	require.NoError(t, database.UpdateCache(dbConn))
 
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	entry := database.Entry{Journal: jId, Notes: meta.Notes{"Original notes"}}
@@ -465,12 +465,12 @@ func TestEntryUpdateView_ResetInputField_Rows(t *testing.T) {
 		tw := tat.NewTestWrapperSpecific(View(uv))
 
 		uv.activeInput = ENTRIESROWINPUT
-		uv.entryRowsManager.rowMutators[0].dateInput.SetValue("2099-12-31")
-		assert.Equal(t, "2099-12-31", uv.entryRowsManager.rowMutators[0].dateInput.Value())
+		uv.entryRowsManager.rowMutators[0].dateInput.SetValue("99-12-31")
+		assert.Equal(t, "99-12-31", uv.entryRowsManager.rowMutators[0].dateInput.Value())
 
 		tw.Send(meta.ResetInputFieldMsg{})
 
-		assert.Equal(t, "2024-01-01", uv.entryRowsManager.rowMutators[0].dateInput.Value())
+		assert.Equal(t, "24-01-01", uv.entryRowsManager.rowMutators[0].dateInput.Value())
 		assert.Equal(t, "50.00", uv.entryRowsManager.rowMutators[0].debitInput.Value())
 	})
 

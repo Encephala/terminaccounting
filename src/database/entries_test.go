@@ -17,10 +17,10 @@ func TestInsertEntry(t *testing.T) {
 	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
-	time1, err := time.Parse(database.DATE_FORMAT, "1234-05-06")
+	time1, err := time.Parse(database.DATE_FORMAT, "34-05-06")
 	require.NoError(t, err)
 
-	time2, err := time.Parse(database.DATE_FORMAT, "7890-01-02")
+	time2, err := time.Parse(database.DATE_FORMAT, "90-01-02")
 	require.NoError(t, err)
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
@@ -130,7 +130,7 @@ func TestUpdateEntry(t *testing.T) {
 		Journal: journal.Id,
 		Notes:   meta.Notes{"updated note"},
 	}
-	newDate, err := database.ToDate("2025-06-15")
+	newDate, err := database.ToDate("25-06-15")
 	require.NoError(t, err)
 
 	updatedRows := []database.EntryRow{
@@ -345,7 +345,7 @@ func TestSetReconciledMultipleRows(t *testing.T) {
 	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
@@ -376,7 +376,7 @@ func TestSetReconciledReturnsChangedCount(t *testing.T) {
 	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
@@ -413,7 +413,7 @@ func TestSelectRowsByAccount(t *testing.T) {
 
 	regularLedger := insertTestLedger(t, DB)
 
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	entryWithAccount := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}

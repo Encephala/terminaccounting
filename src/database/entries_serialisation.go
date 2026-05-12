@@ -7,7 +7,7 @@ import (
 )
 
 // Don't ask me why we have to use this specific date as string format in Go
-const DATE_FORMAT = "2006-01-02"
+const DATE_FORMAT = "06-01-02"
 
 func (d *Date) Scan(value any) error {
 	switch value := value.(type) {

@@ -222,12 +222,12 @@ func TestEntryCreateView_Commit(t *testing.T) {
 	cv.journalInput.SetValue(journal)
 	cv.notesInput.SetValue("Test Notes")
 
-	cv.entryRowsManager.rowMutators[0].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rowMutators[0].dateInput.SetValue("24-01-01")
 	cv.entryRowsManager.rowMutators[0].ledgerInput.SetValue(ledger)
 	cv.entryRowsManager.rowMutators[0].accountInput.SetValue(&account)
 	cv.entryRowsManager.rowMutators[0].debitInput.SetValue("50.00")
 
-	cv.entryRowsManager.rowMutators[1].dateInput.SetValue("2024-01-01")
+	cv.entryRowsManager.rowMutators[1].dateInput.SetValue("24-01-01")
 	cv.entryRowsManager.rowMutators[1].ledgerInput.SetValue(ledger)
 	cv.entryRowsManager.rowMutators[1].accountInput.SetValue(&account)
 	cv.entryRowsManager.rowMutators[1].creditInput.SetValue("50.00")

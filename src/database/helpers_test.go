@@ -63,7 +63,7 @@ func insertTestEntry(t *testing.T, DB *sqlx.DB, journalId int, ledgerId int) dat
 		Journal: journalId,
 		Notes:   meta.Notes{},
 	}
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	rows := []database.EntryRow{

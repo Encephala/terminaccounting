@@ -243,9 +243,9 @@ type rowMutator struct {
 func newRowMutator(startDate *database.Date, originalValue *database.EntryRow) *rowMutator {
 	dateInput := textinput.New()
 	dateInput.Cursor.SetMode(cursor.CursorStatic)
-	dateInput.Placeholder = "yyyy-MM-dd"
-	dateInput.CharLimit = 10
-	dateInput.Width = 10
+	dateInput.Placeholder = "yy-MM-dd"
+	dateInput.CharLimit = 8
+	dateInput.Width = 8
 	if startDate != nil {
 		dateInput.SetValue(startDate.String())
 	}
@@ -892,8 +892,8 @@ func (rmm *rowsMutateManager) View() string {
 
 func (rmm *rowsMutateManager) calculateColumnWidths() {
 	idxWidth := 4 // Surely there'll never be more than 9999 rows on an entry
-	// 10 for yyyy-MM-dd and 2 for prompt and 1 for cursor
-	dateWidth := 10 + 2 + 1
+	// 8 for yy-MM-dd and 2 for prompt and 1 for cursor
+	dateWidth := 8 + 2 + 1
 
 	// -12 for 2-wide padding between columns 6x
 	remainingWidth := rmm.viewport.Width - idxWidth - dateWidth - 12
@@ -1053,7 +1053,7 @@ func (rmm *rowsMutateManager) compileRows() ([]database.EntryRow, error) {
 		// TODO: Validate the date thingy
 		date, err := database.ToDate(formRow.dateInput.Value())
 		if err != nil {
-			return nil, fmt.Errorf("row %d had date %q which isn't in yyyy-MM-dd:\n%#v", i, formRow.dateInput.Value(), err)
+			return nil, fmt.Errorf("row %d had date %q which isn't in yy-MM-dd:\n%#v", i, formRow.dateInput.Value(), err)
 		}
 
 		formDescription := formRow.descriptionInput.Value()

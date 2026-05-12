@@ -111,7 +111,7 @@ func TestEntryDeleteView(t *testing.T) {
 	require.NoError(t, err)
 	ledger.Id = ledgerId
 
-	date, err := database.ToDate("2024-01-01")
+	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
 	entry := database.Entry{Journal: journalId}
