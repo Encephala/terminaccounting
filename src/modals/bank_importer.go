@@ -304,7 +304,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 			bankLedger.(database.Ledger).Id,
 		)
 		if err != nil {
-			return bi, tea.Batch(meta.MessageCmd(err), meta.MessageCmd(meta.QuitMsg{}))
+			return bi, meta.MessageCmd(err)
 		}
 
 		entriesAppType := meta.ENTRIESAPP
