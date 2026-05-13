@@ -245,6 +245,20 @@ func TestBankImporter_Navigate_ScrollsViewport(t *testing.T) {
 	assert.Equal(t, 0, bi.preview.YOffset)
 }
 
+func TestCalculateColWidths_TerminatesWhenAllColumnsAtMax(t *testing.T) {
+	tat.SetupTestEnv(t)
+	bi := newBankImporter()
+	bi.headers = []string{"A", "B"}
+	bi.data = [][]string{{"x", "y"}}
+	// Very wide window: remainingWidth >> sum(maxColWidths), so the loop reaches
+	// colWidths == maxColWidths while remainingWidth is still positive.
+	bi.width = 10000
+
+	colWidths := bi.calculateColWidths()
+
+	assert.Equal(t, []int{1, 1}, colWidths)
+}
+
 // Kinda silly test, but helpful to have this one fail to remind me to fix tests, should ING CSV format ever change
 func TestIngParser_UsedColumns(t *testing.T) {
 	ip := ingParser{}
