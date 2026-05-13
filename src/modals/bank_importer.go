@@ -104,8 +104,8 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 
 		// -4 for horizontal padding on both sides
 		bi.preview.Width = message.Width - 4
-		// -9 for the various inputs and confirmation prompt and vertical padding
-		bi.preview.Height = message.Height - 9
+		// -10 for the various inputs and confirmation/status prompts and vertical padding
+		bi.preview.Height = message.Height - 10
 
 		bi.updatePickerWidths()
 		bi.colWidths = bi.calculateColWidths()
@@ -722,9 +722,21 @@ func makeRows(date time.Time, bankNumber, value, description string, isDebit boo
 	if err != nil {
 		return result, err
 	}
-	decimal, err := strconv.Atoi(valueParts[1])
-	if err != nil {
-		return result, err
+
+	var decimal int
+	if len(valueParts) >= 2 {
+		decStr := valueParts[1]
+
+		for len(decStr) < 2 {
+			decStr += "0"
+		}
+
+		decStr = decStr[:2] // truncate if more than 2 digits
+
+		decimal, err = strconv.Atoi(decStr)
+		if err != nil {
+			return result, fmt.Errorf("%q is not a valid number value", value)
+		}
 	}
 
 	valueParsed := whole*100 + decimal
