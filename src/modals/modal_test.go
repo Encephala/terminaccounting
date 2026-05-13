@@ -57,7 +57,7 @@ func setupBankImporter(t *testing.T) *bankImporter {
 	bi.fileLoaded = true
 	bi.headers = testCSVHeaders
 	bi.data = testCSVData
-	bi.colWidths = bi.calculateColWidths(100)
+	bi.colWidths = bi.calculateColWidths()
 
 	return bi
 }
@@ -230,7 +230,7 @@ func TestBankImporter_Navigate_ScrollsViewport(t *testing.T) {
 	bi.fileLoaded = true
 	bi.headers = testCSVHeaders
 	bi.data = manyRows
-	bi.colWidths = bi.calculateColWidths(100)
+	bi.colWidths = bi.calculateColWidths()
 	bi.activeInput = 3
 	bi.View() // populate viewport content
 
