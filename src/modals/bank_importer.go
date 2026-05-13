@@ -410,6 +410,20 @@ func (bi *bankImporter) View() string {
 
 	result.WriteString("\n\n")
 
+	_, err := bi.parserPicker.Value().(bankParser).compileRows(
+		bi.data,
+		database.GetAccountsLedger().Id,
+		bi.bankLedgerPicker.Value().(database.Ledger).Id,
+	)
+	if err == nil {
+		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Render("parser succeeds"))
+	} else {
+		text := fmt.Sprintf("parser fails: %s", err.Error())
+		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Render(text))
+	}
+
+	result.WriteString("\n")
+
 	result.WriteString(lipgloss.NewStyle().Italic(true).Render(":write to create the entry"))
 
 	return result.String()
