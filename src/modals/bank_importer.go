@@ -215,8 +215,34 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		}
 
 	case meta.UpdateSearchMsg:
-		// TODO
-		return bi, nil
+		selectMessage := itempicker.FuzzySelectMsg{Query: message.Query}
+
+		switch bi.activeInput {
+		case 0:
+			new, cmd := bi.parserPicker.Update(selectMessage)
+			bi.parserPicker = new
+
+			return bi, cmd
+
+		case 1:
+			new, cmd := bi.journalPicker.Update(selectMessage)
+			bi.journalPicker = new
+
+			return bi, cmd
+
+		case 2:
+			new, cmd := bi.bankLedgerPicker.Update(selectMessage)
+			bi.bankLedgerPicker = new
+
+			return bi, cmd
+
+		case 3:
+			// Pass
+			return bi, nil
+
+		default:
+			panic(fmt.Sprintf("unexpected bi.activeInput: %#v", bi.activeInput))
+		}
 
 	case meta.NavigateMsg:
 		if bi.activeInput != numInputs-1 {
@@ -384,7 +410,7 @@ func (bi *bankImporter) View() string {
 
 	result.WriteString("\n\n")
 
-	result.WriteString(lipgloss.NewStyle().Italic(true).Render("Type :write to create the entry"))
+	result.WriteString(lipgloss.NewStyle().Italic(true).Render(":write to create the entry"))
 
 	return result.String()
 }
