@@ -175,6 +175,15 @@ func (sm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 
 		return sm, nil
 
+	case meta.JumpVerticalMsg:
+		if message.Down {
+			sm.activeRow = len(sm.shownItems) - 1
+		} else {
+			sm.activeRow = 0
+		}
+
+		return sm, nil
+
 	case meta.UpdateSearchMsg:
 		var cmd tea.Cmd
 		sm.searchQuery = message.Query
@@ -314,7 +323,8 @@ func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 	}
 	result.Insert(meta.Motion{"g", "d"}, gotoDetailViewCmd)
 
-	// TODO: gg/G motion
+	result.Insert(meta.Motion{"g", "g"}, meta.JumpVerticalMsg{Down: false})
+	result.Insert(meta.Motion{"G"}, meta.JumpVerticalMsg{Down: true})
 
 	return result
 }
