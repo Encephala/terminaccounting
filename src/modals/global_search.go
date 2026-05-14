@@ -187,10 +187,11 @@ func (sm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 
 		return sm, cmd
 
-	case meta.GlobalSearchDataLoadedMsg:
-		sm.items = make([]searchItem, len(message.Data))
+	case meta.DataLoadedMsg:
+		data := message.Data.([]any)
+		sm.items = make([]searchItem, len(data))
 
-		for i, item := range message.Data {
+		for i, item := range data {
 			sm.items[i] = item.(searchItem)
 		}
 
@@ -354,7 +355,7 @@ func makeSelectAllDataCmd(DB *sqlx.DB) tea.Cmd {
 			toAnySlice(entryRows),
 		)
 
-		return meta.GlobalSearchDataLoadedMsg{Data: result}
+		return meta.DataLoadedMsg{Data: result}
 	}
 }
 

@@ -35,10 +35,6 @@ type ShowTextModalMsg struct {
 
 type ShowGlobalSearchMsg struct{}
 
-type GlobalSearchDataLoadedMsg struct {
-	Data []any
-}
-
 type FetchNotificationHistoryMsg struct{}
 
 type NotificationHistoryLoadedMsg struct {
