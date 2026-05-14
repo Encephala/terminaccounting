@@ -45,7 +45,11 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var cmd tea.Cmd
 		if mm.Modal != nil {
-			mm.Modal, cmd = mm.Modal.Update(message)
+			mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
+				// -8 for the padding
+				Width:  message.Width - 8,
+				Height: message.Height,
+			})
 		}
 
 		return mm, cmd
@@ -55,7 +59,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
-			Width:  mm.width,
+			Width:  mm.width - 8,
 			Height: mm.height,
 		})
 
@@ -66,7 +70,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
-			Width:  mm.width,
+			Width:  mm.width - 8,
 			Height: mm.height,
 		})
 
@@ -77,7 +81,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
-			Width:  mm.width,
+			Width:  mm.width - 8,
 			Height: mm.height,
 		})
 
@@ -88,7 +92,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var cmd tea.Cmd
 		mm.Modal, cmd = mm.Modal.Update(tea.WindowSizeMsg{
-			Width:  mm.width,
+			Width:  mm.width - 8,
 			Height: mm.height,
 		})
 
@@ -99,7 +103,7 @@ func (mm *ModalManager) Update(message tea.Msg) (*ModalManager, tea.Cmd) {
 
 		var windowSizeCmd tea.Cmd
 		mm.Modal, windowSizeCmd = mm.Modal.Update(tea.WindowSizeMsg{
-			Width:  mm.width,
+			Width:  mm.width - 8,
 			Height: mm.height,
 		})
 
