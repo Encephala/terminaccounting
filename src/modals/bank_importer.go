@@ -102,8 +102,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		bi.width = message.Width
 		bi.height = message.Height
 
-		// -4 for horizontal padding on both sides
-		bi.preview.Width = message.Width - 4
+		bi.preview.Width = message.Width
 		// -10 for the various inputs and confirmation/status prompts and vertical padding
 		bi.preview.Height = message.Height - 10
 
@@ -406,7 +405,16 @@ func (bi *bankImporter) View() string {
 
 	result.WriteString("\n")
 
-	result.WriteString(bi.preview.View())
+	if len(bi.data) > bi.preview.Height {
+		bi.preview.Width = bi.width - 2
+
+		scrollState := float64(bi.preview.YOffset) / float64(len(bi.data)-bi.preview.Height)
+
+		result.WriteString(lipgloss.JoinHorizontal(lipgloss.Position(scrollState), bi.preview.View(), " ", "█"))
+	} else {
+		bi.preview.Width = bi.width
+		result.WriteString(bi.preview.View())
+	}
 
 	result.WriteString("\n\n")
 
@@ -538,8 +546,8 @@ func (bi *bankImporter) calculateColWidths() []int {
 	}
 
 	// Make it all fit nicely by distributing unused width among long columns.
-	// margin between columns is 2, 2*4 for horizontal padding on both sides
-	fillerWidth := 2*(numCols-1) + 2*4
+	// margin between columns is 2
+	fillerWidth := 2 * (numCols - 1)
 
 	colWidths := make([]int, numCols)
 	remainingWidth := bi.width - fillerWidth
