@@ -154,115 +154,129 @@ func newGlobalSearchModal(DB *sqlx.DB) *globalSearchModal {
 	}
 }
 
-func (sm *globalSearchModal) Init() tea.Cmd {
-	return makeSelectAllDataCmd(sm.DB)
+func (gsm *globalSearchModal) Init() tea.Cmd {
+	return makeSelectAllDataCmd(gsm.DB)
 }
 
-func (sm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
+func (gsm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		sm.viewport.Width = message.Width
-		sm.viewport.Height = message.Height - 2
+		gsm.viewport.Width = message.Width
+		gsm.viewport.Height = message.Height - 2
 
-		return sm, nil
+		return gsm, nil
 
 	case meta.NavigateMsg:
 		if message.Direction == meta.DOWN {
-			sm.activeRow = min(sm.activeRow+1, len(sm.shownItems)-1)
+			gsm.activeRow = min(gsm.activeRow+1, len(gsm.shownItems)-1)
 		} else {
-			sm.activeRow = max(sm.activeRow-1, 0)
+			gsm.activeRow = max(gsm.activeRow-1, 0)
 		}
 
-		return sm, nil
+		gsm.scrollViewport()
+
+		return gsm, nil
 
 	case meta.JumpVerticalMsg:
 		if message.Down {
-			sm.activeRow = len(sm.shownItems) - 1
+			gsm.activeRow = len(gsm.shownItems) - 1
 		} else {
-			sm.activeRow = 0
+			gsm.activeRow = 0
 		}
 
-		return sm, nil
+		gsm.scrollViewport()
+
+		return gsm, nil
 
 	case meta.UpdateSearchMsg:
 		var cmd tea.Cmd
-		sm.searchQuery = message.Query
+		gsm.searchQuery = message.Query
 
 		if message.Query != "" {
-			sm.activeRow = 0
+			gsm.activeRow = 0
 		}
 
-		sm.updateShownItems()
+		gsm.updateShownItems()
 
-		return sm, cmd
+		return gsm, cmd
 
 	case meta.DataLoadedMsg:
 		data := message.Data.([]any)
-		sm.items = make([]searchItem, len(data))
+		gsm.items = make([]searchItem, len(data))
 
 		for i, item := range data {
-			sm.items[i] = item.(searchItem)
+			gsm.items[i] = item.(searchItem)
 		}
 
-		sm.updateShownItems()
+		gsm.updateShownItems()
 
-		return sm, nil
+		return gsm, nil
 
 	default:
 		panic(fmt.Sprintf("unexpected tea.Msg: %#v", message))
 	}
 }
 
-func (sm *globalSearchModal) View() string {
+func (gsm *globalSearchModal) View() string {
 	var result strings.Builder
 
-	result.WriteString("Query: " + sm.searchQuery)
+	result.WriteString("Query: " + gsm.searchQuery)
 	result.WriteString("\n\n")
 
-	sm.updateViewportContent()
+	gsm.updateViewportContent()
 
-	result.WriteString(sm.viewport.View())
+	result.WriteString(gsm.viewport.View())
 
 	return result.String()
 }
 
-func (sm *globalSearchModal) updateShownItems() {
-	if sm.searchQuery == "" {
-		sm.shownItems = sm.items
+func (gsm *globalSearchModal) updateShownItems() {
+	if gsm.searchQuery == "" {
+		gsm.shownItems = gsm.items
 		return
 	}
 
-	filterValues := make([]string, len(sm.items))
-	for i, item := range sm.items {
+	filterValues := make([]string, len(gsm.items))
+	for i, item := range gsm.items {
 		filterValues[i] = item.filterValue()
 	}
 
-	matches := fuzzy.Find(sm.searchQuery, filterValues)
+	matches := fuzzy.Find(gsm.searchQuery, filterValues)
 
-	sm.shownItems = make([]searchItem, len(matches))
+	gsm.shownItems = make([]searchItem, len(matches))
 	for i, match := range matches {
-		sm.shownItems[i] = sm.items[match.Index]
+		gsm.shownItems[i] = gsm.items[match.Index]
 	}
 }
 
-func (sm *globalSearchModal) updateViewportContent() {
+func (gsm *globalSearchModal) scrollViewport() {
+	if gsm.activeRow >= gsm.viewport.YOffset+gsm.viewport.Height {
+		gsm.viewport.ScrollDown(gsm.activeRow - gsm.viewport.YOffset - gsm.viewport.Height + 1)
+	}
+
+	if gsm.activeRow < gsm.viewport.YOffset {
+		gsm.viewport.ScrollUp(gsm.viewport.YOffset - gsm.activeRow)
+	}
+}
+
+func (gsm *globalSearchModal) updateViewportContent() {
 	var result []string
-	for i, item := range sm.shownItems {
-		result = append(result, item.render(sm.activeRow == i))
+	for i, item := range gsm.shownItems {
+		result = append(result, item.render(gsm.activeRow == i))
 	}
 
-	sm.viewport.SetContent(strings.Join(result, "\n"))
+	gsm.viewport.SetContent(strings.Join(result, "\n"))
 }
 
-func (sm *globalSearchModal) AllowsInsertMode() bool {
+func (gsm *globalSearchModal) AllowsInsertMode() bool {
 	return false
 }
 
-func (sm *globalSearchModal) AllowsSearchMode() bool {
+func (gsm *globalSearchModal) AllowsSearchMode() bool {
 	return true
 }
 
-func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
+func (gsm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 	var result meta.Trie[tea.Msg]
 
 	result.Insert(meta.Motion{"j"}, meta.NavigateMsg{Direction: meta.DOWN})
@@ -271,14 +285,14 @@ func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 	// Closures to the rescue once more
 	var gotoDetailViewCmd tea.Cmd
 	gotoDetailViewCmd = func() tea.Msg {
-		if len(sm.shownItems) == 0 {
+		if len(gsm.shownItems) == 0 {
 			return errors.New("no items shown to go to detail view of")
 		}
 
 		var appType *meta.AppType
 		var data any
 
-		activeItem := sm.shownItems[sm.activeRow]
+		activeItem := gsm.shownItems[gsm.activeRow]
 		switch model := activeItem.model.(type) {
 		case database.Ledger:
 			tmp := meta.LEDGERSAPP
@@ -304,7 +318,7 @@ func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 			tmp := meta.ENTRIESAPP
 			appType = &tmp
 
-			entry, err := database.SelectEntry(sm.DB, model.Entry)
+			entry, err := database.SelectEntry(gsm.DB, model.Entry)
 			if err != nil {
 				return fmt.Errorf("Failed to go to entry detail view: %s", err)
 			}
@@ -329,12 +343,12 @@ func (sm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 	return result
 }
 
-func (sm *globalSearchModal) CommandSet() meta.Trie[tea.Msg] {
+func (gsm *globalSearchModal) CommandSet() meta.Trie[tea.Msg] {
 	return meta.Trie[tea.Msg]{}
 }
 
-func (sm *globalSearchModal) Reload() Modal {
-	return newGlobalSearchModal(sm.DB)
+func (gsm *globalSearchModal) Reload() Modal {
+	return newGlobalSearchModal(gsm.DB)
 }
 
 func makeSelectAllDataCmd(DB *sqlx.DB) tea.Cmd {
