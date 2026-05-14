@@ -41,30 +41,13 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		})
 		*viewer = *newViewer
 
-		viewer.calculateColumnWidths()
-
 		return gdv, cmd
 
 	case meta.DataLoadedMsg:
-		switch message.Model {
-		case meta.ENTRYROWMODEL:
-			data := message.Data.([]database.EntryRow)
+		newViewer, cmd := viewer.Update(message)
+		*viewer = *newViewer
 
-			viewer.originalRows = make([]database.EntryRow, len(data))
-			viewer.rows = make([]*database.EntryRow, len(data))
-
-			for i, row := range data {
-				viewer.originalRows[i] = row
-				viewer.rows[i] = &row
-			}
-
-		default:
-			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
-		}
-
-		viewer.updateViewRows()
-
-		return gdv, nil
+		return gdv, cmd
 
 	case meta.NavigateMsg:
 		newViewer, cmd := viewer.Update(message)
@@ -284,6 +267,30 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		// -8 for the total rows and their vertical margin
 		erv.viewport.Height = message.Height - 8
 
+		erv.calculateColumnWidths()
+
+		return erv, nil
+
+	case meta.DataLoadedMsg:
+		switch message.Model {
+		case meta.ENTRYROWMODEL:
+			data := message.Data.([]database.EntryRow)
+
+			erv.originalRows = make([]database.EntryRow, len(data))
+			erv.rows = make([]*database.EntryRow, len(data))
+
+			for i, row := range data {
+				erv.originalRows[i] = row
+				erv.rows[i] = &row
+			}
+
+		default:
+			panic(fmt.Sprintf("unexpected meta.ModelType: %#v", message.Model))
+		}
+
+		erv.updateViewRows()
+		erv.calculateColumnWidths()
+
 		return erv, nil
 
 	case meta.NavigateMsg:
@@ -343,7 +350,14 @@ func (erv *entryRowViewer) View() string {
 
 	result.WriteString("\n")
 
-	result.WriteString(erv.viewport.View())
+	// Show scroll indicator of rows go offscreen
+	if len(erv.shownRows) > erv.viewport.Height {
+		scrollState := float64(erv.viewport.YOffset) / float64(len(erv.shownRows)-erv.viewport.Height)
+
+		result.WriteString(lipgloss.JoinHorizontal(lipgloss.Position(scrollState), erv.viewport.View(), " ", "█"))
+	} else {
+		result.WriteString(erv.viewport.View())
+	}
 
 	result.WriteString("\n\n")
 
@@ -383,6 +397,14 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 	var colWidths []int
 	remainingWidth := erv.width - dateWidth - reconciledWidth
 	descriptionWidth := remainingWidth / 3
+
+	// If showing scrollbar
+	if len(erv.shownRows) > erv.viewport.Height {
+		erv.viewport.Width = erv.width - 2 // reserve space for " █"
+		remainingWidth -= 2
+	} else {
+		erv.viewport.Width = erv.width
+	}
 
 	// -12 because of the 2-wide padding between columns, 6x
 	// /4 because there are four other columns
