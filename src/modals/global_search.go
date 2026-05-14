@@ -137,6 +137,8 @@ func (item *searchItem) render(isActive bool) string {
 type globalSearchModal struct {
 	DB *sqlx.DB
 
+	width, height int
+
 	searchQuery string
 
 	viewport  viewport.Model
@@ -161,6 +163,9 @@ func (gsm *globalSearchModal) Init() tea.Cmd {
 func (gsm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
+		gsm.width = message.Width
+		gsm.height = message.Height
+
 		gsm.viewport.Width = message.Width
 		gsm.viewport.Height = message.Height - 2
 
@@ -225,7 +230,16 @@ func (gsm *globalSearchModal) View() string {
 
 	gsm.updateViewportContent()
 
-	result.WriteString(gsm.viewport.View())
+	if len(gsm.shownItems) > gsm.viewport.Height {
+		gsm.viewport.Width = gsm.width - 2
+
+		scrollState := float64(gsm.viewport.YOffset) / float64(len(gsm.shownItems)-gsm.viewport.Height)
+
+		result.WriteString(lipgloss.JoinHorizontal(lipgloss.Position(scrollState), gsm.viewport.View(), " ", "█"))
+	} else {
+		gsm.viewport.Width = gsm.width
+		result.WriteString(gsm.viewport.View())
+	}
 
 	return result.String()
 }
