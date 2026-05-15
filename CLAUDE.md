@@ -2,17 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
-
-All commands run from the `src/` directory.
-
-```bash
-go build -v          # Build the binary
-go test ./...        # Run all tests
-go test -run TestFoo # Run a specific test
-go vet ./...         # Lint
-```
-
 ## Architecture
 
 Terminaccounting is a TUI personal finance app built with [Bubble Tea](https://github.com/charmbracelet/bubbletea). The app has four tabs: Entries, Ledgers, Accounts, Journals — each is an `App` (see `meta/meta.go`).
@@ -24,6 +13,8 @@ terminaccounting (tea.Model, main.go/model.go)
   └── appManager (appmanager.go)
         └── App (meta.App interface) — one of: EntriesApp, LedgersApp, AccountsApp, JournalsApp
               └── View (view/view.go interface) — list, detail, create, update, delete
+  └── modalManager (modals/modals.go)
+        └── Modal
 ```
 
 Each layer implements `Init() / Update() / View()`. Apps use a "self-returning" `Update(msg) (App, tea.Cmd)` signature rather than `tea.Model`'s generic interface.
