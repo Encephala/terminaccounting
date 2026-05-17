@@ -101,7 +101,6 @@ func (ta *terminaccounting) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return ta, nil
 
 	case tea.Cmd:
-		slog.Debug("asdf")
 		return ta, message
 
 	case tea.WindowSizeMsg:
