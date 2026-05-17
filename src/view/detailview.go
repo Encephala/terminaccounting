@@ -49,14 +49,17 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		return gdv, cmd
 
 	case meta.ToggleShowReconciledMsg:
-		oldShownRows := make([]*database.EntryRow, len(viewer.shownRows))
+		oldItems := viewer.list.Items()
+		oldShownRows := make([]*database.EntryRow, len(oldItems))
 		oldActiveIndex := viewer.list.ActiveIndex()
-		copy(oldShownRows, viewer.shownRows)
+		for i, item := range oldItems {
+			oldShownRows[i] = item.(*database.EntryRow)
+		}
 
 		viewer.showReconciled = !viewer.showReconciled
 		viewer.updateViewRows()
 
-		if len(viewer.shownRows) == 0 || len(oldShownRows) == 0 {
+		if len(viewer.list.Items()) == 0 || len(oldShownRows) == 0 {
 			return gdv, nil
 		}
 
@@ -71,7 +74,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 		}
 
 		// If no closest row before found (i.e. active row was one of the first rows and is now hidden)
-		for i := oldActiveIndex + 1; i < len(viewer.shownRows); i++ {
+		for i := oldActiveIndex + 1; i < len(oldShownRows); i++ {
 			found := viewer.setActiveRow(oldShownRows[i])
 
 			if found {
@@ -79,7 +82,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			}
 		}
 
-		panic("this never happens due to the above check of len(viewer.shownRows) == 0")
+		panic("this never happens due to the above check that the new items are non-empty")
 
 	case meta.ReconcileMsg:
 		if !gdv.getCanReconcile() {
@@ -333,7 +336,7 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 	erv.colWidths = colWidths
 }
 
-// Takes the rows, and depending on state, updates the shownRows and viewRows based off of them
+// Takes the rows, and depending on showReconciled state, updates the list's items
 func (erv *entryRowViewer) updateViewRows() {
 	var viewRows []list.Item
 	if erv.showReconciled {

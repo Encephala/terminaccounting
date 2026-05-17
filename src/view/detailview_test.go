@@ -170,16 +170,16 @@ func TestGenericDetailView_ToggleShowReconciled(t *testing.T) {
 	tw.Execute(t, func(view View) {
 		v := view.(*accountsDetailView)
 
-		require.Len(t, v.viewer.shownRows, 1)
+		require.Len(t, v.viewer.list.Items(), 1)
 
-		assert.Equal(t, v.viewer.shownRows[0].Value, database.CurrencyValue(200))
+		assert.Equal(t, v.viewer.list.Items()[0].(*database.EntryRow).Value, database.CurrencyValue(200))
 	})
 
 	// Toggle show reconciled
 	tw.Send(meta.ToggleShowReconciledMsg{})
 
 	tw.Execute(t, func(view View) {
-		assert.Len(t, view.(*accountsDetailView).viewer.shownRows, 2)
+		assert.Len(t, view.(*accountsDetailView).viewer.list.Items(), 2)
 	})
 }
 func TestGenericDetailView_ToggleShowReconciled_AllRowsReconciled(t *testing.T) {
@@ -221,23 +221,23 @@ func TestGenericDetailView_ToggleShowReconciled_AllRowsReconciled(t *testing.T) 
 	dv := NewAccountsDetailView(DB, aID)
 	tw := tat.NewTestWrapperSpecific(View(dv))
 
-	// All rows are reconciled, so shownRows starts empty (showReconciled defaults to false)
+	// All rows are reconciled, so the list starts empty (showReconciled defaults to false)
 	tw.Execute(t, func(view View) {
-		assert.Empty(t, view.(*accountsDetailView).viewer.shownRows)
+		assert.Empty(t, view.(*accountsDetailView).viewer.list.Items())
 	})
 
 	// Toggling showReconciled to true should not crash
 	tw.Send(meta.ToggleShowReconciledMsg{})
 
 	tw.Execute(t, func(view View) {
-		assert.Len(t, view.(*accountsDetailView).viewer.shownRows, 2)
+		assert.Len(t, view.(*accountsDetailView).viewer.list.Items(), 2)
 	})
 }
 
 func TestGenericDetailView_Navigation(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	ledger := database.Ledger{Name: "Test Ledger", Type: database.ASSETLEDGER}
+	ledger := database.Ledger{Name: "Test Ledger", Type: database.ASSETLEDGER, IsAccounts: true}
 	lID, err := ledger.Insert(DB)
 	require.NoError(t, err)
 
@@ -287,14 +287,14 @@ func TestGenericDetailView_Navigation(t *testing.T) {
 	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
 
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 2)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 1)
 	})
 
 	// Move up
 	tw.Send(meta.NavigateMsg{Direction: meta.UP})
 
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 1)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 0)
 	})
 }
 
