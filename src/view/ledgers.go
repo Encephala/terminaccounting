@@ -97,7 +97,7 @@ func (dv *ledgersDetailView) title() string {
 func (dv *ledgersDetailView) metadata() metadata {
 	return metadata{
 		names:  []string{"Type", "Is accounts ledger"},
-		values: []string{dv.model.Type.String(), renderBoolean(dv.model.IsAccounts)},
+		values: []string{dv.model.Type.String(), meta.RenderBoolean(dv.model.IsAccounts)},
 	}
 }
 
@@ -610,7 +610,7 @@ func (dv *ledgersDeleteView) Reload() View {
 }
 
 func (dv *ledgersDeleteView) inputValues() []string {
-	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse(), renderBoolean(dv.model.IsAccounts)}
+	return []string{dv.model.Name, dv.model.Type.String(), dv.model.Notes.Collapse(), meta.RenderBoolean(dv.model.IsAccounts)}
 }
 
 func (dv *ledgersDeleteView) inputNames() []string {

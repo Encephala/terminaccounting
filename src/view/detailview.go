@@ -161,10 +161,10 @@ func genericDetailViewView(gdv genericDetailView) string {
 	result.WriteString(renderHeader(gdv.title(), gdv.metadata(), gdv.getWidth()))
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))
+	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", meta.RenderBoolean(gdv.getViewer().showReconciled)))
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", renderBoolean(gdv.getCanReconcile())))
+	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", meta.RenderBoolean(gdv.getCanReconcile())))
 	result.WriteString("\n\n")
 
 	result.WriteString(gdv.getViewer().View())
@@ -443,83 +443,12 @@ func (erv *entryRowViewer) updateViewRows() {
 			viewRow = append(viewRow, "", (-row.Value).String())
 		}
 
-		viewRow = append(viewRow, renderBoolean(row.Reconciled))
+		viewRow = append(viewRow, meta.RenderBoolean(row.Reconciled))
 
 		viewRows = append(viewRows, viewRow)
 	}
 
 	erv.viewRows = viewRows
-}
-
-func getRowLedgerAndAccount(row *database.EntryRow,
-	availableLedgers []database.Ledger,
-	availableAccounts []database.Account) (database.Ledger, *database.Account) {
-	var ledger database.Ledger
-	availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger database.Ledger) bool {
-		return ledger.Id == row.Ledger
-	})
-	if availableLedgerIndex == -1 {
-		panic(fmt.Sprintf("ledger for row %#v wasn't found in cache", row))
-	}
-	ledger = availableLedgers[availableLedgerIndex]
-
-	var account *database.Account
-	if row.Account == nil {
-		account = nil
-	} else {
-		availableAccountIndex := slices.IndexFunc(availableAccounts, func(account database.Account) bool {
-			return account.Id == *row.Account
-		})
-
-		if availableAccountIndex == -1 {
-			panic(fmt.Sprintf("account for row %#v wasn't found in cache", row))
-		}
-
-		account = &availableAccounts[availableAccountIndex]
-	}
-
-	return ledger, account
-}
-
-func filterRows(rows []*database.EntryRow, filter *string) []*database.EntryRow {
-	if filter == nil {
-		return rows
-	}
-
-	availableLedgers := database.AvailableLedgers()
-	availableAccounts := database.AvailableAccounts()
-
-	var result []*database.EntryRow
-	for _, row := range rows {
-		ledger, account := getRowLedgerAndAccount(row, availableLedgers, availableAccounts)
-
-		if strings.Contains(row.Date.String(), *filter) {
-			result = append(result, row)
-			continue
-		}
-
-		if strings.Contains(ledger.String(), *filter) {
-			result = append(result, row)
-			continue
-		}
-
-		if strings.Contains(account.String(), *filter) {
-			result = append(result, row)
-			continue
-		}
-
-		if strings.Contains(row.Description, *filter) {
-			result = append(result, row)
-			continue
-		}
-
-		if strings.Contains(row.Value.Abs().String(), *filter) {
-			result = append(result, row)
-			continue
-		}
-	}
-
-	return result
 }
 
 func (erv *entryRowViewer) scrollViewport() {

@@ -375,8 +375,50 @@ func (er EntryRow) FilterValue() string {
 }
 
 func (er EntryRow) String() string {
-	// TODO
-	return "Entryrow"
+	var result strings.Builder
+
+	result.WriteString(er.Date.String())
+
+	ledger, account := getRowLedgerAndAccount(er)
+
+	result.WriteString(ledger.String())
+	result.WriteString(account.String())
+	result.WriteString(er.Description)
+	result.WriteString(er.Value.String())
+	result.WriteString(meta.RenderBoolean(er.Reconciled))
+
+	return result.String()
+}
+
+func getRowLedgerAndAccount(row EntryRow) (Ledger, *Account) {
+	availableLedgers := AvailableLedgers()
+	availableAccounts := AvailableAccounts()
+
+	var ledger Ledger
+	availableLedgerIndex := slices.IndexFunc(availableLedgers, func(ledger Ledger) bool {
+		return ledger.Id == row.Ledger
+	})
+	if availableLedgerIndex == -1 {
+		panic(fmt.Sprintf("ledger for row %#v wasn't found in cache", row))
+	}
+	ledger = availableLedgers[availableLedgerIndex]
+
+	var account *Account
+	if row.Account == nil {
+		account = nil
+	} else {
+		availableAccountIndex := slices.IndexFunc(availableAccounts, func(account Account) bool {
+			return account.Id == *row.Account
+		})
+
+		if availableAccountIndex == -1 {
+			panic(fmt.Sprintf("account for row %#v wasn't found in cache", row))
+		}
+
+		account = &availableAccounts[availableAccountIndex]
+	}
+
+	return ledger, account
 }
 
 func (er EntryRow) Render(isActive bool) string {
