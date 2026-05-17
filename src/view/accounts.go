@@ -130,7 +130,7 @@ func (dv *accountsDetailView) MotionSet() meta.Trie[tea.Msg] {
 	result.Insert(meta.Motion{"g", "x"}, meta.SwitchAppViewMsg{ViewType: meta.DELETEVIEWTYPE, Data: dv.modelId})
 	result.Insert(meta.Motion{"g", "e"}, meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: dv.modelId})
 
-	result.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, dv.viewer.getActiveRow()))
+	result.Insert(meta.Motion{"g", "d"}, makeGoToEntryDetailViewCmd(dv.DB, (*dv.viewer.list.ActiveItem()).(*database.EntryRow)))
 
 	return result
 }

@@ -16,15 +16,11 @@ type Item interface {
 	Render(isActive bool) string
 }
 
-type FuzzyFilterMsg struct {
-	Query string
-}
-
 type Model struct {
 	width, height int
 
-	viewport   viewport.Model
-	activeItem int
+	viewport  viewport.Model
+	activeIdx int
 
 	filterQuery string
 
@@ -46,13 +42,6 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 
 		m.viewport.Width = message.Width
 		m.viewport.Height = message.Height
-
-		return m, nil
-
-	case FuzzyFilterMsg:
-		m.filterQuery = message.Query
-
-		m.updateShownItems()
 
 		return m, nil
 
@@ -97,20 +86,36 @@ func (m *Model) Items() []Item {
 	return m.items
 }
 
-func (m *Model) ActiveItem() *Item {
+func (m Model) ActiveIndex() int {
+	return m.activeIdx
+}
+
+func (m *Model) SetActiveIndex(index int) {
+	m.activeIdx = index
+
+	m.updateViewportContent()
+}
+
+func (m Model) ActiveItem() *Item {
 	if len(m.shownItems) == 0 {
 		return nil
 	}
 
-	return &m.shownItems[m.activeItem]
+	return &m.shownItems[m.activeIdx]
+}
+
+func (m *Model) SetFilter(query string) {
+	m.filterQuery = query
+
+	m.updateShownItems()
 }
 
 // Scroll one line up/down
 func (m *Model) Navigate(down bool) {
 	if down {
-		m.activeItem = min(m.activeItem+1, len(m.shownItems)-1)
+		m.activeIdx = min(m.activeIdx+1, len(m.shownItems)-1)
 	} else {
-		m.activeItem = max(m.activeItem-1, 0)
+		m.activeIdx = max(m.activeIdx-1, 0)
 	}
 
 	m.updateViewportContent()
@@ -120,9 +125,9 @@ func (m *Model) Navigate(down bool) {
 // Scroll all the way to the top/bottom
 func (m *Model) Jump(down bool) {
 	if down {
-		m.activeItem = len(m.shownItems) - 1
+		m.activeIdx = len(m.shownItems) - 1
 	} else {
-		m.activeItem = 0
+		m.activeIdx = 0
 	}
 
 	m.updateViewportContent()
@@ -131,12 +136,12 @@ func (m *Model) Jump(down bool) {
 
 func (m *Model) scrollViewport() {
 	// Use ScrollDown/ScrollUp to handle clipping
-	if m.activeItem >= m.viewport.YOffset+m.viewport.Height {
-		m.viewport.ScrollDown(m.activeItem - m.viewport.YOffset - m.viewport.Height + 1)
+	if m.activeIdx >= m.viewport.YOffset+m.viewport.Height {
+		m.viewport.ScrollDown(m.activeIdx - m.viewport.YOffset - m.viewport.Height + 1)
 	}
 
-	if m.activeItem < m.viewport.YOffset {
-		m.viewport.ScrollUp(m.viewport.YOffset - m.activeItem)
+	if m.activeIdx < m.viewport.YOffset {
+		m.viewport.ScrollUp(m.viewport.YOffset - m.activeIdx)
 	}
 }
 
@@ -145,7 +150,6 @@ func (m *Model) updateShownItems() {
 	if m.filterQuery == "" {
 		m.shownItems = m.items
 	} else {
-
 		var filterValues []string
 		for _, item := range m.items {
 			filterValues = append(filterValues, item.FilterValue())
@@ -162,14 +166,14 @@ func (m *Model) updateShownItems() {
 
 	m.updateViewportContent()
 
-	m.activeItem = 0
+	m.activeIdx = 0
 	m.scrollViewport()
 }
 
 func (m *Model) updateViewportContent() {
 	var result []string
 	for i, item := range m.shownItems {
-		result = append(result, item.Render(m.activeItem == i))
+		result = append(result, item.Render(m.activeIdx == i))
 	}
 
 	m.viewport.SetContent(strings.Join(result, "\n"))

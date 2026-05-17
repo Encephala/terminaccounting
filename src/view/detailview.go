@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"terminaccounting/bubbles/list"
 	"terminaccounting/database"
 	"terminaccounting/meta"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -43,30 +42,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 		return gdv, cmd
 
-	case meta.DataLoadedMsg:
-		newViewer, cmd := viewer.Update(message)
-		*viewer = *newViewer
-
-		return gdv, cmd
-
-	case meta.NavigateMsg:
-		newViewer, cmd := viewer.Update(message)
-		*viewer = *newViewer
-
-		return gdv, cmd
-
-	case meta.JumpVerticalMsg:
-		if message.Down {
-			viewer.activeRow = len(viewer.shownRows) - 1
-		} else {
-			viewer.activeRow = 0
-		}
-
-		viewer.scrollViewport()
-
-		return gdv, nil
-
-	case meta.UpdateSearchMsg:
+	case meta.DataLoadedMsg, meta.NavigateMsg, *meta.JumpVerticalMsg, *meta.UpdateSearchMsg:
 		newViewer, cmd := viewer.Update(message)
 		*viewer = *newViewer
 
@@ -74,7 +50,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 	case meta.ToggleShowReconciledMsg:
 		oldShownRows := make([]*database.EntryRow, len(viewer.shownRows))
-		oldActiveIndex := viewer.activeRow
+		oldActiveIndex := viewer.list.ActiveIndex()
 		copy(oldShownRows, viewer.shownRows)
 
 		viewer.showReconciled = !viewer.showReconciled
@@ -110,7 +86,7 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 			return gdv, meta.MessageCmd(errors.New("reconciling is disabled in this view"))
 		}
 
-		activeEntryRow := viewer.getActiveRow()
+		activeEntryRow := (*viewer.list.ActiveItem()).(*database.EntryRow)
 
 		if activeEntryRow == nil {
 			return gdv, meta.MessageCmd(errors.New("there are no rows to reconcile"))
@@ -118,8 +94,10 @@ func genericDetailViewUpdate(gdv genericDetailView, message tea.Msg) (View, tea.
 
 		activeEntryRow.Reconciled = !activeEntryRow.Reconciled
 		// If the last row was just reconciled and it is now hidden, set activeRow to the new last row
-		if !viewer.showReconciled && viewer.activeRow == len(viewer.viewRows)-1 {
-			viewer.activeRow = max(0, viewer.activeRow-1)
+		activeIndex := viewer.list.ActiveIndex()
+
+		if !viewer.showReconciled && activeIndex == len(viewer.list.Items())-1 {
+			activeIndex = max(0, activeIndex-1)
 		}
 
 		viewer.updateViewRows()
@@ -222,22 +200,12 @@ type entryRowViewer struct {
 	width, height   int
 	highlightColour lipgloss.Color
 
-	viewport viewport.Model
+	list list.Model
 
 	// All the rows in this viewer
 	rows []*database.EntryRow
-	// The rows being shown in the view right now
-	shownRows []*database.EntryRow
-	// THe shownRows, rendered to strings slices
-	viewRows [][]string
 	// The original rows in the viewer (for comparing reconciled-state)
 	originalRows []database.EntryRow
-
-	activeRow int
-
-	// The query to filter shownRows by
-	// If nil, no filter
-	filterQuery *string
 
 	showReconciled bool
 
@@ -249,7 +217,7 @@ func newEntryRowViewer(colour lipgloss.Color) *entryRowViewer {
 	result := &entryRowViewer{
 		highlightColour: colour,
 
-		viewport: viewport.New(0, 0),
+		list: list.New(0, 0),
 
 		headers: []string{"Date", "Ledger", "Account", "Description", "Debit", "Credit", "Reconciled"},
 	}
@@ -263,9 +231,11 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		erv.width = message.Width
 		erv.height = message.Height
 
-		erv.viewport.Width = message.Width
-		// -8 for the total rows and their vertical margin
-		erv.viewport.Height = message.Height - 8
+		erv.list.Update(tea.WindowSizeMsg{
+			Width: message.Width,
+			// -8 for the total rows and their vertical margin
+			Height: message.Height - 8,
+		})
 
 		erv.calculateColumnWidths()
 
@@ -294,38 +264,17 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 		return erv, nil
 
 	case meta.NavigateMsg:
-		switch message.Direction {
-		case meta.DOWN:
-			if erv.activeRow != len(erv.shownRows)-1 {
-				erv.activeRow++
-			}
+		erv.list.Navigate(message.Direction == meta.DOWN)
 
-		case meta.UP:
-			if erv.activeRow != 0 {
-				erv.activeRow--
-			}
+		return erv, nil
 
-		default:
-			panic(fmt.Sprintf("unexpected meta.Direction: %#v", message.Direction))
-		}
-
-		erv.scrollViewport()
+	case meta.JumpVerticalMsg:
+		erv.list.Jump(message.Down)
 
 		return erv, nil
 
 	case meta.UpdateSearchMsg:
-		if message.Query == "" {
-			erv.filterQuery = nil
-			erv.viewport.Height = erv.height - 8
-		} else {
-			erv.filterQuery = &message.Query
-			// Add -2 to show filter state
-			erv.viewport.Height = erv.height - 8 - 2
-
-			erv.activeRow = 0
-		}
-
-		erv.updateViewRows()
+		erv.list.SetFilter(message.Query)
 
 		return erv, nil
 
@@ -337,29 +286,7 @@ func (erv *entryRowViewer) Update(message tea.Msg) (*entryRowViewer, tea.Cmd) {
 func (erv *entryRowViewer) View() string {
 	var result strings.Builder
 
-	if erv.filterQuery != nil {
-		style := lipgloss.NewStyle().Foreground(erv.highlightColour)
-
-		result.WriteString("Rows filtered by: " + style.Render(*erv.filterQuery))
-		result.WriteString("\n\n")
-	}
-
-	erv.setViewportContent()
-
-	result.WriteString(erv.renderRow(erv.headers, true, false))
-
-	result.WriteString("\n")
-
-	// Show scroll indicator of rows go offscreen
-	if len(erv.shownRows) > erv.viewport.Height {
-		scrollState := float64(erv.viewport.YOffset) / float64(len(erv.shownRows)-erv.viewport.Height)
-
-		result.WriteString(lipgloss.JoinHorizontal(lipgloss.Position(scrollState), erv.viewport.View(), " ", "█"))
-	} else {
-		result.WriteString(erv.viewport.View())
-	}
-
-	result.WriteString("\n\n")
+	result.WriteString(erv.list.View())
 
 	result.WriteString(fmt.Sprintf("Total: %s", database.CalculateTotal(erv.rows)))
 
@@ -398,14 +325,6 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 	remainingWidth := erv.width - dateWidth - reconciledWidth
 	descriptionWidth := remainingWidth / 3
 
-	// If showing scrollbar
-	if len(erv.shownRows) > erv.viewport.Height {
-		erv.viewport.Width = erv.width - 2 // reserve space for " █"
-		remainingWidth -= 2
-	} else {
-		erv.viewport.Width = erv.width
-	}
-
 	// -12 because of the 2-wide padding between columns, 6x
 	// /4 because there are four other columns
 	othersWidth := (remainingWidth - descriptionWidth - 12) / 4
@@ -416,110 +335,31 @@ func (erv *entryRowViewer) calculateColumnWidths() {
 
 // Takes the rows, and depending on state, updates the shownRows and viewRows based off of them
 func (erv *entryRowViewer) updateViewRows() {
+	var viewRows []list.Item
 	if erv.showReconciled {
-		erv.shownRows = filterRows(erv.rows, erv.filterQuery)
+		for _, row := range erv.rows {
+			viewRows = append(viewRows, row)
+		}
 	} else {
-		erv.shownRows = filterRows(erv.getUnreconciledRows(), erv.filterQuery)
-	}
-
-	availableLedgers := database.AvailableLedgers()
-	availableAccounts := database.AvailableAccounts()
-
-	var viewRows [][]string
-	for _, row := range erv.shownRows {
-		var viewRow []string
-		viewRow = append(viewRow, row.Date.String())
-
-		ledger, account := getRowLedgerAndAccount(row, availableLedgers, availableAccounts)
-
-		viewRow = append(viewRow, ledger.String(), account.String(), row.Description)
-
-		if row.Value == 0 {
-			panic(fmt.Sprintf("row %#v had zero debit and credit?", row))
+		for _, row := range erv.getUnreconciledRows() {
+			viewRows = append(viewRows, row)
 		}
-		if row.Value > 0 {
-			viewRow = append(viewRow, row.Value.String(), "")
-		} else {
-			viewRow = append(viewRow, "", (-row.Value).String())
-		}
-
-		viewRow = append(viewRow, meta.RenderBoolean(row.Reconciled))
-
-		viewRows = append(viewRows, viewRow)
 	}
 
-	erv.viewRows = viewRows
-}
-
-func (erv *entryRowViewer) scrollViewport() {
-	if erv.activeRow >= erv.viewport.YOffset+erv.viewport.Height {
-		erv.viewport.ScrollDown(erv.activeRow - erv.viewport.YOffset - erv.viewport.Height + 1)
-	}
-
-	if erv.activeRow < erv.viewport.YOffset {
-		erv.viewport.ScrollUp(erv.viewport.YOffset - erv.activeRow)
-	}
-}
-
-func (erv *entryRowViewer) getActiveRow() *database.EntryRow {
-	if len(erv.viewRows) == 0 {
-		return nil
-	}
-
-	return erv.shownRows[erv.activeRow]
+	erv.list.SetItems(viewRows)
 }
 
 func (erv *entryRowViewer) setActiveRow(entryRow *database.EntryRow) (found bool) {
-	index := slices.IndexFunc(erv.shownRows, func(row *database.EntryRow) bool { return row == entryRow })
+	index := slices.IndexFunc(erv.list.Items(), func(row list.Item) bool { return row == entryRow })
 
 	if index == -1 {
 		// This means that the row that was highlighted is reconciled and is now hidden, all good
 		return false
 	}
 
-	erv.activeRow = index
-	erv.scrollViewport()
+	erv.list.SetActiveIndex(index)
 
 	return true
-}
-
-func (erv *entryRowViewer) setViewportContent() {
-	var content []string
-
-	for i, row := range erv.viewRows {
-		doHighlight := i == erv.activeRow
-		content = append(content, erv.renderRow(row, false, doHighlight))
-	}
-
-	erv.viewport.SetContent(strings.Join(content, "\n"))
-}
-
-func (erv *entryRowViewer) renderRow(values []string, isHeader, highlight bool) string {
-	if len(erv.colWidths) != len(values) {
-		panic("You absolute dingus")
-	}
-
-	var result strings.Builder
-
-	for i := range values {
-		style := lipgloss.NewStyle().Width(erv.colWidths[i])
-
-		if highlight {
-			style = style.Foreground(erv.highlightColour)
-		}
-
-		if !isHeader && i == len(values)-1 {
-			style = style.AlignHorizontal(lipgloss.Center)
-		}
-
-		if i != len(values)-1 {
-			style = style.MarginRight(2)
-		}
-
-		result.WriteString(style.Render(ansi.Truncate(values[i], erv.colWidths[i], "…")))
-	}
-
-	return result.String()
 }
 
 func (erv *entryRowViewer) getReconciledRows() []*database.EntryRow {

@@ -273,28 +273,28 @@ func TestGenericDetailView_Navigation(t *testing.T) {
 
 	// Initial active row is 0
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.activeRow, 0)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 0)
 	})
 
 	// Move down
 	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
 
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.activeRow, 1)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 1)
 	})
 
 	// Move down again (should stay at 1)
 	tw.Send(meta.NavigateMsg{Direction: meta.DOWN})
 
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.activeRow, 2)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 2)
 	})
 
 	// Move up
 	tw.Send(meta.NavigateMsg{Direction: meta.UP})
 
 	tw.Execute(t, func(view View) {
-		assert.Equal(t, view.(*accountsDetailView).viewer.activeRow, 1)
+		assert.Equal(t, view.(*accountsDetailView).viewer.list.ActiveIndex(), 1)
 	})
 }
 

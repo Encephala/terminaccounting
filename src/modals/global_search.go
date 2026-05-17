@@ -54,10 +54,9 @@ func (gsm *globalSearchModal) Update(message tea.Msg) (Modal, tea.Cmd) {
 		return gsm, nil
 
 	case meta.UpdateSearchMsg:
-		var cmd tea.Cmd
-		gsm.list, cmd = gsm.list.Update(list.FuzzyFilterMsg{Query: message.Query})
+		gsm.list.SetFilter(message.Query)
 
-		return gsm, cmd
+		return gsm, nil
 
 	case meta.DataLoadedMsg:
 		gsm.list.SetItems(message.Data.([]list.Item))
