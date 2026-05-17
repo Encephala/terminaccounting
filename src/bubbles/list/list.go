@@ -2,7 +2,6 @@ package list
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -63,11 +62,14 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	m.updateViewportContent()
-
 	var result strings.Builder
 
-	result.WriteString("Query: " + m.filterQuery)
+	result.WriteString("Query: ")
+	if m.filterQuery == "" {
+		result.WriteString(lipgloss.NewStyle().Italic(true).Render("None"))
+	} else {
+		result.WriteString(m.filterQuery)
+	}
 	result.WriteString("\n\n")
 
 	if len(m.shownItems) > m.viewport.Height {
@@ -111,6 +113,7 @@ func (m *Model) Navigate(down bool) {
 		m.activeItem = max(m.activeItem-1, 0)
 	}
 
+	m.updateViewportContent()
 	m.scrollViewport()
 }
 
@@ -122,6 +125,7 @@ func (m *Model) Jump(down bool) {
 		m.activeItem = 0
 	}
 
+	m.updateViewportContent()
 	m.scrollViewport()
 }
 
@@ -140,23 +144,23 @@ func (m *Model) scrollViewport() {
 func (m *Model) updateShownItems() {
 	if m.filterQuery == "" {
 		m.shownItems = m.items
-		return
+	} else {
+
+		var filterValues []string
+		for _, item := range m.items {
+			filterValues = append(filterValues, item.FilterValue())
+		}
+
+		matches := fuzzy.Find(m.filterQuery, filterValues)
+
+		m.shownItems = make([]Item, len(matches))
+
+		for i, match := range matches {
+			m.shownItems[i] = m.items[match.Index]
+		}
 	}
 
-	var filterValues []string
-	for _, item := range m.items {
-		filterValues = append(filterValues, item.FilterValue())
-	}
-
-	matches := fuzzy.Find(m.filterQuery, filterValues)
-
-	m.shownItems = make([]Item, len(matches))
-
-	for i, match := range matches {
-		m.shownItems[i] = m.items[match.Index]
-	}
-
-	slog.Debug("updating shown items", "filterQuery", m.filterQuery, "n items", len(m.items), "n shown items", len(m.shownItems))
+	m.updateViewportContent()
 
 	m.activeItem = 0
 	m.scrollViewport()

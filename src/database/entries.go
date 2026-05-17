@@ -3,12 +3,14 @@ package database
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"terminaccounting/meta"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,15 +23,32 @@ type Entry struct {
 func (e Entry) FilterValue() string {
 	var result strings.Builder
 
-	result.WriteString(strconv.Itoa(e.Id))
-	result.WriteString(strconv.Itoa(e.Journal))
+	availableJournals := AvailableJournals()
+
+	result.WriteString(fmt.Sprintf("%d", e.Id))
+
+	journal := availableJournals[slices.IndexFunc(availableJournals, func(other Journal) bool {
+		return other.Id == e.Journal
+	})]
+	result.WriteString(journal.Name)
+
 	result.WriteString(e.Notes.Collapse())
 
 	return result.String()
 }
 
 func (e Entry) String() string {
-	return strconv.Itoa(e.Id)
+	return fmt.Sprintf("Entry %d", e.Id)
+}
+
+func (e Entry) Render(isActive bool) string {
+	style := lipgloss.NewStyle()
+
+	if !isActive {
+		style = style.Foreground(meta.ENTRIESCOLOUR)
+	}
+
+	return style.Render(e.String())
 }
 
 func (e Entry) Title() string {
@@ -315,6 +334,59 @@ type EntryRow struct {
 	Document    *string       `db:"document"`
 	Value       CurrencyValue `db:"value"`
 	Reconciled  bool          `db:"reconciled"`
+}
+
+func (er EntryRow) FilterValue() string {
+	var result strings.Builder
+
+	availableLedgers := AvailableLedgers()
+	availableAccounts := AvailableAccounts()
+
+	result.WriteString(fmt.Sprintf("%d", er.Id))
+	result.WriteString(fmt.Sprintf("%d", er.Entry))
+	result.WriteString(er.Date.String())
+
+	ledger := availableLedgers[slices.IndexFunc(availableLedgers, func(other Ledger) bool {
+		return other.Id == er.Ledger
+	})]
+	result.WriteString(fmt.Sprintf("%s", ledger.Name))
+
+	if er.Account == nil {
+		result.WriteString("none")
+	} else {
+		account := availableAccounts[slices.IndexFunc(availableAccounts, func(other Account) bool {
+			return other.Id == *er.Account
+		})]
+		result.WriteString(fmt.Sprintf("%s", account.Name))
+	}
+
+	result.WriteString(er.Description)
+	if er.Document != nil {
+		result.WriteString(*er.Document)
+	}
+
+	result.WriteString(er.Value.String())
+
+	if er.Reconciled {
+		result.WriteString("reconciled")
+	}
+
+	return result.String()
+}
+
+func (er EntryRow) String() string {
+	// TODO
+	return "Entryrow"
+}
+
+func (er EntryRow) Render(isActive bool) string {
+	style := lipgloss.NewStyle()
+
+	if !isActive {
+		style = style.Foreground(meta.ENTRIESCOLOUR)
+	}
+
+	return style.Render(er.String())
 }
 
 func setupSchemaEntryRows(DB *sqlx.DB) (bool, error) {

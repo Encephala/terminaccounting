@@ -66,9 +66,11 @@ type Account struct {
 func (a Account) FilterValue() string {
 	var result strings.Builder
 
+	result.WriteString(fmt.Sprintf("%d", a.Id))
 	result.WriteString(a.Name)
 	result.WriteString(string(a.Type))
-	result.WriteString(strings.Join(a.Notes, ";"))
+	result.WriteString(a.BankNumbers.Collapse())
+	result.WriteString(a.Notes.Collapse())
 
 	return result.String()
 }
@@ -88,6 +90,16 @@ func (a *Account) String() string {
 	}
 
 	return a.Name + " (" + strconv.Itoa(a.Id) + ")"
+}
+
+func (a Account) Render(isActive bool) string {
+	style := lipgloss.NewStyle()
+
+	if !isActive {
+		style = style.Foreground(meta.ACCOUNTSCOLOUR)
+	}
+
+	return style.Render(a.String())
 }
 
 func (a *Account) CompareId() int {

@@ -10,6 +10,7 @@ import (
 	"terminaccounting/bubbles/itempicker"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -70,6 +71,16 @@ func (j Journal) String() string {
 	return j.Name + " (" + strconv.Itoa(j.Id) + ")"
 }
 
+func (j Journal) Render(isActive bool) string {
+	style := lipgloss.NewStyle()
+
+	if !isActive {
+		style = style.Foreground(meta.JOURNALSCOLOUR)
+	}
+
+	return style.Render(j.String())
+}
+
 func (j Journal) CompareId() int {
 	return j.Id
 }
@@ -77,6 +88,7 @@ func (j Journal) CompareId() int {
 func (j Journal) FilterValue() string {
 	var result strings.Builder
 
+	result.WriteString(fmt.Sprintf("%d", j.Id))
 	result.WriteString(j.Name)
 	result.WriteString(string(j.Type))
 	result.WriteString(j.Notes.Collapse())

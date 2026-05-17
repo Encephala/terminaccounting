@@ -10,6 +10,7 @@ import (
 	"terminaccounting/meta"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -74,9 +75,14 @@ type Ledger struct {
 func (l Ledger) FilterValue() string {
 	var result strings.Builder
 
+	result.WriteString(fmt.Sprintf("%d", l.Id))
 	result.WriteString(l.Name)
 	result.WriteString(string(l.Type))
 	result.WriteString(l.Notes.Collapse())
+
+	if l.IsAccounts {
+		result.WriteString("isAccounts")
+	}
 
 	return result.String()
 }
@@ -91,6 +97,16 @@ func (l Ledger) Description() string {
 
 func (l Ledger) String() string {
 	return l.Name + " (" + strconv.Itoa(l.Id) + ")"
+}
+
+func (l Ledger) Render(isActive bool) string {
+	style := lipgloss.NewStyle()
+
+	if !isActive {
+		style = style.Foreground(meta.LEDGERSCOLOUR)
+	}
+
+	return style.Render(l.String())
 }
 
 func (l Ledger) CompareId() int {
