@@ -75,7 +75,7 @@ type Ledger struct {
 func (l Ledger) FilterValue() string {
 	var result strings.Builder
 
-	result.WriteString(fmt.Sprintf("%d", l.Id))
+	fmt.Fprintf(&result, "%d", l.Id)
 	result.WriteString(l.Name)
 	result.WriteString(string(l.Type))
 	result.WriteString(l.Notes.Collapse())

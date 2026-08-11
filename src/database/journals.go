@@ -88,7 +88,7 @@ func (j Journal) CompareId() int {
 func (j Journal) FilterValue() string {
 	var result strings.Builder
 
-	result.WriteString(fmt.Sprintf("%d", j.Id))
+	fmt.Fprintf(&result, "%d", j.Id)
 	result.WriteString(j.Name)
 	result.WriteString(string(j.Type))
 	result.WriteString(j.Notes.Collapse())

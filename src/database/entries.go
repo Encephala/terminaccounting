@@ -25,7 +25,7 @@ func (e Entry) FilterValue() string {
 
 	availableJournals := AvailableJournals()
 
-	result.WriteString(fmt.Sprintf("%d", e.Id))
+	fmt.Fprintf(&result, "%d", e.Id)
 
 	journal := availableJournals[slices.IndexFunc(availableJournals, func(other Journal) bool {
 		return other.Id == e.Journal
@@ -342,14 +342,14 @@ func (er EntryRow) FilterValue() string {
 	availableLedgers := AvailableLedgers()
 	availableAccounts := AvailableAccounts()
 
-	result.WriteString(fmt.Sprintf("%d", er.Id))
-	result.WriteString(fmt.Sprintf("%d", er.Entry))
+	fmt.Fprintf(&result, "%d", er.Id)
+	fmt.Fprintf(&result, "%d", er.Entry)
 	result.WriteString(er.Date.String())
 
 	ledger := availableLedgers[slices.IndexFunc(availableLedgers, func(other Ledger) bool {
 		return other.Id == er.Ledger
 	})]
-	result.WriteString(fmt.Sprintf("%s", ledger.Name))
+	fmt.Fprintf(&result, "%s", ledger.Name)
 
 	if er.Account == nil {
 		result.WriteString("none")
@@ -357,7 +357,7 @@ func (er EntryRow) FilterValue() string {
 		account := availableAccounts[slices.IndexFunc(availableAccounts, func(other Account) bool {
 			return other.Id == *er.Account
 		})]
-		result.WriteString(fmt.Sprintf("%s", account.Name))
+		fmt.Fprintf(&result, "%s", account.Name)
 	}
 
 	result.WriteString(er.Description)

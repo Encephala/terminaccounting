@@ -161,10 +161,10 @@ func genericDetailViewView(gdv genericDetailView) string {
 	result.WriteString(renderHeader(gdv.title(), gdv.metadata(), gdv.getWidth()))
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled)))
+	fmt.Fprintf(&result, "Showing reconciled rows: %s", renderBoolean(gdv.getViewer().showReconciled))
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("Reconciling enabled: %s", renderBoolean(gdv.getCanReconcile())))
+	fmt.Fprintf(&result, "Reconciling enabled: %s", renderBoolean(gdv.getCanReconcile()))
 	result.WriteString("\n\n")
 
 	result.WriteString(gdv.getViewer().View())
@@ -340,7 +340,7 @@ func (erv *entryRowViewer) View() string {
 	if erv.filterQuery != nil {
 		style := lipgloss.NewStyle().Foreground(erv.highlightColour)
 
-		result.WriteString("Rows filtered by: " + style.Render(*erv.filterQuery))
+		fmt.Fprintf(&result, "Rows filtered by: %s", style.Render(*erv.filterQuery))
 		result.WriteString("\n\n")
 	}
 
@@ -361,7 +361,7 @@ func (erv *entryRowViewer) View() string {
 
 	result.WriteString("\n\n")
 
-	result.WriteString(fmt.Sprintf("Total: %s", database.CalculateTotal(erv.rows)))
+	fmt.Fprintf(&result, "Total: %s", database.CalculateTotal(erv.rows))
 
 	result.WriteString("\n")
 
@@ -376,16 +376,16 @@ func (erv *entryRowViewer) View() string {
 			totalReconciledRendered = fmt.Sprintf("%s", totalReconciled)
 		}
 
-		result.WriteString(fmt.Sprintf("Reconciled total: %s", totalReconciledRendered))
+		fmt.Fprintf(&result, "Reconciled total: %s", totalReconciledRendered)
 
 		result.WriteString("\n")
 	}
 
-	result.WriteString(fmt.Sprintf("Size: %s", database.CalculateSize(erv.rows)))
+	fmt.Fprintf(&result, "Size: %s", database.CalculateSize(erv.rows))
 
 	result.WriteString("\n")
 
-	result.WriteString(fmt.Sprintf("# rows: %d", len(erv.rows)))
+	fmt.Fprintf(&result, "# rows: %d", len(erv.rows))
 
 	return result.String()
 }

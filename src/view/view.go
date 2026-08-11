@@ -59,7 +59,7 @@ func renderHeader(title string, metadata metadata, width int) string {
 	// Metadata
 	var metadataBuilder strings.Builder
 	for i := range metadata.names {
-		metadataBuilder.WriteString(fmt.Sprintf("%s: %s", metadata.names[i], metadata.values[i]))
+		fmt.Fprintf(&metadataBuilder, "%s: %s", metadata.names[i], metadata.values[i])
 
 		if i != len(metadata.names)-1 {
 			metadataBuilder.WriteString("\n")

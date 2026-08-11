@@ -66,7 +66,7 @@ type Account struct {
 func (a Account) FilterValue() string {
 	var result strings.Builder
 
-	result.WriteString(fmt.Sprintf("%d", a.Id))
+	fmt.Fprintf(&result, "%d", a.Id)
 	result.WriteString(a.Name)
 	result.WriteString(string(a.Type))
 	result.WriteString(a.BankNumbers.Collapse())
