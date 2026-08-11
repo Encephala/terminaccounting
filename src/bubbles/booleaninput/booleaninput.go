@@ -9,6 +9,8 @@ import (
 
 type Model struct {
 	state bool
+
+	Colour lipgloss.Color
 }
 
 func New() Model {
@@ -31,7 +33,9 @@ func (m Model) Update(message tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return renderBoolean(m.state)
+	style := lipgloss.NewStyle().Foreground(m.Colour)
+
+	return style.Render(renderBoolean(m.state))
 }
 
 func (m Model) Value() bool {
