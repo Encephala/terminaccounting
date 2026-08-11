@@ -145,10 +145,9 @@ func (m *Model) updateShownItems() {
 	if m.filterQuery == "" {
 		m.shownItems = m.items
 	} else {
-
-		var filterValues []string
-		for _, item := range m.items {
-			filterValues = append(filterValues, item.FilterValue())
+		var filterValues = make([]string, len(m.items))
+		for i, item := range m.items {
+			filterValues[i] = item.FilterValue()
 		}
 
 		matches := fuzzy.Find(m.filterQuery, filterValues)
