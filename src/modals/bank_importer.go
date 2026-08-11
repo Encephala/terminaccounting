@@ -418,11 +418,18 @@ func (bi *bankImporter) View() string {
 
 	result.WriteString("\n\n")
 
-	_, err := bi.parserPicker.Value().(bankParser).compileRows(
-		bi.data,
-		database.GetAccountsLedger().Id,
-		bi.bankLedgerPicker.Value().(database.Ledger).Id,
-	)
+	bankLedger := bi.bankLedgerPicker.Value()
+	var err error
+	if bankLedger == nil {
+		err = errors.New("No bank ledger selected")
+	} else {
+		_, err = bi.parserPicker.Value().(bankParser).compileRows(
+			bi.data,
+			database.GetAccountsLedger().Id,
+			bankLedger.(database.Ledger).Id,
+		)
+	}
+
 	if err == nil {
 		result.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Render("parser succeeds"))
 	} else {
