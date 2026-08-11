@@ -241,10 +241,12 @@ func newAdapterFrom(input any) input {
 			updateFn: func(model booleaninput.Model, message tea.Msg) (booleaninput.Model, tea.Cmd) {
 				return model.Update(message)
 			},
-			focusFn:         func(*booleaninput.Model) tea.Cmd { return nil },
-			blurFn:          func(*booleaninput.Model) {},
-			setWidthFn:      func(model *booleaninput.Model, width int) {},
-			setTextColourFn: func(model *booleaninput.Model, colour lipgloss.Color) {},
+			focusFn:    func(*booleaninput.Model) tea.Cmd { return nil },
+			blurFn:     func(*booleaninput.Model) {},
+			setWidthFn: func(model *booleaninput.Model, width int) {},
+			setTextColourFn: func(model *booleaninput.Model, colour lipgloss.Color) {
+				model.Colour = colour
+			},
 			valueFn: func(model booleaninput.Model) any {
 				return model.Value()
 			},
