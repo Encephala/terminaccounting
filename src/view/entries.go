@@ -86,24 +86,14 @@ func (dv *entryDetailView) title() string {
 }
 
 func (dv *entryDetailView) metadata() metadata {
-	availableJournals := database.AvailableJournals()
-
-	journalIndex := slices.IndexFunc(availableJournals, func(j database.Journal) bool {
-		return j.Id == dv.model.Journal
-	})
-
-	if journalIndex == -1 {
-		if dv.model.Id != 0 {
-			// Data seems loaded (SQLITE autoincrement starts at 1), but journal not found?
-			panic(fmt.Sprintf("journal %d not found for entry %d", dv.model.Journal, dv.model.Id))
-		}
-
+	// SQLITE autoincrement starts at 1, so a zero Id means the entry isn't loaded yet
+	if dv.model.Id == 0 {
 		return metadata{}
 	}
 
 	return metadata{
-		names:  []string{"Journal"},
-		values: []string{availableJournals[journalIndex].Name},
+		names:  []string{"Type"},
+		values: []string{dv.model.Type.String()},
 	}
 }
 
@@ -162,7 +152,7 @@ func (dv *entryDetailView) getViewer() *entryRowViewer {
 // NOTE: entries doesn't use the genericMutateView, because with the row creating it's too idiosyncratic
 
 const (
-	ENTRIESJOURNALINPUT int = iota
+	ENTRIESTYPEINPUT int = iota
 	ENTRIESNOTESINPUT
 	ENTRIESROWINPUT
 )
@@ -170,7 +160,7 @@ const (
 type entryCreateView struct {
 	DB *sqlx.DB
 
-	journalInput     itempicker.Model
+	typeInput        itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *rowsMutateManager
 	activeInput      int
@@ -179,7 +169,7 @@ type entryCreateView struct {
 }
 
 func NewEntryCreateView(DB *sqlx.DB) *entryCreateView {
-	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
+	typeInput := itempicker.New(database.EntryTypesAsItempickerItems())
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
@@ -193,9 +183,9 @@ func NewEntryCreateView(DB *sqlx.DB) *entryCreateView {
 	result := &entryCreateView{
 		DB: DB,
 
-		journalInput:     journalInput,
+		typeInput:        typeInput,
 		notesInput:       notesInput,
-		activeInput:      ENTRIESJOURNALINPUT,
+		activeInput:      ENTRIESTYPEINPUT,
 		entryRowsManager: newRowsMutateManager(),
 
 		colour: meta.ENTRIESCOLOUR,
@@ -205,16 +195,16 @@ func NewEntryCreateView(DB *sqlx.DB) *entryCreateView {
 }
 
 type EntryPrefillData struct {
-	Journal database.Journal
-	Rows    []database.EntryRow
-	Notes   meta.Notes
+	Type  database.EntryType
+	Rows  []database.EntryRow
+	Notes meta.Notes
 }
 
-// Make an EntryCreateView with the provided journal, rows prefilled into forms
+// Make an EntryCreateView with the provided type, rows prefilled into forms
 func NewEntryCreateViewPrefilled(DB *sqlx.DB, data EntryPrefillData) (*entryCreateView, error) {
 	result := NewEntryCreateView(DB)
 
-	result.journalInput.SetValue(data.Journal)
+	result.typeInput.SetValue(data.Type)
 	result.notesInput.SetValue(data.Notes.Collapse())
 
 	entryRowCreateView, err := decompileRows(data.Rows)
@@ -342,10 +332,7 @@ func (cv *entryCreateView) Init() tea.Cmd {
 func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message.(type) {
 	case meta.CommitMsg:
-		entryJournal := cv.journalInput.Value()
-		if entryJournal == nil {
-			return cv, meta.MessageCmd(errors.New("no journal selected (none available)"))
-		}
+		entryType := cv.typeInput.Value().(database.EntryType)
 		entryNotes := cv.notesInput.Value()
 
 		entryRows, err := cv.entryRowsManager.compileRows()
@@ -354,8 +341,8 @@ func (cv *entryCreateView) Update(message tea.Msg) (View, tea.Cmd) {
 		}
 
 		newEntry := database.Entry{
-			Journal: entryJournal.(database.Journal).Id,
-			Notes:   meta.CompileNotes(entryNotes),
+			Type:  entryType,
+			Notes: meta.CompileNotes(entryNotes),
 		}
 
 		id, err := newEntry.Insert(cv.DB, entryRows)
@@ -415,7 +402,6 @@ func (cv *entryCreateView) AcceptedModels() map[meta.ModelType]struct{} {
 	return map[meta.ModelType]struct{}{
 		meta.LEDGERMODEL:  {},
 		meta.ACCOUNTMODEL: {},
-		meta.JOURNALMODEL: {},
 	}
 }
 
@@ -436,8 +422,8 @@ func (cv *entryCreateView) Reload() View {
 	return NewEntryCreateView(cv.DB)
 }
 
-func (cv *entryCreateView) getJournalInput() *itempicker.Model {
-	return &cv.journalInput
+func (cv *entryCreateView) getTypeInput() *itempicker.Model {
+	return &cv.typeInput
 }
 
 func (cv *entryCreateView) getNotesInput() *textarea.Model {
@@ -455,7 +441,7 @@ func (cv *entryCreateView) getActiveInput() *int {
 type entryUpdateView struct {
 	DB *sqlx.DB
 
-	journalInput     itempicker.Model
+	typeInput        itempicker.Model
 	notesInput       textarea.Model
 	entryRowsManager *rowsMutateManager
 	activeInput      int
@@ -468,7 +454,7 @@ type entryUpdateView struct {
 }
 
 func NewEntryUpdateView(DB *sqlx.DB, modelId int) *entryUpdateView {
-	journalInput := itempicker.New(database.AvailableJournalsAsItempickerItems())
+	typeInput := itempicker.New(database.EntryTypesAsItempickerItems())
 
 	notesInput := textarea.New()
 	notesInput.Cursor.SetMode(cursor.CursorStatic)
@@ -482,9 +468,9 @@ func NewEntryUpdateView(DB *sqlx.DB, modelId int) *entryUpdateView {
 	result := &entryUpdateView{
 		DB: DB,
 
-		journalInput:     journalInput,
+		typeInput:        typeInput,
 		notesInput:       notesInput,
-		activeInput:      ENTRIESJOURNALINPUT,
+		activeInput:      ENTRIESTYPEINPUT,
 		entryRowsManager: newRowsMutateManager(),
 
 		modelId: modelId,
@@ -507,10 +493,7 @@ func (uv *entryUpdateView) Init() tea.Cmd {
 func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	switch message := message.(type) {
 	case meta.CommitMsg:
-		entryJournal := uv.journalInput.Value()
-		if entryJournal == nil {
-			return uv, meta.MessageCmd(errors.New("no journal selected (none available)"))
-		}
+		entryType := uv.typeInput.Value().(database.EntryType)
 		entryNotes := uv.notesInput.Value()
 
 		entryRows, err := uv.entryRowsManager.compileRows()
@@ -523,9 +506,9 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 		}
 
 		newEntry := database.Entry{
-			Id:      uv.startingEntry.Id,
-			Journal: entryJournal.(database.Journal).Id,
-			Notes:   meta.CompileNotes(entryNotes),
+			Id:    uv.startingEntry.Id,
+			Type:  entryType,
+			Notes: meta.CompileNotes(entryNotes),
 		}
 
 		err = newEntry.Update(uv.DB, entryRows)
@@ -540,17 +523,10 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 	case meta.DataLoadedMsg:
 		switch message.Model {
 		case meta.ENTRYMODEL:
-			// NOTE: I assume a valid state of the database cache (ledgers/accounts/journals)
-
 			entry := message.Data.(database.Entry)
 			uv.startingEntry = entry
 
-			journal, err := database.SelectJournal(uv.DB, entry.Journal)
-			if err != nil {
-				return uv, meta.MessageCmd(err)
-			}
-
-			err = uv.journalInput.SetValue(itempicker.Item(journal))
+			err := uv.typeInput.SetValue(itempicker.Item(entry.Type))
 			if err != nil {
 				return uv, meta.MessageCmd(err)
 			}
@@ -560,7 +536,7 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 			return uv, nil
 
 		case meta.ENTRYROWMODEL:
-			// NOTE: I assume a valid state of the database cache (ledgers/accounts/journals)
+			// NOTE: I assume a valid state of the database cache (ledgers/accounts)
 
 			rows := message.Data.([]database.EntryRow)
 			if len(rows) == 0 {
@@ -581,17 +557,8 @@ func (uv *entryUpdateView) Update(message tea.Msg) (View, tea.Cmd) {
 
 	case meta.ResetInputFieldMsg:
 		switch uv.activeInput {
-		case ENTRIESJOURNALINPUT:
-			availableJournals := database.AvailableJournals()
-			availableJournalIndex := slices.IndexFunc(availableJournals, func(journal database.Journal) bool {
-				return journal.Id == uv.startingEntry.Journal
-			})
-
-			if availableJournalIndex == -1 {
-				panic("This won't happen, surely")
-			}
-
-			err := uv.journalInput.SetValue(availableJournals[availableJournalIndex])
+		case ENTRIESTYPEINPUT:
+			err := uv.typeInput.SetValue(uv.startingEntry.Type)
 			if err != nil {
 				panic("This can't happen")
 			}
@@ -657,7 +624,6 @@ func (uv *entryUpdateView) AcceptedModels() map[meta.ModelType]struct{} {
 		meta.ENTRYMODEL:    {},
 		meta.ENTRYROWMODEL: {},
 		meta.ACCOUNTMODEL:  {},
-		meta.JOURNALMODEL:  {},
 	}
 }
 
@@ -679,8 +645,8 @@ func (uv *entryUpdateView) Reload() View {
 	return NewEntryUpdateView(uv.DB, uv.modelId)
 }
 
-func (uv *entryUpdateView) getJournalInput() *itempicker.Model {
-	return &uv.journalInput
+func (uv *entryUpdateView) getTypeInput() *itempicker.Model {
+	return &uv.typeInput
 }
 
 func (uv *entryUpdateView) getNotesInput() *textarea.Model {
@@ -1429,7 +1395,7 @@ type entryMutateView interface {
 
 	title() string
 
-	getJournalInput() *itempicker.Model
+	getTypeInput() *itempicker.Model
 	getNotesInput() *textarea.Model
 	getManager() *rowsMutateManager
 
@@ -1438,7 +1404,7 @@ type entryMutateView interface {
 
 func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd) {
 	activeInput := view.getActiveInput()
-	journalInput := view.getJournalInput()
+	typeInput := view.getTypeInput()
 	notesInput := view.getNotesInput()
 	rowsMutateManager := view.getManager()
 
@@ -1446,18 +1412,18 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 	case tea.WindowSizeMsg:
 		rowsMutateManager := view.getManager()
 
-		journalHeight := 3
-		notesHeight := (message.Height - journalHeight) / 4
+		typeHeight := 3
+		notesHeight := (message.Height - typeHeight) / 4
 		view.getNotesInput().SetHeight(notesHeight)
 		// -4 for borders and padding, -1 for margin between name and input
-		notesWidth := message.Width - len("Journal") - 2*4 - 1
+		notesWidth := message.Width - len("Notes") - 2*4 - 1
 		view.getNotesInput().SetWidth(notesWidth)
 
 		newManager, cmd := rowsMutateManager.Update(tea.WindowSizeMsg{
 			// -4 for borders and horizontal padding
 			Width: max(message.Width-4, 0),
 			// 2 for notes borders, -4 for borders, header row and total row
-			Height: max(message.Height-journalHeight-(notesHeight+2)-4, 0),
+			Height: max(message.Height-typeHeight-(notesHeight+2)-4, 0),
 		})
 		*rowsMutateManager = *newManager
 
@@ -1537,8 +1503,8 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch *activeInput {
-		case ENTRIESJOURNALINPUT:
-			*journalInput, cmd = journalInput.Update(message)
+		case ENTRIESTYPEINPUT:
+			*typeInput, cmd = typeInput.Update(message)
 		case ENTRIESNOTESINPUT:
 			*notesInput, cmd = notesInput.Update(message)
 		case ENTRIESROWINPUT:
@@ -1581,8 +1547,8 @@ func entryMutateViewUpdate(view entryMutateView, message tea.Msg) (View, tea.Cmd
 		activeInput := view.getActiveInput()
 
 		if *activeInput == 0 {
-			journalInput, cmd := view.getJournalInput().Update(itempicker.FuzzySelectMsg{Query: message.Query})
-			*view.getJournalInput() = journalInput
+			typeInput, cmd := view.getTypeInput().Update(itempicker.FuzzySelectMsg{Query: message.Query})
+			*view.getTypeInput() = typeInput
 
 			return view, cmd
 		}
@@ -1616,24 +1582,24 @@ func entryMutateViewView(view entryMutateView) string {
 		Padding(0, 1).
 		Align(lipgloss.Left)
 
-	journalInput := view.getJournalInput()
+	typeInput := view.getTypeInput()
 	switch *view.getActiveInput() {
 	case 0:
-		journalInput.Colour = meta.ENTRIESCOLOUR
+		typeInput.Colour = meta.ENTRIESCOLOUR
 	case 1, 2:
-		journalInput.Colour = ""
+		typeInput.Colour = ""
 	default:
 		panic(fmt.Sprintf("invalid active input %d", *view.getActiveInput()))
 	}
 
 	// +2 for padding
-	maxNameColWidth := len("Journal") + 2
+	maxNameColWidth := len("Notes") + 2
 
 	result.WriteString(lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		sectionStyle.Width(maxNameColWidth).Render("Journal"),
+		sectionStyle.Width(maxNameColWidth).Render("Type"),
 		" ",
-		sectionStyle.Render(journalInput.View()),
+		sectionStyle.Render(typeInput.View()),
 	))
 
 	result.WriteString("\n")
@@ -1701,8 +1667,7 @@ type entryDeleteView struct {
 	modelId int // only for retrieving the model itself initially
 	model   database.Entry
 
-	rows    []*database.EntryRow
-	journal *database.Journal
+	rows []*database.EntryRow
 
 	colour lipgloss.Color
 }
@@ -1718,7 +1683,6 @@ func NewEntryDeleteView(DB *sqlx.DB, modelId int) *entryDeleteView {
 }
 
 func (dv *entryDeleteView) Init() tea.Cmd {
-	// Can't load journal yet, we only know journal ID when entry is loaded
 	entryCmd := database.MakeLoadEntriesDetailCmd(dv.DB, dv.modelId)
 	rowsCmd := database.MakeSelectEntryRowsCmd(dv.DB, dv.modelId)
 
@@ -1731,18 +1695,6 @@ func (dv *entryDeleteView) Update(message tea.Msg) (View, tea.Cmd) {
 		switch message.Model {
 		case meta.ENTRYMODEL:
 			dv.model = message.Data.(database.Entry)
-
-			availableJournals := database.AvailableJournals()
-			journalIndex := slices.IndexFunc(availableJournals, func(j database.Journal) bool {
-				return j.Id == dv.model.Journal
-			})
-			if journalIndex == -1 {
-				return dv, meta.MessageCmd(fmt.Errorf("couldn't find journal %d in cache", dv.model.Journal))
-			}
-
-			// Don't reference original journal directly to ensure cache is never mutated
-			journal := availableJournals[journalIndex]
-			dv.journal = &journal
 
 		case meta.ENTRYROWMODEL:
 			rows := message.Data.([]database.EntryRow)
@@ -1835,11 +1787,7 @@ func (dv *entryDeleteView) Reload() View {
 func (dv *entryDeleteView) inputValues() []string {
 	var result []string
 
-	if dv.journal == nil {
-		result = append(result, strconv.Itoa(dv.model.Journal))
-	} else {
-		result = append(result, dv.journal.Name)
-	}
+	result = append(result, dv.model.Type.String())
 
 	result = append(result, dv.model.Notes.Collapse())
 
@@ -1851,7 +1799,7 @@ func (dv *entryDeleteView) inputValues() []string {
 }
 
 func (dv *entryDeleteView) inputNames() []string {
-	return []string{"Journal", "Notes", "# rows", "Entry size"}
+	return []string{"Type", "Notes", "# rows", "Entry size"}
 }
 
 func (dv *entryDeleteView) makeGoToDetailViewCmd() tea.Cmd {

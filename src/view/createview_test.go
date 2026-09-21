@@ -119,44 +119,12 @@ func TestLedgersCreateView_Commit_DuplicateAccountsLedger(t *testing.T) {
 	assert.Len(t, ledgers, 1)
 }
 
-func TestJournalsCreateView_Commit(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	v := NewJournalsCreateView(DB)
-	tw := tat.NewTestWrapperSpecific(View(v), meta.NotificationMessageMsg{
-		Message: "Successfully created Journal \"Test Journal\"",
-	}, meta.SwitchAppViewMsg{
-		ViewType: meta.UPDATEVIEWTYPE,
-		Data:     1,
-	})
-
-	// Set inputs
-	im := v.getInputManager()
-	require.NoError(t, im.inputs[0].setValue("Test Journal"))
-	require.NoError(t, im.inputs[1].setValue(database.GENERALJOURNAL))
-	require.NoError(t, im.inputs[2].setValue("Journal notes"))
-
-	// Commit
-	tw.Send(meta.CommitMsg{})
-
-	// Verify DB
-	journals, err := database.SelectJournals(DB)
-	require.NoError(t, err)
-	require.Len(t, journals, 1)
-	assert.Equal(t, "Test Journal", journals[0].Name)
-	assert.Equal(t, database.GENERALJOURNAL, journals[0].Type)
-
-	// Verify messages
-	require.Len(t, tw.LastCmdResults, 2)
-	assert.IsType(t, meta.NotificationMessageMsg{}, tw.LastCmdResults[0])
-	assert.IsType(t, meta.SwitchAppViewMsg{}, tw.LastCmdResults[1])
-}
-
 func TestEntryCreateView_Rendering(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv))
 
-	tw.AssertViewContains(t, "Journal")
+	tw.AssertViewContains(t, "Type")
 	tw.AssertViewContains(t, "Notes")
 }
 
@@ -165,10 +133,10 @@ func TestEntryCreateView_FocusNavigation(t *testing.T) {
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv))
 
-	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "initial active input should be journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, cv.activeInput, "initial active input should be type")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	assert.Equal(t, ENTRIESNOTESINPUT, cv.activeInput, "after NEXT from journal should be notes")
+	assert.Equal(t, ENTRIESNOTESINPUT, cv.activeInput, "after NEXT from type should be notes")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
 	assert.Equal(t, ENTRIESROWINPUT, cv.activeInput, "after NEXT from notes should be rows")
@@ -178,7 +146,7 @@ func TestEntryCreateView_FocusNavigation(t *testing.T) {
 	assert.Equal(t, ENTRIESNOTESINPUT, cv.activeInput, "PREVIOUS from rows first cell should return to notes")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "PREVIOUS from notes should return to journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, cv.activeInput, "PREVIOUS from notes should return to type")
 }
 
 func TestEntryCreateView_FocusNavigation_WrapsAround(t *testing.T) {
@@ -186,13 +154,13 @@ func TestEntryCreateView_FocusNavigation_WrapsAround(t *testing.T) {
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv))
 
-	// PREVIOUS from journal wraps to rows, focused at last cell
+	// PREVIOUS from type wraps to rows, focused at last cell
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	assert.Equal(t, ENTRIESROWINPUT, cv.activeInput, "PREVIOUS from journal should wrap to rows")
+	assert.Equal(t, ENTRIESROWINPUT, cv.activeInput, "PREVIOUS from type should wrap to rows")
 
-	// NEXT from the last cell in rows wraps back to journal
+	// NEXT from the last cell in rows wraps back to type
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	assert.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput, "NEXT from last rows cell should wrap to journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, cv.activeInput, "NEXT from last rows cell should wrap to type")
 }
 
 func TestEntryCreateView_Commit(t *testing.T) {
@@ -208,18 +176,13 @@ func TestEntryCreateView_Commit(t *testing.T) {
 	require.NoError(t, err)
 	account.Id = accountId
 
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv),
 		meta.NotificationMessageMsg{Message: "Successfully created Entry \"1\""},
 		meta.SwitchAppViewMsg{ViewType: meta.UPDATEVIEWTYPE, Data: 1},
 	)
 
-	cv.journalInput.SetValue(journal)
+	cv.typeInput.SetValue(database.GENERALENTRY)
 	cv.notesInput.SetValue("Test Notes")
 
 	cv.entryRowsManager.rowMutators[0].dateInput.SetValue("24-01-01")
@@ -238,7 +201,7 @@ func TestEntryCreateView_Commit(t *testing.T) {
 	entries, err := database.SelectEntries(DB)
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
-	assert.Equal(t, journalId, entries[0].Journal)
+	assert.Equal(t, database.GENERALENTRY, entries[0].Type)
 	assert.Equal(t, meta.Notes{"Test Notes"}, entries[0].Notes)
 
 	rows, err := database.SelectRowsByEntry(DB, entries[0].Id)
@@ -258,11 +221,11 @@ func TestEntryCreateView_Commit(t *testing.T) {
 	assert.Equal(t, entries[0].Id, switchMsg.Data)
 }
 
-func TestEntryCreateView_Commit_NoJournal(t *testing.T) {
+func TestEntryCreateView_Commit_NoLedger(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv),
-		errors.New("no journal selected (none available)"),
+		errors.New("invalid ledger selected in row 0 (none available)"),
 	)
 
 	tw.Send(meta.CommitMsg{})
@@ -274,17 +237,12 @@ func TestEntryCreateView_Commit_NoJournal(t *testing.T) {
 func TestEntryCreateView_Commit_UnbalancedRows(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
 	cv := NewEntryCreateView(DB)
 	tw := tat.NewTestWrapperSpecific(View(cv),
 		errors.New("entry has nonzero total value 20.00"),
 	)
 
-	cv.journalInput.SetValue(journal)
+	cv.typeInput.SetValue(database.GENERALENTRY)
 	cv.entryRowsManager.rowMutators[0].debitInput.SetValue("50.00")
 	cv.entryRowsManager.rowMutators[1].creditInput.SetValue("30.00")
 
@@ -338,7 +296,7 @@ func TestEntryCreateView_CreateRow_WhenNotInRows(t *testing.T) {
 		errors.New("no entry row highlighted while trying to create one"),
 	)
 
-	require.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput)
+	require.Equal(t, ENTRIESTYPEINPUT, cv.activeInput)
 
 	tw.Send(CreateEntryRowMsg{After: true})
 
@@ -353,7 +311,7 @@ func TestEntryCreateView_DeleteRow_WhenNotInRows(t *testing.T) {
 		errors.New("no entry row highlighted while trying to delete one"),
 	)
 
-	require.Equal(t, ENTRIESJOURNALINPUT, cv.activeInput)
+	require.Equal(t, ENTRIESTYPEINPUT, cv.activeInput)
 
 	tw.Send(DeleteEntryRowMsg{})
 

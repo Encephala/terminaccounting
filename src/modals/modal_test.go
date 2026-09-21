@@ -10,6 +10,7 @@ import (
 	"terminaccounting/view"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,14 +63,26 @@ func setupBankImporter(t *testing.T) *bankImporter {
 	return bi
 }
 
+// View() assumes both ledger pickers are populated, which Init() guarantees by refusing
+// to open the modal without an accounts ledger.
+func insertAccountsLedger(t *testing.T, DB *sqlx.DB) {
+	t.Helper()
+
+	accountsLedger := database.Ledger{Name: "Accounts Ledger", Type: database.ASSETLEDGER, IsAccounts: true}
+	_, err := accountsLedger.Insert(DB)
+	require.NoError(t, err)
+}
+
 func TestBankImporter_Rendering(t *testing.T) {
-	tat.SetupTestEnv(t)
+	DB := tat.SetupTestEnv(t)
+	insertAccountsLedger(t, DB)
+
 	bi := setupBankImporter(t)
 
 	rendered := bi.View()
 
 	assert.Contains(t, rendered, "File format")
-	assert.Contains(t, rendered, "Journal")
+	assert.Contains(t, rendered, "Type")
 	assert.Contains(t, rendered, "Bank ledger")
 	assert.Contains(t, rendered, "ING")
 	assert.Contains(t, rendered, ":write")
@@ -82,7 +95,7 @@ func TestBankImporter_FocusNavigation(t *testing.T) {
 	assert.Equal(t, 0, bi.activeInput, "initial active input should be parser picker (0)")
 
 	bi.Update(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	assert.Equal(t, 1, bi.activeInput, "after NEXT should be journal picker (1)")
+	assert.Equal(t, 1, bi.activeInput, "after NEXT should be type picker (1)")
 
 	bi.Update(meta.SwitchFocusMsg{Direction: meta.NEXT})
 	assert.Equal(t, 2, bi.activeInput, "after NEXT should be bank ledger picker (2)")
@@ -114,13 +127,8 @@ func TestBankImporter_Commit(t *testing.T) {
 	require.NoError(t, err)
 	bankLedger.Id = bankLedgerId
 
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
 	bi := setupBankImporter(t)
-	require.NoError(t, bi.journalPicker.SetValue(journal))
+	require.NoError(t, bi.typePicker.SetValue(database.GENERALENTRY))
 	require.NoError(t, bi.bankLedgerPicker.SetValue(bankLedger))
 
 	_, cmd := bi.Update(meta.CommitMsg{})
@@ -135,41 +143,22 @@ func TestBankImporter_Commit(t *testing.T) {
 
 	prefillData, ok := switchMsg.Data.(view.EntryPrefillData)
 	require.True(t, ok, "SwitchAppViewMsg.Data should be EntryPrefillData")
-	assert.Equal(t, journalId, prefillData.Journal.Id)
+	assert.Equal(t, database.GENERALENTRY, prefillData.Type)
 	// 2 CSV rows × 2 ledger rows each = 4 entry rows
 	assert.Len(t, prefillData.Rows, 4)
 	assert.NotEmpty(t, prefillData.Notes)
 }
 
-func TestBankImporter_Commit_NoJournal(t *testing.T) {
-	tat.SetupTestEnv(t)
-	bi := setupBankImporter(t)
-
-	_, cmd := bi.Update(meta.CommitMsg{})
-	require.NotNil(t, cmd)
-
-	err, ok := cmd().(error)
-	require.True(t, ok)
-	assert.EqualError(t, err, "no journal selected (none available)")
-}
-
 func TestBankImporter_Commit_NoBankLedger(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	// Insert journal before setupBankImporter so journalPicker is populated for SetValue.
-	// Insert accountsLedger after so bankLedgerPicker starts empty (Value() returns nil) to test the error occurring
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
+	// Insert accountsLedger after setupBankImporter so bankLedgerPicker starts empty
+	// (Value() returns nil) to test the error occurring
 	bi := setupBankImporter(t)
 
 	accountsLedger := database.Ledger{Name: "Accounts Ledger", Type: database.ASSETLEDGER, IsAccounts: true}
-	_, err = accountsLedger.Insert(DB)
+	_, err := accountsLedger.Insert(DB)
 	require.NoError(t, err)
-
-	require.NoError(t, bi.journalPicker.SetValue(journal))
 
 	_, cmd := bi.Update(meta.CommitMsg{})
 	require.NotNil(t, cmd)
@@ -180,7 +169,9 @@ func TestBankImporter_Commit_NoBankLedger(t *testing.T) {
 }
 
 func TestBankImporter_Navigate(t *testing.T) {
-	tat.SetupTestEnv(t)
+	DB := tat.SetupTestEnv(t)
+	insertAccountsLedger(t, DB)
+
 	bi := setupBankImporter(t)
 	bi.activeInput = 3
 	bi.View() // populate viewport content so TotalLineCount() is correct
@@ -212,7 +203,8 @@ func TestBankImporter_Navigate_RequiresPreviewFocus(t *testing.T) {
 }
 
 func TestBankImporter_Navigate_ScrollsViewport(t *testing.T) {
-	tat.SetupTestEnv(t)
+	DB := tat.SetupTestEnv(t)
+	insertAccountsLedger(t, DB)
 
 	// Need more rows than preview viewport height (Height:40 -> preview.Height = 31)
 	manyRows := make([][]string, 40)

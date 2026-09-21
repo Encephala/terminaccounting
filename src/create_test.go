@@ -17,7 +17,6 @@ import (
 func TestCreateGeneric(t *testing.T) {
 	all_apps := []meta.AppType{
 		meta.LEDGERSAPP,
-		meta.JOURNALSAPP,
 		meta.ACCOUNTSAPP,
 	}
 
@@ -111,21 +110,6 @@ func testCreateGenericHelper(t *testing.T, app meta.AppType) {
 
 			assert.Equal(t, expected, accounts[0])
 
-		case meta.JOURNALSAPP:
-			journals, err := database.SelectJournals(DB)
-			require.Nil(t, err)
-
-			require.Len(t, journals, 1)
-
-			expected := database.Journal{
-				Id:    1,
-				Name:  "test",
-				Type:  database.INCOMEJOURNAL,
-				Notes: nil,
-			}
-
-			assert.Equal(t, expected, journals[0])
-
 		default:
 			panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
 		}
@@ -135,7 +119,6 @@ func testCreateGenericHelper(t *testing.T, app meta.AppType) {
 func TestCreateGeneric_Msg(t *testing.T) {
 	all_apps := []meta.AppType{
 		meta.LEDGERSAPP,
-		meta.JOURNALSAPP,
 		meta.ACCOUNTSAPP,
 	}
 
@@ -191,8 +174,6 @@ func testCreate_SetValues(t *testing.T, app meta.AppType) {
 		tw.AssertViewContains(t, string(database.EXPENSELEDGER))
 	case meta.ACCOUNTSAPP:
 		tw.AssertViewContains(t, string(database.CREDITOR))
-	case meta.JOURNALSAPP:
-		tw.AssertViewContains(t, string(database.EXPENSEJOURNAL))
 	default:
 		panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
 	}
@@ -260,21 +241,6 @@ func testCreate_Commit(t *testing.T, app meta.AppType) {
 
 		assert.Equal(t, expected, accounts[0])
 
-	case meta.JOURNALSAPP:
-		journals, err := database.SelectJournals(DB)
-
-		require.Nil(t, err)
-		assert.Len(t, journals, 1)
-
-		expected := database.Journal{
-			Id:    1,
-			Name:  "test",
-			Type:  database.EXPENSEJOURNAL,
-			Notes: nil,
-		}
-
-		assert.Equal(t, expected, journals[0])
-
 	default:
 		panic(fmt.Sprintf("unexpected meta.AppType: %#v", app))
 	}
@@ -285,8 +251,6 @@ func TestCreate_Entries(t *testing.T) {
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
-	require.NoError(t, err)
-	j1, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
 	require.NoError(t, err)
 	require.NoError(t, database.UpdateCache(DB))
 
@@ -364,7 +328,7 @@ func TestCreate_Entries(t *testing.T) {
 		assert.Len(t, entries, 1)
 
 		assert.Equal(t, "Entry Notes", entries[0].Notes.Collapse())
-		assert.Equal(t, j1, entries[0].Journal)
+		assert.Equal(t, database.INCOMEENTRY, entries[0].Type)
 
 		rows, err := database.SelectRowsByEntry(DB, entries[0].Id)
 		require.Nil(t, err)
@@ -385,8 +349,6 @@ func TestCreate_Entries_Motions(t *testing.T) {
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	_, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
-	require.NoError(t, err)
-	_, err = (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
 	require.NoError(t, err)
 	require.NoError(t, database.UpdateCache(DB))
 
@@ -531,8 +493,6 @@ func testCreateEntries_SetValues(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
-	_, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
-	require.NoError(t, err)
 	require.NoError(t, database.UpdateCache(DB))
 
 	tw.GoToTab(meta.ENTRIESAPP).
@@ -566,7 +526,7 @@ func testCreateEntries_CommitCmd(t *testing.T) {
 
 	tw.AssertLastMsgsEqual(t,
 		meta.CommitMsg{},
-		errors.New("no journal selected (none available)"),
+		errors.New("invalid ledger selected in row 0 (none available)"),
 	)
 }
 
@@ -575,8 +535,6 @@ func testCreateEntries_Commit(t *testing.T) {
 	tw := tat.NewTestWrapperGeneric(newTerminaccounting(DB))
 
 	l1, err := (&database.Ledger{Name: "L1", Type: database.EXPENSELEDGER}).Insert(DB)
-	require.NoError(t, err)
-	j1, err := (&database.Journal{Name: "J1", Type: database.EXPENSEJOURNAL}).Insert(DB)
 	require.NoError(t, err)
 	require.NoError(t, database.UpdateCache(DB))
 
@@ -604,7 +562,7 @@ func testCreateEntries_Commit(t *testing.T) {
 	entries, err := database.SelectEntries(DB)
 	require.Nil(t, err)
 	assert.Len(t, entries, 1)
-	assert.Equal(t, j1, entries[0].Journal)
+	assert.Equal(t, database.INCOMEENTRY, entries[0].Type)
 	assert.Equal(t, "My Entry", entries[0].Notes.Collapse())
 
 	rows, err := database.SelectRowsByEntry(DB, entries[0].Id)

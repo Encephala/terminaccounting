@@ -21,18 +21,16 @@ type appManager struct {
 }
 
 func newAppManager(DB *sqlx.DB) *appManager {
-	a := make([]meta.App, 4)
+	a := make([]meta.App, 3)
 	a[0] = apps.NewEntriesApp(DB)
 	a[1] = apps.NewLedgersApp(DB)
 	a[2] = apps.NewAccountsApp(DB)
-	a[3] = apps.NewJournalsApp(DB)
 
 	// Map the name(=type) of an app to its index in `apps`
-	appIds := make(map[meta.AppType]int, 4)
+	appIds := make(map[meta.AppType]int, 3)
 	appIds[meta.ENTRIESAPP] = 0
 	appIds[meta.LEDGERSAPP] = 1
 	appIds[meta.ACCOUNTSAPP] = 2
-	appIds[meta.JOURNALSAPP] = 3
 
 	return &appManager{
 		apps:   a,

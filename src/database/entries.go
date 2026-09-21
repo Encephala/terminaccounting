@@ -9,29 +9,62 @@ import (
 	"terminaccounting/meta"
 	"time"
 
+	"terminaccounting/bubbles/itempicker"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 )
 
+type EntryType string
+
+const (
+	INCOMEENTRY   EntryType = "INCOME"
+	EXPENSEENTRY  EntryType = "EXPENSE"
+	CASHFLOWENTRY EntryType = "CASHFLOW"
+	GENERALENTRY  EntryType = "GENERAL"
+)
+
+func (et EntryType) String() string {
+	return string(et)
+}
+
+func (et EntryType) CompareId() int {
+	switch et {
+	case INCOMEENTRY:
+		return 0
+	case EXPENSEENTRY:
+		return 1
+	case CASHFLOWENTRY:
+		return 2
+	case GENERALENTRY:
+		return 3
+	default:
+		panic(fmt.Sprintf("unexpected database.EntryType: %#v", et))
+	}
+}
+
+func EntryTypesAsItempickerItems() []itempicker.Item {
+	var result []itempicker.Item
+
+	for _, entryType := range []EntryType{INCOMEENTRY, EXPENSEENTRY, CASHFLOWENTRY, GENERALENTRY} {
+		result = append(result, entryType)
+	}
+
+	return result
+}
+
 type Entry struct {
-	Id      int        `db:"id"`
-	Journal int        `db:"journal"`
-	Notes   meta.Notes `db:"notes"`
+	Id    int        `db:"id"`
+	Type  EntryType  `db:"type"`
+	Notes meta.Notes `db:"notes"`
 }
 
 func (e Entry) FilterValue() string {
 	var result strings.Builder
 
-	availableJournals := AvailableJournals()
-
-	fmt.Fprintf(&result, "%d", e.Id)
-
-	journal := availableJournals[slices.IndexFunc(availableJournals, func(other Journal) bool {
-		return other.Id == e.Journal
-	})]
-	result.WriteString(journal.Name)
-
+	result.WriteString(fmt.Sprintf("%d", e.Id))
+	result.WriteString(string(e.Type))
 	result.WriteString(e.Notes.Collapse())
 
 	return result.String()
@@ -130,9 +163,8 @@ func setupSchemaEntries(DB *sqlx.DB) (bool, error) {
 
 	schema := `CREATE TABLE IF NOT EXISTS entries(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		journal INTEGER NOT NULL,
-		notes TEXT,
-		FOREIGN KEY (journal) REFERENCES journals(id) ON DELETE RESTRICT
+		type INTEGER NOT NULL,
+		notes TEXT
 	) STRICT;`
 
 	_, err = DB.Exec(schema)
@@ -147,7 +179,7 @@ func (e Entry) Insert(DB *sqlx.DB, rows []EntryRow) (int, error) {
 		return 0, err
 	}
 
-	res, err := transaction.NamedExec(`INSERT INTO entries (journal, notes) VALUES (:journal, :notes)`, e)
+	res, err := transaction.NamedExec(`INSERT INTO entries (type, notes) VALUES (:type, :notes)`, e)
 	if err != nil {
 		return 0, err
 	}
@@ -177,7 +209,7 @@ func (e Entry) Insert(DB *sqlx.DB, rows []EntryRow) (int, error) {
 
 func (e Entry) Update(DB *sqlx.DB, rows []EntryRow) error {
 	query := `UPDATE entries SET
-	journal = :journal,
+	type = :type,
 	notes = :notes
 	WHERE id = :id;`
 
@@ -466,14 +498,6 @@ func SelectEntry(DB *sqlx.DB, id int) (Entry, error) {
 	return result, err
 }
 
-func SelectEntriesByJournal(DB *sqlx.DB, journalId int) ([]Entry, error) {
-	result := []Entry{}
-
-	err := DB.Select(&result, `SELECT * FROM entries WHERE journal = $1;`, journalId)
-
-	return result, err
-}
-
 func DeleteEntry(DB *sqlx.DB, id int) error {
 	_, err := DB.Exec(`DELETE FROM entries WHERE id = $1;`, id)
 
@@ -503,16 +527,6 @@ func SelectRowsByAccount(DB *sqlx.DB, id int) ([]EntryRow, error) {
 	LEFT JOIN ledgers
 	ON ledgers.id = entryrows.ledger
 	WHERE account = $1 AND ledgers.is_accounts = 1;`
-
-	err := DB.Select(&result, query, id)
-
-	return result, err
-}
-
-func SelectRowsByJournal(DB *sqlx.DB, id int) ([]EntryRow, error) {
-	result := []EntryRow{}
-
-	query := `SELECT er.* FROM entryrows AS er LEFT JOIN entries AS e ON er.entry = e.id WHERE e.journal = $1;`
 
 	err := DB.Select(&result, query, id)
 
@@ -564,21 +578,6 @@ func MakeSelectEntryCmd(DB *sqlx.DB, entryId int) tea.Cmd {
 
 		return meta.DataLoadedMsg{
 			TargetApp: meta.ENTRIESAPP,
-			Model:     meta.ENTRYMODEL,
-			Data:      rows,
-		}
-	}
-}
-
-func MakeSelectEntriesByJournalCmd(DB *sqlx.DB, journalId int) tea.Cmd {
-	return func() tea.Msg {
-		rows, err := SelectEntriesByJournal(DB, journalId)
-		if err != nil {
-			return fmt.Errorf("FAILED TO LOAD ENTRIES FOR JOURNAL %d: %#v", journalId, err)
-		}
-
-		return meta.DataLoadedMsg{
-			TargetApp: meta.JOURNALSAPP,
 			Model:     meta.ENTRYMODEL,
 			Data:      rows,
 		}

@@ -46,29 +46,12 @@ func TestMakeLoadListCmd(t *testing.T) {
 			newApp: apps.NewAccountsApp,
 		},
 		{
-			appType:   meta.JOURNALSAPP,
-			modelType: meta.JOURNALMODEL,
-			insertItems: func(t *testing.T, DB *sqlx.DB) int {
-				t.Helper()
-				_, err := (&database.Journal{Name: "J1", Type: database.GENERALJOURNAL}).Insert(DB)
-				require.NoError(t, err)
-				_, err = (&database.Journal{Name: "J2", Type: database.INCOMEJOURNAL}).Insert(DB)
-				require.NoError(t, err)
-				_, err = (&database.Journal{Name: "J3", Type: database.EXPENSEJOURNAL}).Insert(DB)
-				require.NoError(t, err)
-				return 3
-			},
-			newApp: apps.NewJournalsApp,
-		},
-		{
 			appType:   meta.ENTRIESAPP,
 			modelType: meta.ENTRYMODEL,
 			insertItems: func(t *testing.T, DB *sqlx.DB) int {
 				t.Helper()
-				journalId, err := (&database.Journal{Name: "J1", Type: database.GENERALJOURNAL}).Insert(DB)
-				require.NoError(t, err)
-				entry := database.Entry{Journal: journalId}
-				_, err = entry.Insert(DB, []database.EntryRow{})
+				entry := database.Entry{Type: database.GENERALENTRY}
+				_, err := entry.Insert(DB, []database.EntryRow{})
 				require.NoError(t, err)
 				_, err = entry.Insert(DB, []database.EntryRow{})
 				require.NoError(t, err)

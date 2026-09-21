@@ -38,9 +38,6 @@ func (tw *TestWrapper[T]) GoToTab(tab meta.AppType) *TestWrapper[T] {
 	case meta.ACCOUNTSAPP:
 		tw.Send(meta.SwitchTabMsg{Direction: meta.NEXT}).Send(meta.SwitchTabMsg{Direction: meta.NEXT})
 
-	case meta.JOURNALSAPP:
-		tw.Send(meta.SwitchTabMsg{Direction: meta.PREVIOUS})
-
 	default:
 		panic(fmt.Sprintf("unexpected meta.AppType: %#v", tab))
 	}

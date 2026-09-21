@@ -41,27 +41,12 @@ func insertTestAccount(t *testing.T, DB *sqlx.DB) database.Account {
 	return account
 }
 
-func insertTestJournal(t *testing.T, DB *sqlx.DB) database.Journal {
-	t.Helper()
-
-	journal := database.Journal{
-		Name:  "test journal",
-		Type:  database.GENERALJOURNAL,
-		Notes: meta.Notes{},
-	}
-	id, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = id
-
-	return journal
-}
-
-func insertTestEntry(t *testing.T, DB *sqlx.DB, journalId int, ledgerId int) database.Entry {
+func insertTestEntry(t *testing.T, DB *sqlx.DB, ledgerId int) database.Entry {
 	t.Helper()
 
 	entry := database.Entry{
-		Journal: journalId,
-		Notes:   meta.Notes{},
+		Type:  database.GENERALENTRY,
+		Notes: meta.Notes{},
 	}
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)

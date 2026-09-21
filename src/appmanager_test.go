@@ -15,7 +15,6 @@ func TestAppViewRouting(t *testing.T) {
 	appTypes := []meta.AppType{
 		meta.LEDGERSAPP,
 		meta.ACCOUNTSAPP,
-		meta.JOURNALSAPP,
 		meta.ENTRIESAPP,
 	}
 
@@ -99,18 +98,11 @@ func insertItemForApp(t *testing.T, DB *sqlx.DB, appType meta.AppType) int {
 		require.NoError(t, err)
 		return accountId
 
-	case meta.JOURNALSAPP:
-		journalId, err := (&database.Journal{Name: "Test", Type: database.GENERALJOURNAL}).Insert(DB)
-		require.NoError(t, err)
-		return journalId
-
 	case meta.ENTRIESAPP:
-		journalId, err := (&database.Journal{Name: "J", Type: database.GENERALJOURNAL}).Insert(DB)
-		require.NoError(t, err)
 		ledgerId, err := (&database.Ledger{Name: "L", Type: database.EXPENSELEDGER}).Insert(DB)
 		require.NoError(t, err)
 		require.NoError(t, database.UpdateCache(DB))
-		entry := database.Entry{Journal: journalId}
+		entry := database.Entry{Type: database.GENERALENTRY}
 		entryId, err := entry.Insert(DB, []database.EntryRow{
 			{Ledger: ledgerId, Value: 100, Description: "row"},
 		})
@@ -130,8 +122,6 @@ func detailDataForApp(appType meta.AppType, id int) any {
 		return database.Ledger{Id: id}
 	case meta.ACCOUNTSAPP:
 		return database.Account{Id: id}
-	case meta.JOURNALSAPP:
-		return database.Journal{Id: id}
 	case meta.ENTRIESAPP:
 		return database.Entry{Id: id}
 	default:

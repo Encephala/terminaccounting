@@ -31,19 +31,10 @@ func insertListItems(t *testing.T, DB *sqlx.DB, appType meta.AppType) []string {
 			require.NoError(t, err)
 		}
 
-	case meta.JOURNALSAPP:
-		for _, name := range names {
-			_, err := (&database.Journal{Name: name, Type: database.GENERALJOURNAL}).Insert(DB)
-			require.NoError(t, err)
-		}
-
 	case meta.ENTRIESAPP:
-		jID, err := (&database.Journal{Name: "Journal", Type: database.GENERALJOURNAL}).Insert(DB)
-		require.NoError(t, err)
-
 		for _, note := range names {
-			entry := database.Entry{Journal: jID, Notes: meta.Notes{note}}
-			_, err = entry.Insert(DB, []database.EntryRow{})
+			entry := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{note}}
+			_, err := entry.Insert(DB, []database.EntryRow{})
 			require.NoError(t, err)
 		}
 
@@ -59,7 +50,6 @@ func TestListViewGeneric(t *testing.T) {
 		meta.ENTRIESAPP,
 		meta.LEDGERSAPP,
 		meta.ACCOUNTSAPP,
-		meta.JOURNALSAPP,
 	}
 
 	for _, appType := range allApps {

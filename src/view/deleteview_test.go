@@ -78,33 +78,8 @@ func TestLedgersDeleteView(t *testing.T) {
 	assert.Empty(t, ledgers)
 }
 
-func TestJournalsDeleteView(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
-	dv := NewJournalsDeleteView(DB, journalId)
-
-	testGenericDeleteView(t, View(dv),
-		[]string{"Name", "Type", "Notes"},
-		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted Journal %q", journal.Name)},
-	)
-
-	journals, err := database.SelectJournals(DB)
-	require.NoError(t, err)
-	assert.Empty(t, journals)
-}
-
 func TestEntryDeleteView(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
 
 	ledger := database.Ledger{Name: "Test Ledger", Type: database.EXPENSELEDGER}
 	ledgerId, err := ledger.Insert(DB)
@@ -114,7 +89,7 @@ func TestEntryDeleteView(t *testing.T) {
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
-	entry := database.Entry{Journal: journalId}
+	entry := database.Entry{Type: database.GENERALENTRY}
 	entryRows := []database.EntryRow{
 		{Ledger: ledgerId, Date: date, Value: 1000},
 		{Ledger: ledgerId, Date: date, Value: -1000},
@@ -126,7 +101,7 @@ func TestEntryDeleteView(t *testing.T) {
 	dv := NewEntryDeleteView(DB, entryId)
 
 	testGenericDeleteView(t, View(dv),
-		[]string{"Journal", "Notes", "# rows", "Entry size"},
+		[]string{"Type", "Notes", "# rows", "Entry size"},
 		meta.NotificationMessageMsg{Message: fmt.Sprintf("Successfully deleted entry \"%d\"", entryId)},
 	)
 

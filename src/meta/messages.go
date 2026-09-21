@@ -50,7 +50,6 @@ type AppType string
 const (
 	LEDGERSAPP  AppType = "LEDGERS"
 	ENTRIESAPP  AppType = "ENTRIES"
-	JOURNALSAPP AppType = "JOURNALS"
 	ACCOUNTSAPP AppType = "ACCOUNTS"
 )
 
@@ -60,7 +59,6 @@ const (
 	LEDGERMODEL   ModelType = "LEDGER"
 	ENTRYMODEL    ModelType = "ENTRY"
 	ENTRYROWMODEL ModelType = "ENTRYROW"
-	JOURNALMODEL  ModelType = "JOURNAL"
 	ACCOUNTMODEL  ModelType = "ACCOUNT"
 )
 

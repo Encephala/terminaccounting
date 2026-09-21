@@ -69,12 +69,6 @@ func TestLedgersCreateView_Generic(t *testing.T) {
 	testGenericMutateView_Generic(t, v, []string{"Name", "Type", "Notes", "Is accounts ledger?"})
 }
 
-func TestJournalsCreateView_Generic(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	v := NewJournalsCreateView(DB)
-	testGenericMutateView_Generic(t, v, []string{"Name", "Type", "Notes"})
-}
-
 // Helper to create a rowCreator with populated itempickers
 func newTestRowCreator(ledgers []database.Ledger, accounts []database.Account) *rowMutator {
 	lItems := make([]itempicker.Item, len(ledgers))

@@ -340,9 +340,9 @@ func TestRepeatingMotionUnit(t *testing.T) {
 
 		tw.SendText("5gt")
 
-		// Starting at tab 0, 5 forward switches: 0→1→2→3→0→1 = tab 1
+		// Starting at tab 0, 5 forward switches: 0→1→2→0→1→2 = tab 2
 		tw.Execute(t, func(ta *terminaccounting) {
-			assert.Equal(t, 1, ta.appManager.activeApp)
+			assert.Equal(t, 2, ta.appManager.activeApp)
 		})
 	})
 
@@ -352,9 +352,9 @@ func TestRepeatingMotionUnit(t *testing.T) {
 
 		tw.SendText("3gT")
 
-		// Starting at tab 0, 3 backward switches: 0→3→2→1 = tab 1
+		// Starting at tab 0, 3 backward switches: 0→2→1→0 = tab 0
 		tw.Execute(t, func(ta *terminaccounting) {
-			assert.Equal(t, 1, ta.appManager.activeApp)
+			assert.Equal(t, 0, ta.appManager.activeApp)
 		})
 	})
 
@@ -364,7 +364,7 @@ func TestRepeatingMotionUnit(t *testing.T) {
 
 		tw.SendText("12gt")
 
-		// Starting at tab 0, 12 forward switches: 12 % 4 = 0, final tab = 0
+		// Starting at tab 0, 12 forward switches: 12 % 3 = 0, final tab = 0
 		tw.Execute(t, func(ta *terminaccounting) {
 			assert.Equal(t, 0, ta.appManager.activeApp)
 		})
@@ -417,7 +417,7 @@ func TestSwitchApp(t *testing.T) {
 		expectedActiveApp int
 	}{
 		{"switch tab simple", []string{"gt"}, 1},
-		{"wrap backwards", []string{"gT", "gT"}, 3},
+		{"wrap backwards", []string{"gT", "gT"}, 2},
 		{"wrap forwards", []string{"gt"}, 0},
 	}
 

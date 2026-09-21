@@ -110,11 +110,6 @@ func (gsm *globalSearchModal) MotionSet() meta.Trie[tea.Msg] {
 			appType = &tmp
 			data = model
 
-		case database.Journal:
-			tmp := meta.JOURNALSAPP
-			appType = &tmp
-			data = model
-
 		case database.Entry:
 			tmp := meta.ENTRIESAPP
 			appType = &tmp
@@ -165,8 +160,6 @@ func makeSelectAllDataCmd(DB *sqlx.DB) tea.Cmd {
 
 		accounts := database.AvailableAccounts()
 
-		journals := database.AvailableJournals()
-
 		entries, err := database.SelectEntries(DB)
 		if err != nil {
 			return meta.MessageCmd(err)
@@ -180,7 +173,6 @@ func makeSelectAllDataCmd(DB *sqlx.DB) tea.Cmd {
 		result = slices.Concat(
 			toItemSlice(ledgers),
 			toItemSlice(accounts),
-			toItemSlice(journals),
 			toItemSlice(entries),
 			toItemSlice(entryRows),
 		)

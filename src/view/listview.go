@@ -120,7 +120,6 @@ func (lv *ListView) AcceptedModels() map[meta.ModelType]struct{} {
 		meta.ACCOUNTMODEL: {},
 		meta.LEDGERMODEL:  {},
 		meta.ENTRYMODEL:   {},
-		meta.JOURNALMODEL: {},
 	}
 }
 

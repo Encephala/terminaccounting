@@ -51,14 +51,6 @@ func InitSchemas(DB *sqlx.DB) error {
 		slog.Info("Set up `accounts` schema")
 	}
 
-	changed, err = setupSchemaJournals(DB)
-	if err != nil {
-		return err
-	}
-	if changed {
-		slog.Info("Set up `journals` schema")
-	}
-
 	changed, err = setupSchemaEntries(DB)
 	if err != nil {
 		return err
@@ -85,11 +77,6 @@ func UpdateCache(DB *sqlx.DB) error {
 	}
 
 	err = UpdateAccountsCache(DB)
-	if err != nil {
-		return err
-	}
-
-	err = UpdateJournalsCache(DB)
 	if err != nil {
 		return err
 	}

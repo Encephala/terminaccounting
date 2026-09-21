@@ -256,88 +256,7 @@ func TestLedgersUpdateView_ResetInputField(t *testing.T) {
 	assert.Equal(t, "Test Ledger", uv.inputManager.inputs[0].value())
 }
 
-func TestJournalsUpdateView_Generic(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	uv := NewJournalsUpdateView(DB, journalId)
-	testGenericUpdateView_Generic(t, uv, []string{"Name", "Type", "Notes"})
-}
-
-func TestJournalsUpdateView_DataLoaded(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{
-		Name:  "Test Journal",
-		Type:  database.GENERALJOURNAL,
-		Notes: meta.Notes{"Some notes"},
-	}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-	journal.Id = journalId
-
-	uv := NewJournalsUpdateView(DB, journalId)
-	tat.NewTestWrapperSpecific(View(uv))
-
-	assert.Equal(t, journal.Name, uv.startingValue.Name)
-	assert.Equal(t, journal.Type, uv.startingValue.Type)
-	assert.Equal(t, journal.Notes, uv.startingValue.Notes)
-
-	assert.Equal(t, "Test Journal", uv.inputManager.inputs[0].value())
-	assert.Equal(t, database.GENERALJOURNAL, uv.inputManager.inputs[1].value())
-	assert.Equal(t, "Some notes", uv.inputManager.inputs[2].value())
-}
-
-func TestJournalsUpdateView_Commit(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	uv := NewJournalsUpdateView(DB, journalId)
-	tw := tat.NewTestWrapperSpecific(View(uv),
-		meta.NotificationMessageMsg{Message: `Successfully updated Journal "Updated Journal"`},
-	)
-
-	require.NoError(t, uv.inputManager.inputs[0].setValue("Updated Journal"))
-	require.NoError(t, uv.inputManager.inputs[1].setValue(database.INCOMEJOURNAL))
-
-	tw.Send(meta.CommitMsg{})
-
-	journals, err := database.SelectJournals(DB)
-	require.NoError(t, err)
-	require.Len(t, journals, 1)
-	assert.Equal(t, "Updated Journal", journals[0].Name)
-	assert.Equal(t, database.INCOMEJOURNAL, journals[0].Type)
-
-	require.Len(t, tw.LastCmdResults, 1)
-	assert.Equal(t, meta.NotificationMessageMsg{Message: `Successfully updated Journal "Updated Journal"`}, tw.LastCmdResults[0])
-}
-
-func TestJournalsUpdateView_ResetInputField(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	journalId, err := journal.Insert(DB)
-	require.NoError(t, err)
-
-	uv := NewJournalsUpdateView(DB, journalId)
-	tw := tat.NewTestWrapperSpecific(View(uv))
-
-	require.NoError(t, uv.inputManager.inputs[0].setValue("Modified Journal"))
-	assert.Equal(t, "Modified Journal", uv.inputManager.inputs[0].value())
-
-	uv.inputManager.activeInput = 0
-	tw.Send(meta.ResetInputFieldMsg{})
-
-	assert.Equal(t, "Test Journal", uv.inputManager.inputs[0].value())
-}
-
-func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, accountId, entryId int) {
+func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, ledgerId, accountId, entryId int) {
 	t.Helper()
 
 	dbConn := tat.SetupTestEnv(t)
@@ -350,16 +269,12 @@ func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, a
 	aId, err := account.Insert(dbConn)
 	require.NoError(t, err)
 
-	journal := database.Journal{Name: "Test Journal", Type: database.GENERALJOURNAL}
-	jId, err := journal.Insert(dbConn)
-	require.NoError(t, err)
-
 	require.NoError(t, database.UpdateCache(dbConn))
 
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
-	entry := database.Entry{Journal: jId, Notes: meta.Notes{"Original notes"}}
+	entry := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{"Original notes"}}
 	entryRows := []database.EntryRow{
 		{Ledger: lId, Account: &aId, Date: date, Value: 5000},
 		{Ledger: lId, Account: &aId, Date: date, Value: -5000},
@@ -367,33 +282,32 @@ func setupEntryUpdateViewTest(t *testing.T) (DB *sqlx.DB, journalId, ledgerId, a
 	eId, err := entry.Insert(dbConn, entryRows)
 	require.NoError(t, err)
 
-	return dbConn, jId, lId, aId, eId
+	return dbConn, lId, aId, eId
 }
 
 func TestEntryUpdateView_DataLoaded(t *testing.T) {
-	DB, journalId, _, _, entryId := setupEntryUpdateViewTest(t)
+	DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tat.NewTestWrapperSpecific(View(uv))
 
 	assert.Equal(t, entryId, uv.startingEntry.Id)
 	assert.Equal(t, "Original notes", uv.notesInput.Value())
-	assert.NotNil(t, uv.journalInput.Value(), "journal input should be populated")
-	assert.Equal(t, journalId, uv.journalInput.Value().(database.Journal).Id)
+	assert.Equal(t, database.GENERALENTRY, uv.typeInput.Value())
 	assert.Len(t, uv.entryRowsManager.rowMutators, 2)
 	assert.Len(t, uv.startingEntryRows, 2)
 }
 
 func TestEntryUpdateView_FocusNavigation(t *testing.T) {
-	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+	DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
 
-	assert.Equal(t, ENTRIESJOURNALINPUT, uv.activeInput, "initial active input should be journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, uv.activeInput, "initial active input should be type")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	assert.Equal(t, ENTRIESNOTESINPUT, uv.activeInput, "after NEXT from journal should be notes")
+	assert.Equal(t, ENTRIESNOTESINPUT, uv.activeInput, "after NEXT from type should be notes")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
 	assert.Equal(t, ENTRIESROWINPUT, uv.activeInput, "after NEXT from notes should be rows")
@@ -402,24 +316,24 @@ func TestEntryUpdateView_FocusNavigation(t *testing.T) {
 	assert.Equal(t, ENTRIESNOTESINPUT, uv.activeInput, "PREVIOUS from rows first cell should return to notes")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	assert.Equal(t, ENTRIESJOURNALINPUT, uv.activeInput, "PREVIOUS from notes should return to journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, uv.activeInput, "PREVIOUS from notes should return to type")
 }
 
 func TestEntryUpdateView_FocusNavigation_WrapsAround(t *testing.T) {
-	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+	DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.PREVIOUS})
-	assert.Equal(t, ENTRIESROWINPUT, uv.activeInput, "PREVIOUS from journal should wrap to rows")
+	assert.Equal(t, ENTRIESROWINPUT, uv.activeInput, "PREVIOUS from type should wrap to rows")
 
 	tw.Send(meta.SwitchFocusMsg{Direction: meta.NEXT})
-	assert.Equal(t, ENTRIESJOURNALINPUT, uv.activeInput, "NEXT from last rows cell should wrap to journal")
+	assert.Equal(t, ENTRIESTYPEINPUT, uv.activeInput, "NEXT from last rows cell should wrap to type")
 }
 
 func TestEntryUpdateView_Commit(t *testing.T) {
-	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+	DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv),
@@ -443,7 +357,7 @@ func TestEntryUpdateView_Commit(t *testing.T) {
 }
 
 func TestEntryUpdateView_ResetInputField_Notes(t *testing.T) {
-	DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+	DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 	uv := NewEntryUpdateView(DB, entryId)
 	tw := tat.NewTestWrapperSpecific(View(uv))
@@ -459,7 +373,7 @@ func TestEntryUpdateView_ResetInputField_Notes(t *testing.T) {
 
 func TestEntryUpdateView_ResetInputField_Rows(t *testing.T) {
 	t.Run("resets existing row to original value", func(t *testing.T) {
-		DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+		DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 		uv := NewEntryUpdateView(DB, entryId)
 		tw := tat.NewTestWrapperSpecific(View(uv))
@@ -475,7 +389,7 @@ func TestEntryUpdateView_ResetInputField_Rows(t *testing.T) {
 	})
 
 	t.Run("returns error for added row with no original", func(t *testing.T) {
-		DB, _, _, _, entryId := setupEntryUpdateViewTest(t)
+		DB, _, _, entryId := setupEntryUpdateViewTest(t)
 
 		uv := NewEntryUpdateView(DB, entryId)
 		tw := tat.NewTestWrapperSpecific(View(uv),

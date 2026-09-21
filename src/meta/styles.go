@@ -9,7 +9,6 @@ var (
 	ENTRIESCOLOUR  = lipgloss.Color("#7D7E00")
 	LEDGERSCOLOUR  = lipgloss.Color("#3E7D56")
 	ACCOUNTSCOLOUR = lipgloss.Color("#006B85")
-	JOURNALSCOLOUR = lipgloss.Color("#915E5E")
 )
 
 var tabBorder = lipgloss.Border{

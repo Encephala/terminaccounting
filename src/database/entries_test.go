@@ -14,7 +14,6 @@ import (
 func TestInsertEntry(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
 	time1, err := time.Parse(database.DATE_FORMAT, "34-05-06")
@@ -25,9 +24,9 @@ func TestInsertEntry(t *testing.T) {
 
 	// Note: relying on sqlite default behaviour of starting PRIMARY KEY AUTOINCREMENT at 1
 	entry := database.Entry{
-		Id:      1,
-		Journal: journal.Id,
-		Notes:   meta.Notes{},
+		Id:    1,
+		Type:  database.GENERALENTRY,
+		Notes: meta.Notes{},
 	}
 	entryRows := []database.EntryRow{
 		{
@@ -94,10 +93,9 @@ func TestInsertEntry(t *testing.T) {
 func TestSelectEntries(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	entry1 := insertTestEntry(t, DB, journal.Id, ledger.Id)
-	entry2 := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry1 := insertTestEntry(t, DB, ledger.Id)
+	entry2 := insertTestEntry(t, DB, ledger.Id)
 
 	result, err := database.SelectEntries(DB)
 	require.NoError(t, err)
@@ -108,9 +106,8 @@ func TestSelectEntries(t *testing.T) {
 func TestSelectEntry(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	entry := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry := insertTestEntry(t, DB, ledger.Id)
 
 	result, err := database.SelectEntry(DB, entry.Id)
 	require.NoError(t, err)
@@ -121,14 +118,13 @@ func TestSelectEntry(t *testing.T) {
 func TestUpdateEntry(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	entry := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry := insertTestEntry(t, DB, ledger.Id)
 
 	updatedEntry := database.Entry{
-		Id:      entry.Id,
-		Journal: journal.Id,
-		Notes:   meta.Notes{"updated note"},
+		Id:    entry.Id,
+		Type:  database.GENERALENTRY,
+		Notes: meta.Notes{"updated note"},
 	}
 	newDate, err := database.ToDate("25-06-15")
 	require.NoError(t, err)
@@ -164,9 +160,8 @@ func TestUpdateEntry(t *testing.T) {
 func TestDeleteEntry(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
 
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	entry := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry := insertTestEntry(t, DB, ledger.Id)
 
 	err := database.DeleteEntry(DB, entry.Id)
 	require.NoError(t, err)
@@ -259,10 +254,9 @@ func TestCalculateSize(t *testing.T) {
 
 func TestSelectRowsByEntry(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	entry1 := insertTestEntry(t, DB, journal.Id, ledger.Id)
-	entry2 := insertTestEntry(t, DB, journal.Id, ledger.Id)
+	entry1 := insertTestEntry(t, DB, ledger.Id)
+	entry2 := insertTestEntry(t, DB, ledger.Id)
 
 	rows1, err := database.SelectRowsByEntry(DB, entry1.Id)
 	require.NoError(t, err)
@@ -277,11 +271,10 @@ func TestSelectRowsByEntry(t *testing.T) {
 
 func TestSelectRowsByLedger(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	ledger1 := insertTestLedger(t, DB)
 	ledger2 := insertTestLedger(t, DB)
-	insertTestEntry(t, DB, journal.Id, ledger1.Id)
-	insertTestEntry(t, DB, journal.Id, ledger2.Id)
+	insertTestEntry(t, DB, ledger1.Id)
+	insertTestEntry(t, DB, ledger2.Id)
 
 	rows, err := database.SelectRowsByLedger(DB, ledger1.Id)
 	require.NoError(t, err)
@@ -289,40 +282,10 @@ func TestSelectRowsByLedger(t *testing.T) {
 	assert.Equal(t, ledger1.Id, rows[0].Ledger)
 }
 
-func TestSelectRowsByJournal(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	journal1 := insertTestJournal(t, DB)
-	journal2 := insertTestJournal(t, DB)
-	ledger := insertTestLedger(t, DB)
-	entry1 := insertTestEntry(t, DB, journal1.Id, ledger.Id)
-	insertTestEntry(t, DB, journal2.Id, ledger.Id)
-
-	rows, err := database.SelectRowsByJournal(DB, journal1.Id)
-	require.NoError(t, err)
-	require.Len(t, rows, 1)
-	assert.Equal(t, entry1.Id, rows[0].Entry)
-}
-
-func TestSelectEntriesByJournal(t *testing.T) {
-	DB := tat.SetupTestEnv(t)
-	journal1 := insertTestJournal(t, DB)
-	journal2 := insertTestJournal(t, DB)
-	ledger := insertTestLedger(t, DB)
-	entry1 := insertTestEntry(t, DB, journal1.Id, ledger.Id)
-	insertTestEntry(t, DB, journal2.Id, ledger.Id)
-
-	entries, err := database.SelectEntriesByJournal(DB, journal1.Id)
-	require.NoError(t, err)
-	require.Len(t, entries, 1)
-	assert.Equal(t, entry1.Id, entries[0].Id)
-	assert.Equal(t, journal1.Id, entries[0].Journal)
-}
-
 func TestSetReconciled(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
-	insertTestEntry(t, DB, journal.Id, ledger.Id)
+	insertTestEntry(t, DB, ledger.Id)
 
 	rows, err := database.SelectRows(DB)
 	require.NoError(t, err)
@@ -342,13 +305,12 @@ func TestSetReconciled(t *testing.T) {
 
 func TestSetReconciledMultipleRows(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
-	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	entry := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{}}
 	_, err = entry.Insert(DB, []database.EntryRow{
 		{Date: date, Ledger: ledger.Id, Value: 1000},
 		{Date: date, Ledger: ledger.Id, Value: -1000},
@@ -373,13 +335,12 @@ func TestSetReconciledMultipleRows(t *testing.T) {
 
 func TestSetReconciledReturnsChangedCount(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	ledger := insertTestLedger(t, DB)
 
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
-	entry := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	entry := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{}}
 	_, err = entry.Insert(DB, []database.EntryRow{
 		{Date: date, Ledger: ledger.Id, Value: 500},
 		{Date: date, Ledger: ledger.Id, Value: -500},
@@ -399,7 +360,6 @@ func TestSetReconciledReturnsChangedCount(t *testing.T) {
 
 func TestSelectRowsByAccount(t *testing.T) {
 	DB := tat.SetupTestEnv(t)
-	journal := insertTestJournal(t, DB)
 	account := insertTestAccount(t, DB)
 
 	accountsLedger := database.Ledger{
@@ -416,14 +376,14 @@ func TestSelectRowsByAccount(t *testing.T) {
 	date, err := database.ToDate("24-01-01")
 	require.NoError(t, err)
 
-	entryWithAccount := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	entryWithAccount := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{}}
 	_, err = entryWithAccount.Insert(DB, []database.EntryRow{
 		{Date: date, Ledger: accountsLedgerId, Account: &account.Id, Value: 500},
 	})
 	require.NoError(t, err)
 
 	// Row on a non-accounts ledger should not appear
-	entryWithoutAccountsLedger := database.Entry{Journal: journal.Id, Notes: meta.Notes{}}
+	entryWithoutAccountsLedger := database.Entry{Type: database.GENERALENTRY, Notes: meta.Notes{}}
 	_, err = entryWithoutAccountsLedger.Insert(DB, []database.EntryRow{
 		{Date: date, Ledger: regularLedger.Id, Account: &account.Id, Value: 300},
 	})
@@ -434,4 +394,62 @@ func TestSelectRowsByAccount(t *testing.T) {
 	require.Len(t, rows, 1)
 	assert.Equal(t, accountsLedgerId, rows[0].Ledger)
 	assert.Equal(t, &account.Id, rows[0].Account)
+}
+
+func TestEntryTypeSerialization(t *testing.T) {
+	entryTypes := []database.EntryType{
+		database.INCOMEENTRY,
+		database.EXPENSEENTRY,
+		database.CASHFLOWENTRY,
+		database.GENERALENTRY,
+	}
+
+	for _, entryType := range entryTypes {
+		t.Run(string(entryType), func(t *testing.T) {
+			DB := tat.SetupTestEnv(t)
+
+			entry := database.Entry{
+				Type:  entryType,
+				Notes: meta.Notes{},
+			}
+			_, err := entry.Insert(DB, []database.EntryRow{})
+			require.NoError(t, err)
+
+			var result database.Entry
+			err = DB.Get(&result, `SELECT * FROM entries;`)
+			require.NoError(t, err)
+
+			assert.Equal(t, entryType, result.Type)
+		})
+	}
+}
+
+func TestNotesSerialization(t *testing.T) {
+	tests := []struct {
+		name  string
+		notes meta.Notes
+	}{
+		{"empty", meta.Notes{}},
+		{"single", meta.Notes{"one note"}},
+		{"multiple", meta.Notes{"first note", "second note", "third note"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			DB := tat.SetupTestEnv(t)
+
+			entry := database.Entry{
+				Type:  database.GENERALENTRY,
+				Notes: tc.notes,
+			}
+			_, err := entry.Insert(DB, []database.EntryRow{})
+			require.NoError(t, err)
+
+			var result database.Entry
+			err = DB.Get(&result, `SELECT * FROM entries;`)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.notes, result.Notes)
+		})
+	}
 }

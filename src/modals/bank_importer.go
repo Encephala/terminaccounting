@@ -39,7 +39,7 @@ type bankImporter struct {
 	preview viewport.Model
 
 	parserPicker     itempicker.Model
-	journalPicker    itempicker.Model
+	typePicker       itempicker.Model
 	bankLedgerPicker itempicker.Model
 }
 
@@ -53,13 +53,13 @@ type bankParser interface {
 
 func newBankImporter() *bankImporter {
 	parserPicker := itempicker.New([]itempicker.Item{ingParser{}, minimalParser{}})
-	journalPicker := itempicker.New(database.AvailableJournalsAsItempickerItems())
+	typePicker := itempicker.New(database.EntryTypesAsItempickerItems())
 	bankLedgerPicker := itempicker.New(database.AvailableLedgersAsItempickerItems())
 
 	return &bankImporter{
 		preview:          viewport.New(0, 0),
 		parserPicker:     parserPicker,
-		journalPicker:    journalPicker,
+		typePicker:       typePicker,
 		bankLedgerPicker: bankLedgerPicker,
 	}
 }
@@ -194,8 +194,8 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 			return bi, cmd
 
 		case 1:
-			new, cmd := bi.journalPicker.Update(message)
-			bi.journalPicker = new
+			new, cmd := bi.typePicker.Update(message)
+			bi.typePicker = new
 
 			return bi, cmd
 
@@ -224,8 +224,8 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 			return bi, cmd
 
 		case 1:
-			new, cmd := bi.journalPicker.Update(selectMessage)
-			bi.journalPicker = new
+			new, cmd := bi.typePicker.Update(selectMessage)
+			bi.typePicker = new
 
 			return bi, cmd
 
@@ -281,10 +281,7 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 		return bi, nil
 
 	case meta.CommitMsg:
-		journal := bi.journalPicker.Value()
-		if journal == nil {
-			return bi, meta.MessageCmd(errors.New("no journal selected (none available)"))
-		}
+		entryType := bi.typePicker.Value().(database.EntryType)
 
 		// This assumes only a single ledger is the accounts ledger
 		accountsLedger := database.GetAccountsLedger()
@@ -312,9 +309,9 @@ func (bi *bankImporter) Update(message tea.Msg) (Modal, tea.Cmd) {
 			App:      &entriesAppType,
 			ViewType: meta.CREATEVIEWTYPE,
 			Data: view.EntryPrefillData{
-				Journal: journal.(database.Journal),
-				Rows:    rows,
-				Notes:   meta.Notes{fmt.Sprintf("Bank import %s", time.Now().Format("2006-01-02 15:04:05"))},
+				Type:  entryType,
+				Rows:  rows,
+				Notes: meta.Notes{fmt.Sprintf("Bank import %s", time.Now().Format("2006-01-02 15:04:05"))},
 			},
 		}
 
@@ -336,7 +333,7 @@ func (bi *bankImporter) View() string {
 	cellStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
 
 	formatSelectorStyle := style
-	journalSelectorStyle := style
+	typeSelectorStyle := style
 	bankLedgerSelectorStyle := style
 
 	previewIsActive := false
@@ -345,7 +342,7 @@ func (bi *bankImporter) View() string {
 	case 0:
 		formatSelectorStyle = highlightStyle
 	case 1:
-		journalSelectorStyle = highlightStyle
+		typeSelectorStyle = highlightStyle
 	case 2:
 		bankLedgerSelectorStyle = highlightStyle
 	case 3:
@@ -366,11 +363,11 @@ func (bi *bankImporter) View() string {
 		formatSelectorStyle.Render(bi.parserPicker.View()),
 	))
 
-	journalSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
+	typeSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		"Journal",
+		"Type",
 		" ",
-		journalSelectorStyle.Render(bi.journalPicker.View()),
+		typeSelectorStyle.Render(bi.typePicker.View()),
 	))
 
 	bankLedgerSelectorRendered := cellStyle.Render(lipgloss.JoinHorizontal(
@@ -384,7 +381,7 @@ func (bi *bankImporter) View() string {
 		lipgloss.Top,
 		formatSelectorRendered,
 		" ",
-		journalSelectorRendered,
+		typeSelectorRendered,
 		" ",
 		bankLedgerSelectorRendered,
 	))
@@ -509,10 +506,10 @@ func (bi *bankImporter) updatePickerWidths() {
 	defaultWidth := (bi.width - fillerWidth) / 3
 
 	parserWidth := bi.parserPicker.MaxViewLength() + len("File format ")
-	journalWidth := bi.journalPicker.MaxViewLength() + len("Journal ")
+	typeWidth := bi.typePicker.MaxViewLength() + len("Type ")
 	bankWidth := bi.bankLedgerPicker.MaxViewLength() + len("Bank ledger ")
 
-	widths := []int{parserWidth, journalWidth, bankWidth}
+	widths := []int{parserWidth, typeWidth, bankWidth}
 
 	remainingWidth := bi.width - fillerWidth
 	remainingElements := 3
@@ -530,7 +527,7 @@ func (bi *bankImporter) updatePickerWidths() {
 	}
 
 	bi.parserPicker.MaxWidth = widths[0] - len("File format ")
-	bi.journalPicker.MaxWidth = widths[1] - len("Journal ")
+	bi.typePicker.MaxWidth = widths[1] - len("Type ")
 	bi.bankLedgerPicker.MaxWidth = widths[2] - len("Bank ledger ")
 }
 
