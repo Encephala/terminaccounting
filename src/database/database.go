@@ -7,8 +7,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func Connect() (*sqlx.DB, error) {
-	DB, err := sqlx.Connect("sqlite3", "file:test.db?cache=shared&mode=rwc&_foreign_keys=on")
+func Connect(dbPath string) (*sqlx.DB, error) {
+	DB, err := sqlx.Connect("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc&_foreign_keys=on", dbPath))
 	if err != nil {
 		return DB, err
 	}
